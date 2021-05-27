@@ -8,14 +8,16 @@ import (
 )
 
 type Parser struct {
-	tokens []models.Token
-	pos    int
+	tokens   []models.Token
+	pos      int
+	fileName string
 }
 
-func NewParser(tokens []models.Token) (*Parser, error) {
+func NewParser(fileName string, tokens []models.Token) (*Parser, error) {
 	return &Parser{
-		tokens: tokens,
-		pos:    0,
+		tokens:   tokens,
+		pos:      0,
+		fileName: fileName,
 	}, nil
 }
 
@@ -44,10 +46,15 @@ func (p *Parser) require(expected ...models.TokenType) (*models.Token, error) {
 	return token, nil
 }
 
-func (p *Parser) parseVariableOrNumber() (ast.ExpressionNode, error) {
+func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 	number := p.match(models.TokenTypesList[models.Number])
 	if number != nil {
 		return ast.NewNumberNode(*number), nil
+	}
+
+	stringToken := p.match(models.TokenTypesList[models.String])
+	if stringToken != nil {
+		return ast.NewStringNode(*stringToken), nil
 	}
 
 	name := p.match(models.TokenTypesList[models.Name])
@@ -67,8 +74,7 @@ func (p *Parser) parseVariableOrNumber() (ast.ExpressionNode, error) {
 
 func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 	if p.match(models.TokenTypesList[models.LPar]) != nil {
-		//node, err := p.parseFormula()
-		node, err := p.parseExpression()
+		node, err := p.parseFormula()
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +87,6 @@ func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 		return node, err
 	}
 
-	//return p.parseVariableOrNumber()
 	return p.parseExpression()
 }
 
@@ -122,7 +127,7 @@ func (p *Parser) parseFunctionCall() (ast.ExpressionNode, error) {
 			}
 
 			for {
-				argNode, err := p.parseExpression()
+				argNode, err := p.parseFormula()
 				if err != nil {
 					return nil, err
 				}
@@ -152,23 +157,12 @@ func (p *Parser) parseFunctionCall() (ast.ExpressionNode, error) {
 }
 
 func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
-	variableNode, err := p.parseVariableOrNumber()
+	variableNode, err := p.parseVariableOrConstant()
 	if err != nil {
 		return nil, err
 	}
 
 	if variableNode != nil {
-		assignOperator := p.match(models.TokenTypesList[models.Assign])
-		if assignOperator != nil {
-			rightExpressionNode, err := p.parseExpression()
-			if err != nil {
-				return nil, err
-			}
-
-			binaryNode := ast.NewBinOperationNode(*assignOperator, variableNode, rightExpressionNode)
-			return binaryNode, nil
-		}
-
 		return variableNode, nil
 	}
 
@@ -190,7 +184,32 @@ func (p *Parser) parseIncludeDirective() (ast.ExpressionNode, error) {
 	return nil, nil
 }
 
-func (p *Parser) parseRowOfCode() (ast.ExpressionNode, error) {
+func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
+	name := p.match(models.TokenTypesList[models.Name])
+	if name != nil {
+		if p.match(models.TokenTypesList[models.LPar]) != nil {
+			p.pos -= 2
+			return nil, nil
+		}
+
+		variableNode := ast.NewVariableNode(*name)
+		assignOperator := p.match(models.TokenTypesList[models.Assign])
+		if assignOperator != nil {
+			rightExpressionNode, err := p.parseFormula()
+			if err != nil {
+				return nil, err
+			}
+
+			binaryNode := ast.NewBinOperationNode(*assignOperator, variableNode, rightExpressionNode)
+			return binaryNode, nil
+		}
+	}
+
+	p.pos -= 1
+	return nil, nil
+}
+
+func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 	includeDirectiveNode, err := p.parseIncludeDirective()
 	if err != nil {
 		return nil, err
@@ -198,6 +217,20 @@ func (p *Parser) parseRowOfCode() (ast.ExpressionNode, error) {
 
 	if includeDirectiveNode != nil {
 		return includeDirectiveNode, nil
+	}
+
+	assignmentNode, err := p.parseVariableAssignment()
+	if err != nil {
+		return nil, err
+	}
+
+	if assignmentNode != nil {
+		_, err = p.require(models.TokenTypesList[models.Semicolon])
+		if err != nil {
+			return nil, err
+		}
+
+		return assignmentNode, nil
 	}
 
 	codeNode, err := p.parseExpression()
@@ -215,13 +248,18 @@ func (p *Parser) parseRowOfCode() (ast.ExpressionNode, error) {
 
 func (p *Parser) Parse() (*ast.AST, error) {
 	asTree := &ast.AST{}
+	rowCounter := 1
 	for p.pos < len(p.tokens) {
-		codeNode, err := p.parseRowOfCode()
+		codeNode, err := p.parseRow()
 		if err != nil {
-			return nil, err
+			return nil, errors.New(fmt.Sprintf(
+				"  Файл \"%s\", рядок %d\nСинтаксична помилка: %s",
+				p.fileName, rowCounter, err.Error(),
+			))
 		}
 
 		asTree.AddNode(codeNode)
+		rowCounter++
 	}
 
 	return asTree, nil

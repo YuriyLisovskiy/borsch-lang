@@ -7,6 +7,7 @@ import (
 
 const (
 	Number = iota
+	String
 	Name
 	Semicolon
 	Space
@@ -21,15 +22,14 @@ const (
 	RAngleBracket
 	Comma
 	IncludeDirective
-	FilePath
 	SingleLineComment
 )
 
 var TokenTypeNames = []string{
-	"Number", "Name", "Semicolon", "Space", "Assign",
+	"Number", "String", "Name", "Semicolon", "Space", "Assign",
 	"Add", "Sub", "Mul", "Div",
 	"LPar", "RPar", "LAngleBracket", "RAngleBracket",
-	"Comma", "IncludeDirective", "FilePath", "SingleLineComment",
+	"Comma", "IncludeDirective", "SingleLineComment",
 }
 
 type TokenType struct {
@@ -45,6 +45,11 @@ var TokenTypesList = map[int]TokenType{
 	Number: {
 		Name:  Number,
 		Regex: regexp.MustCompile("^[0-9]+(\\.[0-9]+)?"),
+	},
+	String: {
+		Name:  String,
+		// "(?:[^"\\]|\\.)*"
+		Regex: regexp.MustCompile("^\"(?:[^\"\\\\]|\\\\.)*\""),
 	},
 	Name: {
 		Name:  Name,
@@ -100,10 +105,10 @@ var TokenTypesList = map[int]TokenType{
 	},
 	IncludeDirective: {
 		Name:  IncludeDirective,
-		Regex: regexp.MustCompile("^#підключити\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>"),
+		Regex: regexp.MustCompile("^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>"),
 	},
 	SingleLineComment: {
 		Name:  SingleLineComment,
-		Regex: regexp.MustCompile("^~[^\\n\\r]*.*[^\\n\\r]*"),
+		Regex: regexp.MustCompile("^#[^\\n\\r]*.*[^\\n\\r]*"),
 	},
 }

@@ -124,6 +124,9 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 	case ast.NumberNode:
 		return node.Number.Text, nil
 
+	case ast.StringNode:
+		return node.Content.Text, nil
+
 	case ast.VariableNode:
 		if val, ok := e.scope[node.Variable.Text]; ok {
 			return val, nil
@@ -146,14 +149,14 @@ func (e *Interpreter) executeAST(tree *ast.AST) error {
 	return nil
 }
 
-func (e *Interpreter) Execute(code string) error {
+func (e *Interpreter) Execute(file string, code string) error {
 	lexer := NewLexer(code)
 	tokens, err := lexer.Lex()
 	if err != nil {
 		return err
 	}
 
-	parser, err := NewParser(tokens)
+	parser, err := NewParser(file, tokens)
 	if err != nil {
 		return err
 	}
@@ -181,5 +184,5 @@ func (e *Interpreter) ExecuteFile(filePath string) error {
 		return err
 	}
 
-	return e.Execute(string(content))
+	return e.Execute(filePath, string(content))
 }

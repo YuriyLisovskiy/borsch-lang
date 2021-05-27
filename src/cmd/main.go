@@ -30,7 +30,7 @@ func main() {
 				break
 			}
 
-			err = interpreter.Execute(code)
+			err = interpreter.Execute("стдввід", code)
 			if err != nil {
 				fmt.Println(err)
 			}
