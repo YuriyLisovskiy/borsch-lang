@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/ast"
 	"github.com/YuriyLisovskiy/borsch/src/models"
-	"github.com/YuriyLisovskiy/borsch/src/std"
+	"github.com/YuriyLisovskiy/borsch/src/builtin"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -63,7 +63,7 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 			args = append(args, sArg)
 		}
 
-		function, found := std.FunctionsList[node.FunctionName.Text]
+		function, found := builtin.FunctionsList[node.FunctionName.Text]
 		if !found {
 			return "", errors.New(
 				fmt.Sprintf("Функцію з назвою '%s' не знайдено", node.FunctionName.Text),
