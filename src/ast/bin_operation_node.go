@@ -3,9 +3,11 @@ package ast
 import "github.com/YuriyLisovskiy/borsch/src/models"
 
 type BinOperationNode struct {
-	Operator models.Token
-	LeftNode ExpressionNode
+	Operator  models.Token
+	LeftNode  ExpressionNode
 	RightNode ExpressionNode
+
+	rowNumber int
 }
 
 func NewBinOperationNode(
@@ -15,9 +17,14 @@ func NewBinOperationNode(
 		Operator:  operator,
 		LeftNode:  leftNode,
 		RightNode: rightNode,
+		rowNumber: operator.Row,
 	}
 }
 
-func (bo BinOperationNode) String() string {
-	return "BinOperationNode"
+func (n BinOperationNode) String() string {
+	return "(" + n.LeftNode.String() + " " + n.Operator.String() + " " + n.RightNode.String() + ")"
+}
+
+func (n BinOperationNode) RowNumber() int {
+	return n.rowNumber
 }

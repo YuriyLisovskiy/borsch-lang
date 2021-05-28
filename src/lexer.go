@@ -41,11 +41,15 @@ func (l *Lexer) Lex() ([]models.Token, error) {
 	}
 
 	var result []models.Token
+	rowCounter := 1
 	for _, token := range l.tokenList {
-		switch models.TokenTypesList[token.Type.Name].Name {
+		switch token.Type.Name {
 		case models.Space, models.SingleLineComment:
-			break
+			if token.Text == "\n" {
+				rowCounter++
+			}
 		default:
+			token.Row = rowCounter
 			result = append(result, token)
 		}
 	}

@@ -26,10 +26,10 @@ const (
 )
 
 var TokenTypeNames = []string{
-	"Number", "String", "Name", "Semicolon", "Space", "Assign",
-	"Add", "Sub", "Mul", "Div",
-	"LPar", "RPar", "LAngleBracket", "RAngleBracket",
-	"Comma", "IncludeDirective", "SingleLineComment",
+	"число", "рядок", "назва", "крапка з комою", "пропуск", "оператор присвоєння",
+	"оператор суми", "оператор різниці", "оператор множення", "оператор ділення",
+	"відкриваюча дужка", "закриваюча дужка", "відкриваюча кутова дужка", "закриваюча кутова дужка",
+	"кома", "директива підключення файлу", "однорядковий коментар",
 }
 
 type TokenType struct {
@@ -41,6 +41,8 @@ func (tt *TokenType) String() string {
 	return fmt.Sprintf("[%d | %s]", tt.Name, tt.Regex.String())
 }
 
+const nameRegex = "[А-ЩЬЮЯҐЄІЇа-щьюяґєії_][А-ЩЬЮЯҐЄІЇа-щьюяґєії_0-9]*"
+
 var TokenTypesList = map[int]TokenType{
 	Number: {
 		Name:  Number,
@@ -48,12 +50,11 @@ var TokenTypesList = map[int]TokenType{
 	},
 	String: {
 		Name:  String,
-		// "(?:[^"\\]|\\.)*"
 		Regex: regexp.MustCompile("^\"(?:[^\"\\\\]|\\\\.)*\""),
 	},
 	Name: {
 		Name:  Name,
-		Regex: regexp.MustCompile("^(стд::)?[А-ЩЬЮЯҐЄІЇа-щьюяґєії_][А-ЩЬЮЯҐЄІЇа-щьюяґєії_0-9]*"),
+		Regex: regexp.MustCompile("^" + nameRegex),
 	},
 	Semicolon: {
 		Name:  Semicolon,
@@ -105,7 +106,10 @@ var TokenTypesList = map[int]TokenType{
 	},
 	IncludeDirective: {
 		Name:  IncludeDirective,
-		Regex: regexp.MustCompile("^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>"),
+		Regex: regexp.MustCompile(
+			//"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>\\sяк\\s(" + nameRegex + ")",
+			"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>",
+		),
 	},
 	SingleLineComment: {
 		Name:  SingleLineComment,

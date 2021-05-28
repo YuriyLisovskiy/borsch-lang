@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/ast"
 	"github.com/YuriyLisovskiy/borsch/src/models"
+	"strings"
+	"unicode/utf8"
 )
 
 type Parser struct {
@@ -39,7 +41,7 @@ func (p *Parser) require(expected ...models.TokenType) (*models.Token, error) {
 	token := p.match(expected...)
 	if token == nil {
 		return nil, errors.New(
-			fmt.Sprintf("На позиції %d очікується %s", p.pos, models.TokenTypeNames[expected[0].Name]),
+			fmt.Sprintf("очікується %s", p.pos, models.TokenTypeNames[expected[0].Name]),
 		)
 	}
 
@@ -67,9 +69,7 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 		return ast.NewVariableNode(*name), nil
 	}
 
-	return nil, errors.New(
-		fmt.Sprintf("Очікується змінна або число на позиції %d", p.pos),
-	)
+	return nil, errors.New("очікується змінна або число")
 }
 
 func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
@@ -146,14 +146,10 @@ func (p *Parser) parseFunctionCall() (ast.ExpressionNode, error) {
 			return ast.NewFunctionCallNode(*name, args), nil
 		}
 
-		return nil, errors.New(
-			fmt.Sprintf("Очікується відкриваюча дужка на позиції %d", p.pos),
-		)
+		return nil, errors.New("очікується відкриваюча дужка")
 	}
 
-	return nil, errors.New(
-		fmt.Sprintf("Очікується виклик функції на позиції %d", p.pos),
-	)
+	return nil, errors.New("очікується виклик функції")
 }
 
 func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
@@ -248,18 +244,19 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 
 func (p *Parser) Parse() (*ast.AST, error) {
 	asTree := &ast.AST{}
-	rowCounter := 1
 	for p.pos < len(p.tokens) {
 		codeNode, err := p.parseRow()
 		if err != nil {
+			tokenString := p.tokens[p.pos-1].String()
 			return nil, errors.New(fmt.Sprintf(
-				"  Файл \"%s\", рядок %d\nСинтаксична помилка: %s",
-				p.fileName, rowCounter, err.Error(),
+				"  Файл \"%s\", рядок %d\n    %s\n    %s\nСинтаксична помилка: %s",
+				p.fileName, p.tokens[p.pos-1].Row,
+				tokenString, strings.Repeat(" ", utf8.RuneCountInString(tokenString)) + "^",
+				err.Error(),
 			))
 		}
 
 		asTree.AddNode(codeNode)
-		rowCounter++
 	}
 
 	return asTree, nil

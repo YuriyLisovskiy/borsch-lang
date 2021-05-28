@@ -4,15 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/ast"
-	"github.com/YuriyLisovskiy/borsch/src/models"
 	"github.com/YuriyLisovskiy/borsch/src/builtin"
+	"github.com/YuriyLisovskiy/borsch/src/models"
 	"io/ioutil"
 	"os"
 	"strconv"
 )
 
 type Interpreter struct {
-	scope  map[string]string
+	scope map[string]string
 }
 
 func NewInterpreter() *Interpreter {
@@ -31,7 +31,7 @@ func (e *Interpreter) runNumbers(
 
 	leftNumber, err := strconv.ParseFloat(leftStr, 64)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, errors.New(fmt.Sprintf("Помилка виконання: %s", err.Error()))
 	}
 
 	rightStr, err := e.executeNode(rightNode)
@@ -41,7 +41,7 @@ func (e *Interpreter) runNumbers(
 
 	rightNumber, err := strconv.ParseFloat(rightStr, 64)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, errors.New(fmt.Sprintf("Помилка виконання: %s", err.Error()))
 	}
 
 	return leftNumber, rightNumber, nil
@@ -66,11 +66,16 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 		function, found := builtin.FunctionsList[node.FunctionName.Text]
 		if !found {
 			return "", errors.New(
-				fmt.Sprintf("Функцію з назвою '%s' не знайдено", node.FunctionName.Text),
+				fmt.Sprintf("Помилка виконання: функцію з назвою '%s' не знайдено", node.FunctionName.Text),
 			)
 		}
 
-		return function(args...)
+		res, err := function(args...)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf("Помилка виконання: %s", err.Error()))
+		}
+
+		return res, nil
 
 	case ast.BinOperationNode:
 		switch node.Operator.Type.Name {
@@ -80,7 +85,7 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 				return "", err
 			}
 
-			return fmt.Sprintf("%f", left + right), nil
+			return fmt.Sprintf("%f", left+right), nil
 
 		case models.Sub:
 			left, right, err := e.runNumbers(node.LeftNode, node.RightNode)
@@ -88,7 +93,7 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 				return "", err
 			}
 
-			return fmt.Sprintf("%f", left - right), nil
+			return fmt.Sprintf("%f", left-right), nil
 
 		case models.Mul:
 			left, right, err := e.runNumbers(node.LeftNode, node.RightNode)
@@ -96,7 +101,7 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 				return "", err
 			}
 
-			return fmt.Sprintf("%f", left * right), nil
+			return fmt.Sprintf("%f", left*right), nil
 
 		case models.Div:
 			left, right, err := e.runNumbers(node.LeftNode, node.RightNode)
@@ -105,10 +110,10 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 			}
 
 			if right == 0 {
-				return "", errors.New(fmt.Sprintf("Помилка: ділення на нуль"))
+				return "", errors.New(fmt.Sprintf("Помилка виконання: ділення на нуль"))
 			}
 
-			return fmt.Sprintf("%f", left / right), nil
+			return fmt.Sprintf("%f", left/right), nil
 
 		case models.Assign:
 			result, err := e.executeNode(node.RightNode)
@@ -132,17 +137,22 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 			return val, nil
 		}
 
-		return "", errors.New(fmt.Sprintf("Змінну з назвою '%s' не знайдено", node.Variable.Text))
+		return "", errors.New(fmt.Sprintf(
+			"Помилка виконання: змінну з назвою '%s' не знайдено", node.Variable.Text,
+		))
 	}
 
-	return "", errors.New(fmt.Sprintf("Помилка!"))
+	return "", errors.New(fmt.Sprintf("Помилка виконання: невідома помилка"))
 }
 
-func (e *Interpreter) executeAST(tree *ast.AST) error {
+func (e *Interpreter) executeAST(file string, tree *ast.AST) error {
 	for _, codeRow := range tree.CodeRows {
 		_, err := e.executeNode(codeRow)
 		if err != nil {
-			return err
+			return errors.New(fmt.Sprintf(
+				"  Файл \"%s\", рядок %d\n    %s\n%s",
+				file, codeRow.RowNumber(), codeRow.String(), err.Error(),
+			))
 		}
 	}
 
@@ -166,7 +176,7 @@ func (e *Interpreter) Execute(file string, code string) error {
 		return err
 	}
 
-	err = e.executeAST(asTree)
+	err = e.executeAST(file, asTree)
 	if err != nil {
 		return err
 	}
@@ -176,7 +186,7 @@ func (e *Interpreter) Execute(file string, code string) error {
 
 func (e *Interpreter) ExecuteFile(filePath string) error {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return errors.New(fmt.Sprintf("Помилка: файл з ім'ям '%s' не існує", filePath))
+		return errors.New(fmt.Sprintf("файл з ім'ям '%s' не існує", filePath))
 	}
 
 	content, err := ioutil.ReadFile(filePath)

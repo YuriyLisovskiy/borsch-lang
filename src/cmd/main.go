@@ -14,7 +14,7 @@ func main() {
 		filePath := os.Args[1]
 		err := interpreter.ExecuteFile(filePath)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 		}
 	} else {
 		reader := bufio.NewReader(os.Stdin)
@@ -30,9 +30,9 @@ func main() {
 				break
 			}
 
-			err = interpreter.Execute("стдввід", code)
+			err = interpreter.Execute("<стдввід>", code)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 			}
 		}
 	}

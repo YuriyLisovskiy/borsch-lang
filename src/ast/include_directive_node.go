@@ -5,16 +5,25 @@ import (
 )
 
 type IncludeDirectiveNode struct {
-	FilePath string
+	Directive models.Token
+	FilePath  string
+
+	rowNumber int
 }
 
 func NewIncludeDirectiveNode(directive models.Token) IncludeDirectiveNode {
 	matches := directive.Type.Regex.FindAllStringSubmatch(directive.Text, -1)
 	return IncludeDirectiveNode{
-		FilePath: matches[0][1],
+		Directive: directive,
+		FilePath:  matches[0][1],
+		rowNumber: directive.Row,
 	}
 }
 
 func (n IncludeDirectiveNode) String() string {
-	return "'" + n.FilePath + "'"
+	return n.Directive.String()
+}
+
+func (n IncludeDirectiveNode) RowNumber() int {
+	return n.rowNumber
 }

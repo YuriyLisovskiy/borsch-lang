@@ -13,7 +13,7 @@ func Sum(values... string) (string, error) {
 		number, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return "", errors.New(
-				fmt.Sprintf("стд::сума: неможливо виконати додавання з нечисловим значенням '%s'", value),
+				fmt.Sprintf("неможливо виконати додавання з нечисловим значенням '%s'", value),
 			)
 		}
 
@@ -25,13 +25,13 @@ func Sum(values... string) (string, error) {
 
 func Log10(values... string) (string, error) {
 	if len(values) != 1 {
-		return "", errors.New(fmt.Sprintf("лог10: функція приймає лише один аргумент"))
+		return "", errors.New(fmt.Sprintf("функція 'лог10' приймає лише один аргумент"))
 	}
 
 	number, err := strconv.ParseFloat(values[0], 64)
 	if err != nil {
 		return "", errors.New(
-			fmt.Sprintf("стд::лог10: неможливо обчислити логарифм від нечислового значення '%s'", values[0]),
+			fmt.Sprintf("неможливо обчислити логарифм від нечислового значення '%s'", values[0]),
 		)
 	}
 
