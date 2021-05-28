@@ -16,6 +16,7 @@ const (
 
 type ValueType interface {
 	String() string
+	Representation() string
 	TypeHash() int
 	TypeName() string
 }
@@ -25,7 +26,11 @@ type NoneType struct {
 }
 
 func (NoneType) String() string {
-	return "Ніякий"
+	return "Порожнеча"
+}
+
+func (t NoneType) Representation() string {
+	return "\"" + t.String() + "\""
 }
 
 func (t NoneType) TypeHash() int {
@@ -54,6 +59,10 @@ func (t RealNumberType) String() string {
 	return fmt.Sprintf("%f", t.Value)
 }
 
+func (t RealNumberType) Representation() string {
+	return "\"" + t.String() + "\""
+}
+
 func (t RealNumberType) TypeHash() int {
 	return realNumberType
 }
@@ -80,6 +89,10 @@ func (t IntegerNumberType) String() string {
 	return fmt.Sprintf("%d", t.Value)
 }
 
+func (t IntegerNumberType) Representation() string {
+	return "\"" + t.String() + "\""
+}
+
 func (t IntegerNumberType) TypeHash() int {
 	return integerNumberType
 }
@@ -95,6 +108,10 @@ type StringType struct {
 
 func (t StringType) String() string {
 	return t.Value
+}
+
+func (t StringType) Representation() string {
+	return "\"" + t.String() + "\""
 }
 
 func (t StringType) TypeHash() int {

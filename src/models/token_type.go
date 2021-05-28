@@ -6,7 +6,9 @@ import (
 )
 
 const (
-	RealNumber = iota
+	SingleLineComment = iota
+	MultiLineComment
+	RealNumber
 	IntegerNumber
 	String
 	Name
@@ -23,10 +25,11 @@ const (
 	RAngleBracket
 	Comma
 	IncludeDirective
-	SingleLineComment
 )
 
 var TokenTypeNames = []string{
+	"однорядковий коментар",
+	"багаторядковий коментар",
 	"дійсне число",
 	"ціле число",
 	"рядок",
@@ -44,7 +47,6 @@ var TokenTypeNames = []string{
 	"закриваюча кутова дужка",
 	"кома",
 	"директива підключення файлу",
-	"однорядковий коментар",
 }
 
 type TokenType struct {
@@ -59,14 +61,25 @@ func (tt *TokenType) String() string {
 const nameRegex = "[А-ЩЬЮЯҐЄІЇа-щьюяґєії_][А-ЩЬЮЯҐЄІЇа-щьюяґєії_0-9]*"
 
 var TokenTypesList = map[int]TokenType{
+	SingleLineComment: {
+		Name:  SingleLineComment,
+		//Regex: regexp.MustCompile("^//[^\\n\\r]*.*[^\\n\\r]*"),
+		Regex: regexp.MustCompile("^//[^\\n\\r]+?(?:\\*\\)|[\\n\\r])"),
+	},
+	MultiLineComment: {
+		Name:  MultiLineComment,
+		//Regex: regexp.MustCompile("^//[^\\n\\r]*.*[^\\n\\r]*"),
+		Regex: regexp.MustCompile("^(/\\*)(.|\\n)*?(\\*/)"),
+	},
 	RealNumber: {
 		Name:  RealNumber,
-		Regex: regexp.MustCompile("^[0-9]+(\\.[0-9]+f)"),
+		Regex: regexp.MustCompile("^[0-9]+(\\.[0-9]+)"),
 	},
 	IntegerNumber: {
 		Name:  IntegerNumber,
 		//Regex: regexp.MustCompile("^[0-9]+([^.][0-9]+)?"),
-		Regex: regexp.MustCompile("^\\d+[^\\Df]?"),
+		//Regex: regexp.MustCompile("^\\d+[^\\Df]?"),
+		Regex: regexp.MustCompile("^\\d+"),
 	},
 	String: {
 		Name:  String,
@@ -130,9 +143,5 @@ var TokenTypesList = map[int]TokenType{
 			//"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>\\sяк\\s(" + nameRegex + ")",
 			"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>",
 		),
-	},
-	SingleLineComment: {
-		Name:  SingleLineComment,
-		Regex: regexp.MustCompile("^#[^\\n\\r]*.*[^\\n\\r]*"),
 	},
 }

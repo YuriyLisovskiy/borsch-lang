@@ -4,26 +4,34 @@ import (
 	"errors"
 	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/models"
+	"sort"
+	"strings"
 	"unicode/utf8"
 )
 
 type Lexer struct {
+	filePath         string
 	code             string
 	pos              int
 	tokenList        []models.Token
 	tokenTypesValues []models.TokenType
 }
 
-func NewLexer(code string) *Lexer {
+func NewLexer(filePath string, code string) *Lexer {
 	values := make([]models.TokenType, 0, len(models.TokenTypesList))
 	for _, value := range models.TokenTypesList {
 		values = append(values, value)
 	}
 
+	sort.Slice(values, func(i, j int) bool {
+		return values[i].Name < values[j].Name
+	})
+
 	return &Lexer{
-		code:      code,
-		pos:       0,
-		tokenList: []models.Token{},
+		filePath:         filePath,
+		code:             code,
+		pos:              0,
+		tokenList:        []models.Token{},
 		tokenTypesValues: values,
 	}
 }
@@ -44,10 +52,13 @@ func (l *Lexer) Lex() ([]models.Token, error) {
 	rowCounter := 1
 	for _, token := range l.tokenList {
 		switch token.Type.Name {
-		case models.Space, models.SingleLineComment:
+		case models.Space:
 			if token.Text == "\n" {
 				rowCounter++
 			}
+		case models.SingleLineComment:
+		case models.MultiLineComment:
+			rowCounter += strings.Count(token.Text, "\n")
 		default:
 			token.Row = rowCounter
 			result = append(result, token)
@@ -59,17 +70,18 @@ func (l *Lexer) Lex() ([]models.Token, error) {
 }
 
 func (l *Lexer) nextToken() (bool, error) {
-	if l.pos >= utf8.RuneCountInString(l.code) {
+	codeSize := utf8.RuneCountInString(l.code)
+	if l.pos >= codeSize {
 		return false, nil
 	}
 
+	runes := []rune(l.code)
 	for _, tokenType := range l.tokenTypesValues {
-		runes := []rune(l.code)
 		strToMatch := string(runes[l.pos:])
 		result := tokenType.Regex.FindString(strToMatch)
 		if utf8.RuneCountInString(result) > 0 {
 			token := models.Token{
-				Type:  tokenType,
+				Type: tokenType,
 				Text: result,
 				Pos:  l.pos,
 			}
@@ -79,5 +91,29 @@ func (l *Lexer) nextToken() (bool, error) {
 		}
 	}
 
-	return false, errors.New(fmt.Sprintf("На позиції %d знайдено помилку", l.pos))
+	rowNumber := strings.Count(string(runes[:l.pos]), "\n") + 1
+	leftPos := l.pos
+	for leftPos > 0 {
+		if runes[leftPos] == '\n' {
+			break
+		}
+
+		leftPos--
+	}
+
+	rightPos := l.pos
+	for rightPos < codeSize {
+		if runes[rightPos] == '\n' {
+			break
+		}
+
+		rightPos++
+	}
+
+	codeFragment := string(runes[leftPos+1:rightPos-1])
+	underline := strings.Repeat(" ", len(runes[leftPos+1:l.pos])) + "^"
+	return false, errors.New(fmt.Sprintf(
+		"  Файл \"%s\", рядок %d\n    %s\n    %s\n%s",
+		l.filePath, rowNumber, codeFragment, underline, "Синтаксичка помилка: некоректний синтаксис",
+	))
 }

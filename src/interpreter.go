@@ -217,17 +217,13 @@ func (e *Interpreter) executeAST(file string, tree *ast.AST) error {
 }
 
 func (e *Interpreter) Execute(file string, code string) error {
-	lexer := NewLexer(code)
+	lexer := NewLexer(file, code)
 	tokens, err := lexer.Lex()
 	if err != nil {
 		return err
 	}
 
-	parser, err := NewParser(file, tokens)
-	if err != nil {
-		return err
-	}
-
+	parser := NewParser(file, tokens)
 	asTree, err := parser.Parse()
 	if err != nil {
 		return err
@@ -235,7 +231,7 @@ func (e *Interpreter) Execute(file string, code string) error {
 
 	err = e.executeAST(file, asTree)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 	}
 
 	return nil

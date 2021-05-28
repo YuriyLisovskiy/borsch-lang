@@ -15,12 +15,12 @@ type Parser struct {
 	fileName string
 }
 
-func NewParser(fileName string, tokens []models.Token) (*Parser, error) {
+func NewParser(fileName string, tokens []models.Token) *Parser {
 	return &Parser{
 		tokens:   tokens,
 		pos:      0,
 		fileName: fileName,
-	}, nil
+	}
 }
 
 func (p *Parser) match(expected ...models.TokenType) *models.Token {
@@ -268,6 +268,10 @@ func (p *Parser) Parse() (*ast.AST, error) {
 	for p.pos < len(p.tokens) {
 		codeNode, err := p.parseRow()
 		if err != nil {
+			if p.pos == 0 {
+				p.pos = 1
+			}
+
 			tokenString := p.tokens[p.pos-1].String()
 			return nil, errors.New(fmt.Sprintf(
 				"  Файл \"%s\", рядок %d\n    %s\n    %s\nСинтаксична помилка: %s",
