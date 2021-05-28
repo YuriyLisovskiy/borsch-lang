@@ -5,10 +5,10 @@ import (
 	"os"
 )
 
-func GetEnv(values ...string) (string, error) {
+func GetEnv(values ...ValueType) (ValueType, error) {
 	if len(values) == 1 {
-		return os.Getenv(values[0]), nil
+		return StringType{Value: os.Getenv(values[0].String())}, nil
 	}
 
-	return "", errors.New("функція 'середовище' приймає один аргумент")
+	return NoneType{}, errors.New("функція 'середовище' приймає один аргумент")
 }

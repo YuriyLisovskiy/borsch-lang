@@ -6,58 +6,136 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/ast"
 	"github.com/YuriyLisovskiy/borsch/src/builtin"
 	"github.com/YuriyLisovskiy/borsch/src/models"
+	"github.com/YuriyLisovskiy/borsch/src/util"
 	"io/ioutil"
 	"os"
-	"strconv"
 )
 
+const (
+	sumOp = iota
+	subOp
+	mulOp
+	divOp
+)
+
+var opTypeNames = []string{
+	"додавання", "віднімання", "множення", "ділення",
+}
+
 type Interpreter struct {
-	scope map[string]string
+	scope map[string]builtin.ValueType
 }
 
 func NewInterpreter() *Interpreter {
 	return &Interpreter{
-		scope: map[string]string{},
+		scope: map[string]builtin.ValueType{},
 	}
 }
 
-func (e *Interpreter) runNumbers(
-	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode,
-) (float64, float64, error) {
-	leftStr, err := e.executeNode(leftNode)
+func (e *Interpreter) executeCalculationOp(
+	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType int,
+) (builtin.ValueType, error) {
+	left, err := e.executeNode(leftNode)
 	if err != nil {
-		return 0, 0, err
+		return builtin.NoneType{}, err
 	}
 
-	leftNumber, err := strconv.ParseFloat(leftStr, 64)
+	right, err := e.executeNode(rightNode)
 	if err != nil {
-		return 0, 0, errors.New(fmt.Sprintf("Помилка виконання: %s", err.Error()))
+		return builtin.NoneType{}, err
 	}
 
-	rightStr, err := e.executeNode(rightNode)
-	if err != nil {
-		return 0, 0, err
+	if left.TypeHash() != right.TypeHash() {
+		return builtin.NoneType{}, util.RuntimeError(
+			fmt.Sprintf(
+				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				opTypeNames[opType], left.TypeName(), right.TypeName(),
+			),
+		)
 	}
 
-	rightNumber, err := strconv.ParseFloat(rightStr, 64)
-	if err != nil {
-		return 0, 0, errors.New(fmt.Sprintf("Помилка виконання: %s", err.Error()))
+	switch opType {
+	case sumOp:
+		switch leftVal := left.(type) {
+		case builtin.RealNumberType:
+			return builtin.RealNumberType{
+				Value: leftVal.Value + right.(builtin.RealNumberType).Value,
+			}, nil
+		case builtin.IntegerNumberType:
+			return builtin.IntegerNumberType{
+				Value: leftVal.Value + right.(builtin.IntegerNumberType).Value,
+			}, nil
+		case builtin.StringType:
+			return builtin.StringType{
+				Value: leftVal.Value + right.(builtin.StringType).Value,
+			}, nil
+		}
+
+	case subOp:
+		switch leftVal := left.(type) {
+		case builtin.RealNumberType:
+			return builtin.RealNumberType{
+				Value: leftVal.Value - right.(builtin.RealNumberType).Value,
+			}, nil
+		case builtin.IntegerNumberType:
+			return builtin.IntegerNumberType{
+				Value: leftVal.Value - right.(builtin.IntegerNumberType).Value,
+			}, nil
+		}
+	case mulOp:
+		switch leftVal := left.(type) {
+		case builtin.RealNumberType:
+			return builtin.RealNumberType{
+				Value: leftVal.Value * right.(builtin.RealNumberType).Value,
+			}, nil
+		case builtin.IntegerNumberType:
+			return builtin.IntegerNumberType{
+				Value: leftVal.Value * right.(builtin.IntegerNumberType).Value,
+			}, nil
+		}
+	case divOp:
+		switch leftVal := left.(type) {
+		case builtin.RealNumberType:
+			rightVal := right.(builtin.RealNumberType).Value
+			if rightVal == 0 {
+				return builtin.NoneType{}, util.RuntimeError("ділення на нуль")
+			}
+
+			return builtin.RealNumberType{
+				Value: leftVal.Value / right.(builtin.RealNumberType).Value,
+			}, nil
+		case builtin.IntegerNumberType:
+			rightVal := right.(builtin.IntegerNumberType).Value
+			if rightVal == 0 {
+				return builtin.NoneType{}, util.RuntimeError("ділення на нуль")
+			}
+
+			return builtin.RealNumberType{
+				Value: float64(leftVal.Value) / right.(builtin.RealNumberType).Value,
+			}, nil
+		}
+
+	default:
+		return builtin.NoneType{}, util.RuntimeError("невідомий оператор")
 	}
 
-	return leftNumber, rightNumber, nil
+	return builtin.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
+		opTypeNames[opType], left.TypeName(), right.TypeName(),
+	))
 }
 
-func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
+func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (builtin.ValueType, error) {
 	switch node := rootNode.(type) {
 	case ast.IncludeDirectiveNode:
-		return "", e.ExecuteFile(node.FilePath)
+		return builtin.NoneType{}, e.ExecuteFile(node.FilePath)
 
 	case ast.FunctionCallNode:
-		var args []string
+		var args []builtin.ValueType
 		for _, arg := range node.Args {
 			sArg, err := e.executeNode(arg)
 			if err != nil {
-				return "", err
+				return builtin.NoneType{}, err
 			}
 
 			args = append(args, sArg)
@@ -65,14 +143,14 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 
 		function, found := builtin.FunctionsList[node.FunctionName.Text]
 		if !found {
-			return "", errors.New(
-				fmt.Sprintf("Помилка виконання: функцію з назвою '%s' не знайдено", node.FunctionName.Text),
+			return builtin.NoneType{}, util.RuntimeError(
+				fmt.Sprintf("функцію з назвою '%s' не знайдено", node.FunctionName.Text),
 			)
 		}
 
 		res, err := function(args...)
 		if err != nil {
-			return "", errors.New(fmt.Sprintf("Помилка виконання: %s", err.Error()))
+			return builtin.NoneType{}, err
 		}
 
 		return res, nil
@@ -80,45 +158,21 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 	case ast.BinOperationNode:
 		switch node.Operator.Type.Name {
 		case models.Add:
-			left, right, err := e.runNumbers(node.LeftNode, node.RightNode)
-			if err != nil {
-				return "", err
-			}
-
-			return fmt.Sprintf("%f", left+right), nil
+			return e.executeCalculationOp(node.LeftNode, node.RightNode, sumOp)
 
 		case models.Sub:
-			left, right, err := e.runNumbers(node.LeftNode, node.RightNode)
-			if err != nil {
-				return "", err
-			}
-
-			return fmt.Sprintf("%f", left-right), nil
+			return e.executeCalculationOp(node.LeftNode, node.RightNode, subOp)
 
 		case models.Mul:
-			left, right, err := e.runNumbers(node.LeftNode, node.RightNode)
-			if err != nil {
-				return "", err
-			}
-
-			return fmt.Sprintf("%f", left*right), nil
+			return e.executeCalculationOp(node.LeftNode, node.RightNode, mulOp)
 
 		case models.Div:
-			left, right, err := e.runNumbers(node.LeftNode, node.RightNode)
-			if err != nil {
-				return "", err
-			}
-
-			if right == 0 {
-				return "", errors.New(fmt.Sprintf("Помилка виконання: ділення на нуль"))
-			}
-
-			return fmt.Sprintf("%f", left/right), nil
+			return e.executeCalculationOp(node.LeftNode, node.RightNode, divOp)
 
 		case models.Assign:
 			result, err := e.executeNode(node.RightNode)
 			if err != nil {
-				return "", err
+				return builtin.NoneType{}, err
 			}
 
 			variableNode := node.LeftNode.(ast.VariableNode)
@@ -126,23 +180,26 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (string, error) {
 			return result, nil
 		}
 
-	case ast.NumberNode:
-		return node.Number.Text, nil
+	case ast.RealNumberNode:
+		return builtin.NewRealNumberType(node.Number.Text)
+
+	case ast.IntegerNumberNode:
+		return builtin.NewIntegerNumberType(node.Number.Text)
 
 	case ast.StringNode:
-		return node.Content.Text, nil
+		return builtin.StringType{Value: node.Content.Text}, nil
 
 	case ast.VariableNode:
 		if val, ok := e.scope[node.Variable.Text]; ok {
 			return val, nil
 		}
 
-		return "", errors.New(fmt.Sprintf(
-			"Помилка виконання: змінну з назвою '%s' не знайдено", node.Variable.Text,
+		return builtin.NoneType{}, util.RuntimeError(fmt.Sprintf(
+			"змінну з назвою '%s' не знайдено", node.Variable.Text,
 		))
 	}
 
-	return "", errors.New(fmt.Sprintf("Помилка виконання: невідома помилка"))
+	return builtin.NoneType{}, util.RuntimeError("невідома помилка")
 }
 
 func (e *Interpreter) executeAST(file string, tree *ast.AST) error {

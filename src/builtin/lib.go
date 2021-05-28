@@ -1,14 +1,16 @@
 package builtin
 
-var FunctionsList = map[string] func (...string) (string, error) {
+var FunctionsList = map[string] func (...ValueType) (ValueType, error) {
 	// I/O
 	"друк": Print,
 	"друкр": PrintLn,
 
 	// Math
-	"сума": Sum,
 	"лог10": Log10,
 
 	// OS
 	"середовище": GetEnv,
+
+	// Cast
+	"ціле": CastToInt,
 }

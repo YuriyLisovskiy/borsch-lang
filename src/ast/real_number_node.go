@@ -2,23 +2,23 @@ package ast
 
 import "github.com/YuriyLisovskiy/borsch/src/models"
 
-type NumberNode struct {
+type RealNumberNode struct {
 	Number models.Token
 
 	rowNumber int
 }
 
-func NewNumberNode(number models.Token) NumberNode {
-	return NumberNode{
+func NewRealNumberNode(number models.Token) RealNumberNode {
+	return RealNumberNode{
 		Number:    number,
 		rowNumber: number.Row,
 	}
 }
 
-func (n NumberNode) String() string {
+func (n RealNumberNode) String() string {
 	return n.Number.Text
 }
 
-func (n NumberNode) RowNumber() int {
+func (n RealNumberNode) RowNumber() int {
 	return n.rowNumber
 }

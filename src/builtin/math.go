@@ -1,39 +1,24 @@
 package builtin
 
 import (
-	"errors"
 	"fmt"
+	"github.com/YuriyLisovskiy/borsch/src/util"
 	"math"
-	"strconv"
 )
 
-func Sum(values... string) (string, error) {
-	res := 0.0
-	for _, value := range values {
-		number, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return "", errors.New(
-				fmt.Sprintf("неможливо виконати додавання з нечисловим значенням '%s'", value),
-			)
-		}
-
-		res += number
-	}
-
-	return fmt.Sprintf("%f", res), nil
-}
-
-func Log10(values... string) (string, error) {
+func Log10(values... ValueType) (ValueType, error) {
 	if len(values) != 1 {
-		return "", errors.New(fmt.Sprintf("функція 'лог10' приймає лише один аргумент"))
+		return NoneType{}, util.RuntimeError(fmt.Sprintf(
+			"лог10() приймає лише один аргумент (отримано %d)", len(values),
+		))
 	}
 
-	number, err := strconv.ParseFloat(values[0], 64)
-	if err != nil {
-		return "", errors.New(
-			fmt.Sprintf("неможливо обчислити логарифм від нечислового значення '%s'", values[0]),
-		)
+	switch vt := values[0].(type) {
+	case RealNumberType:
+		return RealNumberType{Value: math.Log10(vt.Value)}, nil
+	default:
+		return NoneType{}, util.RuntimeError(fmt.Sprintf(
+			"лог10() приймає лише дійсне значення, а не '%s'", values[0].TypeName(),
+		))
 	}
-
-	return fmt.Sprintf("%f", math.Log10(number)), nil
 }

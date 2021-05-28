@@ -41,7 +41,7 @@ func (p *Parser) require(expected ...models.TokenType) (*models.Token, error) {
 	token := p.match(expected...)
 	if token == nil {
 		return nil, errors.New(
-			fmt.Sprintf("очікується %s", p.pos, models.TokenTypeNames[expected[0].Name]),
+			fmt.Sprintf("очікується %s", models.TokenTypeNames[expected[0].Name]),
 		)
 	}
 
@@ -49,9 +49,14 @@ func (p *Parser) require(expected ...models.TokenType) (*models.Token, error) {
 }
 
 func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
-	number := p.match(models.TokenTypesList[models.Number])
+	number := p.match(models.TokenTypesList[models.RealNumber])
 	if number != nil {
-		return ast.NewNumberNode(*number), nil
+		return ast.NewRealNumberNode(*number), nil
+	}
+
+	number = p.match(models.TokenTypesList[models.IntegerNumber])
+	if number != nil {
+		return ast.NewIntegerNumberNode(*number), nil
 	}
 
 	stringToken := p.match(models.TokenTypesList[models.String])
@@ -211,6 +216,10 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return nil, err
 	}
 
+	if p.pos < 0 {
+		p.pos = 0
+	}
+
 	if includeDirectiveNode != nil {
 		return includeDirectiveNode, nil
 	}
@@ -218,6 +227,10 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 	assignmentNode, err := p.parseVariableAssignment()
 	if err != nil {
 		return nil, err
+	}
+
+	if p.pos < 0 {
+		p.pos = 0
 	}
 
 	if assignmentNode != nil {
@@ -229,9 +242,17 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return assignmentNode, nil
 	}
 
+	if p.pos < 0 {
+		p.pos = 0
+	}
+
 	codeNode, err := p.parseExpression()
 	if err != nil {
 		return nil, err
+	}
+
+	if p.pos < 0 {
+		p.pos = 0
 	}
 
 	_, err = p.require(models.TokenTypesList[models.Semicolon])

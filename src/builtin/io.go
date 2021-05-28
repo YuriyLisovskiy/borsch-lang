@@ -5,19 +5,24 @@ import (
 	"strings"
 )
 
-func Print(args... string) (string, error) {
+func Print(args... ValueType) (ValueType, error) {
+	var strArgs []string
+	for _, arg := range args {
+		strArgs = append(strArgs, arg.String())
+	}
+
 	fmt.Print(
 		strings.Replace(
 			strings.Replace(
 				strings.Replace(
-					strings.Join(args, " "), `\n`, "\n", -1,
+					strings.Join(strArgs, " "), `\n`, "\n", -1,
 				), `\r`, "\r", -1,
 			), `\t`, "\t", -1,
 		),
 	)
-	return "", nil
+	return NoneType{}, nil
 }
 
-func PrintLn(args... string) (string, error) {
-	return Print(append(args, "\n")...)
+func PrintLn(args... ValueType) (ValueType, error) {
+	return Print(append(args, StringType{Value: "\n"})...)
 }
