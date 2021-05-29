@@ -1,7 +1,10 @@
 package builtin
 
 import (
+	"bufio"
 	"fmt"
+	"github.com/YuriyLisovskiy/borsch/src/util"
+	"os"
 	"strings"
 )
 
@@ -25,4 +28,19 @@ func Print(args... ValueType) (ValueType, error) {
 
 func PrintLn(args... ValueType) (ValueType, error) {
 	return Print(append(args, StringType{Value: "\n"})...)
+}
+
+func Input(args... ValueType) (ValueType, error) {
+	_, err := Print(args...)
+	if err != nil {
+		return NoneType{}, util.InternalError(err.Error())
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return NoneType{}, util.InternalError(err.Error())
+	}
+
+	return StringType{Value: strings.TrimSuffix(input, "\n")}, nil
 }

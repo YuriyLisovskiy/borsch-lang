@@ -110,8 +110,12 @@ func (l *Lexer) nextToken() (bool, error) {
 		rightPos++
 	}
 
-	codeFragment := string(runes[leftPos+1:rightPos-1])
-	underline := strings.Repeat(" ", len(runes[leftPos+1:l.pos])) + "^"
+	if leftPos != 0 {
+		leftPos++
+	}
+
+	codeFragment := string(runes[leftPos:rightPos-1])
+	underline := strings.Repeat(" ", len(runes[leftPos:l.pos])) + "^"
 	return false, errors.New(fmt.Sprintf(
 		"  Файл \"%s\", рядок %d\n    %s\n    %s\n%s",
 		l.filePath, rowNumber, codeFragment, underline, "Синтаксичка помилка: некоректний синтаксис",

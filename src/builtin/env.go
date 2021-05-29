@@ -1,7 +1,7 @@
 package builtin
 
 import (
-	"errors"
+	"github.com/YuriyLisovskiy/borsch/src/util"
 	"os"
 )
 
@@ -10,5 +10,5 @@ func GetEnv(values ...ValueType) (ValueType, error) {
 		return StringType{Value: os.Getenv(values[0].String())}, nil
 	}
 
-	return NoneType{}, errors.New("функція 'середовище' приймає один аргумент")
+	return NoneType{}, util.RuntimeError("середовище() приймає лише один аргумент")
 }

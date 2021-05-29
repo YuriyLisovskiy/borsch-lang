@@ -26,7 +26,7 @@ func main() {
 			}
 
 			code = strings.TrimSuffix(code, "\n")
-			if code == "exit()" {
+			if code == "вихід()" {
 				break
 			}
 

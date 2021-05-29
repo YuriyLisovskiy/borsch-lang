@@ -4,6 +4,7 @@ var FunctionsList = map[string] func (...ValueType) (ValueType, error) {
 	// I/O
 	"друк": Print,
 	"друкр": PrintLn,
+	"ввід": Input,
 
 	// TODO: remove from built-ins, it will be implemented in std lib.
 	// Math
