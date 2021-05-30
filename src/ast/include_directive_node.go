@@ -7,15 +7,17 @@ import (
 type IncludeDirectiveNode struct {
 	Directive models.Token
 	FilePath  string
+	IsStd     bool
 
 	rowNumber int
 }
 
-func NewIncludeDirectiveNode(directive models.Token) IncludeDirectiveNode {
+func NewIncludeDirectiveNode(directive models.Token, isStd bool) IncludeDirectiveNode {
 	matches := directive.Type.Regex.FindAllStringSubmatch(directive.Text, -1)
 	return IncludeDirectiveNode{
 		Directive: directive,
 		FilePath:  matches[0][1],
+		IsStd:     isStd,
 		rowNumber: directive.Row,
 	}
 }

@@ -177,9 +177,14 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 }
 
 func (p *Parser) parseIncludeDirective() (ast.ExpressionNode, error) {
-	includeDirective := p.match(models.TokenTypesList[models.IncludeDirective])
+	includeDirective := p.match(models.TokenTypesList[models.IncludeStdDirective])
 	if includeDirective != nil {
-		return ast.NewIncludeDirectiveNode(*includeDirective), nil
+		return ast.NewIncludeDirectiveNode(*includeDirective, true), nil
+	}
+
+	includeDirective = p.match(models.TokenTypesList[models.IncludeDirective])
+	if includeDirective != nil {
+		return ast.NewIncludeDirectiveNode(*includeDirective, false), nil
 	}
 
 	return nil, nil

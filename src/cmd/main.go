@@ -9,12 +9,13 @@ import (
 )
 
 func main() {
-	interpreter := src.NewInterpreter()
+	stdRoot := os.Getenv("BORSCH_STD")
+	interpreter := src.NewInterpreter(stdRoot)
 	if len(os.Args) > 1 {
 		filePath := os.Args[1]
 		err := interpreter.ExecuteFile(filePath)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 		}
 	} else {
 		reader := bufio.NewReader(os.Stdin)
@@ -32,7 +33,7 @@ func main() {
 
 			err = interpreter.Execute("<стдввід>", code)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 			}
 		}
 	}

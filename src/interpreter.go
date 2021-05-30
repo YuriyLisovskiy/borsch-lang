@@ -9,6 +9,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/util"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -23,24 +24,26 @@ var opTypeNames = []string{
 }
 
 type Interpreter struct {
-	scope map[string]builtin.ValueType
+	stdRoot string
+	scope   map[string]builtin.ValueType
 }
 
-func NewInterpreter() *Interpreter {
+func NewInterpreter(stdRoot string) *Interpreter {
 	return &Interpreter{
+		stdRoot: stdRoot,
 		scope: map[string]builtin.ValueType{},
 	}
 }
 
 func (e *Interpreter) executeCalculationOp(
-	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType int,
+	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType int, rootDir string,
 ) (builtin.ValueType, error) {
-	left, err := e.executeNode(leftNode)
+	left, err := e.executeNode(leftNode, rootDir)
 	if err != nil {
 		return builtin.NoneType{}, err
 	}
 
-	right, err := e.executeNode(rightNode)
+	right, err := e.executeNode(rightNode, rootDir)
 	if err != nil {
 		return builtin.NoneType{}, err
 	}
@@ -125,15 +128,21 @@ func (e *Interpreter) executeCalculationOp(
 	))
 }
 
-func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (builtin.ValueType, error) {
+func (e *Interpreter) executeNode(rootNode ast.ExpressionNode, rootDir string) (builtin.ValueType, error) {
 	switch node := rootNode.(type) {
 	case ast.IncludeDirectiveNode:
+		if node.IsStd {
+			node.FilePath = filepath.Join(e.stdRoot, node.FilePath)
+		} else if !filepath.IsAbs(node.FilePath) {
+			node.FilePath = filepath.Join(rootDir, node.FilePath)
+		}
+
 		return builtin.NoneType{}, e.ExecuteFile(node.FilePath)
 
 	case ast.FunctionCallNode:
 		var args []builtin.ValueType
 		for _, arg := range node.Args {
-			sArg, err := e.executeNode(arg)
+			sArg, err := e.executeNode(arg, rootDir)
 			if err != nil {
 				return builtin.NoneType{}, err
 			}
@@ -158,19 +167,19 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (builtin.ValueTyp
 	case ast.BinOperationNode:
 		switch node.Operator.Type.Name {
 		case models.Add:
-			return e.executeCalculationOp(node.LeftNode, node.RightNode, sumOp)
+			return e.executeCalculationOp(node.LeftNode, node.RightNode, sumOp, rootDir)
 
 		case models.Sub:
-			return e.executeCalculationOp(node.LeftNode, node.RightNode, subOp)
+			return e.executeCalculationOp(node.LeftNode, node.RightNode, subOp, rootDir)
 
 		case models.Mul:
-			return e.executeCalculationOp(node.LeftNode, node.RightNode, mulOp)
+			return e.executeCalculationOp(node.LeftNode, node.RightNode, mulOp, rootDir)
 
 		case models.Div:
-			return e.executeCalculationOp(node.LeftNode, node.RightNode, divOp)
+			return e.executeCalculationOp(node.LeftNode, node.RightNode, divOp, rootDir)
 
 		case models.Assign:
-			result, err := e.executeNode(node.RightNode)
+			result, err := e.executeNode(node.RightNode, rootDir)
 			if err != nil {
 				return builtin.NoneType{}, err
 			}
@@ -203,12 +212,30 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode) (builtin.ValueTyp
 }
 
 func (e *Interpreter) executeAST(file string, tree *ast.AST) error {
+	var filePath string
+	var dir string
+	var err error
+	if file == "<стдввід>" {
+		filePath = "<стдввід>"
+		dir, err = os.Getwd()
+		if err != nil {
+			return util.InternalError(err.Error())
+		}
+	} else {
+		filePath, err = filepath.Abs(file)
+		if err != nil {
+			return util.InternalError(err.Error())
+		}
+
+		dir = filepath.Dir(filePath)
+	}
+
 	for _, codeRow := range tree.CodeRows {
-		_, err := e.executeNode(codeRow)
+		_, err := e.executeNode(codeRow, dir)
 		if err != nil {
 			return errors.New(fmt.Sprintf(
 				"  Файл \"%s\", рядок %d\n    %s\n%s",
-				file, codeRow.RowNumber(), codeRow.String(), err.Error(),
+				filePath, codeRow.RowNumber(), codeRow.String(), err.Error(),
 			))
 		}
 	}
@@ -231,7 +258,7 @@ func (e *Interpreter) Execute(file string, code string) error {
 
 	err = e.executeAST(file, asTree)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
+		return err
 	}
 
 	return nil

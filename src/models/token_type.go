@@ -24,6 +24,7 @@ const (
 	LAngleBracket
 	RAngleBracket
 	Comma
+	IncludeStdDirective
 	IncludeDirective
 )
 
@@ -46,6 +47,7 @@ var TokenTypeNames = []string{
 	"відкриваюча кутова дужка",
 	"закриваюча кутова дужка",
 	"кома",
+	"директива підключення файлу стандартної бібліотеки",
 	"директива підключення файлу",
 }
 
@@ -70,6 +72,20 @@ var TokenTypesList = map[int]TokenType{
 		Name:  MultiLineComment,
 		//Regex: regexp.MustCompile("^//[^\\n\\r]*.*[^\\n\\r]*"),
 		Regex: regexp.MustCompile("^(/\\*)(.|\\n)*?(\\*/)"),
+	},
+	IncludeStdDirective: {
+		Name:  IncludeStdDirective,
+		Regex: regexp.MustCompile(
+			//"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>\\sяк\\s(" + nameRegex + ")",
+			"^@\\s*<\\s*([^.\\\\/<\\r\\n].*[^>\\r\\n])\\s*>",
+		),
+	},
+	IncludeDirective: {
+		Name:  IncludeDirective,
+		Regex: regexp.MustCompile(
+			//"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>\\sяк\\s(" + nameRegex + ")",
+			"^@\\s*\"\\s*([^\"\\r\\n].*[^\"\\r\\n])\\s*\"",
+		),
 	},
 	RealNumber: {
 		Name:  RealNumber,
@@ -136,12 +152,5 @@ var TokenTypesList = map[int]TokenType{
 	Comma: {
 		Name:  Comma,
 		Regex: regexp.MustCompile("^,"),
-	},
-	IncludeDirective: {
-		Name:  IncludeDirective,
-		Regex: regexp.MustCompile(
-			//"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>\\sяк\\s(" + nameRegex + ")",
-			"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>",
-		),
 	},
 }
