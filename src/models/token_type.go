@@ -11,6 +11,7 @@ const (
 	RealNumber
 	IntegerNumber
 	String
+	Bool
 	Name
 	Semicolon
 	Space
@@ -19,6 +20,8 @@ const (
 	Sub
 	Mul
 	Div
+	And
+	Or
 	LPar
 	RPar
 	LAngleBracket
@@ -34,6 +37,7 @@ var TokenTypeNames = []string{
 	"дійсне число",
 	"ціле число",
 	"рядок",
+	"логічний тип",
 	"назва",
 	"крапка з комою",
 	"пропуск",
@@ -42,6 +46,8 @@ var TokenTypeNames = []string{
 	"оператор різниці",
 	"оператор добутку",
 	"оператор частки",
+	"оператор логічного 'і'",
+	"оператор логічного 'або'",
 	"відкриваюча дужка",
 	"закриваюча дужка",
 	"відкриваюча кутова дужка",
@@ -101,6 +107,10 @@ var TokenTypesList = map[int]TokenType{
 		Name:  String,
 		Regex: regexp.MustCompile("^\"(?:[^\"\\\\]|\\\\.)*\""),
 	},
+	Bool: {
+		Name:  Bool,
+		Regex: regexp.MustCompile("^(істина|хиба)"),
+	},
 	Name: {
 		Name:  Name,
 		Regex: regexp.MustCompile("^" + nameRegex),
@@ -132,6 +142,14 @@ var TokenTypesList = map[int]TokenType{
 	Div: {
 		Name:  Div,
 		Regex: regexp.MustCompile("^/"),
+	},
+	And: {
+		Name:  And,
+		Regex: regexp.MustCompile("^[&]{2}"),
+	},
+	Or: {
+		Name:  Or,
+		Regex: regexp.MustCompile("^[|]{2}"),
 	},
 	LPar: {
 		Name:  LPar,

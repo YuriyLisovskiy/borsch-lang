@@ -13,14 +13,20 @@ import (
 )
 
 const (
+	// math
 	sumOp = iota
 	subOp
 	mulOp
 	divOp
+
+	// logical
+	andOp
+	orOp
+//	notOp
 )
 
 var opTypeNames = []string{
-	"додавання", "віднімання", "множення", "ділення",
+	"додавання", "віднімання", "множення", "ділення", "логічного 'і'", "логічного 'або'",
 }
 
 type Interpreter struct {
@@ -128,6 +134,54 @@ func (e *Interpreter) executeCalculationOp(
 	))
 }
 
+func (e *Interpreter) executeLogicalOp(
+	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType int, rootDir string,
+) (builtin.ValueType, error) {
+	left, err := e.executeNode(leftNode, rootDir)
+	if err != nil {
+		return builtin.NoneType{}, err
+	}
+
+	right, err := e.executeNode(rightNode, rootDir)
+	if err != nil {
+		return builtin.NoneType{}, err
+	}
+
+	if left.TypeHash() != right.TypeHash() {
+		return builtin.NoneType{}, util.RuntimeError(
+			fmt.Sprintf(
+				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				opTypeNames[opType], left.TypeName(), right.TypeName(),
+			),
+		)
+	}
+
+	switch opType {
+	case andOp:
+		switch leftVal := left.(type) {
+		case builtin.BoolType:
+			return builtin.BoolType{
+				Value: leftVal.Value && right.(builtin.BoolType).Value,
+			}, nil
+		}
+	case orOp:
+		switch leftVal := left.(type) {
+		case builtin.BoolType:
+			return builtin.BoolType{
+				Value: leftVal.Value || right.(builtin.BoolType).Value,
+			}, nil
+		}
+
+	default:
+		return builtin.NoneType{}, util.RuntimeError("невідомий оператор")
+	}
+
+	return builtin.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
+		opTypeNames[opType], left.TypeName(), right.TypeName(),
+	))
+}
+
 func (e *Interpreter) executeNode(rootNode ast.ExpressionNode, rootDir string) (builtin.ValueType, error) {
 	switch node := rootNode.(type) {
 	case ast.IncludeDirectiveNode:
@@ -178,6 +232,12 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode, rootDir string) (
 		case models.Div:
 			return e.executeCalculationOp(node.LeftNode, node.RightNode, divOp, rootDir)
 
+		case models.And:
+			return e.executeLogicalOp(node.LeftNode, node.RightNode, andOp, rootDir)
+
+		case models.Or:
+			return e.executeLogicalOp(node.LeftNode, node.RightNode, orOp, rootDir)
+
 		case models.Assign:
 			result, err := e.executeNode(node.RightNode, rootDir)
 			if err != nil {
@@ -197,6 +257,9 @@ func (e *Interpreter) executeNode(rootNode ast.ExpressionNode, rootDir string) (
 
 	case ast.StringNode:
 		return builtin.StringType{Value: node.Content.Text}, nil
+
+	case ast.BoolNode:
+		return builtin.NewBoolType(node.Value.Text)
 
 	case ast.VariableNode:
 		if val, ok := e.scope[node.Variable.Text]; ok {

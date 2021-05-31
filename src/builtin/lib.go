@@ -17,4 +17,5 @@ var FunctionsList = map[string] func (...ValueType) (ValueType, error) {
 	"ціле": CastToInt,
 	"дійсне": CastToReal,
 	"рядок": CastToString,
+	"логічне": CastToBool,
 }

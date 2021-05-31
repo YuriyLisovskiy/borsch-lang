@@ -64,6 +64,11 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 		return ast.NewStringNode(*stringToken), nil
 	}
 
+	boolean := p.match(models.TokenTypesList[models.Bool])
+	if boolean != nil {
+		return ast.NewBoolNode(*boolean), nil
+	}
+
 	name := p.match(models.TokenTypesList[models.Name])
 	if name != nil {
 		if p.match(models.TokenTypesList[models.LPar]) != nil {
@@ -104,6 +109,7 @@ func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
 	operator := p.match(
 		models.TokenTypesList[models.Add], models.TokenTypesList[models.Sub],
 		models.TokenTypesList[models.Mul], models.TokenTypesList[models.Div],
+		models.TokenTypesList[models.And], models.TokenTypesList[models.Or],
 	)
 	for operator != nil {
 		rightNode, err := p.parseParentheses()
@@ -115,6 +121,7 @@ func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
 		operator = p.match(
 			models.TokenTypesList[models.Add], models.TokenTypesList[models.Sub],
 			models.TokenTypesList[models.Mul], models.TokenTypesList[models.Div],
+			models.TokenTypesList[models.And], models.TokenTypesList[models.Or],
 		)
 	}
 
