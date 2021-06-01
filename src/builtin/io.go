@@ -11,7 +11,7 @@ import (
 func Print(args... ValueType) (ValueType, error) {
 	var strArgs []string
 	for _, arg := range args {
-		strArgs = append(strArgs, arg.String())
+		strArgs = append(strArgs, arg.Representation())
 	}
 
 	fmt.Print(

@@ -26,12 +26,12 @@ type ValueType interface {
 type NoneType struct {
 }
 
-func (NoneType) String() string {
-	return "Порожнеча"
+func (t NoneType) String() string {
+	return "NoneType{" + t.Representation() + "}"
 }
 
 func (t NoneType) Representation() string {
-	return "\"" + t.String() + "\""
+	return "Порожнеча"
 }
 
 func (t NoneType) TypeHash() int {
@@ -57,11 +57,11 @@ func NewRealNumberType(value string) (RealNumberType, error) {
 }
 
 func (t RealNumberType) String() string {
-	return fmt.Sprintf("%f", t.Value)
+	return "RealType{" + t.Representation() + "}"
 }
 
 func (t RealNumberType) Representation() string {
-	return "\"" + t.String() + "\""
+	return fmt.Sprintf("%f", t.Value)
 }
 
 func (t RealNumberType) TypeHash() int {
@@ -87,11 +87,11 @@ func NewIntegerNumberType(value string) (IntegerNumberType, error) {
 }
 
 func (t IntegerNumberType) String() string {
-	return fmt.Sprintf("%d", t.Value)
+	return "IntegerType{" + t.Representation() + "}"
 }
 
 func (t IntegerNumberType) Representation() string {
-	return "\"" + t.String() + "\""
+	return fmt.Sprintf("%d", t.Value)
 }
 
 func (t IntegerNumberType) TypeHash() int {
@@ -108,11 +108,11 @@ type StringType struct {
 }
 
 func (t StringType) String() string {
-	return t.Value
+	return "StringType{\"" + t.Representation() + "\"}"
 }
 
 func (t StringType) Representation() string {
-	return "\"" + t.String() + "\""
+	return t.Value
 }
 
 func (t StringType) TypeHash() int {
@@ -145,15 +145,15 @@ func NewBoolType(value string) (BoolType, error) {
 }
 
 func (t BoolType) String() string {
+	return "\"" + t.Representation() + "\""
+}
+
+func (t BoolType) Representation() string {
 	if t.Value {
 		return "істина"
 	}
 
 	return "хиба"
-}
-
-func (t BoolType) Representation() string {
-	return "\"" + t.String() + "\""
 }
 
 func (t BoolType) TypeHash() int {

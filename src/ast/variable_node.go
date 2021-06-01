@@ -12,7 +12,7 @@ type VariableNode struct {
 
 func NewVariableNode(variable models.Token) VariableNode {
 	return VariableNode{
-		Variable: variable,
+		Variable:  variable,
 		rowNumber: variable.Row,
 	}
 }

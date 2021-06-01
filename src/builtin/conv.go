@@ -9,7 +9,7 @@ import (
 func CastToInt(args... ValueType) (ValueType, error) {
 	if len(args) != 1 {
 		return NoneType{}, util.RuntimeError(fmt.Sprintf(
-			"ціле() приймає лише один аргумент (отримано %d)", len(args),
+			"функція 'ціле()' приймає лише один аргумент (отримано %d)", len(args),
 		))
 	}
 
@@ -22,7 +22,7 @@ func CastToInt(args... ValueType) (ValueType, error) {
 		intVal, err := strconv.ParseInt(vt.Value, 10, 64)
 		if err != nil {
 			return NoneType{}, util.RuntimeError(fmt.Sprintf(
-				"некоректний літерал для функції ціле() з основою 10: '%s'", vt.Value,
+				"некоректний літерал для функції 'ціле()' з основою 10: '%s'", vt.Value,
 			))
 		}
 
@@ -43,7 +43,7 @@ func CastToInt(args... ValueType) (ValueType, error) {
 func CastToReal(args... ValueType) (ValueType, error) {
 	if len(args) != 1 {
 		return NoneType{}, util.RuntimeError(fmt.Sprintf(
-			"дійсне() приймає лише один аргумент (отримано %d)", len(args),
+			"функція 'дійсне()' приймає лише один аргумент (отримано %d)", len(args),
 		))
 	}
 
@@ -77,7 +77,7 @@ func CastToReal(args... ValueType) (ValueType, error) {
 func CastToString(args... ValueType) (ValueType, error) {
 	if len(args) != 1 {
 		return NoneType{}, util.RuntimeError(fmt.Sprintf(
-			"рядок() приймає лише один аргумент (отримано %d)", len(args),
+			"функція 'рядок()' приймає лише один аргумент (отримано %d)", len(args),
 		))
 	}
 
@@ -85,7 +85,7 @@ func CastToString(args... ValueType) (ValueType, error) {
 	case StringType:
 		return vt, nil
 	case RealNumberType, IntegerNumberType, BoolType, NoneType:
-		return StringType{Value: vt.String()}, nil
+		return StringType{Value: vt.Representation()}, nil
 	default:
 		return NoneType{}, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як рядок", args[0].TypeName(),
@@ -96,7 +96,7 @@ func CastToString(args... ValueType) (ValueType, error) {
 func CastToBool(args... ValueType) (ValueType, error) {
 	if len(args) != 1 {
 		return NoneType{}, util.RuntimeError(fmt.Sprintf(
-			"логічне() приймає лише один аргумент (отримано %d)", len(args),
+			"функція 'логічне()' приймає лише один аргумент (отримано %d)", len(args),
 		))
 	}
 

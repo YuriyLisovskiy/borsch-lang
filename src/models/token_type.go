@@ -8,53 +8,63 @@ import (
 const (
 	SingleLineComment = iota
 	MultiLineComment
+	IncludeStdDirective
+	IncludeDirective
 	RealNumber
 	IntegerNumber
 	String
 	Bool
-	Name
 	Semicolon
 	Space
+	AndOp
+	OrOp
+	NotOp
+	EqualsOp
+	NotEqualsOp
+	GreaterOrEqualsOp
+	GreaterOp
+	LessOrEqualsOp
+	LessOp
 	Assign
 	Add
 	Sub
 	Mul
 	Div
-	And
-	Or
 	LPar
 	RPar
-	LAngleBracket
-	RAngleBracket
 	Comma
-	IncludeStdDirective
-	IncludeDirective
+	Name
 )
 
-var TokenTypeNames = []string{
-	"однорядковий коментар",
-	"багаторядковий коментар",
-	"дійсне число",
-	"ціле число",
-	"рядок",
-	"логічний тип",
-	"назва",
-	"крапка з комою",
-	"пропуск",
-	"оператор присвоєння",
-	"оператор суми",
-	"оператор різниці",
-	"оператор добутку",
-	"оператор частки",
-	"оператор логічного 'і'",
-	"оператор логічного 'або'",
-	"відкриваюча дужка",
-	"закриваюча дужка",
-	"відкриваюча кутова дужка",
-	"закриваюча кутова дужка",
-	"кома",
-	"директива підключення файлу стандартної бібліотеки",
-	"директива підключення файлу",
+var tokenTypeNames = map[int]string{
+	SingleLineComment: "однорядковий коментар",
+	MultiLineComment: "багаторядковий коментар",
+	IncludeStdDirective: "директива підключення файлу стандартної бібліотеки",
+	IncludeDirective: "директива підключення файлу",
+	RealNumber: "дійсне число",
+	IntegerNumber: "ціле число",
+	String: "рядок",
+	Bool: "логічний тип",
+	Semicolon: "крапка з комою",
+	Space: "пропуск",
+	AndOp: "оператор логічного 'і'",
+	OrOp: "оператор логічного 'або'",
+	NotOp: "оператор логічного заперечення",
+	EqualsOp: "умова рівності",
+	NotEqualsOp: "умова нерівності",
+	GreaterOrEqualsOp: "умова 'більше або дорівнює'",
+	GreaterOp: "умова 'більше'",
+	LessOrEqualsOp: "умова 'менше або дорівнює'",
+	LessOp: "умова 'менше'",
+	Assign: "оператор присвоєння",
+	Add: "оператор суми",
+	Sub: "оператор різниці",
+	Mul: "оператор добутку",
+	Div: "оператор частки",
+	LPar: "відкриваюча дужка",
+	RPar: "закриваюча дужка",
+	Comma: "кома",
+	Name: "назва",
 }
 
 type TokenType struct {
@@ -62,8 +72,19 @@ type TokenType struct {
 	Regex *regexp.Regexp
 }
 
-func (tt *TokenType) String() string {
-	return fmt.Sprintf("[%d | %s]", tt.Name, tt.Regex.String())
+func (t *TokenType) String() string {
+	return fmt.Sprintf("[%d | %s]", t.Name, t.Regex.String())
+}
+
+func (t TokenType) Description() string {
+	if description, ok := tokenTypeNames[t.Name]; ok {
+		return description
+	}
+
+	panic(fmt.Sprintf(
+		"Unable to retrieve description for '%d' token, please add it to 'tokenTypeNames' map first",
+		t.Name,
+	))
 }
 
 const nameRegex = "[А-ЩЬЮЯҐЄІЇа-щьюяґєії_][А-ЩЬЮЯҐЄІЇа-щьюяґєії_0-9]*"
@@ -111,10 +132,6 @@ var TokenTypesList = map[int]TokenType{
 		Name:  Bool,
 		Regex: regexp.MustCompile("^(істина|хиба)"),
 	},
-	Name: {
-		Name:  Name,
-		Regex: regexp.MustCompile("^" + nameRegex),
-	},
 	Semicolon: {
 		Name:  Semicolon,
 		Regex: regexp.MustCompile("^;"),
@@ -122,6 +139,42 @@ var TokenTypesList = map[int]TokenType{
 	Space: {
 		Name:  Space,
 		Regex: regexp.MustCompile("^[\\s\\n\\t\\r]"),
+	},
+	AndOp: {
+		Name:  AndOp,
+		Regex: regexp.MustCompile("^і"),
+	},
+	OrOp: {
+		Name:  OrOp,
+		Regex: regexp.MustCompile("^або"),
+	},
+	NotOp: {
+		Name:  NotOp,
+		Regex: regexp.MustCompile("^не"),
+	},
+	EqualsOp: {
+		Name:  EqualsOp,
+		Regex: regexp.MustCompile("^=="),
+	},
+	NotEqualsOp: {
+		Name:  NotEqualsOp,
+		Regex: regexp.MustCompile("^!="),
+	},
+	GreaterOrEqualsOp: {
+		Name:  GreaterOrEqualsOp,
+		Regex: regexp.MustCompile("^>="),
+	},
+	GreaterOp: {
+		Name:  GreaterOp,
+		Regex: regexp.MustCompile("^>"),
+	},
+	LessOrEqualsOp: {
+		Name:  LessOrEqualsOp,
+		Regex: regexp.MustCompile("^<="),
+	},
+	LessOp: {
+		Name:  LessOp,
+		Regex: regexp.MustCompile("^<"),
 	},
 	Assign: {
 		Name:  Assign,
@@ -143,14 +196,6 @@ var TokenTypesList = map[int]TokenType{
 		Name:  Div,
 		Regex: regexp.MustCompile("^/"),
 	},
-	And: {
-		Name:  And,
-		Regex: regexp.MustCompile("^[&]{2}"),
-	},
-	Or: {
-		Name:  Or,
-		Regex: regexp.MustCompile("^[|]{2}"),
-	},
 	LPar: {
 		Name:  LPar,
 		Regex: regexp.MustCompile("^\\("),
@@ -159,16 +204,12 @@ var TokenTypesList = map[int]TokenType{
 		Name:  RPar,
 		Regex: regexp.MustCompile("^\\)"),
 	},
-	LAngleBracket: {
-		Name:  LAngleBracket,
-		Regex: regexp.MustCompile("^<"),
-	},
-	RAngleBracket: {
-		Name:  RAngleBracket,
-		Regex: regexp.MustCompile("^>"),
-	},
 	Comma: {
 		Name:  Comma,
 		Regex: regexp.MustCompile("^,"),
+	},
+	Name: {
+		Name:  Name,
+		Regex: regexp.MustCompile("^" + nameRegex),
 	},
 }

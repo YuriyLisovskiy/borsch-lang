@@ -3,14 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/src"
+	interpreter2 "github.com/YuriyLisovskiy/borsch/src/interpreter"
 	"os"
 	"strings"
 )
 
 func main() {
 	stdRoot := os.Getenv("BORSCH_STD")
-	interpreter := src.NewInterpreter(stdRoot)
+	interpreter := interpreter2.NewInterpreter(stdRoot)
 	if len(os.Args) > 1 {
 		filePath := os.Args[1]
 		err := interpreter.ExecuteFile(filePath)

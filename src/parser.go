@@ -41,32 +41,43 @@ func (p *Parser) require(expected ...models.TokenType) (*models.Token, error) {
 	token := p.match(expected...)
 	if token == nil {
 		return nil, errors.New(
-			fmt.Sprintf("очікується %s", models.TokenTypeNames[expected[0].Name]),
+			fmt.Sprintf("очікується %s", expected[0].Description()),
 		)
 	}
 
 	return token, nil
 }
 
+func (p *Parser) matchBinaryOperator() *models.Token {
+	return p.match(
+		models.TokenTypesList[models.Add], models.TokenTypesList[models.Sub],
+		models.TokenTypesList[models.Mul], models.TokenTypesList[models.Div],
+		models.TokenTypesList[models.AndOp], models.TokenTypesList[models.OrOp],
+		models.TokenTypesList[models.EqualsOp], models.TokenTypesList[models.NotEqualsOp],
+		models.TokenTypesList[models.GreaterOp], models.TokenTypesList[models.GreaterOrEqualsOp],
+		models.TokenTypesList[models.LessOp], models.TokenTypesList[models.LessOrEqualsOp],
+	)
+}
+
 func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 	number := p.match(models.TokenTypesList[models.RealNumber])
 	if number != nil {
-		return ast.NewRealNumberNode(*number), nil
+		return ast.NewRealTypeNode(*number), nil
 	}
 
 	number = p.match(models.TokenTypesList[models.IntegerNumber])
 	if number != nil {
-		return ast.NewIntegerNumberNode(*number), nil
+		return ast.NewIntegerTypeNode(*number), nil
 	}
 
 	stringToken := p.match(models.TokenTypesList[models.String])
 	if stringToken != nil {
-		return ast.NewStringNode(*stringToken), nil
+		return ast.NewStringTypeNode(*stringToken), nil
 	}
 
 	boolean := p.match(models.TokenTypesList[models.Bool])
 	if boolean != nil {
-		return ast.NewBoolNode(*boolean), nil
+		return ast.NewBoolTypeNode(*boolean), nil
 	}
 
 	name := p.match(models.TokenTypesList[models.Name])
@@ -106,11 +117,7 @@ func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
 		return nil, err
 	}
 
-	operator := p.match(
-		models.TokenTypesList[models.Add], models.TokenTypesList[models.Sub],
-		models.TokenTypesList[models.Mul], models.TokenTypesList[models.Div],
-		models.TokenTypesList[models.And], models.TokenTypesList[models.Or],
-	)
+	operator := p.matchBinaryOperator()
 	for operator != nil {
 		rightNode, err := p.parseParentheses()
 		if err != nil {
@@ -118,11 +125,7 @@ func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
 		}
 
 		leftNode = ast.NewBinOperationNode(*operator, leftNode, rightNode)
-		operator = p.match(
-			models.TokenTypesList[models.Add], models.TokenTypesList[models.Sub],
-			models.TokenTypesList[models.Mul], models.TokenTypesList[models.Div],
-			models.TokenTypesList[models.And], models.TokenTypesList[models.Or],
-		)
+		operator = p.matchBinaryOperator()
 	}
 
 	return leftNode, nil
@@ -165,12 +168,33 @@ func (p *Parser) parseFunctionCall() (ast.ExpressionNode, error) {
 }
 
 func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
+	notOperator := p.match(models.TokenTypesList[models.NotOp])
+	if notOperator != nil {
+		operandNode, err := p.parseParentheses()
+		if err != nil {
+			return nil, err
+		}
+
+		return ast.NewUnaryOperationNode(*notOperator, operandNode), nil
+	}
+
 	variableNode, err := p.parseVariableOrConstant()
 	if err != nil {
 		return nil, err
 	}
 
 	if variableNode != nil {
+		operator := p.matchBinaryOperator()
+		if operator != nil {
+			rightNode, err := p.parseParentheses()
+			if err != nil {
+				return nil, err
+			}
+
+			return ast.NewBinOperationNode(*operator, variableNode, rightNode), nil
+		}
+
+		//p.pos--
 		return variableNode, nil
 	}
 
