@@ -1,4 +1,4 @@
-## Мова програмування Борщ <img width="250" src="misc/logo.png" alt="Borsch Logo"/>
+## Мова програмування Борщ <img width="100" src="misc/logo.png" alt="Borsch Logo" aligh="right"/>
 
 Borsch - це мова програмування з відкритим кодом, яка допоможе
 зрозуміти хоча б трохи, як працює програмування, навіть якщо
