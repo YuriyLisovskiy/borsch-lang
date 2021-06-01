@@ -13,8 +13,8 @@ var FunctionsList = map[string] func (...ValueType) (ValueType, error) {
 	"логічне": CastToBool,
 
 	// Common
-	"середовище": GetEnv,
 	"паніка": Panic,
+	"середовище": GetEnv,
+	"довжина": Length,
 	//"тип": Type,
-	//"довжина": Length,
 }

@@ -69,7 +69,7 @@ func (t RealNumberType) TypeHash() int {
 }
 
 func (t RealNumberType) TypeName() string {
-	return "дійсне число"
+	return "дійсне"
 }
 
 // IntegerNumberType represents numbers as float64
@@ -99,7 +99,7 @@ func (t IntegerNumberType) TypeHash() int {
 }
 
 func (t IntegerNumberType) TypeName() string {
-	return "ціле число"
+	return "ціле"
 }
 
 // StringType is string representation.
@@ -161,5 +161,5 @@ func (t BoolType) TypeHash() int {
 }
 
 func (t BoolType) TypeName() string {
-	return "логічний тип"
+	return "логічне"
 }

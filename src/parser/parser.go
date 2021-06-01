@@ -1,9 +1,10 @@
-package src
+package parser
 
 import (
 	"errors"
 	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/ast"
+	"github.com/YuriyLisovskiy/borsch/src/builtin"
 	"github.com/YuriyLisovskiy/borsch/src/models"
 	"strings"
 	"unicode/utf8"
@@ -59,6 +60,19 @@ func (p *Parser) matchBinaryOperator() *models.Token {
 	)
 }
 
+func (p *Parser) checkForKeyword(name string) error {
+	for _, identifier := range builtin.RegisteredIdentifiers {
+		if identifier == name {
+			return errors.New(fmt.Sprintf(
+				"неможливо використати ідентифікатор '%s', осткільки він є вбудованим",
+				name,
+			))
+		}
+	}
+
+	return nil
+}
+
 func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 	number := p.match(models.TokenTypesList[models.RealNumber])
 	if number != nil {
@@ -85,6 +99,11 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 		if p.match(models.TokenTypesList[models.LPar]) != nil {
 			p.pos--
 			return nil, nil
+		}
+
+		err := p.checkForKeyword(name.Text)
+		if err != nil {
+			return nil, err
 		}
 
 		return ast.NewVariableNode(*name), nil
@@ -227,6 +246,11 @@ func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
 		if p.match(models.TokenTypesList[models.LPar]) != nil {
 			p.pos -= 2
 			return nil, nil
+		}
+
+		err := p.checkForKeyword(name.Text)
+		if err != nil {
+			return nil, err
 		}
 
 		variableNode := ast.NewVariableNode(*name)

@@ -56,8 +56,7 @@ func (l *Lexer) Lex() ([]models.Token, error) {
 			if token.Text == "\n" {
 				rowCounter++
 			}
-		case models.SingleLineComment:
-		case models.MultiLineComment:
+		case models.MultiLineComment, models.SingleLineComment:
 			rowCounter += strings.Count(token.Text, "\n")
 		default:
 			token.Row = rowCounter

@@ -7,6 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/ast"
 	"github.com/YuriyLisovskiy/borsch/src/builtin"
 	"github.com/YuriyLisovskiy/borsch/src/models"
+	parser2 "github.com/YuriyLisovskiy/borsch/src/parser"
 	"github.com/YuriyLisovskiy/borsch/src/util"
 	"io/ioutil"
 	"os"
@@ -243,7 +244,7 @@ func (e *Interpreter) Execute(file string, code string) error {
 		return err
 	}
 
-	parser := src.NewParser(file, tokens)
+	parser := parser2.NewParser(file, tokens)
 	asTree, err := parser.Parse()
 	if err != nil {
 		return err
