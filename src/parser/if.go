@@ -37,7 +37,6 @@ func (p *Parser) readScope() ([]models.Token, error) {
 
 func (p *Parser) parseIfSequence() (ast.ExpressionNode, error) {
 	if p.match(models.TokenTypesList[models.If]) != nil {
-		// if condition
 		_, err := p.require(models.TokenTypesList[models.LPar])
 		if err != nil {
 			return nil, err
@@ -59,45 +58,40 @@ func (p *Parser) parseIfSequence() (ast.ExpressionNode, error) {
 		}
 
 		ifNode := ast.NewIfSequenceNode(conditionNode, blockOfCode)
+		for p.match(models.TokenTypesList[models.Else]) != nil {
+			if p.match(models.TokenTypesList[models.If]) != nil {
+				_, err := p.require(models.TokenTypesList[models.LPar])
+				if err != nil {
+					return nil, err
+				}
 
-		// else if conditions
-		for p.match(models.TokenTypesList[models.ElseIf]) != nil {
-			_, err := p.require(models.TokenTypesList[models.LPar])
-			if err != nil {
-				return nil, err
-			}
+				conditionNode, err = p.parseExpression()
+				if err != nil {
+					return nil, err
+				}
 
-			conditionNode, err = p.parseExpression()
-			if err != nil {
-				return nil, err
-			}
+				_, err = p.require(models.TokenTypesList[models.RPar])
+				if err != nil {
+					return nil, err
+				}
 
-			_, err = p.require(models.TokenTypesList[models.RPar])
-			if err != nil {
-				return nil, err
-			}
+				blockOfCode, err = p.readScope()
+				if err != nil {
+					return nil, err
+				}
 
-			blockOfCode, err = p.readScope()
-			if err != nil {
-				return nil, err
-			}
+				ifNode.Blocks = append(ifNode.Blocks, ast.NewConditionBlock(conditionNode, blockOfCode))
+			} else {
+				ifNode.ElseBlock, err = p.readScope()
+				if err != nil {
+					return nil, err
+				}
 
-			ifNode.Blocks = append(ifNode.Blocks, ast.NewConditionBlock(conditionNode, blockOfCode))
-		}
-
-		// else condition
-		if p.match(models.TokenTypesList[models.Else]) != nil {
-			ifNode.ElseBlock, err = p.readScope()
-			if err != nil {
-				return nil, err
+				break
 			}
 		}
 
 		return ifNode, nil
-	}
-
-	if p.match(models.TokenTypesList[models.ElseIf]) != nil {
-		return nil, errors.New("некоректний синтаксис")
 	}
 
 	if p.match(models.TokenTypesList[models.Else]) != nil {

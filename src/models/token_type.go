@@ -30,7 +30,6 @@ const (
 	LPar
 	RPar
 	If
-	ElseIf
 	Else
 	AndOp
 	OrOp
@@ -66,7 +65,6 @@ var tokenTypeNames = map[int]string{
 	LPar: "відкриваюча дужка",
 	RPar: "закриваюча дужка",
 	If: "якщо",
-	ElseIf: "інакше якщо",
 	Else: "інакше",
 	AndOp: "оператор логічного 'і'",
 	OrOp: "оператор логічного 'або'",
@@ -205,10 +203,6 @@ var TokenTypesList = map[int]TokenType{
 	If: {
 		Name:  If,
 		Regex: regexp.MustCompile("^якщо"),
-	},
-	ElseIf: {
-		Name:  ElseIf,
-		Regex: regexp.MustCompile("^інакше якщо"),
 	},
 	Else: {
 		Name:  Else,
