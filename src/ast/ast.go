@@ -4,16 +4,16 @@ type AST struct {
 	CodeRows []ExpressionNode
 }
 
-func NewStatementsNode() AST {
-	return AST{
+func NewAST() *AST {
+	return &AST{
 		[]ExpressionNode{},
 	}
 }
 
-func (sn *AST) AddNode(node ExpressionNode) {
-	sn.CodeRows = append(sn.CodeRows, node)
+func (a *AST) AddNode(node ExpressionNode) {
+	a.CodeRows = append(a.CodeRows, node)
 }
 
-func (sn AST) String() string {
+func (a AST) String() string {
 	return "AST"
 }

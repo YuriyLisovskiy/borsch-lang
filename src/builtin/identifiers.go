@@ -7,6 +7,9 @@ var RegisteredIdentifiers = []string{
 	"і",
 	"або",
 	"не",
+	"якщо",
+	"інакше якщо",
+	"інакше",
 
 	// Types + cast functions
 	"рядок",

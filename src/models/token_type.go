@@ -16,9 +16,6 @@ const (
 	Bool
 	Semicolon
 	Space
-	AndOp
-	OrOp
-	NotOp
 	EqualsOp
 	NotEqualsOp
 	GreaterOrEqualsOp
@@ -32,6 +29,14 @@ const (
 	Div
 	LPar
 	RPar
+	If
+	ElseIf
+	Else
+	AndOp
+	OrOp
+	NotOp
+	LCurlyBracket
+	RCurlyBracket
 	Comma
 	Name
 )
@@ -47,9 +52,6 @@ var tokenTypeNames = map[int]string{
 	Bool: "логічний тип",
 	Semicolon: "крапка з комою",
 	Space: "пропуск",
-	AndOp: "оператор логічного 'і'",
-	OrOp: "оператор логічного 'або'",
-	NotOp: "оператор логічного заперечення",
 	EqualsOp: "умова рівності",
 	NotEqualsOp: "умова нерівності",
 	GreaterOrEqualsOp: "умова 'більше або дорівнює'",
@@ -63,6 +65,14 @@ var tokenTypeNames = map[int]string{
 	Div: "оператор частки",
 	LPar: "відкриваюча дужка",
 	RPar: "закриваюча дужка",
+	If: "якщо",
+	ElseIf: "інакше якщо",
+	Else: "інакше",
+	AndOp: "оператор логічного 'і'",
+	OrOp: "оператор логічного 'або'",
+	NotOp: "оператор логічного заперечення",
+	LCurlyBracket: "відкриваюча фігурна дужка",
+	RCurlyBracket: "закриваюча фігурна дужка",
 	Comma: "кома",
 	Name: "назва",
 }
@@ -140,18 +150,6 @@ var TokenTypesList = map[int]TokenType{
 		Name:  Space,
 		Regex: regexp.MustCompile("^[\\s\\n\\t\\r]"),
 	},
-	AndOp: {
-		Name:  AndOp,
-		Regex: regexp.MustCompile("^і"),
-	},
-	OrOp: {
-		Name:  OrOp,
-		Regex: regexp.MustCompile("^або"),
-	},
-	NotOp: {
-		Name:  NotOp,
-		Regex: regexp.MustCompile("^не"),
-	},
 	EqualsOp: {
 		Name:  EqualsOp,
 		Regex: regexp.MustCompile("^=="),
@@ -203,6 +201,38 @@ var TokenTypesList = map[int]TokenType{
 	RPar: {
 		Name:  RPar,
 		Regex: regexp.MustCompile("^\\)"),
+	},
+	If: {
+		Name:  If,
+		Regex: regexp.MustCompile("^якщо"),
+	},
+	ElseIf: {
+		Name:  ElseIf,
+		Regex: regexp.MustCompile("^інакше якщо"),
+	},
+	Else: {
+		Name:  Else,
+		Regex: regexp.MustCompile("^інакше"),
+	},
+	AndOp: {
+		Name:  AndOp,
+		Regex: regexp.MustCompile("^і"),
+	},
+	OrOp: {
+		Name:  OrOp,
+		Regex: regexp.MustCompile("^або"),
+	},
+	NotOp: {
+		Name:  NotOp,
+		Regex: regexp.MustCompile("^не"),
+	},
+	LCurlyBracket: {
+		Name:  LCurlyBracket,
+		Regex: regexp.MustCompile("^{"),
+	},
+	RCurlyBracket: {
+		Name:  RCurlyBracket,
+		Regex: regexp.MustCompile("^}"),
 	},
 	Comma: {
 		Name:  Comma,

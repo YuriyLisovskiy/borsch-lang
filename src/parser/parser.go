@@ -124,7 +124,7 @@ func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		return node, err
+		return node, nil
 	}
 
 	return p.parseExpression()
@@ -186,15 +186,31 @@ func (p *Parser) parseFunctionCall() (ast.ExpressionNode, error) {
 	return nil, errors.New("очікується виклик функції")
 }
 
-func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
-	notOperator := p.match(models.TokenTypesList[models.NotOp])
-	if notOperator != nil {
-		operandNode, err := p.parseParentheses()
+func (p *Parser) parseUnaryOperator() (ast.ExpressionNode, error) {
+	unaryOp := p.match(
+		models.TokenTypesList[models.NotOp],
+		models.TokenTypesList[models.Sub], models.TokenTypesList[models.Add],
+	)
+	if unaryOp != nil {
+		exprNode, err := p.parseExpression()
 		if err != nil {
 			return nil, err
 		}
 
-		return ast.NewUnaryOperationNode(*notOperator, operandNode), nil
+		return ast.NewUnaryOperationNode(*unaryOp, exprNode), nil
+	}
+
+	return nil, nil
+}
+
+func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
+	unaryOperation, err := p.parseUnaryOperator()
+	if err != nil {
+		return nil, err
+	}
+
+	if unaryOperation != nil {
+		return unaryOperation, err
 	}
 
 	variableNode, err := p.parseVariableOrConstant()
@@ -205,7 +221,7 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 	if variableNode != nil {
 		operator := p.matchBinaryOperator()
 		if operator != nil {
-			rightNode, err := p.parseParentheses()
+			rightNode, err := p.parseFormula()
 			if err != nil {
 				return nil, err
 			}
@@ -213,7 +229,6 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 			return ast.NewBinOperationNode(*operator, variableNode, rightNode), nil
 		}
 
-		//p.pos--
 		return variableNode, nil
 	}
 
@@ -266,7 +281,6 @@ func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
 		}
 	}
 
-	p.pos -= 1
 	return nil, nil
 }
 
@@ -282,6 +296,19 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 
 	if includeDirectiveNode != nil {
 		return includeDirectiveNode, nil
+	}
+
+	ifNode, err := p.parseIfSequence()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.pos < 0 {
+		p.pos = 0
+	}
+
+	if ifNode != nil {
+		return ifNode, nil
 	}
 
 	assignmentNode, err := p.parseVariableAssignment()
@@ -324,7 +351,7 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 }
 
 func (p *Parser) Parse() (*ast.AST, error) {
-	asTree := &ast.AST{}
+	asTree := ast.NewAST()
 	for p.pos < len(p.tokens) {
 		codeNode, err := p.parseRow()
 		if err != nil {

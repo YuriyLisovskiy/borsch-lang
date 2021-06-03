@@ -8,14 +8,14 @@ import (
 )
 
 func (e *Interpreter) executeLogicalOp(
-	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType Operator, rootDir string,
+	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType Operator, rootDir string, currentFile string,
 ) (builtin.ValueType, error) {
-	left, err := e.executeNode(leftNode, rootDir)
+	left, err := e.executeNode(leftNode, rootDir, currentFile)
 	if err != nil {
 		return builtin.NoneType{}, err
 	}
 
-	right, err := e.executeNode(rightNode, rootDir)
+	right, err := e.executeNode(rightNode, rootDir, currentFile)
 	if err != nil {
 		return builtin.NoneType{}, err
 	}
