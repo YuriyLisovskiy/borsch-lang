@@ -96,15 +96,15 @@ func compareBooleans(left, right builtin.BoolType, opType Operator) (builtin.Val
 	}
 }
 
-func (e *Interpreter) executeComparisonOp(
+func (i *Interpreter) executeComparisonOp(
 	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType Operator, rootDir string, currentFile string,
 ) (builtin.ValueType, error) {
-	left, err := e.executeNode(leftNode, rootDir, currentFile)
+	left, err := i.executeNode(leftNode, rootDir, currentFile)
 	if err != nil {
 		return builtin.NoneType{}, err
 	}
 
-	right, err := e.executeNode(rightNode, rootDir, currentFile)
+	right, err := i.executeNode(rightNode, rootDir, currentFile)
 	if err != nil {
 		return builtin.NoneType{}, err
 	}

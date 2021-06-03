@@ -38,19 +38,19 @@ const (
 type Operator int
 
 var opTypeNames = map[Operator]string{
-	sumOp: "додавання",
-	subOp: "віднімання",
-	mulOp: "множення",
-	divOp: "ділення",
-	andOp: "логічного 'і'",
-	orOp: "логічного 'або'",
-	notOp: "логічного заперечення",
-	equalsOp: "рівності",
-	notEqualsOp: "нерівності",
-	greaterOp: "'більше'",
+	sumOp:             "додавання",
+	subOp:             "віднімання",
+	mulOp:             "множення",
+	divOp:             "ділення",
+	andOp:             "логічного 'і'",
+	orOp:              "логічного 'або'",
+	notOp:             "логічного заперечення",
+	equalsOp:          "рівності",
+	notEqualsOp:       "нерівності",
+	greaterOp:         "'більше'",
 	greaterOrEqualsOp: "'більше або дорівнює'",
-	lessOp: "'менше'",
-	lessOrEqualsOp: "'менше або дорівнює'",
+	lessOp:            "'менше'",
+	lessOrEqualsOp:    "'менше або дорівнює'",
 }
 
 func (op Operator) Description() string {
@@ -66,33 +66,82 @@ func (op Operator) Description() string {
 
 type Interpreter struct {
 	stdRoot string
-	scope   map[string]builtin.ValueType
+	scopes  []map[string]builtin.ValueType
 }
 
 func NewInterpreter(stdRoot string) *Interpreter {
-	return &Interpreter{
+	obj := &Interpreter{
 		stdRoot: stdRoot,
-		scope: map[string]builtin.ValueType{},
+		scopes:   []map[string]builtin.ValueType{},
 	}
+	obj.pushScope()
+	return obj
 }
 
-func (e *Interpreter) executeNode(
+func (i *Interpreter) pushScope() {
+	i.scopes = append(i.scopes, map[string]builtin.ValueType{})
+}
+
+func (i *Interpreter) popScope() {
+	if len(i.scopes) == 0 {
+		panic("Not enough scopes")
+	}
+
+	i.scopes = i.scopes[:len(i.scopes)-1]
+}
+
+func (i *Interpreter) getVar(name string) (builtin.ValueType, error){
+	lastScopeIdx := len(i.scopes) - 1
+	for idx := lastScopeIdx; idx >= 0; idx-- {
+		if val, ok := i.scopes[idx][name]; ok {
+			return val, nil
+		}
+	}
+
+	return builtin.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		"змінну з назвою '%s' не знайдено", name,
+	))
+}
+
+func (i *Interpreter) setVar(name string, value builtin.ValueType) error {
+	lastScopeIdx := len(i.scopes) - 1
+	for idx := 0; idx < lastScopeIdx; idx++ {
+		if oldValue, ok := i.scopes[idx][name]; ok {
+			if oldValue.TypeHash() != value.TypeHash() {
+				// TODO: надрукувати нормальне попередження!
+				fmt.Println(fmt.Sprintf(
+					"Попередження: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
+					value.TypeName(), oldValue.TypeName(), name,
+				))
+				break
+			}
+
+			i.scopes[idx][name] = value
+			return nil
+		}
+	}
+
+	i.scopes[lastScopeIdx][name] = value
+	return nil
+}
+
+func (i *Interpreter) executeNode(
 	rootNode ast.ExpressionNode, rootDir string, currentFile string,
 ) (builtin.ValueType, error) {
 	switch node := rootNode.(type) {
 	case ast.IncludeDirectiveNode:
 		if node.IsStd {
-			node.FilePath = filepath.Join(e.stdRoot, node.FilePath)
+			node.FilePath = filepath.Join(i.stdRoot, node.FilePath)
 		} else if !filepath.IsAbs(node.FilePath) {
 			node.FilePath = filepath.Join(rootDir, node.FilePath)
 		}
 
-		return builtin.NoneType{}, e.ExecuteFile(node.FilePath)
+		return builtin.NoneType{}, i.ExecuteFile(node.FilePath)
 
 	case ast.FunctionCallNode:
 		var args []builtin.ValueType
 		for _, arg := range node.Args {
-			sArg, err := e.executeNode(arg, rootDir, currentFile)
+			sArg, err := i.executeNode(arg, rootDir, currentFile)
 			if err != nil {
 				return builtin.NoneType{}, err
 			}
@@ -115,7 +164,7 @@ func (e *Interpreter) executeNode(
 		return res, nil
 
 	case ast.UnaryOperationNode:
-		operand, err := e.executeNode(node.Operand, rootDir, currentFile)
+		operand, err := i.executeNode(node.Operand, rootDir, currentFile)
 		if err != nil {
 			return builtin.NoneType{}, err
 		}
@@ -164,55 +213,59 @@ func (e *Interpreter) executeNode(
 	case ast.BinOperationNode:
 		switch node.Operator.Type.Name {
 		case models.Add:
-			return e.executeArithmeticOp(node.LeftNode, node.RightNode, sumOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, sumOp, rootDir, currentFile)
 
 		case models.Sub:
-			return e.executeArithmeticOp(node.LeftNode, node.RightNode, subOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, subOp, rootDir, currentFile)
 
 		case models.Mul:
-			return e.executeArithmeticOp(node.LeftNode, node.RightNode, mulOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, mulOp, rootDir, currentFile)
 
 		case models.Div:
-			return e.executeArithmeticOp(node.LeftNode, node.RightNode, divOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, divOp, rootDir, currentFile)
 
 		case models.AndOp:
-			return e.executeLogicalOp(node.LeftNode, node.RightNode, andOp, rootDir, currentFile)
+			return i.executeLogicalOp(node.LeftNode, node.RightNode, andOp, rootDir, currentFile)
 
 		case models.OrOp:
-			return e.executeLogicalOp(node.LeftNode, node.RightNode, orOp, rootDir, currentFile)
+			return i.executeLogicalOp(node.LeftNode, node.RightNode, orOp, rootDir, currentFile)
 
 		case models.EqualsOp:
-			return e.executeComparisonOp(node.LeftNode, node.RightNode, equalsOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, equalsOp, rootDir, currentFile)
 
 		case models.NotEqualsOp:
-			return e.executeComparisonOp(node.LeftNode, node.RightNode, notEqualsOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, notEqualsOp, rootDir, currentFile)
 
 		case models.GreaterOp:
-			return e.executeComparisonOp(node.LeftNode, node.RightNode, greaterOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, greaterOp, rootDir, currentFile)
 
 		case models.GreaterOrEqualsOp:
-			return e.executeComparisonOp(node.LeftNode, node.RightNode, greaterOrEqualsOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, greaterOrEqualsOp, rootDir, currentFile)
 
 		case models.LessOp:
-			return e.executeComparisonOp(node.LeftNode, node.RightNode, lessOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, lessOp, rootDir, currentFile)
 
 		case models.LessOrEqualsOp:
-			return e.executeComparisonOp(node.LeftNode, node.RightNode, lessOrEqualsOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, lessOrEqualsOp, rootDir, currentFile)
 
 		case models.Assign:
-			result, err := e.executeNode(node.RightNode, rootDir, currentFile)
+			result, err := i.executeNode(node.RightNode, rootDir, currentFile)
 			if err != nil {
 				return builtin.NoneType{}, err
 			}
 
 			variableNode := node.LeftNode.(ast.VariableNode)
-			e.scope[variableNode.Variable.Text] = result
+			err = i.setVar(variableNode.Variable.Text, result)
+			if err != nil {
+				return builtin.NoneType{}, err
+			}
+
 			return result, nil
 		}
 
 	case ast.IfSequenceNode:
-		return e.executeIfSequence(node.Blocks, node.ElseBlock, rootDir, currentFile)
-		
+		return i.executeIfSequence(node.Blocks, node.ElseBlock, rootDir, currentFile)
+
 	case ast.RealTypeNode:
 		return builtin.NewRealNumberType(node.Value.Text)
 
@@ -226,19 +279,18 @@ func (e *Interpreter) executeNode(
 		return builtin.NewBoolType(node.Value.Text)
 
 	case ast.VariableNode:
-		if val, ok := e.scope[node.Variable.Text]; ok {
-			return val, nil
+		val, err := i.getVar(node.Variable.Text)
+		if err != nil {
+			return builtin.NoneType{}, err
 		}
 
-		return builtin.NoneType{}, util.RuntimeError(fmt.Sprintf(
-			"змінну з назвою '%s' не знайдено", node.Variable.Text,
-		))
+		return val, nil
 	}
 
 	return builtin.NoneType{}, util.RuntimeError("невідома помилка")
 }
 
-func (e *Interpreter) executeAST(file string, tree *ast.AST) error {
+func (i *Interpreter) executeAST(file string, tree *ast.AST) error {
 	var filePath string
 	var dir string
 	var err error
@@ -257,8 +309,9 @@ func (e *Interpreter) executeAST(file string, tree *ast.AST) error {
 		dir = filepath.Dir(filePath)
 	}
 
+	i.pushScope()
 	for _, codeRow := range tree.CodeRows {
-		_, err := e.executeNode(codeRow, dir, file)
+		_, err := i.executeNode(codeRow, dir, file)
 		if err != nil {
 			return errors.New(fmt.Sprintf(
 				"  Файл \"%s\", рядок %d\n    %s\n%s",
@@ -267,17 +320,18 @@ func (e *Interpreter) executeAST(file string, tree *ast.AST) error {
 		}
 	}
 
+	i.popScope()
 	return nil
 }
 
-func (e *Interpreter) executeBlock(tokens []models.Token, currentFile string) (builtin.ValueType, error) {
+func (i *Interpreter) executeBlock(tokens []models.Token, currentFile string) (builtin.ValueType, error) {
 	p := parser.NewParser(currentFile, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
 		return nil, err
 	}
 
-	err = e.executeAST(currentFile, asTree)
+	err = i.executeAST(currentFile, asTree)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +339,7 @@ func (e *Interpreter) executeBlock(tokens []models.Token, currentFile string) (b
 	return builtin.NoneType{}, nil
 }
 
-func (e *Interpreter) Execute(file string, code string) error {
+func (i *Interpreter) Execute(file string, code string) error {
 	lexer := src.NewLexer(file, code)
 	tokens, err := lexer.Lex()
 	if err != nil {
@@ -298,7 +352,7 @@ func (e *Interpreter) Execute(file string, code string) error {
 		return err
 	}
 
-	err = e.executeAST(file, asTree)
+	err = i.executeAST(file, asTree)
 	if err != nil {
 		return err
 	}
@@ -306,7 +360,7 @@ func (e *Interpreter) Execute(file string, code string) error {
 	return nil
 }
 
-func (e *Interpreter) ExecuteFile(filePath string) error {
+func (i *Interpreter) ExecuteFile(filePath string) error {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return errors.New(fmt.Sprintf("файл з ім'ям '%s' не існує", filePath))
 	}
@@ -316,5 +370,5 @@ func (e *Interpreter) ExecuteFile(filePath string) error {
 		return err
 	}
 
-	return e.Execute(filePath, string(content))
+	return i.Execute(filePath, string(content))
 }

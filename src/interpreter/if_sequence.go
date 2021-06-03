@@ -6,11 +6,11 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/models"
 )
 
-func (e *Interpreter) executeIfSequence(
+func (i *Interpreter) executeIfSequence(
 	blocks []ast.ConditionBlock, elseBlock []models.Token, rootDir string, currentFile string,
 ) (builtin.ValueType, error) {
 	for _, block := range blocks {
-		result, err := e.executeNode(block.Condition, rootDir, currentFile)
+		result, err := i.executeNode(block.Condition, rootDir, currentFile)
 		if err != nil {
 			return nil, err
 		}
@@ -21,12 +21,12 @@ func (e *Interpreter) executeIfSequence(
 		}
 
 		if result.(builtin.BoolType).Value {
-			return e.executeBlock(block.Tokens, currentFile)
+			return i.executeBlock(block.Tokens, currentFile)
 		}
 	}
 
 	if len(elseBlock) > 0 {
-		return e.executeBlock(elseBlock, currentFile)
+		return i.executeBlock(elseBlock, currentFile)
 	}
 
 	return builtin.NoneType{}, nil
