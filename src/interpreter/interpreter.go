@@ -70,16 +70,14 @@ type Interpreter struct {
 }
 
 func NewInterpreter(stdRoot string) *Interpreter {
-	obj := &Interpreter{
+	return &Interpreter{
 		stdRoot: stdRoot,
-		scopes:   []map[string]builtin.ValueType{},
+		scopes:  []map[string]builtin.ValueType{},
 	}
-	obj.pushScope()
-	return obj
 }
 
-func (i *Interpreter) pushScope() {
-	i.scopes = append(i.scopes, map[string]builtin.ValueType{})
+func (i *Interpreter) pushScope(scope map[string]builtin.ValueType) {
+	i.scopes = append(i.scopes, scope)
 }
 
 func (i *Interpreter) popScope() {
@@ -90,7 +88,7 @@ func (i *Interpreter) popScope() {
 	i.scopes = i.scopes[:len(i.scopes)-1]
 }
 
-func (i *Interpreter) getVar(name string) (builtin.ValueType, error){
+func (i *Interpreter) getVar(name string) (builtin.ValueType, error) {
 	lastScopeIdx := len(i.scopes) - 1
 	for idx := lastScopeIdx; idx >= 0; idx-- {
 		if val, ok := i.scopes[idx][name]; ok {
@@ -136,14 +134,14 @@ func (i *Interpreter) executeNode(
 			node.FilePath = filepath.Join(rootDir, node.FilePath)
 		}
 
-		return builtin.NoneType{}, i.ExecuteFile(node.FilePath)
+		return nil, i.ExecuteFile(node.FilePath)
 
 	case ast.FunctionCallNode:
 		var args []builtin.ValueType
 		for _, arg := range node.Args {
 			sArg, err := i.executeNode(arg, rootDir, currentFile)
 			if err != nil {
-				return builtin.NoneType{}, err
+				return nil, err
 			}
 
 			args = append(args, sArg)
@@ -151,14 +149,14 @@ func (i *Interpreter) executeNode(
 
 		function, found := builtin.FunctionsList[node.FunctionName.Text]
 		if !found {
-			return builtin.NoneType{}, util.RuntimeError(
+			return nil, util.RuntimeError(
 				fmt.Sprintf("функцію з назвою '%s' не знайдено", node.FunctionName.Text),
 			)
 		}
 
 		res, err := function(args...)
 		if err != nil {
-			return builtin.NoneType{}, err
+			return nil, err
 		}
 
 		return res, nil
@@ -166,7 +164,7 @@ func (i *Interpreter) executeNode(
 	case ast.UnaryOperationNode:
 		operand, err := i.executeNode(node.Operand, rootDir, currentFile)
 		if err != nil {
-			return builtin.NoneType{}, err
+			return nil, err
 		}
 
 		switch node.Operator.Type.Name {
@@ -176,7 +174,7 @@ func (i *Interpreter) executeNode(
 				return builtin.BoolType{Value: !operandVal.Value}, nil
 			}
 
-			return builtin.NoneType{}, util.RuntimeError(fmt.Sprintf(
+			return nil, util.RuntimeError(fmt.Sprintf(
 				"непідтримуваний тип операнда для оператора %s: '%s'",
 				Operator(notOp).Description(), operand.TypeName(),
 			))
@@ -188,7 +186,7 @@ func (i *Interpreter) executeNode(
 				return builtin.CastToInt(operandVal)
 			}
 
-			return builtin.NoneType{}, util.RuntimeError(fmt.Sprintf(
+			return nil, util.RuntimeError(fmt.Sprintf(
 				"непідтримуваний тип операнда для оператора %s: '%s'",
 				Operator(notOp).Description(), operand.TypeName(),
 			))
@@ -204,7 +202,7 @@ func (i *Interpreter) executeNode(
 				return builtin.CastToInt(operandVal)
 			}
 
-			return builtin.NoneType{}, util.RuntimeError(fmt.Sprintf(
+			return nil, util.RuntimeError(fmt.Sprintf(
 				"непідтримуваний тип операнда для оператора %s: '%s'",
 				Operator(notOp).Description(), operand.TypeName(),
 			))
@@ -251,13 +249,13 @@ func (i *Interpreter) executeNode(
 		case models.Assign:
 			result, err := i.executeNode(node.RightNode, rootDir, currentFile)
 			if err != nil {
-				return builtin.NoneType{}, err
+				return nil, err
 			}
 
 			variableNode := node.LeftNode.(ast.VariableNode)
 			err = i.setVar(variableNode.Variable.Text, result)
 			if err != nil {
-				return builtin.NoneType{}, err
+				return nil, err
 			}
 
 			return result, nil
@@ -266,6 +264,14 @@ func (i *Interpreter) executeNode(
 	case ast.IfSequenceNode:
 		return i.executeIfSequence(node.Blocks, node.ElseBlock, rootDir, currentFile)
 
+	case ast.ForEachNode:
+		container, err := i.executeNode(node.Container, rootDir, currentFile)
+		if err != nil {
+			return nil, err
+		}
+
+		return i.executeForEachLoop(node.IndexVar, node.ItemVar, container, node.Body, currentFile)
+		
 	case ast.RealTypeNode:
 		return builtin.NewRealNumberType(node.Value.Text)
 
@@ -287,10 +293,12 @@ func (i *Interpreter) executeNode(
 		return val, nil
 	}
 
-	return builtin.NoneType{}, util.RuntimeError("невідома помилка")
+	return nil, util.RuntimeError("невідома помилка")
 }
 
-func (i *Interpreter) executeAST(file string, tree *ast.AST) error {
+func (i *Interpreter) executeAST(
+	scope map[string]builtin.ValueType, file string, tree *ast.AST,
+) (builtin.ValueType, error) {
 	var filePath string
 	var dir string
 	var err error
@@ -298,45 +306,51 @@ func (i *Interpreter) executeAST(file string, tree *ast.AST) error {
 		filePath = "<стдввід>"
 		dir, err = os.Getwd()
 		if err != nil {
-			return util.InternalError(err.Error())
+			return nil, util.InternalError(err.Error())
 		}
 	} else {
 		filePath, err = filepath.Abs(file)
 		if err != nil {
-			return util.InternalError(err.Error())
+			return nil, util.InternalError(err.Error())
 		}
 
 		dir = filepath.Dir(filePath)
 	}
 
-	i.pushScope()
-	for _, codeRow := range tree.CodeRows {
-		_, err := i.executeNode(codeRow, dir, file)
+	i.pushScope(scope)
+	for _, node := range tree.CodeNodes {
+		_, err := i.executeNode(node, dir, file)
 		if err != nil {
-			return errors.New(fmt.Sprintf(
+			return nil, errors.New(fmt.Sprintf(
 				"  Файл \"%s\", рядок %d\n    %s\n%s",
-				filePath, codeRow.RowNumber(), codeRow.String(), err.Error(),
+				filePath, node.RowNumber(), node.String(), err.Error(),
 			))
 		}
+
+		//if result != nil {
+		//	return result, nil
+		//}
 	}
 
 	i.popScope()
-	return nil
+	return nil, nil
 }
 
-func (i *Interpreter) executeBlock(tokens []models.Token, currentFile string) (builtin.ValueType, error) {
+func (i *Interpreter) executeBlock(
+	scope map[string]builtin.ValueType, tokens []models.Token, currentFile string,
+) (builtin.ValueType, error) {
 	p := parser.NewParser(currentFile, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
 		return nil, err
 	}
 
-	err = i.executeAST(currentFile, asTree)
+	result, err := i.executeAST(scope, currentFile, asTree)
 	if err != nil {
 		return nil, err
 	}
 
-	return builtin.NoneType{}, nil
+	return result, nil
 }
 
 func (i *Interpreter) Execute(file string, code string) error {
@@ -352,7 +366,7 @@ func (i *Interpreter) Execute(file string, code string) error {
 		return err
 	}
 
-	err = i.executeAST(file, asTree)
+	_, err = i.executeAST(map[string]builtin.ValueType{}, file, asTree)
 	if err != nil {
 		return err
 	}

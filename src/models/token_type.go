@@ -15,6 +15,7 @@ const (
 	String
 	Bool
 	Semicolon
+	Colon
 	Space
 	EqualsOp
 	NotEqualsOp
@@ -31,6 +32,7 @@ const (
 	RPar
 	If
 	Else
+	For
 	AndOp
 	OrOp
 	NotOp
@@ -50,6 +52,7 @@ var tokenTypeNames = map[int]string{
 	String: "рядок",
 	Bool: "логічний тип",
 	Semicolon: "крапка з комою",
+	Colon: "двокрапка",
 	Space: "пропуск",
 	EqualsOp: "умова рівності",
 	NotEqualsOp: "умова нерівності",
@@ -66,6 +69,7 @@ var tokenTypeNames = map[int]string{
 	RPar: "закриваюча дужка",
 	If: "якщо",
 	Else: "інакше",
+	For: "для",
 	AndOp: "оператор логічного 'і'",
 	OrOp: "оператор логічного 'або'",
 	NotOp: "оператор логічного заперечення",
@@ -144,6 +148,10 @@ var TokenTypesList = map[int]TokenType{
 		Name:  Semicolon,
 		Regex: regexp.MustCompile("^;"),
 	},
+	Colon: {
+		Name:  Colon,
+		Regex: regexp.MustCompile("^:"),
+	},
 	Space: {
 		Name:  Space,
 		Regex: regexp.MustCompile("^[\\s\\n\\t\\r]"),
@@ -207,6 +215,10 @@ var TokenTypesList = map[int]TokenType{
 	Else: {
 		Name:  Else,
 		Regex: regexp.MustCompile("^інакше"),
+	},
+	For: {
+		Name:  For,
+		Regex: regexp.MustCompile("^для"),
 	},
 	AndOp: {
 		Name:  AndOp,

@@ -311,6 +311,19 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return ifNode, nil
 	}
 
+	forNode, err := p.parseForLoop()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.pos < 0 {
+		p.pos = 0
+	}
+
+	if forNode != nil {
+		return forNode, nil
+	}
+
 	assignmentNode, err := p.parseVariableAssignment()
 	if err != nil {
 		return nil, err

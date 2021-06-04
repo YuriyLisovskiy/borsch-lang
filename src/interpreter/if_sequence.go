@@ -21,13 +21,13 @@ func (i *Interpreter) executeIfSequence(
 		}
 
 		if result.(builtin.BoolType).Value {
-			return i.executeBlock(block.Tokens, currentFile)
+			return i.executeBlock(map[string]builtin.ValueType{}, block.Tokens, currentFile)
 		}
 	}
 
 	if len(elseBlock) > 0 {
-		return i.executeBlock(elseBlock, currentFile)
+		return i.executeBlock(map[string]builtin.ValueType{}, elseBlock, currentFile)
 	}
 
-	return builtin.NoneType{}, nil
+	return nil, nil
 }
