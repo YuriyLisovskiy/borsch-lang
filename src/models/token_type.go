@@ -38,6 +38,8 @@ const (
 	NotOp
 	LCurlyBracket
 	RCurlyBracket
+	LSquareBracket
+	RSquareBracket
 	Comma
 	Name
 )
@@ -75,6 +77,8 @@ var tokenTypeNames = map[int]string{
 	NotOp: "оператор логічного заперечення",
 	LCurlyBracket: "відкриваюча фігурна дужка",
 	RCurlyBracket: "закриваюча фігурна дужка",
+	LSquareBracket: "відкриваюча квадратна дужка",
+	RSquareBracket: "закриваюча квадратна дужка",
 	Comma: "кома",
 	Name: "назва",
 }
@@ -222,15 +226,15 @@ var TokenTypesList = map[int]TokenType{
 	},
 	AndOp: {
 		Name:  AndOp,
-		Regex: regexp.MustCompile("^і"),
+		Regex: regexp.MustCompile("^&&"),
 	},
 	OrOp: {
 		Name:  OrOp,
-		Regex: regexp.MustCompile("^або"),
+		Regex: regexp.MustCompile("^\\|\\|"),
 	},
 	NotOp: {
 		Name:  NotOp,
-		Regex: regexp.MustCompile("^не"),
+		Regex: regexp.MustCompile("^!"),
 	},
 	LCurlyBracket: {
 		Name:  LCurlyBracket,
@@ -239,6 +243,14 @@ var TokenTypesList = map[int]TokenType{
 	RCurlyBracket: {
 		Name:  RCurlyBracket,
 		Regex: regexp.MustCompile("^}"),
+	},
+	LSquareBracket: {
+		Name:  LSquareBracket,
+		Regex: regexp.MustCompile("^\\["),
+	},
+	RSquareBracket: {
+		Name:  RSquareBracket,
+		Regex: regexp.MustCompile("^]"),
 	},
 	Comma: {
 		Name:  Comma,

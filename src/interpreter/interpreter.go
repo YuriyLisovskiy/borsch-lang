@@ -20,6 +20,8 @@ const (
 	subOp
 	mulOp
 	divOp
+	unaryMinus
+	unaryPlus
 
 	// logical
 	andOp
@@ -42,6 +44,8 @@ var opTypeNames = map[Operator]string{
 	subOp:             "віднімання",
 	mulOp:             "множення",
 	divOp:             "ділення",
+	unaryMinus:        "унарного мінуса",
+	unaryPlus:         "унарного плюса",
 	andOp:             "логічного 'і'",
 	orOp:              "логічного 'або'",
 	notOp:             "логічного заперечення",
@@ -102,10 +106,17 @@ func (i *Interpreter) getVar(name string) (builtin.ValueType, error) {
 }
 
 func (i *Interpreter) setVar(name string, value builtin.ValueType) error {
-	lastScopeIdx := len(i.scopes) - 1
-	for idx := 0; idx < lastScopeIdx; idx++ {
+	scopesLen := len(i.scopes)
+	for idx := 0; idx < scopesLen; idx++ {
 		if oldValue, ok := i.scopes[idx][name]; ok {
 			if oldValue.TypeHash() != value.TypeHash() {
+				if scopesLen == 1 {
+					return util.RuntimeError(fmt.Sprintf(
+						"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
+						value.TypeName(), name, oldValue.TypeName(),
+					))
+				}
+
 				// TODO: надрукувати нормальне попередження!
 				fmt.Println(fmt.Sprintf(
 					"Попередження: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
@@ -119,7 +130,7 @@ func (i *Interpreter) setVar(name string, value builtin.ValueType) error {
 		}
 	}
 
-	i.scopes[lastScopeIdx][name] = value
+	i.scopes[scopesLen-1][name] = value
 	return nil
 }
 
@@ -183,12 +194,16 @@ func (i *Interpreter) executeNode(
 			case builtin.IntegerNumberType, builtin.RealNumberType:
 				return operandVal, nil
 			case builtin.BoolType:
-				return builtin.CastToInt(operandVal)
+				if operandVal.Value {
+					return builtin.IntegerNumberType{Value: 1}, nil
+				}
+
+				return builtin.IntegerNumberType{Value: 0}, nil
 			}
 
 			return nil, util.RuntimeError(fmt.Sprintf(
 				"непідтримуваний тип операнда для оператора %s: '%s'",
-				Operator(notOp).Description(), operand.TypeName(),
+				Operator(unaryPlus).Description(), operand.TypeName(),
 			))
 		case models.Sub:
 			switch operandVal := operand.(type) {
@@ -199,12 +214,16 @@ func (i *Interpreter) executeNode(
 				operandVal.Value = -operandVal.Value
 				return operandVal, nil
 			case builtin.BoolType:
-				return builtin.CastToInt(operandVal)
+				if operandVal.Value {
+					return builtin.IntegerNumberType{Value: -1}, nil
+				}
+
+				return builtin.IntegerNumberType{Value: 0}, nil
 			}
 
 			return nil, util.RuntimeError(fmt.Sprintf(
 				"непідтримуваний тип операнда для оператора %s: '%s'",
-				Operator(notOp).Description(), operand.TypeName(),
+				Operator(unaryMinus).Description(), operand.TypeName(),
 			))
 		}
 
@@ -261,6 +280,9 @@ func (i *Interpreter) executeNode(
 			return result, nil
 		}
 
+	case ast.RandomAccessOperationNode:
+		return i.executeRandomAccessOp(node.Operand, node.Index, rootDir, currentFile)
+
 	case ast.IfSequenceNode:
 		return i.executeIfSequence(node.Blocks, node.ElseBlock, rootDir, currentFile)
 
@@ -271,7 +293,7 @@ func (i *Interpreter) executeNode(
 		}
 
 		return i.executeForEachLoop(node.IndexVar, node.ItemVar, container, node.Body, currentFile)
-		
+
 	case ast.RealTypeNode:
 		return builtin.NewRealNumberType(node.Value.Text)
 

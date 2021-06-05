@@ -16,13 +16,17 @@ func (p *Parser) parseForLoop() (ast.ExpressionNode, error) {
 
 		indexVar, err := p.require(models.TokenTypesList[models.Name])
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("%s змінної для порядкового номера", err.Error()))
+			return nil, errors.New(fmt.Sprintf("%s змінної для порядкового номера або ключа", err.Error()))
 		}
 
 		if p.match(models.TokenTypesList[models.Comma]) != nil {
 			itemVar, err := p.require(models.TokenTypesList[models.Name])
 			if err != nil {
-				return nil, errors.New(fmt.Sprintf("%s змінної елемента послідовності", err.Error()))
+				return nil, errors.New(fmt.Sprintf("%s змінної елемента послідовності або значення", err.Error()))
+			}
+
+			if indexVar.Text == itemVar.Text && indexVar.Text != "_" {
+				return nil, errors.New("неможливо створити пару змінних з однаковими назвами")
 			}
 
 			_, err = p.require(models.TokenTypesList[models.Colon])

@@ -3,8 +3,8 @@ package ast
 import "github.com/YuriyLisovskiy/borsch/src/models"
 
 type UnaryOperationNode struct {
-	Operator  models.Token
-	Operand ExpressionNode
+	Operator models.Token
+	Operand  ExpressionNode
 
 	rowNumber int
 }
@@ -14,7 +14,7 @@ func NewUnaryOperationNode(
 ) UnaryOperationNode {
 	return UnaryOperationNode{
 		Operator:  operator,
-		Operand: operand,
+		Operand:   operand,
 		rowNumber: operator.Row,
 	}
 }

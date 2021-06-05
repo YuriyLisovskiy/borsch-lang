@@ -4,9 +4,6 @@ var RegisteredIdentifiers = []string{
 	// Keyword names
 	"істина",
 	"хиба",
-	"і",
-	"або",
-	"не",
 	"якщо",
 	"інакше",
 	"для",

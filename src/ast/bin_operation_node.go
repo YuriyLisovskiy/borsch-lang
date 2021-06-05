@@ -22,7 +22,7 @@ func NewBinOperationNode(
 }
 
 func (n BinOperationNode) String() string {
-	return "(" + n.LeftNode.String() + ") " + n.Operator.String() + " (" + n.RightNode.String() + ")"
+	return n.LeftNode.String() + " " + n.Operator.String() + " " + n.RightNode.String()
 }
 
 func (n BinOperationNode) RowNumber() int {

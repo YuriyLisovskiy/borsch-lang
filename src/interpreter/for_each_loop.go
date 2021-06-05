@@ -15,10 +15,15 @@ func (i *Interpreter) executeForEachLoop(
 	case builtin.StringType:
 		runes := []rune(container.Value)
 		for idx, obj := range runes {
-			scope := map[string]builtin.ValueType{
-				indexVar.Text: builtin.IntegerNumberType{Value: int64(idx)},
-				itemVar.Text: builtin.StringType{Value: string(obj)},
+			scope := map[string]builtin.ValueType{}
+			if indexVar.Text != "_" {
+				scope[indexVar.Text] = builtin.IntegerNumberType{Value: int64(idx)}
 			}
+
+			if itemVar.Text != "_" {
+				scope[itemVar.Text] = builtin.StringType{Value: string(obj)}
+			}
+
 			result, err := i.executeBlock(scope, body, currentFile)
 			if err != nil {
 				return nil, err
@@ -30,7 +35,7 @@ func (i *Interpreter) executeForEachLoop(
 		}
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
-			"тип '%s' не є ітерабельним об'єктом", container.TypeName(),
+			"тип '%s' не є об'єктом, по якому можна ітерувати", container.TypeName(),
 		))
 	}
 
