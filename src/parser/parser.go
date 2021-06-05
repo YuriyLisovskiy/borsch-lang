@@ -112,22 +112,22 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 	return nil, errors.New("очікується змінна або число")
 }
 
-func (p *Parser) parseRandomAccessOperation(targetNode ast.ExpressionNode) (ast.ExpressionNode, error) {
+func (p *Parser) parseRandomAccessOperation() (int, ast.ExpressionNode, error) {
 	if lSquareBracket := p.match(models.TokenTypesList[models.LSquareBracket]); lSquareBracket != nil {
 		indexNode, err := p.parseFormula()
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
 
 		_, err = p.require(models.TokenTypesList[models.RSquareBracket])
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
 
-		return ast.NewRandomAccessOperationNode(targetNode, indexNode, lSquareBracket.Row), nil
+		return lSquareBracket.Row, indexNode, nil
 	}
 
-	return targetNode, nil
+	return 0, nil, nil
 }
 
 func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
@@ -146,9 +146,13 @@ func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		node, err = p.parseRandomAccessOperation(node)
+		rowNumber, indexNode, err := p.parseRandomAccessOperation()
 		if err != nil {
 			return nil, err
+		}
+
+		if indexNode != nil {
+			node = ast.NewRandomAccessGetOperationNode(node, indexNode, rowNumber)
 		}
 
 		if unaryOp != nil {
@@ -278,35 +282,22 @@ func (p *Parser) parseUnaryOperator() (ast.ExpressionNode, error) {
 }
 
 func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
-	//unaryOperation, err := p.parseUnaryOperator()
-	//if err != nil {
-	//	return nil, err
-	//}
+	variableNode, err := p.parseVariableOrConstant()
+	if err != nil {
+		return nil, err
+	}
 
-	//var variableNode ast.ExpressionNode
-	//if unaryOperation != nil {
-	//	variableNode = unaryOperation
-	//} else {
-		variableNode, err := p.parseVariableOrConstant()
+	if variableNode != nil {
+		rowNumber, indexNode, err := p.parseRandomAccessOperation()
 		if err != nil {
 			return nil, err
 		}
-	//}
 
-	if variableNode != nil {
-		return p.parseRandomAccessOperation(variableNode)
+		if indexNode != nil {
+			variableNode = ast.NewRandomAccessGetOperationNode(variableNode, indexNode, rowNumber)
+		}
 
-		//operator := p.matchBinaryOperator()
-		//if operator != nil {
-		//	rightNode, err := p.parseFormula()
-		//	if err != nil {
-		//		return nil, err
-		//	}
-		//
-		//	return ast.NewBinOperationNode(*operator, variableNode, rightNode), nil
-		//}
-
-		//return variableNode, nil
+		return variableNode, nil
 	}
 
 	p.pos--
@@ -315,7 +306,16 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 		return nil, err
 	}
 
-	return p.parseRandomAccessOperation(funcCallNode)
+	rowNumber, indexNode, err := p.parseRandomAccessOperation()
+	if err != nil {
+		return nil, err
+	}
+
+	if indexNode != nil {
+		funcCallNode = ast.NewRandomAccessGetOperationNode(funcCallNode, indexNode, rowNumber)
+	}
+
+	return funcCallNode, nil
 }
 
 func (p *Parser) parseIncludeDirective() (ast.ExpressionNode, error) {
@@ -345,7 +345,18 @@ func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		variableNode := ast.NewVariableNode(*name)
+		var variableNode ast.ExpressionNode
+		rowNumber, indexNode, err := p.parseRandomAccessOperation()
+		if err != nil {
+			return nil, err
+		}
+
+		if indexNode != nil {
+			variableNode = ast.NewRandomAccessSetOperationNode(*name, indexNode, rowNumber)
+		} else {
+			variableNode = ast.NewVariableNode(*name)
+		}
+
 		assignOperator := p.match(models.TokenTypesList[models.Assign])
 		if assignOperator != nil {
 			rightExpressionNode, err := p.parseFormula()

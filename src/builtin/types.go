@@ -1,10 +1,12 @@
 package builtin
 
 import (
+	"errors"
 	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/util"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 const (
@@ -20,6 +22,22 @@ type ValueType interface {
 	Representation() string
 	TypeHash() int
 	TypeName() string
+}
+
+type IterableType interface {
+	Length() int64
+	GetElement(int64) (ValueType, error)
+	SetElement(int64, ValueType) (ValueType, error)
+}
+
+func getIndex(index, length int64) (int64, error) {
+	if index >= 0 && index < length {
+		return index, nil
+	} else if index < 0 && index >= -length {
+		return length + index, nil
+	}
+
+	return 0, errors.New("індекс рядка за межами послідовності")
 }
 
 // NoneType represents none type.
@@ -121,6 +139,42 @@ func (t StringType) TypeHash() int {
 
 func (t StringType) TypeName() string {
 	return "рядок"
+}
+
+func (t StringType) Length() int64 {
+	return int64(utf8.RuneCountInString(t.Value))
+}
+
+func (t StringType) GetElement(index int64) (ValueType, error) {
+	idx, err := getIndex(index, t.Length())
+	if err != nil {
+		return nil, err
+	}
+
+	return StringType{Value: string([]rune(t.Value)[idx])}, nil
+}
+
+func (t StringType) SetElement(index int64, value ValueType) (ValueType, error) {
+	idx, err := getIndex(index, t.Length())
+	if err != nil {
+		return nil, err
+	}
+
+	switch v := value.(type) {
+	case StringType:
+		if utf8.RuneCountInString(v.Value) != 1 {
+			return nil, errors.New("неможливо вставити жодного, або більше ніж один символ в рядок")
+		}
+
+		runes := []rune(v.Value)
+		target := []rune(t.Value)
+		target[idx] = runes[0]
+		t.Value = string(target)
+	default:
+		return nil, errors.New(fmt.Sprintf("неможливо вставити в рядок об'єкт типу '%s'", v.TypeName()))
+	}
+
+	return t, nil
 }
 
 // BoolType is string representation.

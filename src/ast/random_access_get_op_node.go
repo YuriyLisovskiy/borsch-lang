@@ -1,26 +1,26 @@
 package ast
 
-type RandomAccessOperationNode struct {
+type RandomAccessGetOperationNode struct {
 	Operand ExpressionNode
 	Index   ExpressionNode
 
 	rowNumber int
 }
 
-func NewRandomAccessOperationNode(
+func NewRandomAccessGetOperationNode(
 	operand, index ExpressionNode, rowNumber int,
-) RandomAccessOperationNode {
-	return RandomAccessOperationNode{
+) RandomAccessGetOperationNode {
+	return RandomAccessGetOperationNode{
 		Operand:   operand,
 		Index:     index,
 		rowNumber: rowNumber,
 	}
 }
 
-func (n RandomAccessOperationNode) String() string {
+func (n RandomAccessGetOperationNode) String() string {
 	return n.Operand.String() + "[" + n.Index.String() + "]"
 }
 
-func (n RandomAccessOperationNode) RowNumber() int {
+func (n RandomAccessGetOperationNode) RowNumber() int {
 	return n.rowNumber
 }

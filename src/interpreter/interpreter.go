@@ -271,17 +271,28 @@ func (i *Interpreter) executeNode(
 				return nil, err
 			}
 
-			variableNode := node.LeftNode.(ast.VariableNode)
-			err = i.setVar(variableNode.Variable.Text, result)
-			if err != nil {
-				return nil, err
-			}
+			switch assignmentNode := node.LeftNode.(type) {
+			case ast.VariableNode:
+				return nil, i.setVar(assignmentNode.Variable.Text, result)
+			case ast.RandomAccessSetOperationNode:
+				variable, err := i.getVar(assignmentNode.Variable.Text)
+				if err != nil {
+					return nil, err
+				}
 
-			return result, nil
+				variable, err = i.executeRandomAccessSetOp(assignmentNode.Index, variable, result, rootDir, currentFile)
+				if err != nil {
+					return nil, err
+				}
+
+				return nil, i.setVar(assignmentNode.Variable.Text, variable)
+			default:
+				// TODO: обробити помилку
+			}
 		}
 
-	case ast.RandomAccessOperationNode:
-		return i.executeRandomAccessOp(node.Operand, node.Index, rootDir, currentFile)
+	case ast.RandomAccessGetOperationNode:
+		return i.executeRandomAccessGetOp(node.Operand, node.Index, rootDir, currentFile)
 
 	case ast.IfSequenceNode:
 		return i.executeIfSequence(node.Blocks, node.ElseBlock, rootDir, currentFile)

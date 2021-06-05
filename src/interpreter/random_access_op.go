@@ -5,10 +5,9 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/ast"
 	"github.com/YuriyLisovskiy/borsch/src/builtin"
 	"github.com/YuriyLisovskiy/borsch/src/util"
-	"unicode/utf8"
 )
 
-func (i *Interpreter) executeRandomAccessOp(
+func (i *Interpreter) executeRandomAccessGetOp(
 	targetNode, indexNode ast.ExpressionNode, rootDir string, currentFile string,
 ) (builtin.ValueType, error) {
 	indexVal, err := i.executeNode(indexNode, rootDir, currentFile)
@@ -24,17 +23,13 @@ func (i *Interpreter) executeRandomAccessOp(
 		}
 
 		switch target := targetVal.(type) {
-		case builtin.StringType:
-			runesCount := int64(utf8.RuneCountInString(target.Value))
-			if index.Value >= 0 && index.Value < runesCount {
-				runes := []rune(target.Value)
-				return builtin.StringType{Value: string(runes[index.Value])}, nil
-			} else if index.Value < 0 && index.Value >= -runesCount {
-				runes := []rune(target.Value)
-				return builtin.StringType{Value: string(runes[runesCount + index.Value])}, nil
-			} else {
-				return nil, util.RuntimeError("індекс рядка за межами послідовності")
+		case builtin.IterableType:
+			elem, err := target.GetElement(index.Value)
+			if err != nil {
+				return nil, util.RuntimeError(err.Error())
 			}
+
+			return elem, nil
 		default:
 			return nil, util.RuntimeError(fmt.Sprintf(
 				"об'єкт з типом '%s' не підтримує індексування", target.TypeName(),
@@ -42,5 +37,34 @@ func (i *Interpreter) executeRandomAccessOp(
 		}
 	default:
 		return nil, util.RuntimeError("індекси мають бути цілого типу")
+	}
+}
+
+func (i *Interpreter) executeRandomAccessSetOp(
+	indexNode ast.ExpressionNode, variable, value builtin.ValueType,
+	rootDir string, currentFile string,
+) (builtin.ValueType, error) {
+	switch iterable := variable.(type) {
+	case builtin.IterableType:
+		indexVal, err := i.executeNode(indexNode, rootDir, currentFile)
+		if err != nil {
+			return nil, err
+		}
+
+		switch index := indexVal.(type) {
+		case builtin.IntegerNumberType:
+			newIterable, err := iterable.SetElement(index.Value, value)
+			if err != nil {
+				return nil, util.RuntimeError(err.Error())
+			}
+
+			return newIterable, nil
+		default:
+			return nil, util.RuntimeError("індекси мають бути цілого типу")
+		}
+	default:
+		return nil, util.RuntimeError(fmt.Sprintf(
+			"об'єкт з типом '%s' не підтримує індексування", iterable.TypeName(),
+		))
 	}
 }
