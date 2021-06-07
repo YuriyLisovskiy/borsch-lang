@@ -2,26 +2,29 @@ package interpreter
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/src/builtin"
+	"github.com/YuriyLisovskiy/borsch/src/builtin/types"
 	"github.com/YuriyLisovskiy/borsch/src/models"
 	"github.com/YuriyLisovskiy/borsch/src/util"
 )
 
 func (i *Interpreter) executeForEachLoop(
-	indexVar, itemVar models.Token, containerValue builtin.ValueType,
+	indexVar, itemVar models.Token, containerValue types.ValueType,
 	body []models.Token, currentFile string,
-) (builtin.ValueType, error) {
+) (types.ValueType, error) {
 	switch container := containerValue.(type) {
-	case builtin.StringType:
-		runes := []rune(container.Value)
-		for idx, obj := range runes {
-			scope := map[string]builtin.ValueType{}
+	case types.SequentialType:
+		var err error
+		for idx := int64(0); idx < container.Length(); idx++ {
+			scope := map[string]types.ValueType{}
 			if indexVar.Text != "_" {
-				scope[indexVar.Text] = builtin.IntegerNumberType{Value: int64(idx)}
+				scope[indexVar.Text] = types.IntegerType{Value: idx}
 			}
 
 			if itemVar.Text != "_" {
-				scope[itemVar.Text] = builtin.StringType{Value: string(obj)}
+				scope[itemVar.Text], err = container.GetElement(idx)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			result, err := i.executeBlock(scope, body, currentFile)

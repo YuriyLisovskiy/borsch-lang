@@ -10,9 +10,10 @@ var RegisteredIdentifiers = []string{
 
 	// Types + cast functions
 	"рядок",
-	"ціле",
-	"дійсне",
-	"логічне",
+	"цілий",
+	"дійсний",
+	"логічний",
+	"список",
 
 	// Functions
 	"друк",

@@ -105,15 +105,15 @@ func (t TokenType) Description() string {
 
 const nameRegex = "[А-ЩЬЮЯҐЄІЇа-щьюяґєії_][А-ЩЬЮЯҐЄІЇа-щьюяґєії_0-9]*"
 
+var NameRegex = regexp.MustCompile("(" + nameRegex + ")")
+
 var TokenTypesList = map[int]TokenType{
 	SingleLineComment: {
 		Name:  SingleLineComment,
-		//Regex: regexp.MustCompile("^//[^\\n\\r]*.*[^\\n\\r]*"),
 		Regex: regexp.MustCompile("^//[^\\n\\r]+?(?:\\*\\)|[\\n\\r])"),
 	},
 	MultiLineComment: {
 		Name:  MultiLineComment,
-		//Regex: regexp.MustCompile("^//[^\\n\\r]*.*[^\\n\\r]*"),
 		Regex: regexp.MustCompile("^(/\\*)(.|\\n)*?(\\*/)"),
 	},
 	IncludeStdDirective: {
@@ -136,8 +136,6 @@ var TokenTypesList = map[int]TokenType{
 	},
 	IntegerNumber: {
 		Name:  IntegerNumber,
-		//Regex: regexp.MustCompile("^[0-9]+([^.][0-9]+)?"),
-		//Regex: regexp.MustCompile("^\\d+[^\\Df]?"),
 		Regex: regexp.MustCompile("^\\d+"),
 	},
 	String: {

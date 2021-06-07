@@ -74,28 +74,49 @@ func (p *Parser) checkForKeyword(name string) error {
 }
 
 func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
-	number := p.match(models.TokenTypesList[models.RealNumber])
-	if number != nil {
+	if number := p.match(models.TokenTypesList[models.RealNumber]); number != nil {
 		return ast.NewRealTypeNode(*number), nil
 	}
 
-	number = p.match(models.TokenTypesList[models.IntegerNumber])
-	if number != nil {
+	if number := p.match(models.TokenTypesList[models.IntegerNumber]); number != nil {
 		return ast.NewIntegerTypeNode(*number), nil
 	}
 
-	stringToken := p.match(models.TokenTypesList[models.String])
-	if stringToken != nil {
+	if stringToken := p.match(models.TokenTypesList[models.String]); stringToken != nil {
 		return ast.NewStringTypeNode(*stringToken), nil
 	}
 
-	boolean := p.match(models.TokenTypesList[models.Bool])
-	if boolean != nil {
+	if boolean := p.match(models.TokenTypesList[models.Bool]); boolean != nil {
 		return ast.NewBoolTypeNode(*boolean), nil
 	}
 
-	name := p.match(models.TokenTypesList[models.Name])
-	if name != nil {
+	if listStart := p.match(models.TokenTypesList[models.LSquareBracket]); listStart != nil {
+		var values []ast.ExpressionNode
+		if p.match(models.TokenTypesList[models.RSquareBracket]) != nil {
+			return ast.NewListTypeNode(*listStart, values), nil
+		}
+
+		for {
+			valueNode, err := p.parseFormula()
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, valueNode)
+			if p.match(models.TokenTypesList[models.Comma]) == nil {
+				_, err := p.require(models.TokenTypesList[models.RSquareBracket])
+				if err != nil {
+					return nil, err
+				}
+
+				break
+			}
+		}
+
+		return ast.NewListTypeNode(*listStart, values), nil
+	}
+
+	if name := p.match(models.TokenTypesList[models.Name]); name != nil {
 		if p.match(models.TokenTypesList[models.LPar]) != nil {
 			p.pos--
 			return nil, nil

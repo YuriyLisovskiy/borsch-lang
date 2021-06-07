@@ -1,20 +1,25 @@
 package builtin
 
-var FunctionsList = map[string] func (...ValueType) (ValueType, error) {
-	// I/O
-	"друк": Print,
-	"друкр": PrintLn,
-	"ввід": Input,
+import "github.com/YuriyLisovskiy/borsch/src/builtin/types"
 
-	// Cast
-	"ціле": CastToInt,
-	"дійсне": CastToReal,
-	"рядок": CastToString,
-	"логічне": CastToBool,
+var FunctionsList = map[string]func(...types.ValueType) (types.ValueType, error){
+	// I/O
+	"друк":  Print,
+	"друкр": PrintLn,
+	"ввід":  Input,
+
+	// Conversion
+	"цілий":    ToInteger,
+	"дійсний":  ToReal,
+	"рядок":    ToString,
+	"логічний": ToBool,
+	// TODO: список()
 
 	// Common
-	"паніка": Panic,
+	"паніка":     Panic,
 	"середовище": GetEnv,
-	"довжина": Length,
-	//"тип": Type,
+	"довжина":    Length,
+
+	// Containers' manipulation
+	// TODO: додати
 }
