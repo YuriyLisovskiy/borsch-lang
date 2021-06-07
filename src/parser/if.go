@@ -36,7 +36,7 @@ func (p *Parser) parseIfSequence() (ast.ExpressionNode, error) {
 					return nil, err
 				}
 
-				conditionNode, err = p.parseExpression()
+				conditionNode, err = p.parseFormula()
 				if err != nil {
 					return nil, err
 				}
