@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/util"
 	"strconv"
 	"strings"
@@ -21,11 +20,11 @@ func NewRealType(value string) (RealType, error) {
 }
 
 func (t RealType) String() string {
-	return "RealType{" + t.Representation() + "}"
+	return strconv.FormatFloat(t.Value, 'f', -1, 64)
 }
 
 func (t RealType) Representation() string {
-	return fmt.Sprintf("%f", t.Value)
+	return t.String()
 }
 
 func (t RealType) TypeHash() int {

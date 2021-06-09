@@ -85,12 +85,14 @@ func (i *Interpreter) pushScope(scope map[string]types.ValueType) {
 	i.scopes = append(i.scopes, scope)
 }
 
-func (i *Interpreter) popScope() {
+func (i *Interpreter) popScope() map[string]types.ValueType {
 	if len(i.scopes) == 0 {
 		panic("Not enough scopes")
 	}
 
+	scope := i.scopes[len(i.scopes)-1]
 	i.scopes = i.scopes[:len(i.scopes)-1]
+	return scope
 }
 
 func (i *Interpreter) getVar(name string) (types.ValueType, error) {
@@ -331,6 +333,27 @@ func (i *Interpreter) executeNode(
 
 		return list, nil
 
+	case ast.DictionaryTypeNode:
+		dict := types.NewDictionaryType()
+		for keyNode, valueNode := range node.Map {
+			key, err := i.executeNode(keyNode, rootDir, currentFile)
+			if err != nil {
+				return nil, err
+			}
+
+			value, err := i.executeNode(valueNode, rootDir, currentFile)
+			if err != nil {
+				return nil, err
+			}
+
+			err = dict.SetElement(key, value)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return dict, nil
+
 	case ast.VariableNode:
 		val, err := i.getVar(node.Variable.Text)
 		if err != nil {
@@ -345,7 +368,7 @@ func (i *Interpreter) executeNode(
 
 func (i *Interpreter) executeAST(
 	scope map[string]types.ValueType, file string, tree *ast.AST,
-) (types.ValueType, error) {
+) (types.ValueType, map[string]types.ValueType, error) {
 	var filePath string
 	var dir string
 	var err error
@@ -353,12 +376,12 @@ func (i *Interpreter) executeAST(
 		filePath = "<стдввід>"
 		dir, err = os.Getwd()
 		if err != nil {
-			return nil, util.InternalError(err.Error())
+			return nil, nil, util.InternalError(err.Error())
 		}
 	} else {
 		filePath, err = filepath.Abs(file)
 		if err != nil {
-			return nil, util.InternalError(err.Error())
+			return nil, nil, util.InternalError(err.Error())
 		}
 
 		dir = filepath.Dir(filePath)
@@ -366,9 +389,9 @@ func (i *Interpreter) executeAST(
 
 	i.pushScope(scope)
 	for _, node := range tree.CodeNodes {
-		_, err := i.executeNode(node, dir, file)
+		_, err = i.executeNode(node, dir, file)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf(
+			return nil, nil, errors.New(fmt.Sprintf(
 				"  Файл \"%s\", рядок %d\n    %s\n%s",
 				filePath, node.RowNumber(), node.String(), err.Error(),
 			))
@@ -380,7 +403,7 @@ func (i *Interpreter) executeAST(
 	}
 
 	i.popScope()
-	return nil, nil
+	return nil, scope, nil
 }
 
 func (i *Interpreter) executeBlock(
@@ -392,7 +415,7 @@ func (i *Interpreter) executeBlock(
 		return nil, err
 	}
 
-	result, err := i.executeAST(scope, currentFile, asTree)
+	result, _, err := i.executeAST(scope, currentFile, asTree)
 	if err != nil {
 		return nil, err
 	}
@@ -400,25 +423,27 @@ func (i *Interpreter) executeBlock(
 	return result, nil
 }
 
-func (i *Interpreter) Execute(file string, code string) error {
+func (i *Interpreter) Execute(
+	scope map[string]types.ValueType, file string, code string,
+) (map[string]types.ValueType, error) {
 	lexer := src.NewLexer(file, code)
 	tokens, err := lexer.Lex()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	p := parser.NewParser(file, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = i.executeAST(map[string]types.ValueType{}, file, asTree)
+	_, scope, err = i.executeAST(scope, file, asTree)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return scope, nil
 }
 
 func (i *Interpreter) ExecuteFile(filePath string) error {
@@ -431,5 +456,6 @@ func (i *Interpreter) ExecuteFile(filePath string) error {
 		return err
 	}
 
-	return i.Execute(filePath, string(content))
+	_, err = i.Execute(map[string]types.ValueType{}, filePath, string(content))
+	return err
 }

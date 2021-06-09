@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-func Print(args... types.ValueType) (types.ValueType, error) {
+func Print(args ...types.ValueType) (types.ValueType, error) {
 	var strArgs []string
 	for _, arg := range args {
-		strArgs = append(strArgs, arg.Representation())
+		strArgs = append(strArgs, arg.String())
 	}
 
 	fmt.Print(
@@ -27,11 +27,11 @@ func Print(args... types.ValueType) (types.ValueType, error) {
 	return types.NoneType{}, nil
 }
 
-func PrintLn(args... types.ValueType) (types.ValueType, error) {
+func PrintLn(args ...types.ValueType) (types.ValueType, error) {
 	return Print(append(args, types.StringType{Value: "\n"})...)
 }
 
-func Input(args... types.ValueType) (types.ValueType, error) {
+func Input(args ...types.ValueType) (types.ValueType, error) {
 	_, err := Print(args...)
 	if err != nil {
 		return types.NoneType{}, util.InternalError(err.Error())

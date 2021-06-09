@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func ToInteger(args... types.ValueType) (types.ValueType, error) {
+func ToInteger(args ...types.ValueType) (types.ValueType, error) {
 	if len(args) == 0 {
 		return types.IntegerType{Value: 0}, nil
 	}
@@ -45,7 +45,7 @@ func ToInteger(args... types.ValueType) (types.ValueType, error) {
 	}
 }
 
-func ToReal(args... types.ValueType) (types.ValueType, error) {
+func ToReal(args ...types.ValueType) (types.ValueType, error) {
 	if len(args) == 0 {
 		return types.RealType{Value: 0.0}, nil
 	}
@@ -83,7 +83,7 @@ func ToReal(args... types.ValueType) (types.ValueType, error) {
 	}
 }
 
-func ToString(args... types.ValueType) (types.ValueType, error) {
+func ToString(args ...types.ValueType) (types.ValueType, error) {
 	if len(args) == 0 {
 		return types.StringType{Value: ""}, nil
 	}
@@ -98,7 +98,7 @@ func ToString(args... types.ValueType) (types.ValueType, error) {
 	case types.StringType:
 		return vt, nil
 	case types.RealType, types.IntegerType, types.BoolType, types.NoneType:
-		return types.StringType{Value: vt.Representation()}, nil
+		return types.StringType{Value: vt.String()}, nil
 	default:
 		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як рядок", args[0].TypeName(),
@@ -106,7 +106,7 @@ func ToString(args... types.ValueType) (types.ValueType, error) {
 	}
 }
 
-func ToBool(args... types.ValueType) (types.ValueType, error) {
+func ToBool(args ...types.ValueType) (types.ValueType, error) {
 	if len(args) == 0 {
 		return types.BoolType{Value: false}, nil
 	}

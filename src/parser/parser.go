@@ -116,6 +116,42 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 		return ast.NewListTypeNode(*listStart, values), nil
 	}
 
+	if dictStart := p.match(models.TokenTypesList[models.LCurlyBracket]); dictStart != nil {
+		if p.match(models.TokenTypesList[models.RCurlyBracket]) != nil {
+			return ast.NewDictionaryTypeNode(*dictStart), nil
+		}
+
+		dict := ast.NewDictionaryTypeNode(*dictStart)
+		for {
+			keyNode, err := p.parseFormula()
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = p.require(models.TokenTypesList[models.Colon])
+			if err != nil {
+				return nil, err
+			}
+
+			valueNode, err := p.parseFormula()
+			if err != nil {
+				return nil, err
+			}
+
+			dict.Map[keyNode] = valueNode
+			if p.match(models.TokenTypesList[models.Comma]) == nil {
+				_, err := p.require(models.TokenTypesList[models.RCurlyBracket])
+				if err != nil {
+					return nil, err
+				}
+
+				break
+			}
+		}
+
+		return dict, nil
+	}
+
 	if name := p.match(models.TokenTypesList[models.Name]); name != nil {
 		if p.match(models.TokenTypesList[models.LPar]) != nil {
 			p.pos--
@@ -130,7 +166,7 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 		return ast.NewVariableNode(*name), nil
 	}
 
-	return nil, errors.New("очікується змінна або число")
+	return nil, errors.New("очікується змінна або вираз")
 }
 
 func (p *Parser) parseRandomAccessOperation() (int, ast.ExpressionNode, error) {
@@ -475,9 +511,15 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 	return codeNode, nil
 }
 
+func (p *Parser) skipSemicolons() {
+	for p.match(models.TokenTypesList[models.Semicolon]) != nil {
+	}
+}
+
 func (p *Parser) Parse() (*ast.AST, error) {
 	asTree := ast.NewAST()
 	for p.pos < len(p.tokens) {
+		p.skipSemicolons()
 		codeNode, err := p.parseRow()
 		if err != nil {
 			if p.pos == 0 {
@@ -494,6 +536,7 @@ func (p *Parser) Parse() (*ast.AST, error) {
 		}
 
 		asTree.AddNode(codeNode)
+		p.skipSemicolons()
 	}
 
 	return asTree, nil

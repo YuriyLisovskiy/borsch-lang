@@ -4,11 +4,11 @@ type NoneType struct {
 }
 
 func (t NoneType) String() string {
-	return "NoneType{" + t.Representation() + "}"
+	return "Порожнеча"
 }
 
 func (t NoneType) Representation() string {
-	return "Порожнеча"
+	return t.String()
 }
 
 func (t NoneType) TypeHash() int {

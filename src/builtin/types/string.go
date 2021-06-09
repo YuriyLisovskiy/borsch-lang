@@ -11,11 +11,11 @@ type StringType struct {
 }
 
 func (t StringType) String() string {
-	return "StringType{\"" + t.Representation() + "\"}"
+	return t.Value
 }
 
 func (t StringType) Representation() string {
-	return t.Value
+	return "\"" + t.String() + "\""
 }
 
 func (t StringType) TypeHash() int {

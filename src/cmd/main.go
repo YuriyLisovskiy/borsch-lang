@@ -3,9 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/YuriyLisovskiy/borsch/src/builtin/types"
 	interpreter2 "github.com/YuriyLisovskiy/borsch/src/interpreter"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -19,19 +19,26 @@ func main() {
 		}
 	} else {
 		reader := bufio.NewReader(os.Stdin)
+		scope := map[string]types.ValueType{}
+		var err error
 		for {
 			fmt.Print(">>> ")
-			code, err := reader.ReadString('\n')
-			if err != nil {
-				panic(err)
+			code := ""
+			for {
+				fragment, err := reader.ReadString('\n')
+				if err != nil {
+					panic(err)
+				}
+
+				if fragment == "\n" {
+					break
+				} else {
+					code += fragment
+					fmt.Print("... ")
+				}
 			}
 
-			code = strings.TrimSuffix(code, "\n")
-			if code == "вихід()" {
-				break
-			}
-
-			err = interpreter.Execute("<стдввід>", code)
+			scope, err = interpreter.Execute(scope, "<стдввід>", code)
 			if err != nil {
 				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 			}

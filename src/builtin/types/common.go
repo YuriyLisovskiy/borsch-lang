@@ -9,6 +9,7 @@ const (
 	stringType
 	boolType
 	listType
+	dictionaryType
 )
 
 type ValueType interface {
@@ -48,6 +49,8 @@ func GetTypeName(typeValue int) string {
 		return "логічний"
 	case listType:
 		return "список"
+	case dictionaryType:
+		return "словник"
 	default:
 		return "невідомий"
 	}

@@ -1,6 +1,8 @@
 package builtin
 
-import "github.com/YuriyLisovskiy/borsch/src/builtin/types"
+import (
+	"github.com/YuriyLisovskiy/borsch/src/builtin/types"
+)
 
 var FunctionsList = map[string]func(...types.ValueType) (types.ValueType, error){
 	// I/O
@@ -14,12 +16,21 @@ var FunctionsList = map[string]func(...types.ValueType) (types.ValueType, error)
 	"рядок":    ToString,
 	"логічний": ToBool,
 	// TODO: список()
+	// TODO: словник()
 
 	// Common
 	"паніка":     Panic,
 	"середовище": GetEnv,
-	"довжина":    Length,
 
-	// Containers' manipulation
-	// TODO: додати
+	// System calls
+	"вихід": Exit,
+
+	// Containers utilities
+	"довжина": Length,
+
+	// List utilities
+	"додати": AppendToList,
+
+	// Dictionary utilities
+	"вилучити": RemoveFromDictionary,
 }

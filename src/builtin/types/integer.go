@@ -20,11 +20,11 @@ func NewIntegerType(value string) (IntegerType, error) {
 }
 
 func (t IntegerType) String() string {
-	return "IntegerType{" + t.Representation() + "}"
+	return fmt.Sprintf("%d", t.Value)
 }
 
 func (t IntegerType) Representation() string {
-	return fmt.Sprintf("%d", t.Value)
+	return t.String()
 }
 
 func (t IntegerType) TypeHash() int {

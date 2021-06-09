@@ -5,7 +5,7 @@ import (
 )
 
 type ListType struct {
-	Values    []ValueType
+	Values []ValueType
 }
 
 func NewListType() ListType {
@@ -15,7 +15,7 @@ func NewListType() ListType {
 }
 
 func (t ListType) String() string {
-	return "ListType{\"" + t.Representation() + "\"}"
+	return t.Representation()
 }
 
 func (t ListType) Representation() string {

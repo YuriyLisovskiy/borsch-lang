@@ -14,6 +14,7 @@ var RegisteredIdentifiers = []string{
 	"дійсний",
 	"логічний",
 	"список",
+	"словник",
 
 	// Functions
 	"друк",
@@ -22,4 +23,5 @@ var RegisteredIdentifiers = []string{
 	"середовище",
 	"паніка",
 	"довжина",
+	"вихід",
 }

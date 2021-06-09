@@ -26,15 +26,15 @@ func NewBoolType(value string) (BoolType, error) {
 }
 
 func (t BoolType) String() string {
-	return "\"" + t.Representation() + "\""
-}
-
-func (t BoolType) Representation() string {
 	if t.Value {
 		return "істина"
 	}
 
 	return "хиба"
+}
+
+func (t BoolType) Representation() string {
+	return t.String()
 }
 
 func (t BoolType) TypeHash() int {
