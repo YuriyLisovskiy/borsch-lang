@@ -134,3 +134,59 @@ func ToBool(args ...types.ValueType) (types.ValueType, error) {
 		))
 	}
 }
+
+func ToList(args ...types.ValueType) (types.ValueType, error) {
+	list := types.NewListType()
+	if len(args) == 0 {
+		return list, nil
+	}
+
+	for _, arg := range args {
+		list.Values = append(list.Values, arg)
+	}
+
+	return list, nil
+}
+
+func ToDictionary(args ...types.ValueType) (types.ValueType, error) {
+	dict := types.NewDictionaryType()
+	if len(args) == 0 {
+		return dict, nil
+	}
+
+	if len(args) != 2 {
+		return nil, util.RuntimeError(fmt.Sprintf(
+			"функція 'словник()' приймає два аргументи, або жодного (отримано %d)", len(args),
+		))
+	}
+
+	switch keys := args[0].(type) {
+	case types.ListType:
+		switch values := args[1].(type) {
+		case types.ListType:
+			if keys.Length() != values.Length() {
+				return nil, util.RuntimeError(fmt.Sprintf(
+					"довжина списку ключів має співпадати з довжиною списку значень",
+				))
+			}
+
+			length := keys.Length()
+			for i := int64(0); i < length; i++ {
+				err := dict.SetElement(keys.Values[i], values.Values[i])
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			return dict, nil
+		default:
+			return nil, util.RuntimeError(fmt.Sprintf(
+				"функція 'словник()' другим аргументом приймає список значень",
+			))
+		}
+	default:
+		return nil, util.RuntimeError(fmt.Sprintf(
+			"функція 'словник()' першим аргументом приймає список ключів",
+		))
+	}
+}

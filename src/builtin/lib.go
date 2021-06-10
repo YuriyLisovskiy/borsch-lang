@@ -15,8 +15,8 @@ var FunctionsList = map[string]func(...types.ValueType) (types.ValueType, error)
 	"дійсний":  ToReal,
 	"рядок":    ToString,
 	"логічний": ToBool,
-	// TODO: список()
-	// TODO: словник()
+	"список":   ToList,
+	"словник":  ToDictionary,
 
 	// Common
 	"паніка":     Panic,

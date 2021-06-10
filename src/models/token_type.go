@@ -103,9 +103,9 @@ func (t TokenType) Description() string {
 	))
 }
 
-const nameRegex = "[А-ЩЬЮЯҐЄІЇа-щьюяґєії_][А-ЩЬЮЯҐЄІЇа-щьюяґєії_0-9]*"
+const RawNameRegex = "[А-ЩЬЮЯҐЄІЇа-щьюяґєії_][А-ЩЬЮЯҐЄІЇа-щьюяґєії_0-9]*"
 
-var NameRegex = regexp.MustCompile("(" + nameRegex + ")")
+var NameRegex = regexp.MustCompile("(" + RawNameRegex + ")")
 
 var TokenTypesList = map[int]TokenType{
 	SingleLineComment: {
@@ -256,6 +256,6 @@ var TokenTypesList = map[int]TokenType{
 	},
 	Name: {
 		Name:  Name,
-		Regex: regexp.MustCompile("^" + nameRegex),
+		Regex: regexp.MustCompile("^" + RawNameRegex),
 	},
 }

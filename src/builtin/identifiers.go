@@ -24,4 +24,6 @@ var RegisteredIdentifiers = []string{
 	"паніка",
 	"довжина",
 	"вихід",
+	"додати",
+	"вилучити",
 }

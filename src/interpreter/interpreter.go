@@ -376,22 +376,23 @@ func (i *Interpreter) executeAST(
 		filePath = "<стдввід>"
 		dir, err = os.Getwd()
 		if err != nil {
-			return nil, nil, util.InternalError(err.Error())
+			return nil, scope, util.InternalError(err.Error())
 		}
 	} else {
 		filePath, err = filepath.Abs(file)
 		if err != nil {
-			return nil, nil, util.InternalError(err.Error())
+			return nil, scope, util.InternalError(err.Error())
 		}
 
 		dir = filepath.Dir(filePath)
 	}
 
+	var result types.ValueType = nil
 	i.pushScope(scope)
 	for _, node := range tree.CodeNodes {
-		_, err = i.executeNode(node, dir, file)
+		result, err = i.executeNode(node, dir, file)
 		if err != nil {
-			return nil, nil, errors.New(fmt.Sprintf(
+			return nil, scope, errors.New(fmt.Sprintf(
 				"  Файл \"%s\", рядок %d\n    %s\n%s",
 				filePath, node.RowNumber(), node.String(), err.Error(),
 			))
@@ -402,8 +403,8 @@ func (i *Interpreter) executeAST(
 		//}
 	}
 
-	i.popScope()
-	return nil, scope, nil
+	scope = i.popScope()
+	return result, scope, nil
 }
 
 func (i *Interpreter) executeBlock(
@@ -425,25 +426,26 @@ func (i *Interpreter) executeBlock(
 
 func (i *Interpreter) Execute(
 	scope map[string]types.ValueType, file string, code string,
-) (map[string]types.ValueType, error) {
+) (types.ValueType, map[string]types.ValueType, error) {
 	lexer := src.NewLexer(file, code)
 	tokens, err := lexer.Lex()
 	if err != nil {
-		return nil, err
+		return nil, scope, err
 	}
 
 	p := parser.NewParser(file, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
-		return nil, err
+		return nil, scope, err
 	}
 
-	_, scope, err = i.executeAST(scope, file, asTree)
+	var result types.ValueType
+	result, scope, err = i.executeAST(scope, file, asTree)
 	if err != nil {
-		return nil, err
+		return nil, scope, err
 	}
 
-	return scope, nil
+	return result, scope, nil
 }
 
 func (i *Interpreter) ExecuteFile(filePath string) error {
@@ -456,6 +458,6 @@ func (i *Interpreter) ExecuteFile(filePath string) error {
 		return err
 	}
 
-	_, err = i.Execute(map[string]types.ValueType{}, filePath, string(content))
+	_, _, err = i.Execute(map[string]types.ValueType{}, filePath, string(content))
 	return err
 }

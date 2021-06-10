@@ -2,7 +2,7 @@ all: build
 
 build:
 	mkdir -p bin/ && \
-	go build -o bin/borsch src/cmd/main.go
+	go build -o bin/borsch src/cli/main.go
 
 install:
 	mkdir -p /usr/local/lib/borsch-lang/std

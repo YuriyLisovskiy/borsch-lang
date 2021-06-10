@@ -86,7 +86,7 @@ func (i *Interpreter) executeArithmeticOp(
 			}
 
 			return types.RealType{
-				Value: float64(leftVal.Value) / right.(types.RealType).Value,
+				Value: float64(leftVal.Value) / float64(right.(types.IntegerType).Value),
 			}, nil
 		}
 
