@@ -103,7 +103,7 @@ func (i *Interpreter) getVar(name string) (types.ValueType, error) {
 		}
 	}
 
-	return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+	return nil, util.RuntimeError(fmt.Sprintf(
 		"змінну з назвою '%s' не знайдено", name,
 	))
 }
@@ -424,7 +424,7 @@ func (i *Interpreter) executeAST(
 
 	var result types.ValueType = nil
 	i.pushScope(scope)
-	for _, node := range tree.CodeNodes {
+	for _, node := range tree.Nodes {
 		result, err = i.executeNode(node, dir, file)
 		if err != nil {
 			return nil, scope, errors.New(fmt.Sprintf(

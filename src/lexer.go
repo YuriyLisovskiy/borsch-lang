@@ -113,7 +113,7 @@ func (l *Lexer) nextToken() (bool, error) {
 		leftPos++
 	}
 
-	codeFragment := string(runes[leftPos:rightPos-1])
+	codeFragment := string(runes[leftPos : rightPos-1])
 	underline := strings.Repeat(" ", len(runes[leftPos:l.pos])) + "^"
 	return false, errors.New(fmt.Sprintf(
 		"  Файл \"%s\", рядок %d\n    %s\n    %s\n%s",

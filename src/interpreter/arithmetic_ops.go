@@ -20,16 +20,16 @@ func (i *Interpreter) executeArithmeticOp(
 ) (types.ValueType, error) {
 	left, err := i.executeNode(leftNode, rootDir, currentFile)
 	if err != nil {
-		return types.NoneType{}, err
+		return nil, err
 	}
 
 	right, err := i.executeNode(rightNode, rootDir, currentFile)
 	if err != nil {
-		return types.NoneType{}, err
+		return nil, err
 	}
 
 	if left.TypeHash() != right.TypeHash() {
-		return types.NoneType{}, util.RuntimeError(
+		return nil, util.RuntimeError(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
 				opType.Description(), left.TypeName(), right.TypeName(),
@@ -97,7 +97,7 @@ func (i *Interpreter) executeArithmeticOp(
 		case types.RealType:
 			rightVal := right.(types.RealType).Value
 			if rightVal == 0 {
-				return types.NoneType{}, util.RuntimeError("ділення на нуль")
+				return nil, util.RuntimeError("ділення на нуль")
 			}
 
 			return types.RealType{
@@ -106,7 +106,7 @@ func (i *Interpreter) executeArithmeticOp(
 		case types.IntegerType:
 			rightVal := right.(types.IntegerType).Value
 			if rightVal == 0 {
-				return types.NoneType{}, util.RuntimeError("ділення на нуль")
+				return nil, util.RuntimeError("ділення на нуль")
 			}
 
 			return types.RealType{
@@ -115,7 +115,7 @@ func (i *Interpreter) executeArithmeticOp(
 		case types.BoolType:
 			rightVal := right.(types.BoolType).Value
 			if !rightVal {
-				return types.NoneType{}, util.RuntimeError("ділення на нуль")
+				return nil, util.RuntimeError("ділення на нуль")
 			}
 
 			return types.RealType{
@@ -124,10 +124,10 @@ func (i *Interpreter) executeArithmeticOp(
 		}
 
 	default:
-		return types.NoneType{}, util.RuntimeError("невідомий оператор")
+		return nil, util.RuntimeError("невідомий оператор")
 	}
 
-	return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+	return nil, util.RuntimeError(fmt.Sprintf(
 		"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
 		opTypeNames[opType], left.TypeName(), right.TypeName(),
 	))

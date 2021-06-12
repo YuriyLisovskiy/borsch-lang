@@ -14,12 +14,12 @@ func compareNones(left, right types.NoneType, opType Operator) (types.ValueType,
 	case notEqualsOp:
 		return types.BoolType{Value: false}, nil
 	case greaterOp, greaterOrEqualsOp, lessOp, lessOrEqualsOp:
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"оператор %s невизначений для значень типів '%s' та '%s'",
 			opType.Description(), left.TypeName(), right.TypeName(),
 		))
 	default:
-		return types.NoneType{}, util.RuntimeError("невідомий оператор")
+		return nil, util.RuntimeError("невідомий оператор")
 	}
 }
 
@@ -38,7 +38,7 @@ func compareReals(left, right types.RealType, opType Operator) (types.ValueType,
 	case lessOrEqualsOp:
 		return types.BoolType{Value: left.Value <= right.Value}, nil
 	default:
-		return types.NoneType{}, util.RuntimeError("невідомий оператор")
+		return nil, util.RuntimeError("невідомий оператор")
 	}
 }
 
@@ -57,7 +57,7 @@ func compareIntegers(left, right types.IntegerType, opType Operator) (types.Valu
 	case lessOrEqualsOp:
 		return types.BoolType{Value: left.Value <= right.Value}, nil
 	default:
-		return types.NoneType{}, util.RuntimeError("невідомий оператор")
+		return nil, util.RuntimeError("невідомий оператор")
 	}
 }
 
@@ -76,7 +76,7 @@ func compareStrings(left, right types.StringType, opType Operator) (types.ValueT
 	case lessOrEqualsOp:
 		return types.BoolType{Value: left.Value <= right.Value}, nil
 	default:
-		return types.NoneType{}, util.RuntimeError("невідомий оператор")
+		return nil, util.RuntimeError("невідомий оператор")
 	}
 }
 
@@ -87,12 +87,12 @@ func compareBooleans(left, right types.BoolType, opType Operator) (types.ValueTy
 	case notEqualsOp:
 		return types.BoolType{Value: left.Value != right.Value}, nil
 	case greaterOp, greaterOrEqualsOp, lessOp, lessOrEqualsOp:
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"оператор %s невизначений для значень типів '%s' та '%s'",
 			opType.Description(), left.TypeName(), right.TypeName(),
 		))
 	default:
-		return types.NoneType{}, util.RuntimeError("невідомий оператор")
+		return nil, util.RuntimeError("невідомий оператор")
 	}
 }
 
@@ -101,16 +101,16 @@ func (i *Interpreter) executeComparisonOp(
 ) (types.ValueType, error) {
 	left, err := i.executeNode(leftNode, rootDir, currentFile)
 	if err != nil {
-		return types.NoneType{}, err
+		return nil, err
 	}
 
 	right, err := i.executeNode(rightNode, rootDir, currentFile)
 	if err != nil {
-		return types.NoneType{}, err
+		return nil, err
 	}
 
 	if left.TypeHash() != right.TypeHash() {
-		return types.NoneType{}, util.RuntimeError(
+		return nil, util.RuntimeError(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
 				opTypeNames[opType], left.TypeName(), right.TypeName(),
@@ -131,7 +131,7 @@ func (i *Interpreter) executeComparisonOp(
 		return compareBooleans(leftV, right.(types.BoolType), opType)
 	}
 
-	return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+	return nil, util.RuntimeError(fmt.Sprintf(
 		"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
 		opTypeNames[opType], left.TypeName(), right.TypeName(),
 	))

@@ -1,7 +1,7 @@
 package ast
 
 type AST struct {
-	CodeNodes []ExpressionNode
+	Nodes []ExpressionNode
 }
 
 func NewAST() *AST {
@@ -11,7 +11,7 @@ func NewAST() *AST {
 }
 
 func (a *AST) AddNode(node ExpressionNode) {
-	a.CodeNodes = append(a.CodeNodes, node)
+	a.Nodes = append(a.Nodes, node)
 }
 
 func (a AST) String() string {

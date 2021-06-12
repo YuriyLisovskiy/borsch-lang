@@ -25,12 +25,8 @@ var FunctionsList = map[string]func(...types.ValueType) (types.ValueType, error)
 	// System calls
 	"вихід": Exit,
 
-	// Containers utilities
+	// Utilities
 	"довжина": Length,
-
-	// List utilities
 	"додати": AppendToList,
-
-	// Dictionary utilities
 	"вилучити": RemoveFromDictionary,
 }

@@ -233,7 +233,6 @@ func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 		}
 
 		if randomAccessOpNode != nil {
-			//node = ast.NewRandomAccessGetOperationNode(node, indexNode, rowNumber)
 			node = randomAccessOpNode
 		}
 

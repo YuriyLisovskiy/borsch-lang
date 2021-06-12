@@ -12,16 +12,16 @@ func (i *Interpreter) executeLogicalOp(
 ) (types.ValueType, error) {
 	left, err := i.executeNode(leftNode, rootDir, currentFile)
 	if err != nil {
-		return types.NoneType{}, err
+		return nil, err
 	}
 
 	right, err := i.executeNode(rightNode, rootDir, currentFile)
 	if err != nil {
-		return types.NoneType{}, err
+		return nil, err
 	}
 
 	if left.TypeHash() != right.TypeHash() {
-		return types.NoneType{}, util.RuntimeError(
+		return nil, util.RuntimeError(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
 				opType.Description(), left.TypeName(), right.TypeName(),
@@ -46,10 +46,10 @@ func (i *Interpreter) executeLogicalOp(
 		}
 
 	default:
-		return types.NoneType{}, util.RuntimeError("невідомий оператор")
+		return nil, util.RuntimeError("невідомий оператор")
 	}
 
-	return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+	return nil, util.RuntimeError(fmt.Sprintf(
 		"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
 		opType.Description(), left.TypeName(), right.TypeName(),
 	))
