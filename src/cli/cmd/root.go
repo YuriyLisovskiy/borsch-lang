@@ -29,7 +29,7 @@ The source code is available at https://github.com/YuriyLisovskiy/borsch-lang`,
 		}
 
 		if len(stdRoot) == 0 {
-			fmt.Print("Warning: BORSCH_STD var is required for using standard library\n\n")
+			fmt.Print("Увага: змінна середовища BORSCH_STD необхідна для використання стандартної бібліотеки\n\n")
 		}
 
 		interpret := interpreter.NewInterpreter(stdRoot)

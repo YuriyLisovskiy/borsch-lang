@@ -28,7 +28,7 @@ func (t RealType) Representation() string {
 }
 
 func (t RealType) TypeHash() int {
-	return realType
+	return RealTypeHash
 }
 
 func (t RealType) TypeName() string {

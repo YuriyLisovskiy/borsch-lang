@@ -7,6 +7,14 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/util"
 )
 
+func boolToInt(v bool) int64 {
+	if v {
+		return 1
+	}
+
+	return 0
+}
+
 func (i *Interpreter) executeArithmeticOp(
 	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType Operator, rootDir string, currentFile string,
 ) (types.ValueType, error) {
@@ -44,6 +52,14 @@ func (i *Interpreter) executeArithmeticOp(
 			return types.StringType{
 				Value: leftVal.Value + right.(types.StringType).Value,
 			}, nil
+		case types.BoolType:
+			return types.IntegerType{
+				Value: boolToInt(leftVal.Value) + boolToInt(right.(types.BoolType).Value),
+			}, nil
+		case types.ListType:
+			return types.ListType{
+				Values: append(leftVal.Values, right.(types.ListType).Values...),
+			}, nil
 		}
 
 	case subOp:
@@ -56,6 +72,10 @@ func (i *Interpreter) executeArithmeticOp(
 			return types.IntegerType{
 				Value: leftVal.Value - right.(types.IntegerType).Value,
 			}, nil
+		case types.BoolType:
+			return types.IntegerType{
+				Value: boolToInt(leftVal.Value) - boolToInt(right.(types.BoolType).Value),
+			}, nil
 		}
 	case mulOp:
 		switch leftVal := left.(type) {
@@ -66,6 +86,10 @@ func (i *Interpreter) executeArithmeticOp(
 		case types.IntegerType:
 			return types.IntegerType{
 				Value: leftVal.Value * right.(types.IntegerType).Value,
+			}, nil
+		case types.BoolType:
+			return types.IntegerType{
+				Value: boolToInt(leftVal.Value) * boolToInt(right.(types.BoolType).Value),
 			}, nil
 		}
 	case divOp:
@@ -87,6 +111,15 @@ func (i *Interpreter) executeArithmeticOp(
 
 			return types.RealType{
 				Value: float64(leftVal.Value) / float64(right.(types.IntegerType).Value),
+			}, nil
+		case types.BoolType:
+			rightVal := right.(types.BoolType).Value
+			if !rightVal {
+				return types.NoneType{}, util.RuntimeError("ділення на нуль")
+			}
+
+			return types.RealType{
+				Value: float64(boolToInt(leftVal.Value) / boolToInt(right.(types.BoolType).Value)),
 			}, nil
 		}
 

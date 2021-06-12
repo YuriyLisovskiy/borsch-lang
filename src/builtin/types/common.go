@@ -3,13 +3,13 @@ package types
 import "errors"
 
 const (
-	noneType = iota
-	realType
-	integerType
-	stringType
-	boolType
-	listType
-	dictionaryType
+	NoneTypeHash = iota
+	RealTypeHash
+	IntegerTypeHash
+	StringTypeHash
+	BoolTypeHash
+	ListTypeHash
+	DictionaryTypeHash
 )
 
 type ValueType interface {
@@ -23,6 +23,7 @@ type SequentialType interface {
 	Length() int64
 	GetElement(int64) (ValueType, error)
 	SetElement(int64, ValueType) (ValueType, error)
+	Slice(int64, int64) (ValueType, error)
 }
 
 func getIndex(index, length int64) (int64, error) {
@@ -32,24 +33,24 @@ func getIndex(index, length int64) (int64, error) {
 		return length + index, nil
 	}
 
-	return 0, errors.New("індекс рядка за межами послідовності")
+	return 0, errors.New("індекс за межами послідовності")
 }
 
 func GetTypeName(typeValue int) string {
 	switch typeValue {
-	case noneType:
+	case NoneTypeHash:
 		return "без типу"
-	case realType:
+	case RealTypeHash:
 		return "дійсний"
-	case integerType:
+	case IntegerTypeHash:
 		return "цілий"
-	case stringType:
+	case StringTypeHash:
 		return "рядок"
-	case boolType:
+	case BoolTypeHash:
 		return "логічний"
-	case listType:
+	case ListTypeHash:
 		return "список"
-	case dictionaryType:
+	case DictionaryTypeHash:
 		return "словник"
 	default:
 		return "невідомий"

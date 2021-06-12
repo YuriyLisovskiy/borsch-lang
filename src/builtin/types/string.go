@@ -19,7 +19,7 @@ func (t StringType) Representation() string {
 }
 
 func (t StringType) TypeHash() int {
-	return stringType
+	return StringTypeHash
 }
 
 func (t StringType) TypeName() string {
@@ -60,4 +60,22 @@ func (t StringType) SetElement(index int64, value ValueType) (ValueType, error) 
 	}
 
 	return t, nil
+}
+
+func (t StringType) Slice(from, to int64) (ValueType, error) {
+	fromIdx, err := getIndex(from, t.Length())
+	if err != nil {
+		return nil, err
+	}
+
+	toIdx, err := getIndex(to, t.Length())
+	if err != nil {
+		return nil, err
+	}
+
+	if fromIdx > toIdx {
+		return nil, errors.New("індекс рядка за межами послідовності")
+	}
+
+	return StringType{Value: t.Value[fromIdx:toIdx]}, nil
 }

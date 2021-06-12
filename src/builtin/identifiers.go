@@ -1,29 +1,35 @@
 package builtin
 
-var RegisteredIdentifiers = []string{
+const (
+	ConstantKeywordId = iota
+	KeywordId
+	FunctionId
+)
+
+var RegisteredIdentifiers = map[string]int{
 	// Keyword names
-	"істина",
-	"хиба",
-	"якщо",
-	"інакше",
-	"для",
+	"істина": ConstantKeywordId,
+	"хиба": ConstantKeywordId,
+	"якщо": KeywordId,
+	"інакше": KeywordId,
+	"для": KeywordId,
 
 	// Types + cast functions
-	"рядок",
-	"цілий",
-	"дійсний",
-	"логічний",
-	"список",
-	"словник",
+	"рядок": FunctionId,
+	"цілий": FunctionId,
+	"дійсний": FunctionId,
+	"логічний": FunctionId,
+	"список": FunctionId,
+	"словник": FunctionId,
 
 	// Functions
-	"друк",
-	"друкр",
-	"ввід",
-	"середовище",
-	"паніка",
-	"довжина",
-	"вихід",
-	"додати",
-	"вилучити",
+	"друк": FunctionId,
+	"друкр": FunctionId,
+	"ввід": FunctionId,
+	"середовище": FunctionId,
+	"паніка": FunctionId,
+	"довжина": FunctionId,
+	"вихід": FunctionId,
+	"додати": FunctionId,
+	"вилучити": FunctionId,
 }

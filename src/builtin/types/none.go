@@ -12,7 +12,7 @@ func (t NoneType) Representation() string {
 }
 
 func (t NoneType) TypeHash() int {
-	return noneType
+	return NoneTypeHash
 }
 
 func (t NoneType) TypeName() string {

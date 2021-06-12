@@ -28,7 +28,7 @@ func (t IntegerType) Representation() string {
 }
 
 func (t IntegerType) TypeHash() int {
-	return integerType
+	return IntegerTypeHash
 }
 
 func (t IntegerType) TypeName() string {

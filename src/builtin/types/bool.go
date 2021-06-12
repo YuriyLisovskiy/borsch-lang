@@ -38,7 +38,7 @@ func (t BoolType) Representation() string {
 }
 
 func (t BoolType) TypeHash() int {
-	return boolType
+	return BoolTypeHash
 }
 
 func (t BoolType) TypeName() string {

@@ -49,7 +49,7 @@ func (t DictionaryType) Representation() string {
 }
 
 func (t DictionaryType) TypeHash() int {
-	return dictionaryType
+	return DictionaryTypeHash
 }
 
 func (t DictionaryType) TypeName() string {

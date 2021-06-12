@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/YuriyLisovskiy/borsch/src/builtin"
 	"github.com/YuriyLisovskiy/borsch/src/builtin/types"
 	"github.com/YuriyLisovskiy/borsch/src/interpreter"
 	"github.com/YuriyLisovskiy/borsch/src/models"
@@ -14,13 +15,19 @@ import (
 )
 
 var (
-	historyFile  = filepath.Join(os.TempDir(), ".borsch_interactive_console_history")
-	keywords = []string{
-		"істина", "хиба", "якщо(", "інакше", "для(",
-		"рядок(", "цілий(", "дійсний(", "логічний(", "список(", "словник(",
-		"друк(", "друкр(", "ввід(", "середовище(", "паніка(", "довжина(", "вихід(", "додати(", "вилучити(",
-	}
+	historyFile = filepath.Join(os.TempDir(), ".borsch_interactive_console_history")
+	keywords    []string
 )
+
+func init() {
+	for name, id := range builtin.RegisteredIdentifiers {
+		if id != builtin.ConstantKeywordId && name != "інакше" {
+			keywords = append(keywords, name+"(")
+		} else {
+			keywords = append(keywords, name)
+		}
+	}
+}
 
 func inputToHistory(editor *liner.State, prompt string) (fragment string, quit bool) {
 	var err error
@@ -47,7 +54,7 @@ func getPromptText(iteration int) string {
 
 func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 	editor := liner.NewLiner()
-	defer func () {
+	defer func() {
 		if err := editor.Close(); err != nil {
 			panic(err)
 		}

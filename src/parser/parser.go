@@ -61,13 +61,11 @@ func (p *Parser) matchBinaryOperator() *models.Token {
 }
 
 func (p *Parser) checkForKeyword(name string) error {
-	for _, identifier := range builtin.RegisteredIdentifiers {
-		if identifier == name {
-			return errors.New(fmt.Sprintf(
-				"неможливо використати ідентифікатор '%s', осткільки він є вбудованим",
-				name,
-			))
-		}
+	if _, ok := builtin.RegisteredIdentifiers[name]; ok {
+		return errors.New(fmt.Sprintf(
+			"неможливо використати ідентифікатор '%s', осткільки він є вбудованим",
+			name,
+		))
 	}
 
 	return nil
@@ -169,22 +167,48 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 	return nil, errors.New("очікується змінна або вираз")
 }
 
-func (p *Parser) parseRandomAccessOperation() (int, ast.ExpressionNode, error) {
+func (p *Parser) parseRandomAccessOperation(name *models.Token, expr ast.ExpressionNode) (ast.ExpressionNode, error) {
 	if lSquareBracket := p.match(models.TokenTypesList[models.LSquareBracket]); lSquareBracket != nil {
 		indexNode, err := p.parseFormula()
 		if err != nil {
-			return 0, nil, err
+			return nil, err
+		}
+
+		token, err := p.require(
+			models.TokenTypesList[models.RSquareBracket], models.TokenTypesList[models.Colon],
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if token.Type.Name == models.RSquareBracket {
+			if name != nil {
+				return ast.NewRandomAccessSetOperationNode(*name, indexNode, lSquareBracket.Row), nil
+			} else if expr != nil {
+				return ast.NewRandomAccessGetOperationNode(expr, indexNode, lSquareBracket.Row), nil
+			}
+
+			panic(errors.New("unknown operation got"))
+		}
+
+		if token.Type.Name != models.Colon {
+			panic(errors.New("got invalid token"))
+		}
+
+		rIndexNode, err := p.parseFormula()
+		if err != nil {
+			return nil, err
 		}
 
 		_, err = p.require(models.TokenTypesList[models.RSquareBracket])
 		if err != nil {
-			return 0, nil, err
+			return nil, err
 		}
 
-		return lSquareBracket.Row, indexNode, nil
+		return ast.NewListSlicingNode(expr, indexNode, rIndexNode, lSquareBracket.Row), nil
 	}
 
-	return 0, nil, nil
+	return nil, nil
 }
 
 func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
@@ -203,13 +227,14 @@ func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		rowNumber, indexNode, err := p.parseRandomAccessOperation()
+		randomAccessOpNode, err := p.parseRandomAccessOperation(nil, node)
 		if err != nil {
 			return nil, err
 		}
 
-		if indexNode != nil {
-			node = ast.NewRandomAccessGetOperationNode(node, indexNode, rowNumber)
+		if randomAccessOpNode != nil {
+			//node = ast.NewRandomAccessGetOperationNode(node, indexNode, rowNumber)
+			node = randomAccessOpNode
 		}
 
 		if unaryOp != nil {
@@ -345,13 +370,13 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 	}
 
 	if variableNode != nil {
-		rowNumber, indexNode, err := p.parseRandomAccessOperation()
+		randomAccessOp, err := p.parseRandomAccessOperation(nil, variableNode)
 		if err != nil {
 			return nil, err
 		}
 
-		if indexNode != nil {
-			variableNode = ast.NewRandomAccessGetOperationNode(variableNode, indexNode, rowNumber)
+		if randomAccessOp != nil {
+			variableNode = randomAccessOp
 		}
 
 		return variableNode, nil
@@ -363,13 +388,13 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 		return nil, err
 	}
 
-	rowNumber, indexNode, err := p.parseRandomAccessOperation()
+	randomAccessOp, err := p.parseRandomAccessOperation(nil, funcCallNode)
 	if err != nil {
 		return nil, err
 	}
 
-	if indexNode != nil {
-		funcCallNode = ast.NewRandomAccessGetOperationNode(funcCallNode, indexNode, rowNumber)
+	if randomAccessOp != nil {
+		funcCallNode = randomAccessOp
 	}
 
 	return funcCallNode, nil
@@ -402,15 +427,12 @@ func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		var variableNode ast.ExpressionNode
-		rowNumber, indexNode, err := p.parseRandomAccessOperation()
+		variableNode, err := p.parseRandomAccessOperation(name, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		if indexNode != nil {
-			variableNode = ast.NewRandomAccessSetOperationNode(*name, indexNode, rowNumber)
-		} else {
+		if variableNode == nil {
 			variableNode = ast.NewVariableNode(*name)
 		}
 

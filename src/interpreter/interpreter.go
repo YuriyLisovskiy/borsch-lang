@@ -297,6 +297,41 @@ func (i *Interpreter) executeNode(
 	case ast.RandomAccessGetOperationNode:
 		return i.executeRandomAccessGetOp(node.Operand, node.Index, rootDir, currentFile)
 
+	case ast.ListSlicingNode:
+		container, err := i.executeNode(node.Operand, rootDir, currentFile)
+		if err != nil {
+			return nil, err
+		}
+
+		if container.TypeHash() == types.ListTypeHash {
+			fromIdx, err := i.executeNode(node.LeftIndex, rootDir, currentFile)
+			if err != nil {
+				return nil, err
+			}
+
+			if fromIdx.TypeHash() == types.IntegerTypeHash {
+				toIdx, err := i.executeNode(node.RightIndex, rootDir, currentFile)
+				if err != nil {
+					return nil, err
+				}
+
+				if toIdx.TypeHash() == types.IntegerTypeHash {
+					return container.(types.ListType).Slice(
+						fromIdx.(types.IntegerType).Value, toIdx.(types.IntegerType).Value,
+					)
+				}
+
+				return nil, util.RuntimeError("правий індекс має бути цілого типу")
+			}
+
+			return nil, util.RuntimeError("лівий індекс має бути цілого типу")
+		}
+
+		return nil, util.RuntimeError(fmt.Sprintf(
+			"неможливо застосувати оператор відсікання списку до об'єкта з типом '%s'",
+			container.TypeName(),
+		))
+
 	case ast.IfSequenceNode:
 		return i.executeIfSequence(node.Blocks, node.ElseBlock, rootDir, currentFile)
 
@@ -357,7 +392,7 @@ func (i *Interpreter) executeNode(
 	case ast.VariableNode:
 		val, err := i.getVar(node.Variable.Text)
 		if err != nil {
-			return types.NoneType{}, err
+			return nil, err
 		}
 
 		return val, nil
