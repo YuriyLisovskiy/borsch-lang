@@ -10,6 +10,17 @@ import (
 	"unicode/utf8"
 )
 
+func precedence(opType int) int {
+	switch opType {
+	case models.Add, models.Sub:
+		return 1
+	case models.Mul, models.Div:
+		return 2
+	default:
+		return 0
+	}
+}
+
 type Parser struct {
 	tokens   []models.Token
 	pos      int
@@ -252,15 +263,15 @@ func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 		expr = ast.NewUnaryOperationNode(*unaryOp, expr)
 	}
 
-	operator := p.matchBinaryOperator()
-	if operator != nil {
-		rightNode, err := p.parseFormula()
-		if err != nil {
-			return nil, err
-		}
-
-		return ast.NewBinOperationNode(*operator, expr, rightNode), nil
-	}
+	//operator := p.matchBinaryOperator()
+	//if operator != nil {
+	//	rightNode, err := p.parseFormula()
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	return ast.NewBinOperationNode(*operator, expr, rightNode), nil
+	//}
 
 	return expr, nil
 }
@@ -278,7 +289,26 @@ func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		leftNode = ast.NewBinOperationNode(*operator, leftNode, rightNode)
+		nextOperator := p.matchBinaryOperator()
+		if nextOperator != nil {
+			thirdNode, err := p.parseParentheses()
+			if err != nil {
+				return nil, err
+			}
+
+			if precedence(operator.Type.Name) >= precedence(nextOperator.Type.Name) {
+				leftNode = ast.NewBinOperationNode(
+					*nextOperator, ast.NewBinOperationNode(*operator, leftNode, rightNode), thirdNode,
+				)
+			} else {
+				leftNode = ast.NewBinOperationNode(
+					*operator, leftNode, ast.NewBinOperationNode(*nextOperator, rightNode, thirdNode),
+				)
+			}
+		} else {
+			leftNode = ast.NewBinOperationNode(*operator, leftNode, rightNode)
+		}
+
 		operator = p.matchBinaryOperator()
 	}
 
