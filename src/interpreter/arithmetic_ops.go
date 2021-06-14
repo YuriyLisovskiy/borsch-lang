@@ -5,6 +5,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/ast"
 	"github.com/YuriyLisovskiy/borsch/src/builtin/types"
 	"github.com/YuriyLisovskiy/borsch/src/util"
+	"math"
 )
 
 func boolToInt(v bool) int64 {
@@ -13,6 +14,14 @@ func boolToInt(v bool) int64 {
 	}
 
 	return 0
+}
+
+func boolToFloat64(v bool) float64 {
+	if v {
+		return 1.0
+	}
+
+	return 0.0
 }
 
 func (i *Interpreter) executeArithmeticOp(
@@ -61,7 +70,6 @@ func (i *Interpreter) executeArithmeticOp(
 				Values: append(leftVal.Values, right.(types.ListType).Values...),
 			}, nil
 		}
-
 	case subOp:
 		switch leftVal := left.(type) {
 		case types.RealType:
@@ -120,6 +128,21 @@ func (i *Interpreter) executeArithmeticOp(
 
 			return types.RealType{
 				Value: float64(boolToInt(leftVal.Value) / boolToInt(right.(types.BoolType).Value)),
+			}, nil
+		}
+	case exponentOp:
+		switch leftVal := left.(type) {
+		case types.RealType:
+			return types.RealType{
+				Value: math.Pow(leftVal.Value, right.(types.RealType).Value),
+			}, nil
+		case types.IntegerType:
+			return types.IntegerType{
+				Value: int64(math.Pow(float64(leftVal.Value), float64(right.(types.IntegerType).Value))),
+			}, nil
+		case types.BoolType:
+			return types.IntegerType{
+				Value: int64(math.Pow(boolToFloat64(leftVal.Value), boolToFloat64(right.(types.BoolType).Value))),
 			}, nil
 		}
 

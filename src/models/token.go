@@ -6,10 +6,11 @@ import (
 )
 
 type Token struct {
-	Type TokenType
-	Text string
-	Pos  int
-	Row  int
+	Type            TokenType
+	Text            string
+	Pos             int
+	Row             int
+	IsUnaryOperator bool
 }
 
 func (t *Token) String() string {
@@ -28,6 +29,7 @@ const (
 	Semicolon
 	Colon
 	Space
+	ExponentOp
 	EqualsOp
 	NotEqualsOp
 	GreaterOrEqualsOp
@@ -56,42 +58,43 @@ const (
 )
 
 var tokenTypeNames = map[int]string{
-	SingleLineComment: "однорядковий коментар",
-	MultiLineComment: "багаторядковий коментар",
+	SingleLineComment:   "однорядковий коментар",
+	MultiLineComment:    "багаторядковий коментар",
 	IncludeStdDirective: "директива підключення файлу стандартної бібліотеки",
-	IncludeDirective: "директива підключення файлу",
-	RealNumber: "дійсне число",
-	IntegerNumber: "ціле число",
-	String: "рядок",
-	Bool: "логічний тип",
-	Semicolon: "крапка з комою",
-	Colon: "двокрапка",
-	Space: "пропуск",
-	EqualsOp: "умова рівності",
-	NotEqualsOp: "умова нерівності",
-	GreaterOrEqualsOp: "умова 'більше або дорівнює'",
-	GreaterOp: "умова 'більше'",
-	LessOrEqualsOp: "умова 'менше або дорівнює'",
-	LessOp: "умова 'менше'",
-	Assign: "оператор присвоєння",
-	Add: "оператор суми",
-	Sub: "оператор різниці",
-	Mul: "оператор добутку",
-	Div: "оператор частки",
-	LPar: "відкриваюча дужка",
-	RPar: "закриваюча дужка",
-	If: "якщо",
-	Else: "інакше",
-	For: "для",
-	AndOp: "оператор логічного 'і'",
-	OrOp: "оператор логічного 'або'",
-	NotOp: "оператор логічного заперечення",
-	LCurlyBracket: "відкриваюча фігурна дужка",
-	RCurlyBracket: "закриваюча фігурна дужка",
-	LSquareBracket: "відкриваюча квадратна дужка",
-	RSquareBracket: "закриваюча квадратна дужка",
-	Comma: "кома",
-	Name: "назва",
+	IncludeDirective:    "директива підключення файлу",
+	RealNumber:          "дійсне число",
+	IntegerNumber:       "ціле число",
+	String:              "рядок",
+	Bool:                "логічний тип",
+	Semicolon:           "крапка з комою",
+	Colon:               "двокрапка",
+	Space:               "пропуск",
+	ExponentOp:          "оператор піднесення до степеня",
+	EqualsOp:            "умова рівності",
+	NotEqualsOp:         "умова нерівності",
+	GreaterOrEqualsOp:   "умова 'більше або дорівнює'",
+	GreaterOp:           "умова 'більше'",
+	LessOrEqualsOp:      "умова 'менше або дорівнює'",
+	LessOp:              "умова 'менше'",
+	Assign:              "оператор присвоєння",
+	Add:                 "оператор суми",
+	Sub:                 "оператор різниці",
+	Mul:                 "оператор добутку",
+	Div:                 "оператор частки",
+	LPar:                "відкриваюча дужка",
+	RPar:                "закриваюча дужка",
+	If:                  "якщо",
+	Else:                "інакше",
+	For:                 "для",
+	AndOp:               "оператор логічного 'і'",
+	OrOp:                "оператор логічного 'або'",
+	NotOp:               "оператор логічного заперечення",
+	LCurlyBracket:       "відкриваюча фігурна дужка",
+	RCurlyBracket:       "закриваюча фігурна дужка",
+	LSquareBracket:      "відкриваюча квадратна дужка",
+	RSquareBracket:      "закриваюча квадратна дужка",
+	Comma:               "кома",
+	Name:                "назва",
 }
 
 type TokenType struct {
@@ -128,14 +131,14 @@ var TokenTypesList = map[int]TokenType{
 		Regex: regexp.MustCompile("^(/\\*)(.|\\n)*?(\\*/)"),
 	},
 	IncludeStdDirective: {
-		Name:  IncludeStdDirective,
+		Name: IncludeStdDirective,
 		Regex: regexp.MustCompile(
 			//"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>\\sяк\\s(" + nameRegex + ")",
 			"^@\\s*<\\s*([^.\\\\/<\\r\\n].*[^>\\r\\n])\\s*>",
 		),
 	},
 	IncludeDirective: {
-		Name:  IncludeDirective,
+		Name: IncludeDirective,
 		Regex: regexp.MustCompile(
 			//"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>\\sяк\\s(" + nameRegex + ")",
 			"^@\\s*\"\\s*([^\"\\r\\n].*[^\"\\r\\n])\\s*\"",
@@ -168,6 +171,10 @@ var TokenTypesList = map[int]TokenType{
 	Space: {
 		Name:  Space,
 		Regex: regexp.MustCompile("^[\\s\\n\\t\\r]"),
+	},
+	ExponentOp: {
+		Name:  ExponentOp,
+		Regex: regexp.MustCompile("^\\*\\*"),
 	},
 	EqualsOp: {
 		Name:  EqualsOp,

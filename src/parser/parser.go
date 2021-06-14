@@ -10,17 +10,6 @@ import (
 	"unicode/utf8"
 )
 
-func precedence(opType int) int {
-	switch opType {
-	case models.Add, models.Sub:
-		return 1
-	case models.Mul, models.Div:
-		return 2
-	default:
-		return 0
-	}
-}
-
 type Parser struct {
 	tokens   []models.Token
 	pos      int
@@ -58,17 +47,6 @@ func (p *Parser) require(expected ...models.TokenType) (*models.Token, error) {
 	}
 
 	return token, nil
-}
-
-func (p *Parser) matchBinaryOperator() *models.Token {
-	return p.match(
-		models.TokenTypesList[models.Add], models.TokenTypesList[models.Sub],
-		models.TokenTypesList[models.Mul], models.TokenTypesList[models.Div],
-		models.TokenTypesList[models.AndOp], models.TokenTypesList[models.OrOp],
-		models.TokenTypesList[models.EqualsOp], models.TokenTypesList[models.NotEqualsOp],
-		models.TokenTypesList[models.GreaterOp], models.TokenTypesList[models.GreaterOrEqualsOp],
-		models.TokenTypesList[models.LessOp], models.TokenTypesList[models.LessOrEqualsOp],
-	)
 }
 
 func (p *Parser) checkForKeyword(name string) error {
@@ -222,99 +200,6 @@ func (p *Parser) parseRandomAccessOperation(name *models.Token, expr ast.Express
 	return nil, nil
 }
 
-func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
-	unaryOp := p.match(
-		models.TokenTypesList[models.NotOp],
-		models.TokenTypesList[models.Sub], models.TokenTypesList[models.Add],
-	)
-	if p.match(models.TokenTypesList[models.LPar]) != nil {
-		node, err := p.parseFormula()
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = p.require(models.TokenTypesList[models.RPar])
-		if err != nil {
-			return nil, err
-		}
-
-		randomAccessOpNode, err := p.parseRandomAccessOperation(nil, node)
-		if err != nil {
-			return nil, err
-		}
-
-		if randomAccessOpNode != nil {
-			node = randomAccessOpNode
-		}
-
-		if unaryOp != nil {
-			return ast.NewUnaryOperationNode(*unaryOp, node), nil
-		}
-
-		return node, nil
-	}
-
-	expr, err := p.parseExpression()
-	if err != nil {
-		return nil, err
-	}
-
-	if unaryOp != nil {
-		expr = ast.NewUnaryOperationNode(*unaryOp, expr)
-	}
-
-	//operator := p.matchBinaryOperator()
-	//if operator != nil {
-	//	rightNode, err := p.parseFormula()
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//
-	//	return ast.NewBinOperationNode(*operator, expr, rightNode), nil
-	//}
-
-	return expr, nil
-}
-
-func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
-	leftNode, err := p.parseParentheses()
-	if err != nil {
-		return nil, err
-	}
-
-	operator := p.matchBinaryOperator()
-	for operator != nil {
-		rightNode, err := p.parseParentheses()
-		if err != nil {
-			return nil, err
-		}
-
-		nextOperator := p.matchBinaryOperator()
-		if nextOperator != nil {
-			thirdNode, err := p.parseParentheses()
-			if err != nil {
-				return nil, err
-			}
-
-			if precedence(operator.Type.Name) >= precedence(nextOperator.Type.Name) {
-				leftNode = ast.NewBinOperationNode(
-					*nextOperator, ast.NewBinOperationNode(*operator, leftNode, rightNode), thirdNode,
-				)
-			} else {
-				leftNode = ast.NewBinOperationNode(
-					*operator, leftNode, ast.NewBinOperationNode(*nextOperator, rightNode, thirdNode),
-				)
-			}
-		} else {
-			leftNode = ast.NewBinOperationNode(*operator, leftNode, rightNode)
-		}
-
-		operator = p.matchBinaryOperator()
-	}
-
-	return leftNode, nil
-}
-
 func (p *Parser) parseFunctionCall() (ast.ExpressionNode, error) {
 	name := p.match(models.TokenTypesList[models.Name])
 	if name != nil {
@@ -349,47 +234,6 @@ func (p *Parser) parseFunctionCall() (ast.ExpressionNode, error) {
 	}
 
 	return nil, errors.New("очікується виклик функції")
-}
-
-func (p *Parser) parseUnaryOperator() (ast.ExpressionNode, error) {
-	unaryOp := p.match(
-		models.TokenTypesList[models.NotOp],
-		models.TokenTypesList[models.Sub], models.TokenTypesList[models.Add],
-	)
-	if unaryOp != nil {
-		var exprNode ast.ExpressionNode
-		var err error
-		if p.match(models.TokenTypesList[models.LPar]) != nil {
-			p.pos--
-			exprNode, err = p.parseFormula()
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			exprNode, err = p.parseExpression()
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		//if lSquareBracket := p.match(models.TokenTypesList[models.LSquareBracket]); lSquareBracket != nil {
-		//	indexNode, err := p.parseFormula()
-		//	if err != nil {
-		//		return nil, err
-		//	}
-		//
-		//	_, err = p.require(models.TokenTypesList[models.RSquareBracket])
-		//	if err != nil {
-		//		return nil, err
-		//	}
-		//
-		//	exprNode = ast.NewRandomAccessOperationNode(exprNode, indexNode, lSquareBracket.Row)
-		//}
-
-		return ast.NewUnaryOperationNode(*unaryOp, exprNode), nil
-	}
-
-	return nil, nil
 }
 
 func (p *Parser) parseExpression() (ast.ExpressionNode, error) {

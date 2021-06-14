@@ -80,9 +80,10 @@ func (l *Lexer) nextToken() (bool, error) {
 		result := tokenType.Regex.FindString(strToMatch)
 		if utf8.RuneCountInString(result) > 0 {
 			token := models.Token{
-				Type: tokenType,
-				Text: result,
-				Pos:  l.pos,
+				Type:            tokenType,
+				Text:            result,
+				Pos:             l.pos,
+				IsUnaryOperator: false,
 			}
 			l.pos += utf8.RuneCountInString(result)
 			l.tokenList = append(l.tokenList, token)

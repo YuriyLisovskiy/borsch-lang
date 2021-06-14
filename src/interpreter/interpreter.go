@@ -17,7 +17,8 @@ import (
 
 const (
 	// math
-	sumOp = iota
+	exponentOp = iota
+	sumOp
 	subOp
 	mulOp
 	divOp
@@ -41,6 +42,7 @@ const (
 type Operator int
 
 var opTypeNames = map[Operator]string{
+	exponentOp:        "піднесення до степеня",
 	sumOp:             "додавання",
 	subOp:             "віднімання",
 	mulOp:             "множення",
@@ -232,6 +234,8 @@ func (i *Interpreter) executeNode(
 
 	case ast.BinOperationNode:
 		switch node.Operator.Type.Name {
+		case models.ExponentOp:
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, exponentOp, rootDir, currentFile)
 		case models.Add:
 			return i.executeArithmeticOp(node.LeftNode, node.RightNode, sumOp, rootDir, currentFile)
 
