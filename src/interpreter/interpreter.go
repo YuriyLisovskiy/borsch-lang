@@ -18,6 +18,7 @@ import (
 const (
 	// math
 	exponentOp = iota
+	moduloOp
 	sumOp
 	subOp
 	mulOp
@@ -236,42 +237,32 @@ func (i *Interpreter) executeNode(
 		switch node.Operator.Type.Name {
 		case models.ExponentOp:
 			return i.executeArithmeticOp(node.LeftNode, node.RightNode, exponentOp, rootDir, currentFile)
+		case models.ModuloOp:
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, moduloOp, rootDir, currentFile)
 		case models.Add:
 			return i.executeArithmeticOp(node.LeftNode, node.RightNode, sumOp, rootDir, currentFile)
-
 		case models.Sub:
 			return i.executeArithmeticOp(node.LeftNode, node.RightNode, subOp, rootDir, currentFile)
-
 		case models.Mul:
 			return i.executeArithmeticOp(node.LeftNode, node.RightNode, mulOp, rootDir, currentFile)
-
 		case models.Div:
 			return i.executeArithmeticOp(node.LeftNode, node.RightNode, divOp, rootDir, currentFile)
-
 		case models.AndOp:
 			return i.executeLogicalOp(node.LeftNode, node.RightNode, andOp, rootDir, currentFile)
-
 		case models.OrOp:
 			return i.executeLogicalOp(node.LeftNode, node.RightNode, orOp, rootDir, currentFile)
-
 		case models.EqualsOp:
 			return i.executeComparisonOp(node.LeftNode, node.RightNode, equalsOp, rootDir, currentFile)
-
 		case models.NotEqualsOp:
 			return i.executeComparisonOp(node.LeftNode, node.RightNode, notEqualsOp, rootDir, currentFile)
-
 		case models.GreaterOp:
 			return i.executeComparisonOp(node.LeftNode, node.RightNode, greaterOp, rootDir, currentFile)
-
 		case models.GreaterOrEqualsOp:
 			return i.executeComparisonOp(node.LeftNode, node.RightNode, greaterOrEqualsOp, rootDir, currentFile)
-
 		case models.LessOp:
 			return i.executeComparisonOp(node.LeftNode, node.RightNode, lessOp, rootDir, currentFile)
-
 		case models.LessOrEqualsOp:
 			return i.executeComparisonOp(node.LeftNode, node.RightNode, lessOrEqualsOp, rootDir, currentFile)
-
 		case models.Assign:
 			result, err := i.executeNode(node.RightNode, rootDir, currentFile)
 			if err != nil {

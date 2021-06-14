@@ -30,6 +30,7 @@ const (
 	Colon
 	Space
 	ExponentOp
+	ModuloOp
 	EqualsOp
 	NotEqualsOp
 	GreaterOrEqualsOp
@@ -70,6 +71,7 @@ var tokenTypeNames = map[int]string{
 	Colon:               "двокрапка",
 	Space:               "пропуск",
 	ExponentOp:          "оператор піднесення до степеня",
+	ModuloOp:            "оператор остачі від ділення",
 	EqualsOp:            "умова рівності",
 	NotEqualsOp:         "умова нерівності",
 	GreaterOrEqualsOp:   "умова 'більше або дорівнює'",
@@ -175,6 +177,10 @@ var TokenTypesList = map[int]TokenType{
 	ExponentOp: {
 		Name:  ExponentOp,
 		Regex: regexp.MustCompile("^\\*\\*"),
+	},
+	ModuloOp: {
+		Name: ModuloOp,
+		Regex: regexp.MustCompile("^%"),
 	},
 	EqualsOp: {
 		Name:  EqualsOp,

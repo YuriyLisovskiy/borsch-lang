@@ -145,7 +145,23 @@ func (i *Interpreter) executeArithmeticOp(
 				Value: int64(math.Pow(boolToFloat64(leftVal.Value), boolToFloat64(right.(types.BoolType).Value))),
 			}, nil
 		}
+	case moduloOp:
+		switch leftVal := left.(type) {
+		case types.IntegerType:
+			rightVal := right.(types.IntegerType).Value
+			if rightVal == 0 {
+				return nil, util.RuntimeError("ділення на нуль")
+			}
 
+			return types.IntegerType{Value: leftVal.Value % rightVal}, nil
+		case types.BoolType:
+			rightVal := right.(types.BoolType).Value
+			if !rightVal {
+				return nil, util.RuntimeError("ділення на нуль")
+			}
+
+			return types.IntegerType{Value: boolToInt(leftVal.Value) % boolToInt(rightVal)}, nil
+		}
 	default:
 		return nil, util.RuntimeError("невідомий оператор")
 	}

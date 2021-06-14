@@ -33,18 +33,20 @@ func (s *stack) pop() {
 
 func precedence(opType int) int {
 	switch opType {
-	case models.AndOp, models.OrOp:
+	case models.OrOp:
 		return 1
-	case models.NotOp:
+	case models.AndOp:
 		return 2
-	case models.LessOp, models.LessOrEqualsOp, models.EqualsOp, models.NotEqualsOp, models.GreaterOp, models.GreaterOrEqualsOp:
+	case models.NotOp:
 		return 3
-	case models.Add, models.Sub:
+	case models.LessOp, models.LessOrEqualsOp, models.EqualsOp, models.NotEqualsOp, models.GreaterOp, models.GreaterOrEqualsOp:
 		return 4
-	case models.Mul, models.Div:
+	case models.Add, models.Sub:
 		return 5
-	case models.ExponentOp:
+	case models.Mul, models.Div, models.ModuloOp:
 		return 6
+	case models.ExponentOp:
+		return 7
 	default:
 		return 0
 	}
@@ -70,7 +72,7 @@ func buildOperationNode(nodes, operators *stack) {
 
 func (p *Parser) matchBinaryOperator() *models.Token {
 	return p.match(
-		models.TokenTypesList[models.ExponentOp],
+		models.TokenTypesList[models.ExponentOp], models.TokenTypesList[models.ModuloOp],
 		models.TokenTypesList[models.Add], models.TokenTypesList[models.Sub],
 		models.TokenTypesList[models.Mul], models.TokenTypesList[models.Div],
 		models.TokenTypesList[models.AndOp], models.TokenTypesList[models.OrOp],
