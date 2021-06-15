@@ -1,5 +1,9 @@
 package types
 
+import (
+	"github.com/YuriyLisovskiy/borsch/src/util"
+)
+
 type NoneType struct {
 }
 
@@ -17,4 +21,8 @@ func (t NoneType) TypeHash() int {
 
 func (t NoneType) TypeName() string {
 	return GetTypeName(t.TypeHash())
+}
+
+func (t NoneType) GetAttr(name string) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
 }

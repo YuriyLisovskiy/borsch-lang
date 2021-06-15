@@ -34,3 +34,7 @@ func (t RealType) TypeHash() int {
 func (t RealType) TypeName() string {
 	return GetTypeName(t.TypeHash())
 }
+
+func (t RealType) GetAttr(name string) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
+}

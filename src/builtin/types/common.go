@@ -10,6 +10,7 @@ const (
 	BoolTypeHash
 	ListTypeHash
 	DictionaryTypeHash
+	PackageTypeHash
 )
 
 type ValueType interface {
@@ -17,6 +18,7 @@ type ValueType interface {
 	Representation() string
 	TypeHash() int
 	TypeName() string
+	GetAttr(name string) (ValueType, error)
 }
 
 type SequentialType interface {
@@ -52,6 +54,8 @@ func GetTypeName(typeValue int) string {
 		return "список"
 	case DictionaryTypeHash:
 		return "словник"
+	case PackageTypeHash:
+		return "пакет"
 	default:
 		return "невідомий"
 	}

@@ -14,7 +14,8 @@ func (i *Interpreter) executeForEachLoop(
 	switch container := containerValue.(type) {
 	case types.SequentialType:
 		var err error
-		for idx := int64(0); idx < container.Length(); idx++ {
+		sz := container.Length()
+		for idx := int64(0); idx < sz; idx++ {
 			scope := map[string]types.ValueType{}
 			if indexVar.Text != "_" {
 				scope[indexVar.Text] = types.IntegerType{Value: idx}

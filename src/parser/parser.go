@@ -150,7 +150,14 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		return ast.NewVariableNode(*name), nil
+		variable := ast.NewVariableNode(*name)
+
+		// TODO: implement attr set access!
+		if dot := p.match(models.TokenTypesList[models.AttrAccessOp]); dot != nil {
+			return p.parseGetAttr(variable)
+		}
+
+		return variable, nil
 	}
 
 	return nil, errors.New("очікується змінна або вираз")
@@ -200,14 +207,14 @@ func (p *Parser) parseRandomAccessOperation(name *models.Token, expr ast.Express
 	return nil, nil
 }
 
-func (p *Parser) parseFunctionCall() (ast.ExpressionNode, error) {
+func (p *Parser) parseFunctionCall(parent ast.ExpressionNode) (ast.ExpressionNode, error) {
 	name := p.match(models.TokenTypesList[models.Name])
 	if name != nil {
 		lPar := p.match(models.TokenTypesList[models.LPar])
 		if lPar != nil {
 			var args []ast.ExpressionNode
 			if p.match(models.TokenTypesList[models.RPar]) != nil {
-				return ast.NewFunctionCallNode(*name, args), nil
+				return ast.NewFunctionCallNode(*name, parent, args), nil
 			}
 
 			for {
@@ -227,7 +234,14 @@ func (p *Parser) parseFunctionCall() (ast.ExpressionNode, error) {
 				}
 			}
 
-			return ast.NewFunctionCallNode(*name, args), nil
+			result := ast.NewFunctionCallNode(*name, parent, args)
+
+			// TODO: implement attr set access!
+			if dot := p.match(models.TokenTypesList[models.AttrAccessOp]); dot != nil {
+				return p.parseGetAttr(result)
+			}
+
+			return result, nil
 		}
 
 		return nil, errors.New("очікується відкриваюча дужка")
@@ -256,7 +270,7 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 	}
 
 	p.pos--
-	funcCallNode, err := p.parseFunctionCall()
+	funcCallNode, err := p.parseFunctionCall(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -274,14 +288,27 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 }
 
 func (p *Parser) parseIncludeDirective() (ast.ExpressionNode, error) {
+	isStd := false
 	includeDirective := p.match(models.TokenTypesList[models.IncludeStdDirective])
 	if includeDirective != nil {
-		return ast.NewIncludeDirectiveNode(*includeDirective, true), nil
+		isStd = true
+	} else {
+		includeDirective = p.match(models.TokenTypesList[models.IncludeDirective])
 	}
 
-	includeDirective = p.match(models.TokenTypesList[models.IncludeDirective])
 	if includeDirective != nil {
-		return ast.NewIncludeDirectiveNode(*includeDirective, false), nil
+		arrow := p.match(models.TokenTypesList[models.Arrow])
+		name := ""
+		if arrow != nil {
+			token, err := p.require(models.TokenTypesList[models.Name])
+			if err != nil {
+				return nil, err
+			}
+
+			name = token.Text
+		}
+
+		return ast.NewIncludeDirectiveNode(*includeDirective, name, isStd), nil
 	}
 
 	return nil, nil

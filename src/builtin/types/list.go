@@ -2,6 +2,7 @@ package types
 
 import (
 	"errors"
+	"github.com/YuriyLisovskiy/borsch/src/util"
 	"strings"
 )
 
@@ -75,4 +76,8 @@ func (t ListType) Slice(from, to int64) (ValueType, error) {
 	}
 
 	return ListType{Values: t.Values[fromIdx:toIdx]}, nil
+}
+
+func (t ListType) GetAttr(name string) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
 }

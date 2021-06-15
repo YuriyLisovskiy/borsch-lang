@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/YuriyLisovskiy/borsch/src/util"
 	"strings"
 )
 
@@ -95,4 +96,8 @@ func (t *DictionaryType) RemoveElement(key ValueType) error {
 
 	delete(t.Map, keyHash)
 	return nil
+}
+
+func (t DictionaryType) GetAttr(name string) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
 }

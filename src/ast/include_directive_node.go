@@ -6,16 +6,18 @@ import (
 
 type IncludeDirectiveNode struct {
 	Directive models.Token
+	Name      string
 	FilePath  string
 	IsStd     bool
 
 	rowNumber int
 }
 
-func NewIncludeDirectiveNode(directive models.Token, isStd bool) IncludeDirectiveNode {
+func NewIncludeDirectiveNode(directive models.Token, name string, isStd bool) IncludeDirectiveNode {
 	matches := directive.Type.Regex.FindAllStringSubmatch(directive.Text, -1)
 	return IncludeDirectiveNode{
 		Directive: directive,
+		Name:      name,
 		FilePath:  matches[0][1],
 		IsStd:     isStd,
 		rowNumber: directive.Row,

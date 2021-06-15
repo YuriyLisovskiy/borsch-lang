@@ -44,3 +44,7 @@ func (t BoolType) TypeHash() int {
 func (t BoolType) TypeName() string {
 	return GetTypeName(t.TypeHash())
 }
+
+func (t BoolType) GetAttr(name string) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
+}

@@ -22,6 +22,7 @@ const (
 	MultiLineComment
 	IncludeStdDirective
 	IncludeDirective
+	Arrow
 	RealNumber
 	IntegerNumber
 	String
@@ -56,6 +57,7 @@ const (
 	RSquareBracket
 	Comma
 	Name
+	AttrAccessOp
 )
 
 var tokenTypeNames = map[int]string{
@@ -63,6 +65,7 @@ var tokenTypeNames = map[int]string{
 	MultiLineComment:    "багаторядковий коментар",
 	IncludeStdDirective: "директива підключення файлу стандартної бібліотеки",
 	IncludeDirective:    "директива підключення файлу",
+	Arrow:               "стрілка",
 	RealNumber:          "дійсне число",
 	IntegerNumber:       "ціле число",
 	String:              "рядок",
@@ -97,6 +100,7 @@ var tokenTypeNames = map[int]string{
 	RSquareBracket:      "закриваюча квадратна дужка",
 	Comma:               "кома",
 	Name:                "назва",
+	AttrAccessOp:        "оператор доступу до атрибута",
 }
 
 type TokenType struct {
@@ -135,16 +139,18 @@ var TokenTypesList = map[int]TokenType{
 	IncludeStdDirective: {
 		Name: IncludeStdDirective,
 		Regex: regexp.MustCompile(
-			//"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>\\sяк\\s(" + nameRegex + ")",
 			"^@\\s*<\\s*([^.\\\\/<\\r\\n].*[^>\\r\\n])\\s*>",
 		),
 	},
 	IncludeDirective: {
 		Name: IncludeDirective,
 		Regex: regexp.MustCompile(
-			//"^@\\s*<\\s*([^<\\s\\r\\n].*[^>\\s\\r\\n])\\s*>\\sяк\\s(" + nameRegex + ")",
 			"^@\\s*\"\\s*([^\"\\r\\n].*[^\"\\r\\n])\\s*\"",
 		),
+	},
+	Arrow: {
+		Name: Arrow,
+		Regex: regexp.MustCompile("^->"),
 	},
 	RealNumber: {
 		Name:  RealNumber,
@@ -179,7 +185,7 @@ var TokenTypesList = map[int]TokenType{
 		Regex: regexp.MustCompile("^\\*\\*"),
 	},
 	ModuloOp: {
-		Name: ModuloOp,
+		Name:  ModuloOp,
 		Regex: regexp.MustCompile("^%"),
 	},
 	EqualsOp: {
@@ -281,5 +287,9 @@ var TokenTypesList = map[int]TokenType{
 	Name: {
 		Name:  Name,
 		Regex: regexp.MustCompile("^" + RawNameRegex),
+	},
+	AttrAccessOp: {
+		Name:  AttrAccessOp,
+		Regex: regexp.MustCompile("^\\."),
 	},
 }

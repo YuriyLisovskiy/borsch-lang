@@ -73,14 +73,16 @@ func (op Operator) Description() string {
 }
 
 type Interpreter struct {
-	stdRoot string
-	scopes  []map[string]types.ValueType
+	stdRoot          string
+	scopes           []map[string]types.ValueType
+	includedPackages map[string]types.ValueType
 }
 
 func NewInterpreter(stdRoot string) *Interpreter {
 	return &Interpreter{
-		stdRoot: stdRoot,
-		scopes:  []map[string]types.ValueType{},
+		stdRoot:          stdRoot,
+		scopes:           []map[string]types.ValueType{},
+		includedPackages: map[string]types.ValueType{},
 	}
 }
 
@@ -151,7 +153,25 @@ func (i *Interpreter) executeNode(
 			node.FilePath = filepath.Join(rootDir, node.FilePath)
 		}
 
-		return nil, i.ExecuteFile(node.FilePath)
+		pkg, ok := i.includedPackages[node.FilePath]
+		if !ok {
+			var err error
+			pkg, err = i.ExecuteFile(node.FilePath, node.IsStd)
+			if err != nil {
+				return nil, err
+			}
+
+			i.includedPackages[node.FilePath] = pkg
+		}
+
+		if node.Name != "" {
+			err := i.setVar(node.Name, pkg)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return pkg, nil
 
 	case ast.FunctionCallNode:
 		var args []types.ValueType
@@ -391,6 +411,18 @@ func (i *Interpreter) executeNode(
 		}
 
 		return val, nil
+	case ast.GetAttrOpNode:
+		parent, err := i.executeNode(node.Parent, rootDir, currentFile)
+		if err != nil {
+			return nil, err
+		}
+
+		val, err := parent.GetAttr(node.Attr.Text)
+		if err != nil {
+			return nil, err
+		}
+
+		return val, nil
 	}
 
 	return nil, util.RuntimeError("невідома помилка")
@@ -478,16 +510,21 @@ func (i *Interpreter) Execute(
 	return result, scope, nil
 }
 
-func (i *Interpreter) ExecuteFile(filePath string) error {
+func (i *Interpreter) ExecuteFile(filePath string, isBuiltin bool) (types.ValueType, error) {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return util.RuntimeError(fmt.Sprintf("файл з ім'ям '%s' не існує", filePath))
+		return nil, util.RuntimeError(fmt.Sprintf("файл з ім'ям '%s' не існує", filePath))
 	}
 
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, _, err = i.Execute(map[string]types.ValueType{}, filePath, string(content))
-	return err
+	packageInterpreter := NewInterpreter(i.stdRoot)
+	_, scope, err := packageInterpreter.Execute(map[string]types.ValueType{}, filePath, string(content))
+	if err != nil {
+		return nil, err
+	}
+
+	return types.NewPackageType(isBuiltin, filePath, scope), nil
 }

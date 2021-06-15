@@ -8,6 +8,7 @@ const (
 
 var RegisteredIdentifiers = map[string]int{
 	// Keyword names
+	"пакет": ConstantKeywordId,
 	"істина": ConstantKeywordId,
 	"хиба": ConstantKeywordId,
 	"якщо": KeywordId,
@@ -32,4 +33,5 @@ var RegisteredIdentifiers = map[string]int{
 	"вихід": FunctionId,
 	"додати": FunctionId,
 	"вилучити": FunctionId,
+	"підтвердити": FunctionId,
 }

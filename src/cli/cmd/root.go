@@ -35,7 +35,7 @@ The source code is available at https://github.com/YuriyLisovskiy/borsch-lang`,
 		interpret := interpreter.NewInterpreter(stdRoot)
 		if len(args) > 0 {
 			filePath := args[0]
-			err := interpret.ExecuteFile(filePath)
+			_, err := interpret.ExecuteFile(filePath, false)
 			if err != nil {
 				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 			}

@@ -24,7 +24,7 @@ func Print(args ...types.ValueType) (types.ValueType, error) {
 			), `\t`, "\t", -1,
 		),
 	)
-	return types.NoneType{}, nil
+	return nil, nil
 }
 
 func PrintLn(args ...types.ValueType) (types.ValueType, error) {
@@ -34,13 +34,13 @@ func PrintLn(args ...types.ValueType) (types.ValueType, error) {
 func Input(args ...types.ValueType) (types.ValueType, error) {
 	_, err := Print(args...)
 	if err != nil {
-		return types.NoneType{}, util.InternalError(err.Error())
+		return nil, util.InternalError(err.Error())
 	}
 
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
 	if err != nil {
-		return types.NoneType{}, util.InternalError(err.Error())
+		return nil, util.InternalError(err.Error())
 	}
 
 	return types.StringType{Value: strings.TrimSuffix(input, "\n")}, nil

@@ -3,6 +3,7 @@ package types
 import (
 	"errors"
 	"fmt"
+	"github.com/YuriyLisovskiy/borsch/src/util"
 	"unicode/utf8"
 )
 
@@ -78,4 +79,8 @@ func (t StringType) Slice(from, to int64) (ValueType, error) {
 	}
 
 	return StringType{Value: t.Value[fromIdx:toIdx]}, nil
+}
+
+func (t StringType) GetAttr(name string) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
 }
