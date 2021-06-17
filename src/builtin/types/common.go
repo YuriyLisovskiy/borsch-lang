@@ -18,7 +18,8 @@ type ValueType interface {
 	Representation() string
 	TypeHash() int
 	TypeName() string
-	GetAttr(name string) (ValueType, error)
+	GetAttr(string) (ValueType, error)
+	SetAttr(string, ValueType) (ValueType, error)
 }
 
 type SequentialType interface {

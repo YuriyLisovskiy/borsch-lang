@@ -101,3 +101,7 @@ func (t *DictionaryType) RemoveElement(key ValueType) error {
 func (t DictionaryType) GetAttr(name string) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
+
+func (t DictionaryType) SetAttr(name string, _ ValueType) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
+}

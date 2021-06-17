@@ -38,3 +38,7 @@ func (t IntegerType) TypeName() string {
 func (t IntegerType) GetAttr(name string) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
+
+func (t IntegerType) SetAttr(name string, _ ValueType) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
+}

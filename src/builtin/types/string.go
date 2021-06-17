@@ -84,3 +84,7 @@ func (t StringType) Slice(from, to int64) (ValueType, error) {
 func (t StringType) GetAttr(name string) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
+
+func (t StringType) SetAttr(name string, _ ValueType) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
+}

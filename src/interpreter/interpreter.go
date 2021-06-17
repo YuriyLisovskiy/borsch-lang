@@ -10,7 +10,6 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/models"
 	"github.com/YuriyLisovskiy/borsch/src/parser"
 	"github.com/YuriyLisovskiy/borsch/src/util"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -44,6 +43,7 @@ type Operator int
 
 var opTypeNames = map[Operator]string{
 	exponentOp:        "піднесення до степеня",
+	moduloOp:          "остачі від ділення",
 	sumOp:             "додавання",
 	subOp:             "віднімання",
 	mulOp:             "множення",
@@ -73,16 +73,20 @@ func (op Operator) Description() string {
 }
 
 type Interpreter struct {
-	stdRoot          string
-	scopes           []map[string]types.ValueType
-	includedPackages map[string]types.ValueType
+	stdRoot            string
+	scopes             []map[string]types.ValueType
+	currentPackageHash string
+	parentPackageHash  string
+	includedPackages   map[string]types.ValueType
 }
 
-func NewInterpreter(stdRoot string) *Interpreter {
+func NewInterpreter(stdRoot, currPkgHash, parentPkgHash string) *Interpreter {
 	return &Interpreter{
-		stdRoot:          stdRoot,
-		scopes:           []map[string]types.ValueType{},
-		includedPackages: map[string]types.ValueType{},
+		stdRoot:            stdRoot,
+		currentPackageHash: currPkgHash,
+		parentPackageHash:  parentPkgHash,
+		scopes:             []map[string]types.ValueType{},
+		includedPackages:   map[string]types.ValueType{},
 	}
 }
 
@@ -153,15 +157,21 @@ func (i *Interpreter) executeNode(
 			node.FilePath = filepath.Join(rootDir, node.FilePath)
 		}
 
-		pkg, ok := i.includedPackages[node.FilePath]
+		fileHash := util.CalcHash([]byte(node.FilePath))
+		pkg, ok := i.includedPackages[fileHash]
 		if !ok {
 			var err error
-			pkg, err = i.ExecuteFile(node.FilePath, node.IsStd)
+			fileContent, err := util.ReadFile(node.FilePath)
 			if err != nil {
 				return nil, err
 			}
 
-			i.includedPackages[node.FilePath] = pkg
+			pkg, err = i.ExecuteFile(fileContent, fileHash, node.FilePath, node.IsStd)
+			if err != nil {
+				return nil, err
+			}
+
+			i.includedPackages[fileHash] = pkg
 		}
 
 		if node.Name != "" {
@@ -292,8 +302,8 @@ func (i *Interpreter) executeNode(
 			switch assignmentNode := node.LeftNode.(type) {
 			case ast.VariableNode:
 				return nil, i.setVar(assignmentNode.Variable.Text, result)
-			case ast.RandomAccessSetOperationNode:
-				variable, err := i.getVar(assignmentNode.Variable.Text)
+			case ast.RandomAccessOperationNode:
+				variable, err := i.executeNode(assignmentNode.Operand, rootDir, currentFile)
 				if err != nil {
 					return nil, err
 				}
@@ -303,13 +313,52 @@ func (i *Interpreter) executeNode(
 					return nil, err
 				}
 
-				return nil, i.setVar(assignmentNode.Variable.Text, variable)
+				operand := assignmentNode.Operand
+				for {
+					switch external := operand.(type) {
+					case ast.RandomAccessOperationNode:
+						opVar, err := i.executeNode(external.Operand, rootDir, currentFile)
+						if err != nil {
+							return nil, err
+						}
+
+						variable, err = i.executeRandomAccessSetOp(external.Index, opVar, variable, rootDir, currentFile)
+						if err != nil {
+							return nil, err
+						}
+
+						operand = external.Operand
+						continue
+					case ast.VariableNode:
+						err = i.setVar(external.Variable.Text, variable)
+					}
+
+					break
+				}
+
+				return variable, nil
+			case ast.AttrOpNode:
+				variable, err := i.executeNode(assignmentNode.Expression, rootDir, currentFile)
+				if err != nil {
+					return nil, err
+				}
+
+				variable, err = variable.SetAttr(assignmentNode.Attr.Text, result)
+				if err != nil {
+					return nil, err
+				}
+
+				if assignmentNode.Base != nil {
+					return variable, i.setVar(assignmentNode.Base.Text, variable)
+				}
+
+				return variable, nil
 			default:
 				// TODO: обробити помилку
 			}
 		}
 
-	case ast.RandomAccessGetOperationNode:
+	case ast.RandomAccessOperationNode:
 		return i.executeRandomAccessGetOp(node.Operand, node.Index, rootDir, currentFile)
 
 	case ast.ListSlicingNode:
@@ -411,8 +460,8 @@ func (i *Interpreter) executeNode(
 		}
 
 		return val, nil
-	case ast.GetAttrOpNode:
-		parent, err := i.executeNode(node.Parent, rootDir, currentFile)
+	case ast.AttrOpNode:
+		parent, err := i.executeNode(node.Expression, rootDir, currentFile)
 		if err != nil {
 			return nil, err
 		}
@@ -510,20 +559,17 @@ func (i *Interpreter) Execute(
 	return result, scope, nil
 }
 
-func (i *Interpreter) ExecuteFile(filePath string, isBuiltin bool) (types.ValueType, error) {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return nil, util.RuntimeError(fmt.Sprintf("файл з ім'ям '%s' не існує", filePath))
-	}
-
-	content, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	packageInterpreter := NewInterpreter(i.stdRoot)
+func (i *Interpreter) ExecuteFile(
+	content []byte, hashSum string, filePath string, isBuiltin bool,
+) (types.ValueType, error) {
+	packageInterpreter := NewInterpreter(i.stdRoot, hashSum, i.currentPackageHash)
 	_, scope, err := packageInterpreter.Execute(map[string]types.ValueType{}, filePath, string(content))
 	if err != nil {
 		return nil, err
+	}
+
+	for key, pkg := range packageInterpreter.includedPackages {
+		i.includedPackages[key] = pkg
 	}
 
 	return types.NewPackageType(isBuiltin, filePath, scope), nil

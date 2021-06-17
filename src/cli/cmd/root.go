@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/interpreter"
+	"github.com/YuriyLisovskiy/borsch/src/util"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -32,14 +33,21 @@ The source code is available at https://github.com/YuriyLisovskiy/borsch-lang`,
 			fmt.Print("Увага: змінна середовища BORSCH_STD необхідна для використання стандартної бібліотеки\n\n")
 		}
 
-		interpret := interpreter.NewInterpreter(stdRoot)
 		if len(args) > 0 {
 			filePath := args[0]
-			_, err := interpret.ExecuteFile(filePath, false)
+			fileHash := util.CalcHash([]byte(filePath))
+			interpret := interpreter.NewInterpreter(stdRoot, fileHash, "")
+			content, err := util.ReadFile(filePath)
 			if err != nil {
-				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
+				fmt.Println(err.Error())
+			} else {
+				_, err = interpret.ExecuteFile(content, fileHash, filePath, false)
+				if err != nil {
+					fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
+				}
 			}
 		} else {
+			interpret := interpreter.NewInterpreter(stdRoot, util.CalcHash([]byte("<стдввід>")), "")
 			runInteractiveConsole(interpret)
 		}
 	},

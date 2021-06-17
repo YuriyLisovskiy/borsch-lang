@@ -26,3 +26,7 @@ func (t NoneType) TypeName() string {
 func (t NoneType) GetAttr(name string) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
+
+func (t NoneType) SetAttr(name string, _ ValueType) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
+}

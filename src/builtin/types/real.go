@@ -38,3 +38,7 @@ func (t RealType) TypeName() string {
 func (t RealType) GetAttr(name string) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
+
+func (t RealType) SetAttr(name string, _ ValueType) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
+}

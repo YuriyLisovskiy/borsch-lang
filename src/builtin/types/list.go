@@ -81,3 +81,7 @@ func (t ListType) Slice(from, to int64) (ValueType, error) {
 func (t ListType) GetAttr(name string) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
+
+func (t ListType) SetAttr(name string, _ ValueType) (ValueType, error) {
+	return nil, util.AttributeError(t.TypeName(), name)
+}

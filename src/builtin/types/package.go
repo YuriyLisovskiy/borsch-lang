@@ -47,3 +47,20 @@ func (t PackageType) GetAttr(name string) (ValueType, error) {
 
 	return nil, util.AttributeError(t.TypeName(), name)
 }
+
+// SetAttr assumes that attribute already exists.
+func (t PackageType) SetAttr(name string, value ValueType) (ValueType, error) {
+	if val, ok := t.Attributes[name]; ok {
+		if val.TypeHash() == value.TypeHash() {
+			t.Attributes[name] = value
+			return t, nil
+		}
+
+		return nil, util.RuntimeError(fmt.Sprintf(
+			"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
+			value.TypeName(), name, val.TypeName(),
+		))
+	}
+
+	return nil, util.AttributeError(t.TypeName(), name)
+}
