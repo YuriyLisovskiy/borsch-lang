@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"github.com/YuriyLisovskiy/borsch/src/ast"
 	"github.com/YuriyLisovskiy/borsch/src/models"
 )
@@ -95,6 +96,50 @@ func (p *Parser) parseUnaryOperator() *models.Token {
 	return nil
 }
 
+func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
+	variableNode, nameToken, err := p.parseVariableOrConstant()
+	if err != nil {
+		return nil, err
+	}
+
+	if variableNode != nil {
+		randomAccessOp, err := p.parseRandomAccessOperation(variableNode)
+		if err != nil {
+			return nil, err
+		}
+
+		if randomAccessOp != nil {
+			variableNode = randomAccessOp
+		}
+
+		return variableNode, nil
+	}
+
+	if nameToken != nil {
+		funcCallNode, err := p.parseFunctionCall(nameToken, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		randomAccessOp, err := p.parseRandomAccessOperation(funcCallNode)
+		if err != nil {
+			return nil, err
+		}
+
+		if randomAccessOp != nil {
+			funcCallNode = randomAccessOp
+		}
+
+		if dot := p.match(models.TokenTypesList[models.AttrAccessOp]); dot != nil {
+			return p.parseAttrAccess(funcCallNode)
+		}
+
+		return funcCallNode, nil
+	}
+
+	return nil, errors.New("очікується змінна, або виклик функції")
+}
+
 func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 	if p.match(models.TokenTypesList[models.LPar]) != nil {
 		node, err := p.parseFormula()
@@ -107,7 +152,7 @@ func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		randomAccessOpNode, err := p.parseRandomAccessOperation(nil, node)
+		randomAccessOpNode, err := p.parseRandomAccessOperation(node)
 		if err != nil {
 			return nil, err
 		}

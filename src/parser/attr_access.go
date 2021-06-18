@@ -15,7 +15,7 @@ func (p *Parser) parseAttrAccess(parent ast.ExpressionNode) (ast.ExpressionNode,
 				return nil, err
 			}
 
-			randomAccessOp, err := p.parseRandomAccessOperation(name, parent)
+			randomAccessOp, err := p.parseRandomAccessOperation(parent)
 			if err != nil {
 				return nil, err
 			}
@@ -34,7 +34,7 @@ func (p *Parser) parseAttrAccess(parent ast.ExpressionNode) (ast.ExpressionNode,
 		}
 
 		parent = ast.NewGetAttrOpNode(baseToken, parent, *name)
-		randomAccessOp, err := p.parseRandomAccessOperation(baseToken, parent)
+		randomAccessOp, err := p.parseRandomAccessOperation(parent)
 		if err != nil {
 			return nil, err
 		}
@@ -45,6 +45,17 @@ func (p *Parser) parseAttrAccess(parent ast.ExpressionNode) (ast.ExpressionNode,
 
 		if dot := p.match(models.TokenTypesList[models.AttrAccessOp]); dot != nil {
 			return p.parseAttrAccess(parent)
+		}
+
+		assignOperator := p.match(models.TokenTypesList[models.Assign])
+		if assignOperator != nil {
+			rightNode, err := p.parseFormula()
+			if err != nil {
+				return nil, err
+			}
+
+			binaryNode := ast.NewBinOperationNode(*assignOperator, parent, rightNode)
+			return binaryNode, nil
 		}
 
 		return parent, nil

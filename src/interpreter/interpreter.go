@@ -302,6 +302,8 @@ func (i *Interpreter) executeNode(
 			switch assignmentNode := node.LeftNode.(type) {
 			case ast.VariableNode:
 				return nil, i.setVar(assignmentNode.Variable.Text, result)
+			case ast.FunctionCallNode:
+				return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
 			case ast.RandomAccessOperationNode:
 				variable, err := i.executeNode(assignmentNode.Operand, rootDir, currentFile)
 				if err != nil {
@@ -354,7 +356,7 @@ func (i *Interpreter) executeNode(
 
 				return variable, nil
 			default:
-				// TODO: обробити помилку
+				return nil, util.RuntimeError("неможливо присвоїти значення")
 			}
 		}
 

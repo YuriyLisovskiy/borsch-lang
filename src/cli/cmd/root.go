@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/YuriyLisovskiy/borsch/src/cli/build"
 	"github.com/YuriyLisovskiy/borsch/src/interpreter"
 	"github.com/YuriyLisovskiy/borsch/src/util"
 	"github.com/spf13/cobra"
 	"os"
+	"runtime"
+	"strings"
 )
 
 var stdRoot string
@@ -48,6 +51,7 @@ The source code is available at https://github.com/YuriyLisovskiy/borsch-lang`,
 			}
 		} else {
 			interpret := interpreter.NewInterpreter(stdRoot, util.CalcHash([]byte("<стдввід>")), "")
+			fmt.Printf("%s %s (%s, %s)\n", build.AppName, build.Version, build.Time, strings.Title(runtime.GOOS))
 			runInteractiveConsole(interpret)
 		}
 	},
