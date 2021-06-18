@@ -131,7 +131,7 @@ func (i *Interpreter) setVar(name string, value types.ValueType) error {
 
 				// TODO: надрукувати нормальне попередження!
 				fmt.Println(fmt.Sprintf(
-					"Попередження: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
+					"Увага: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
 					value.TypeName(), oldValue.TypeName(), name,
 				))
 				break

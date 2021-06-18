@@ -22,6 +22,9 @@ var FunctionsList = map[string]func(...types.ValueType) (types.ValueType, error)
 	"паніка":     Panic,
 	"середовище": GetEnv,
 	"підтвердити": Assert,
+	"авторське_право": Copyright,
+	"ліцензія": License,
+	"допомога": Help,
 
 	// System calls
 	"вихід": Exit,

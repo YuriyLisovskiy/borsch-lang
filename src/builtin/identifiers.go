@@ -34,4 +34,7 @@ var RegisteredIdentifiers = map[string]int{
 	"додати": FunctionId,
 	"вилучити": FunctionId,
 	"підтвердити": FunctionId,
+	"авторське_право": FunctionId,
+	"ліцензія": FunctionId,
+	"допомога": FunctionId,
 }

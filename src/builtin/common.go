@@ -3,6 +3,7 @@ package builtin
 import (
 	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/builtin/types"
+	"github.com/YuriyLisovskiy/borsch/src/cli/build"
 	"github.com/YuriyLisovskiy/borsch/src/util"
 	"os"
 	"strings"
@@ -83,4 +84,31 @@ func Assert(args ...types.ValueType) (types.ValueType, error) {
 	}
 
 	return nil, util.RuntimeError("функція 'підтвердити()' приймає два, або три аргументи")
+}
+
+func Copyright(args ...types.ValueType) (types.ValueType, error) {
+	if len(args) > 0 {
+		return nil, util.RuntimeError("функція 'авторське_право()' не приймає аргументів")
+	}
+
+	fmt.Println("Copyright (c) 2021 Yuriy Lisovskiy.\nAll Rights Reserved.")
+	return nil, nil
+}
+
+func License(args ...types.ValueType) (types.ValueType, error) {
+	if len(args) > 0 {
+		return nil, util.RuntimeError("функція 'ліцензія()' не приймає аргументів")
+	}
+
+	fmt.Println(build.License)
+	return nil, nil
+}
+
+func Help(args ...types.ValueType) (types.ValueType, error) {
+	if len(args) > 0 {
+		return nil, util.RuntimeError("функція 'допомога()' не приймає аргументів")
+	}
+
+	fmt.Println("Поки що не паше =(")
+	return nil, nil
 }

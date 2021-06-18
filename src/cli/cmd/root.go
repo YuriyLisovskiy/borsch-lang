@@ -52,6 +52,9 @@ The source code is available at https://github.com/YuriyLisovskiy/borsch-lang`,
 		} else {
 			interpret := interpreter.NewInterpreter(stdRoot, util.CalcHash([]byte("<стдввід>")), "")
 			fmt.Printf("%s %s (%s, %s)\n", build.AppName, build.Version, build.Time, strings.Title(runtime.GOOS))
+			fmt.Println(
+				"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.",
+			)
 			runInteractiveConsole(interpret)
 		}
 	},
