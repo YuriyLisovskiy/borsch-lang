@@ -67,3 +67,34 @@ func GetTypeName(typeValue int) string {
 		return "невідомий"
 	}
 }
+
+func GetTypeHash(typeName string) int {
+	switch typeName {
+	case "абиякий":
+		return AnyTypeHash
+	case "без типу":
+		return NoneTypeHash
+	case "дійсний":
+		return RealTypeHash
+	case "цілий":
+		return IntegerTypeHash
+	case "рядок":
+		return StringTypeHash
+	case "логічний":
+		return BoolTypeHash
+	case "список":
+		return ListTypeHash
+	case "словник":
+		return DictionaryTypeHash
+	case "пакет":
+		return PackageTypeHash
+	case "функція":
+		return FunctionTypeHash
+	default:
+		return -1
+	}
+}
+
+func IsBuiltinType(typeName string) bool {
+	return GetTypeHash(typeName) != -1
+}

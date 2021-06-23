@@ -11,16 +11,16 @@ import (
 )
 
 type Parser struct {
-	tokens   []models.Token
-	pos      int
-	fileName string
+	tokens     []models.Token
+	pos        int
+	fileName   string
 }
 
 func NewParser(fileName string, tokens []models.Token) *Parser {
 	return &Parser{
-		tokens:   tokens,
-		pos:      0,
-		fileName: fileName,
+		tokens:     tokens,
+		pos:        0,
+		fileName:   fileName,
 	}
 }
 
@@ -366,6 +366,32 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return forNode, nil
 	}
 
+	functionNode, err := p.parseFunctionDefinition()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.pos < 0 {
+		p.pos = 0
+	}
+
+	if functionNode != nil {
+		return functionNode, nil
+	}
+
+	returnNode, err := p.parseReturnStatement()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.pos < 0 {
+		p.pos = 0
+	}
+
+	if returnNode != nil {
+		return returnNode, nil
+	}
+
 	assignmentNode, err := p.parseVariableAssignment()
 	if err != nil {
 		return nil, err
@@ -420,7 +446,7 @@ func (p *Parser) Parse() (*ast.AST, error) {
 			return nil, errors.New(fmt.Sprintf(
 				"  Файл \"%s\", рядок %d\n    %s\n    %s\nСинтаксична помилка: %s",
 				p.fileName, p.tokens[p.pos-1].Row,
-				tokenString, strings.Repeat(" ", utf8.RuneCountInString(tokenString)) + "^",
+				tokenString, strings.Repeat(" ", utf8.RuneCountInString(tokenString))+"^",
 				err.Error(),
 			))
 		}

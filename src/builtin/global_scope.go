@@ -12,7 +12,7 @@ import (
 /*
 types.FunctionType{
 	Name:       "",
-	Parameters: []types.FunctionParameter{},
+	Arguments: []types.FunctionArgument{},
 	Code:       nil,
 	Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 
@@ -27,14 +27,13 @@ var GlobalScope = map[string]types.ValueType{
 	// I/O
 	"друк": types.FunctionType{
 		Name: "друк",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "а",
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			Print(args...)
 			return nil, nil
@@ -44,14 +43,13 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"друкр": types.FunctionType{
 		Name: "друкр",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "а",
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			Print(append(args, types.StringType{Value: "\n"})...)
 			return nil, nil
@@ -61,14 +59,13 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"ввід": types.FunctionType{
 		Name: "ввід",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.StringTypeHash,
 				Name:       "повідомлення",
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return Input(args...)
 		},
@@ -79,14 +76,13 @@ var GlobalScope = map[string]types.ValueType{
 	// Common
 	"паніка": types.FunctionType{
 		Name: "паніка",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "повідомлення",
 				IsVariadic: false,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			var strArgs []string
 			for _, arg := range args {
@@ -100,14 +96,13 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"середовище": types.FunctionType{
 		Name: "середовище",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.StringTypeHash,
 				Name:       "ключ",
 				IsVariadic: false,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return types.StringType{Value: os.Getenv(args[0].String())}, nil
 		},
@@ -116,7 +111,7 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"підтвердити": types.FunctionType{
 		Name: "підтвердити",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "очікуване",
@@ -133,7 +128,6 @@ var GlobalScope = map[string]types.ValueType{
 				IsVariadic: false,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return nil, Assert(args[0], args[1], args[2].String())
 		},
@@ -141,9 +135,8 @@ var GlobalScope = map[string]types.ValueType{
 		IsBuiltin:  true,
 	},
 	"авторське_право": types.FunctionType{
-		Name:       "авторське_право",
-		Parameters: []types.FunctionParameter{},
-		Code:       nil,
+		Name:      "авторське_право",
+		Arguments: []types.FunctionArgument{},
 		Callable: func([]types.ValueType, map[string]types.ValueType) (types.ValueType, error) {
 			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.AuthorName)
 			return nil, nil
@@ -152,9 +145,8 @@ var GlobalScope = map[string]types.ValueType{
 		IsBuiltin:  true,
 	},
 	"ліцензія": types.FunctionType{
-		Name:       "ліцензія",
-		Parameters: []types.FunctionParameter{},
-		Code:       nil,
+		Name:      "ліцензія",
+		Arguments: []types.FunctionArgument{},
 		Callable: func([]types.ValueType, map[string]types.ValueType) (types.ValueType, error) {
 			fmt.Println(build.License)
 			return nil, nil
@@ -164,14 +156,13 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"допомога": types.FunctionType{
 		Name: "допомога",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.StringTypeHash,
 				Name:       "слово",
 				IsVariadic: false,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return nil, Help(args[0].String())
 		},
@@ -182,14 +173,13 @@ var GlobalScope = map[string]types.ValueType{
 	// System calls
 	"вихід": types.FunctionType{
 		Name: "вихід",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.IntegerTypeHash,
 				Name:       "код",
 				IsVariadic: false,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, kwargs map[string]types.ValueType) (types.ValueType, error) {
 			return nil, Exit(args[0].(types.IntegerType).Value)
 		},
@@ -200,14 +190,13 @@ var GlobalScope = map[string]types.ValueType{
 	// Conversion
 	"цілий": types.FunctionType{
 		Name: "цілий",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToInteger(args...)
 		},
@@ -216,14 +205,13 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"дійсний": types.FunctionType{
 		Name: "дійсний",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToReal(args...)
 		},
@@ -232,14 +220,13 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"рядок": types.FunctionType{
 		Name: "рядок",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToString(args...)
 		},
@@ -248,14 +235,13 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"логічний": types.FunctionType{
 		Name: "логічний",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToBool(args...)
 		},
@@ -264,14 +250,13 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"список": types.FunctionType{
 		Name: "список",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "елементи",
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToList(args...)
 		},
@@ -280,14 +265,13 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"словник": types.FunctionType{
 		Name: "словник",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToDictionary(args...)
 		},
@@ -298,14 +282,13 @@ var GlobalScope = map[string]types.ValueType{
 	// Utilities
 	"довжина": types.FunctionType{
 		Name: "довжина",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "послідовність",
 				IsVariadic: false,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return Length(args[0])
 		},
@@ -314,7 +297,7 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"додати": types.FunctionType{
 		Name: "додати",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.ListTypeHash,
 				Name:       "вхідний_список",
@@ -326,7 +309,6 @@ var GlobalScope = map[string]types.ValueType{
 				IsVariadic: true,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return AppendToList(args[0].(types.ListType), args[1:]...)
 		},
@@ -335,7 +317,7 @@ var GlobalScope = map[string]types.ValueType{
 	},
 	"вилучити": types.FunctionType{
 		Name: "вилучити",
-		Parameters: []types.FunctionParameter{
+		Arguments: []types.FunctionArgument{
 			{
 				TypeHash:   types.DictionaryTypeHash,
 				Name:       "вхідний_словник",
@@ -347,7 +329,6 @@ var GlobalScope = map[string]types.ValueType{
 				IsVariadic: false,
 			},
 		},
-		Code: nil,
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return RemoveFromDictionary(args[0].(types.DictionaryType), args[1])
 		},

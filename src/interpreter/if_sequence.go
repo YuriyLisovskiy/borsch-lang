@@ -8,17 +8,18 @@ import (
 )
 
 func (i *Interpreter) executeIfSequence(
-	blocks []ast.ConditionBlock, elseBlock []models.Token, rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, error) {
+	blocks []ast.ConditionBlock, elseBlock []models.Token,
+	rootDir string, thisPackage, parentPackage string,
+) (types.ValueType, bool, error) {
 	for _, block := range blocks {
-		result, err := i.executeNode(block.Condition, rootDir, thisPackage, parentPackage)
+		result, _, err := i.executeNode(block.Condition, rootDir, thisPackage, parentPackage)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		result, err = builtin.ToBool([]types.ValueType{result}...)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		if result.(types.BoolType).Value {
@@ -30,5 +31,5 @@ func (i *Interpreter) executeIfSequence(
 		return i.executeBlock(map[string]types.ValueType{}, elseBlock, thisPackage, parentPackage)
 	}
 
-	return nil, nil
+	return nil, false, nil
 }

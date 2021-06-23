@@ -11,12 +11,12 @@ func (i *Interpreter) executeLogicalOp(
 	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType Operator,
 	rootDir string, thisPackage, parentPackage string,
 ) (types.ValueType, error) {
-	left, err := i.executeNode(leftNode, rootDir, thisPackage, parentPackage)
+	left, _, err := i.executeNode(leftNode, rootDir, thisPackage, parentPackage)
 	if err != nil {
 		return nil, err
 	}
 
-	right, err := i.executeNode(rightNode, rootDir, thisPackage, parentPackage)
+	right, _, err := i.executeNode(rightNode, rootDir, thisPackage, parentPackage)
 	if err != nil {
 		return nil, err
 	}

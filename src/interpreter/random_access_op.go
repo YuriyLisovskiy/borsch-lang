@@ -10,14 +10,14 @@ import (
 func (i *Interpreter) executeRandomAccessGetOp(
 	targetNode, indexNode ast.ExpressionNode, rootDir string, thisPackage, parentPackage string,
 ) (types.ValueType, error) {
-	targetVal, err := i.executeNode(targetNode, rootDir, thisPackage, parentPackage)
+	targetVal, _, err := i.executeNode(targetNode, rootDir, thisPackage, parentPackage)
 	if err != nil {
 		return nil, err
 	}
 
 	switch target := targetVal.(type) {
 	case types.SequentialType:
-		indexVal, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
+		indexVal, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +34,7 @@ func (i *Interpreter) executeRandomAccessGetOp(
 			return nil, util.RuntimeError("індекси мають бути цілого типу")
 		}
 	case types.DictionaryType:
-		key, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
+		key, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +59,7 @@ func (i *Interpreter) executeRandomAccessSetOp(
 ) (types.ValueType, error) {
 	switch container := variable.(type) {
 	case types.SequentialType:
-		indexVal, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
+		indexVal, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +76,7 @@ func (i *Interpreter) executeRandomAccessSetOp(
 			return nil, util.RuntimeError("індекси мають бути цілого типу")
 		}
 	case types.DictionaryType:
-		key, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
+		key, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}

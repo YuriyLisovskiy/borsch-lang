@@ -2,39 +2,37 @@ package types
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/src/models"
 	"github.com/YuriyLisovskiy/borsch/src/util"
 )
 
-type FunctionParameter struct {
+type FunctionArgument struct {
 	TypeHash   int
 	Name       string
 	IsVariadic bool
 }
 
-func (fp FunctionParameter) TypeName() string {
+func (fp FunctionArgument) TypeName() string {
 	return GetTypeName(fp.TypeHash)
 }
 
 type FunctionType struct {
 	Name       string
-	Parameters []FunctionParameter
-	Code       []models.Token
+	Arguments  []FunctionArgument
 	Callable   func([]ValueType, map[string]ValueType) (ValueType, error)
 	ReturnType int
-	IsBuiltin bool
+	IsBuiltin  bool
 }
 
 func NewFunctionType(
-	name string, parameters []FunctionParameter, code []models.Token, returnType int,
+	name string, arguments []FunctionArgument, returnType int,
+	fn func([]ValueType, map[string]ValueType) (ValueType, error),
 ) FunctionType {
 	return FunctionType{
 		Name:       name,
-		Parameters: parameters,
-		Code:       code,
-		Callable:   nil,
+		Arguments:  arguments,
+		Callable:   fn,
 		ReturnType: returnType,
-		IsBuiltin: false,
+		IsBuiltin:  false,
 	}
 }
 

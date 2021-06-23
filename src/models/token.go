@@ -56,7 +56,10 @@ const (
 	LSquareBracket
 	RSquareBracket
 	Comma
+	FunctionDef
+	Return
 	Name
+	TripleDot
 	AttrAccessOp
 )
 
@@ -75,32 +78,35 @@ var tokenTypeNames = map[int]string{
 	Space:              "пропуск",
 	ExponentOp:         "оператор піднесення до степеня",
 	ModuloOp:           "оператор остачі від ділення",
-	EqualsOp:            "умова рівності",
-	NotEqualsOp:         "умова нерівності",
-	GreaterOrEqualsOp:   "умова 'більше або дорівнює'",
-	GreaterOp:           "умова 'більше'",
-	LessOrEqualsOp:      "умова 'менше або дорівнює'",
-	LessOp:              "умова 'менше'",
-	Assign:              "оператор присвоєння",
-	Add:                 "оператор суми",
-	Sub:                 "оператор різниці",
-	Mul:                 "оператор добутку",
-	Div:                 "оператор частки",
-	LPar:                "відкриваюча дужка",
-	RPar:                "закриваюча дужка",
-	If:                  "якщо",
-	Else:                "інакше",
-	For:                 "для",
-	AndOp:               "оператор логічного 'і'",
-	OrOp:                "оператор логічного 'або'",
-	NotOp:               "оператор логічного заперечення",
-	LCurlyBracket:       "відкриваюча фігурна дужка",
-	RCurlyBracket:       "закриваюча фігурна дужка",
-	LSquareBracket:      "відкриваюча квадратна дужка",
-	RSquareBracket:      "закриваюча квадратна дужка",
-	Comma:               "кома",
-	Name:                "назва",
-	AttrAccessOp:        "оператор доступу до атрибута",
+	EqualsOp:           "умова рівності",
+	NotEqualsOp:        "умова нерівності",
+	GreaterOrEqualsOp:  "умова 'більше або дорівнює'",
+	GreaterOp:          "умова 'більше'",
+	LessOrEqualsOp:     "умова 'менше або дорівнює'",
+	LessOp:             "умова 'менше'",
+	Assign:             "оператор присвоєння",
+	Add:                "оператор суми",
+	Sub:                "оператор різниці",
+	Mul:                "оператор добутку",
+	Div:                "оператор частки",
+	LPar:               "відкриваюча дужка",
+	RPar:               "закриваюча дужка",
+	If:                 "якщо",
+	Else:               "інакше",
+	For:                "для",
+	AndOp:              "оператор логічного 'і'",
+	OrOp:               "оператор логічного 'або'",
+	NotOp:              "оператор логічного заперечення",
+	LCurlyBracket:      "відкриваюча фігурна дужка",
+	RCurlyBracket:      "закриваюча фігурна дужка",
+	LSquareBracket:     "відкриваюча квадратна дужка",
+	RSquareBracket:     "закриваюча квадратна дужка",
+	Comma:              "кома",
+	FunctionDef:        "визначення функції",
+	Return:             "повернення значення",
+	Name:               "назва",
+	TripleDot:          "три крапки",
+	AttrAccessOp:       "оператор доступу до атрибута",
 }
 
 type TokenType struct {
@@ -149,7 +155,7 @@ var TokenTypesList = map[int]TokenType{
 		),
 	},
 	Arrow: {
-		Name: Arrow,
+		Name:  Arrow,
 		Regex: regexp.MustCompile("^->"),
 	},
 	RealNumber: {
@@ -284,9 +290,21 @@ var TokenTypesList = map[int]TokenType{
 		Name:  Comma,
 		Regex: regexp.MustCompile("^,"),
 	},
+	FunctionDef: {
+		Name:  FunctionDef,
+		Regex: regexp.MustCompile("^функція"),
+	},
+	Return: {
+		Name:  Return,
+		Regex: regexp.MustCompile("^повернути"),
+	},
 	Name: {
 		Name:  Name,
 		Regex: regexp.MustCompile("^" + RawNameRegex),
+	},
+	TripleDot: {
+		Name:  TripleDot,
+		Regex: regexp.MustCompile("^\\.{3}"),
 	},
 	AttrAccessOp: {
 		Name:  AttrAccessOp,
