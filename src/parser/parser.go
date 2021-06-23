@@ -65,7 +65,7 @@ func (p *Parser) require(expected ...models.TokenType) (*models.Token, error) {
 func (p *Parser) checkForKeyword(name string) error {
 	if _, ok := builtin.RegisteredIdentifiers[name]; ok {
 		return errors.New(fmt.Sprintf(
-			"неможливо використати ідентифікатор '%s', осткільки він є вбудованим",
+			"неможливо використати ідентифікатор '%s', оскільки він є вбудованим",
 			name,
 		))
 	}
@@ -157,11 +157,6 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, *models.Token, e
 			return nil, name, nil
 		}
 
-		err := p.checkForKeyword(name.Text)
-		if err != nil {
-			return nil, nil, err
-		}
-
 		var variable ast.ExpressionNode = ast.NewVariableNode(*name)
 		randomAccessOp, err := p.parseRandomAccessOperation(variable)
 		if err != nil {
@@ -236,7 +231,7 @@ func (p *Parser) parseFunctionCall(name *models.Token, parent ast.ExpressionNode
 	if lPar != nil && lPar.Type.Name == models.LPar {
 		var args []ast.ExpressionNode
 		if p.match(models.TokenTypesList[models.RPar]) != nil {
-			return ast.NewFunctionCallNode(*name, parent, args), nil
+			return ast.NewCallOpNode(*name, parent, args), nil
 		}
 
 		for {
@@ -256,7 +251,7 @@ func (p *Parser) parseFunctionCall(name *models.Token, parent ast.ExpressionNode
 			}
 		}
 
-		return ast.NewFunctionCallNode(*name, parent, args), nil
+		return ast.NewCallOpNode(*name, parent, args), nil
 	}
 
 	return nil, errors.New("очікується відкриваюча дужка")
@@ -300,7 +295,7 @@ func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
 				return nil, err
 			}
 		} else {
-			err := p.checkForKeyword(name.Text)
+			err = p.checkForKeyword(name.Text)
 			if err != nil {
 				return nil, err
 			}

@@ -118,7 +118,7 @@ func (i *Interpreter) getVar(packageName string, name string) (types.ValueType, 
 		}
 
 		return nil, util.RuntimeError(fmt.Sprintf(
-			"змінну з назвою '%s' не знайдено", name,
+			"ідентифікатор '%s' не визначений", name,
 		))
 	}
 
@@ -202,30 +202,8 @@ func (i *Interpreter) executeNode(
 
 		return pkg, nil
 
-	case ast.FunctionCallNode:
-		var args []types.ValueType
-		for _, arg := range node.Args {
-			sArg, err := i.executeNode(arg, rootDir, thisPackage, parentPackage)
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, sArg)
-		}
-
-		function, found := builtin.FunctionsList[node.FunctionName.Text]
-		if !found {
-			return nil, util.RuntimeError(
-				fmt.Sprintf("функцію з назвою '%s' не знайдено", node.FunctionName.Text),
-			)
-		}
-
-		res, err := function(args...)
-		if err != nil {
-			return nil, err
-		}
-
-		return res, nil
+	case ast.CallOpNode:
+		return i.executeCallOp(&node, rootDir, thisPackage, parentPackage)
 
 	case ast.UnaryOperationNode:
 		operand, err := i.executeNode(node.Operand, rootDir, thisPackage, parentPackage)
@@ -321,7 +299,7 @@ func (i *Interpreter) executeNode(
 			switch assignmentNode := node.LeftNode.(type) {
 			case ast.VariableNode:
 				return nil, i.setVar(thisPackage, assignmentNode.Variable.Text, result)
-			case ast.FunctionCallNode:
+			case ast.CallOpNode:
 				return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
 			case ast.RandomAccessOperationNode:
 				variable, err := i.executeNode(assignmentNode.Operand, rootDir, thisPackage, parentPackage)
@@ -581,6 +559,7 @@ func (i *Interpreter) Execute(
 		return nil, scope, err
 	}
 
+	i.pushScope(thisPackage, builtin.GlobalScope)
 	var result types.ValueType
 	result, scope, err = i.executeAST(scope, thisPackage, parentPackage, asTree)
 	if err != nil {

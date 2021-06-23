@@ -5,24 +5,24 @@ import (
 	"strings"
 )
 
-type FunctionCallNode struct {
-	FunctionName models.Token
+type CallOpNode struct {
+	CallableName models.Token
 	Parent       ExpressionNode
 	Args         []ExpressionNode
 
 	rowNumber int
 }
 
-func NewFunctionCallNode(name models.Token, parent ExpressionNode, args []ExpressionNode) FunctionCallNode {
-	return FunctionCallNode{
-		FunctionName: name,
+func NewCallOpNode(callableName models.Token, parent ExpressionNode, args []ExpressionNode) CallOpNode {
+	return CallOpNode{
+		CallableName: callableName,
 		Parent:       parent,
 		Args:         args,
-		rowNumber:    name.Row,
+		rowNumber:    callableName.Row,
 	}
 }
 
-func (n FunctionCallNode) String() string {
+func (n CallOpNode) String() string {
 	var args []string
 	for _, arg := range n.Args {
 		args = append(args, arg.String())
@@ -33,9 +33,9 @@ func (n FunctionCallNode) String() string {
 		parent = n.Parent.String() + "."
 	}
 
-	return parent + n.FunctionName.Text + "(" + strings.Join(args, ", ") + ")"
+	return parent + n.CallableName.Text + "(" + strings.Join(args, ", ") + ")"
 }
 
-func (n FunctionCallNode) RowNumber() int {
+func (n CallOpNode) RowNumber() int {
 	return n.rowNumber
 }

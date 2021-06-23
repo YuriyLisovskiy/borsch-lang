@@ -4,6 +4,7 @@ const (
 	ConstantKeywordId = iota
 	KeywordId
 	FunctionId
+	TypeId
 )
 
 var RegisteredIdentifiers = map[string]int{
@@ -16,12 +17,13 @@ var RegisteredIdentifiers = map[string]int{
 	"для": KeywordId,
 
 	// Types + cast functions
-	"рядок": FunctionId,
-	"цілий": FunctionId,
-	"дійсний": FunctionId,
-	"логічний": FunctionId,
-	"список": FunctionId,
-	"словник": FunctionId,
+	"абиякий": TypeId,
+	"рядок": TypeId,
+	"цілий": TypeId,
+	"дійсний": TypeId,
+	"логічний": TypeId,
+	"список": TypeId,
+	"словник": TypeId,
 
 	// Functions
 	"друк": FunctionId,

@@ -6,55 +6,32 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/util"
 )
 
-func Length(args ...types.ValueType) (types.ValueType, error) {
-	if len(args) == 1 {
-		switch arg := args[0].(type) {
-		case types.SequentialType:
-			return types.IntegerType{Value: arg.Length()}, nil
-		case types.DictionaryType:
-			return types.IntegerType{Value: arg.Length()}, nil
-		}
-
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
-			"об'єкт типу '%s' не має довжини", args[0].TypeName(),
-		))
-	}
-
-	return types.NoneType{}, util.RuntimeError("функція 'довжина()' приймає лише один аргумент")
-}
-
-func AppendToList(args ...types.ValueType) (types.ValueType, error) {
-	if len(args) < 2 {
-		return nil, util.RuntimeError("функція 'додати()' приймає принаймні два аргументи")
-	}
-
-	switch list := args[0].(type) {
-	case types.ListType:
-		args = args[1:]
-		for _, arg := range args {
-			list.Values = append(list.Values, arg)
-		}
-
-		return list, nil
-	default:
-		return nil, util.RuntimeError("першим аргументом має бути об'єкт списку")
-	}
-}
-
-func RemoveFromDictionary(args ...types.ValueType) (types.ValueType, error) {
-	if len(args) != 2 {
-		return nil, util.RuntimeError("функція 'вилучити()' приймає лише два аргументи")
-	}
-
-	switch container := args[0].(type) {
+func Length(sequence types.ValueType) (types.ValueType, error) {
+	switch arg := sequence.(type) {
+	case types.SequentialType:
+		return types.IntegerType{Value: arg.Length()}, nil
 	case types.DictionaryType:
-		err := container.RemoveElement(args[1])
-		if err != nil {
-			return nil, util.RuntimeError(err.Error())
-		}
-
-		return container, nil
-	default:
-		return nil, util.RuntimeError("першим аргументом має бути об'єкт з типом 'словник'")
+		return types.IntegerType{Value: arg.Length()}, nil
 	}
+
+	return nil, util.RuntimeError(fmt.Sprintf(
+		"об'єкт типу '%s' не має довжини", sequence.TypeName(),
+	))
+}
+
+func AppendToList(list types.ListType, values ...types.ValueType) (types.ValueType, error) {
+	for _, value := range values {
+		list.Values = append(list.Values, value)
+	}
+
+	return list, nil
+}
+
+func RemoveFromDictionary(dict types.DictionaryType, key types.ValueType) (types.ValueType, error) {
+	err := dict.RemoveElement(key)
+	if err != nil {
+		return nil, util.RuntimeError(err.Error())
+	}
+
+	return dict, nil
 }

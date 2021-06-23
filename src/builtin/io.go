@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func Print(args ...types.ValueType) (types.ValueType, error) {
+func Print(args ...types.ValueType) {
 	var strArgs []string
 	for _, arg := range args {
 		strArgs = append(strArgs, arg.String())
@@ -24,19 +24,10 @@ func Print(args ...types.ValueType) (types.ValueType, error) {
 			), `\t`, "\t", -1,
 		),
 	)
-	return nil, nil
-}
-
-func PrintLn(args ...types.ValueType) (types.ValueType, error) {
-	return Print(append(args, types.StringType{Value: "\n"})...)
 }
 
 func Input(args ...types.ValueType) (types.ValueType, error) {
-	_, err := Print(args...)
-	if err != nil {
-		return nil, util.InternalError(err.Error())
-	}
-
+	Print(args...)
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
 	if err != nil {

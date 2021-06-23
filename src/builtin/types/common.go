@@ -3,7 +3,8 @@ package types
 import "errors"
 
 const (
-	NoneTypeHash = iota
+	AnyTypeHash = iota
+	NoneTypeHash
 	RealTypeHash
 	IntegerTypeHash
 	StringTypeHash
@@ -11,6 +12,7 @@ const (
 	ListTypeHash
 	DictionaryTypeHash
 	PackageTypeHash
+	FunctionTypeHash
 )
 
 type ValueType interface {
@@ -41,6 +43,8 @@ func getIndex(index, length int64) (int64, error) {
 
 func GetTypeName(typeValue int) string {
 	switch typeValue {
+	case AnyTypeHash:
+		return "абиякий"
 	case NoneTypeHash:
 		return "без типу"
 	case RealTypeHash:
@@ -57,6 +61,8 @@ func GetTypeName(typeValue int) string {
 		return "словник"
 	case PackageTypeHash:
 		return "пакет"
+	case FunctionTypeHash:
+		return "функція"
 	default:
 		return "невідомий"
 	}
