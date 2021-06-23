@@ -25,14 +25,15 @@ func boolToFloat64(v bool) float64 {
 }
 
 func (i *Interpreter) executeArithmeticOp(
-	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType Operator, rootDir string, currentFile string,
+	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType Operator,
+	rootDir string, thisPackage, parentPackage string,
 ) (types.ValueType, error) {
-	left, err := i.executeNode(leftNode, rootDir, currentFile)
+	left, err := i.executeNode(leftNode, rootDir, thisPackage, parentPackage)
 	if err != nil {
 		return nil, err
 	}
 
-	right, err := i.executeNode(rightNode, rootDir, currentFile)
+	right, err := i.executeNode(rightNode, rootDir, thisPackage, parentPackage)
 	if err != nil {
 		return nil, err
 	}

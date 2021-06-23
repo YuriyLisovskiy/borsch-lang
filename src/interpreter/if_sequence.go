@@ -8,10 +8,10 @@ import (
 )
 
 func (i *Interpreter) executeIfSequence(
-	blocks []ast.ConditionBlock, elseBlock []models.Token, rootDir string, currentFile string,
+	blocks []ast.ConditionBlock, elseBlock []models.Token, rootDir string, thisPackage, parentPackage string,
 ) (types.ValueType, error) {
 	for _, block := range blocks {
-		result, err := i.executeNode(block.Condition, rootDir, currentFile)
+		result, err := i.executeNode(block.Condition, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}
@@ -22,12 +22,12 @@ func (i *Interpreter) executeIfSequence(
 		}
 
 		if result.(types.BoolType).Value {
-			return i.executeBlock(map[string]types.ValueType{}, block.Tokens, currentFile)
+			return i.executeBlock(map[string]types.ValueType{}, block.Tokens, thisPackage, parentPackage)
 		}
 	}
 
 	if len(elseBlock) > 0 {
-		return i.executeBlock(map[string]types.ValueType{}, elseBlock, currentFile)
+		return i.executeBlock(map[string]types.ValueType{}, elseBlock, thisPackage, parentPackage)
 	}
 
 	return nil, nil

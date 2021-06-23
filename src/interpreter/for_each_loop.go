@@ -9,7 +9,7 @@ import (
 
 func (i *Interpreter) executeForEachLoop(
 	indexVar, itemVar models.Token, containerValue types.ValueType,
-	body []models.Token, currentFile string,
+	body []models.Token, thisPackage, parentPackage string,
 ) (types.ValueType, error) {
 	switch container := containerValue.(type) {
 	case types.SequentialType:
@@ -28,7 +28,7 @@ func (i *Interpreter) executeForEachLoop(
 				}
 			}
 
-			result, err := i.executeBlock(scope, body, currentFile)
+			result, err := i.executeBlock(scope, body, thisPackage, parentPackage)
 			if err != nil {
 				return nil, err
 			}

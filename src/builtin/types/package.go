@@ -8,13 +8,15 @@ import (
 type PackageType struct {
 	IsBuiltin  bool
 	Name       string
+	Parent     string
 	Attributes map[string]ValueType
 }
 
-func NewPackageType(isBuiltin bool, name string, attrs map[string]ValueType) PackageType {
+func NewPackageType(isBuiltin bool, name, parent string, attrs map[string]ValueType) PackageType {
 	return PackageType{
 		IsBuiltin:  isBuiltin,
 		Name:       name,
+		Parent:     parent,
 		Attributes: attrs,
 	}
 }

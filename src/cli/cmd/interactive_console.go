@@ -17,6 +17,7 @@ import (
 var (
 	historyFile = filepath.Join(os.TempDir(), ".borsch_interactive_console_history")
 	keywords    []string
+	//packages    map[string][]string
 )
 
 func init() {
@@ -25,6 +26,22 @@ func init() {
 			keywords = append(keywords, name+"(")
 		} else {
 			keywords = append(keywords, name)
+		}
+	}
+}
+
+func pushKeywords(parent, name string, value types.ValueType) {
+	switch v := value.(type) {
+	case types.SequentialType, types.DictionaryType, types.BoolType, types.IntegerType, types.NoneType, types.RealType:
+		if parent != "" {
+			//packages[parent] = append(packages[parent], name)
+		} else {
+			keywords = append(keywords, name)
+		}
+	case types.PackageType:
+		keywords = append(keywords, name)
+		for attrName, attrValue := range v.Attributes {
+			pushKeywords(name, attrName, attrValue)
 		}
 	}
 }
@@ -52,18 +69,8 @@ func getPromptText(iteration int) string {
 	return ">>> "
 }
 
-func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
-	editor := liner.NewLiner()
-	defer func() {
-		if err := editor.Close(); err != nil {
-			panic(err)
-		}
-	}()
-
-	editor.SetCtrlCAborts(true)
-
-	nameEndingRegex := regexp.MustCompile("(" + models.RawNameRegex + "$)")
-	editor.SetWordCompleter(func(line string, pos int) (head string, completions []string, tail string) {
+func makeCompleter(nameEndingRegex regexp.Regexp) func(string, int) (string, []string, string) {
+	return func(line string, pos int) (head string, completions []string, tail string) {
 		head = string([]rune(line)[:pos])
 		tail = string([]rune(line)[pos:])
 		matches := nameEndingRegex.FindAllString(head, -1)
@@ -78,7 +85,19 @@ func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 		}
 
 		return
-	})
+	}
+}
+
+func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
+	editor := liner.NewLiner()
+	defer func() {
+		if err := editor.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	editor.SetCtrlCAborts(true)
+	editor.SetWordCompleter(makeCompleter(*regexp.MustCompile("(" + models.RawNameRegex + "$)")))
 
 	if file, err := os.Open(historyFile); err == nil {
 		_, err = editor.ReadHistory(file)
@@ -104,7 +123,7 @@ func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 			}
 
 			code += "\n" + fragment
-			if fragment == ";" {
+			if fragment == ";" || (!(strings.Contains(code, "{") || strings.Contains(code, "}")) && strings.HasSuffix(fragment, ";")) {
 				break
 			}
 
@@ -118,14 +137,20 @@ func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 		var result types.ValueType
 		var err error
 		result, scope, err = interpreterInstance.Execute(
-			scope, "<стдввід>", strings.TrimPrefix(code, "\n"),
+			"<стдввід>", "", scope, strings.TrimPrefix(code, "\n"),
 		)
 		if err != nil {
 			fmt.Printf("Відстеження (стек викликів):\n%s\n", err.Error())
 		} else if result != nil {
-			if _, ok := result.(types.NoneType); !ok {
+			switch result.(type) {
+			case types.NoneType, types.PackageType:
+			default:
 				fmt.Println(result.Representation())
 			}
+		}
+
+		for name, value := range scope {
+			pushKeywords("", name, value)
 		}
 	}
 

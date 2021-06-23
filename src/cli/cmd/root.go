@@ -38,19 +38,18 @@ The source code is available at https://github.com/YuriyLisovskiy/borsch-lang`,
 
 		if len(args) > 0 {
 			filePath := args[0]
-			fileHash := util.CalcHash([]byte(filePath))
-			interpret := interpreter.NewInterpreter(stdRoot, fileHash, "")
+			interpret := interpreter.NewInterpreter(stdRoot, filePath, "")
 			content, err := util.ReadFile(filePath)
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
-				_, err = interpret.ExecuteFile(content, fileHash, filePath, false)
+				_, err = interpret.ExecuteFile(filePath, "", content, false)
 				if err != nil {
 					fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 				}
 			}
 		} else {
-			interpret := interpreter.NewInterpreter(stdRoot, util.CalcHash([]byte("<стдввід>")), "")
+			interpret := interpreter.NewInterpreter(stdRoot, "<стдввід>", "")
 			fmt.Printf("%s %s (%s, %s)\n", build.AppName, build.Version, build.Time, strings.Title(runtime.GOOS))
 			fmt.Println(
 				"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.",

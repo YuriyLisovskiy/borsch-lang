@@ -24,23 +24,23 @@ func (n ConditionBlock) RowNumber() int {
 	return n.Condition.RowNumber()
 }
 
-type IfSequenceNode struct {
+type IfNode struct {
 	Blocks    []ConditionBlock
 	ElseBlock []models.Token
 }
 
-func NewIfSequenceNode(mainCondition ExpressionNode, mainConditionTokens []models.Token) IfSequenceNode {
-	return IfSequenceNode{
+func NewIfNode(mainCondition ExpressionNode, mainConditionTokens []models.Token) IfNode {
+	return IfNode{
 		Blocks: []ConditionBlock{
 			NewConditionBlock(mainCondition, mainConditionTokens),
 		},
 	}
 }
 
-func (n IfSequenceNode) String() string {
+func (n IfNode) String() string {
 	return n.Blocks[0].String()
 }
 
-func (n IfSequenceNode) RowNumber() int {
+func (n IfNode) RowNumber() int {
 	return n.Blocks[0].RowNumber()
 }

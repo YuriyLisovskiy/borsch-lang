@@ -262,16 +262,16 @@ func (p *Parser) parseFunctionCall(name *models.Token, parent ast.ExpressionNode
 	return nil, errors.New("очікується відкриваюча дужка")
 }
 
-func (p *Parser) parseIncludeDirective() (ast.ExpressionNode, error) {
+func (p *Parser) parseImport() (ast.ExpressionNode, error) {
 	isStd := false
-	includeDirective := p.match(models.TokenTypesList[models.IncludeStdDirective])
-	if includeDirective != nil {
+	importDirective := p.match(models.TokenTypesList[models.ImportStdDirective])
+	if importDirective != nil {
 		isStd = true
 	} else {
-		includeDirective = p.match(models.TokenTypesList[models.IncludeDirective])
+		importDirective = p.match(models.TokenTypesList[models.ImportDirective])
 	}
 
-	if includeDirective != nil {
+	if importDirective != nil {
 		arrow := p.match(models.TokenTypesList[models.Arrow])
 		name := ""
 		if arrow != nil {
@@ -283,7 +283,7 @@ func (p *Parser) parseIncludeDirective() (ast.ExpressionNode, error) {
 			name = token.Text
 		}
 
-		return ast.NewIncludeDirectiveNode(*includeDirective, name, isStd), nil
+		return ast.NewImportNode(*importDirective, name, isStd), nil
 	}
 
 	return nil, nil
@@ -332,7 +332,7 @@ func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
 }
 
 func (p *Parser) parseRow() (ast.ExpressionNode, error) {
-	includeDirectiveNode, err := p.parseIncludeDirective()
+	includeDirectiveNode, err := p.parseImport()
 	if err != nil {
 		return nil, err
 	}

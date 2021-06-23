@@ -73,92 +73,111 @@ func (op Operator) Description() string {
 }
 
 type Interpreter struct {
-	stdRoot            string
-	scopes             []map[string]types.ValueType
-	currentPackageHash string
-	parentPackageHash  string
-	includedPackages   map[string]types.ValueType
+	stdRoot          string
+	scopes           map[string][]map[string]types.ValueType
+	currentPackage   string
+	parentPackage    string
+	includedPackages map[string]types.ValueType
 }
 
-func NewInterpreter(stdRoot, currPkgHash, parentPkgHash string) *Interpreter {
+func NewInterpreter(stdRoot, currentPackage, parentPackage string) *Interpreter {
 	return &Interpreter{
-		stdRoot:            stdRoot,
-		currentPackageHash: currPkgHash,
-		parentPackageHash:  parentPkgHash,
-		scopes:             []map[string]types.ValueType{},
-		includedPackages:   map[string]types.ValueType{},
+		stdRoot:          stdRoot,
+		currentPackage:   currentPackage,
+		parentPackage:    parentPackage,
+		scopes:           map[string][]map[string]types.ValueType{},
+		includedPackages: map[string]types.ValueType{},
 	}
 }
 
-func (i *Interpreter) pushScope(scope map[string]types.ValueType) {
-	i.scopes = append(i.scopes, scope)
+func (i *Interpreter) pushScope(packageName string, scope map[string]types.ValueType) {
+	i.scopes[packageName] = append(i.scopes[packageName], scope)
 }
 
-func (i *Interpreter) popScope() map[string]types.ValueType {
-	if len(i.scopes) == 0 {
-		panic("Not enough scopes")
-	}
-
-	scope := i.scopes[len(i.scopes)-1]
-	i.scopes = i.scopes[:len(i.scopes)-1]
-	return scope
-}
-
-func (i *Interpreter) getVar(name string) (types.ValueType, error) {
-	lastScopeIdx := len(i.scopes) - 1
-	for idx := lastScopeIdx; idx >= 0; idx-- {
-		if val, ok := i.scopes[idx][name]; ok {
-			return val, nil
+func (i *Interpreter) popScope(packageName string) map[string]types.ValueType {
+	if scopes, ok := i.scopes[packageName]; ok {
+		if len(scopes) == 0 {
+			panic("Not enough scopes")
 		}
+
+		scope := scopes[len(scopes)-1]
+		i.scopes[packageName] = scopes[:len(scopes)-1]
+		return scope
 	}
 
-	return nil, util.RuntimeError(fmt.Sprintf(
-		"змінну з назвою '%s' не знайдено", name,
-	))
+	panic(fmt.Sprintf("Scopes for '%s' package does not exist", packageName))
 }
 
-func (i *Interpreter) setVar(name string, value types.ValueType) error {
-	scopesLen := len(i.scopes)
-	for idx := 0; idx < scopesLen; idx++ {
-		if oldValue, ok := i.scopes[idx][name]; ok {
-			if oldValue.TypeHash() != value.TypeHash() {
-				if scopesLen == 1 {
-					return util.RuntimeError(fmt.Sprintf(
-						"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
-						value.TypeName(), name, oldValue.TypeName(),
+func (i *Interpreter) getVar(packageName string, name string) (types.ValueType, error) {
+	if scopes, ok := i.scopes[packageName]; ok {
+		lastScopeIdx := len(scopes) - 1
+		for idx := lastScopeIdx; idx >= 0; idx-- {
+			if val, ok := scopes[idx][name]; ok {
+				return val, nil
+			}
+		}
+
+		return nil, util.RuntimeError(fmt.Sprintf(
+			"змінну з назвою '%s' не знайдено", name,
+		))
+	}
+
+	panic(fmt.Sprintf("Scopes for '%s' package does not exist", packageName))
+}
+
+func (i *Interpreter) setVar(packageName, name string, value types.ValueType) error {
+	if scopes, ok := i.scopes[packageName]; ok {
+		scopesLen := len(scopes)
+		for idx := 0; idx < scopesLen; idx++ {
+			if oldValue, ok := scopes[idx][name]; ok {
+				if oldValue.TypeHash() != value.TypeHash() {
+					if scopesLen == 1 {
+						return util.RuntimeError(fmt.Sprintf(
+							"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
+							value.TypeName(), name, oldValue.TypeName(),
+						))
+					}
+
+					// TODO: надрукувати нормальне попередження!
+					fmt.Println(fmt.Sprintf(
+						"Увага: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
+						value.TypeName(), oldValue.TypeName(), name,
 					))
+					break
 				}
 
-				// TODO: надрукувати нормальне попередження!
-				fmt.Println(fmt.Sprintf(
-					"Увага: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
-					value.TypeName(), oldValue.TypeName(), name,
-				))
-				break
+				scopes[idx][name] = value
+				i.scopes[packageName] = scopes
+				return nil
 			}
-
-			i.scopes[idx][name] = value
-			return nil
 		}
+
+		scopes[scopesLen-1][name] = value
+		i.scopes[packageName] = scopes
+		return nil
 	}
 
-	i.scopes[scopesLen-1][name] = value
-	return nil
+	panic(fmt.Sprintf("Scopes for '%s' package does not exist", packageName))
 }
 
+// executeNode
+// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) executeNode(
-	rootNode ast.ExpressionNode, rootDir string, currentFile string,
+	rootNode ast.ExpressionNode, rootDir string, thisPackage, parentPackage string,
 ) (types.ValueType, error) {
 	switch node := rootNode.(type) {
-	case ast.IncludeDirectiveNode:
+	case ast.ImportNode:
 		if node.IsStd {
 			node.FilePath = filepath.Join(i.stdRoot, node.FilePath)
 		} else if !filepath.IsAbs(node.FilePath) {
 			node.FilePath = filepath.Join(rootDir, node.FilePath)
 		}
 
-		fileHash := util.CalcHash([]byte(node.FilePath))
-		pkg, ok := i.includedPackages[fileHash]
+		if node.FilePath == parentPackage {
+			return nil, util.RuntimeError("циклічний імпорт заборонений")
+		}
+
+		pkg, ok := i.includedPackages[node.FilePath]
 		if !ok {
 			var err error
 			fileContent, err := util.ReadFile(node.FilePath)
@@ -166,16 +185,16 @@ func (i *Interpreter) executeNode(
 				return nil, err
 			}
 
-			pkg, err = i.ExecuteFile(fileContent, fileHash, node.FilePath, node.IsStd)
+			pkg, err = i.ExecuteFile(node.FilePath, thisPackage, fileContent, node.IsStd)
 			if err != nil {
 				return nil, err
 			}
 
-			i.includedPackages[fileHash] = pkg
+			i.includedPackages[node.FilePath] = pkg
 		}
 
 		if node.Name != "" {
-			err := i.setVar(node.Name, pkg)
+			err := i.setVar(thisPackage, node.Name, pkg)
 			if err != nil {
 				return nil, err
 			}
@@ -186,7 +205,7 @@ func (i *Interpreter) executeNode(
 	case ast.FunctionCallNode:
 		var args []types.ValueType
 		for _, arg := range node.Args {
-			sArg, err := i.executeNode(arg, rootDir, currentFile)
+			sArg, err := i.executeNode(arg, rootDir, thisPackage, parentPackage)
 			if err != nil {
 				return nil, err
 			}
@@ -209,7 +228,7 @@ func (i *Interpreter) executeNode(
 		return res, nil
 
 	case ast.UnaryOperationNode:
-		operand, err := i.executeNode(node.Operand, rootDir, currentFile)
+		operand, err := i.executeNode(node.Operand, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}
@@ -266,51 +285,53 @@ func (i *Interpreter) executeNode(
 	case ast.BinOperationNode:
 		switch node.Operator.Type.Name {
 		case models.ExponentOp:
-			return i.executeArithmeticOp(node.LeftNode, node.RightNode, exponentOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, exponentOp, rootDir, thisPackage, parentPackage)
 		case models.ModuloOp:
-			return i.executeArithmeticOp(node.LeftNode, node.RightNode, moduloOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, moduloOp, rootDir, thisPackage, parentPackage)
 		case models.Add:
-			return i.executeArithmeticOp(node.LeftNode, node.RightNode, sumOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, sumOp, rootDir, thisPackage, parentPackage)
 		case models.Sub:
-			return i.executeArithmeticOp(node.LeftNode, node.RightNode, subOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, subOp, rootDir, thisPackage, parentPackage)
 		case models.Mul:
-			return i.executeArithmeticOp(node.LeftNode, node.RightNode, mulOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, mulOp, rootDir, thisPackage, parentPackage)
 		case models.Div:
-			return i.executeArithmeticOp(node.LeftNode, node.RightNode, divOp, rootDir, currentFile)
+			return i.executeArithmeticOp(node.LeftNode, node.RightNode, divOp, rootDir, thisPackage, parentPackage)
 		case models.AndOp:
-			return i.executeLogicalOp(node.LeftNode, node.RightNode, andOp, rootDir, currentFile)
+			return i.executeLogicalOp(node.LeftNode, node.RightNode, andOp, rootDir, thisPackage, parentPackage)
 		case models.OrOp:
-			return i.executeLogicalOp(node.LeftNode, node.RightNode, orOp, rootDir, currentFile)
+			return i.executeLogicalOp(node.LeftNode, node.RightNode, orOp, rootDir, thisPackage, parentPackage)
 		case models.EqualsOp:
-			return i.executeComparisonOp(node.LeftNode, node.RightNode, equalsOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, equalsOp, rootDir, thisPackage, parentPackage)
 		case models.NotEqualsOp:
-			return i.executeComparisonOp(node.LeftNode, node.RightNode, notEqualsOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, notEqualsOp, rootDir, thisPackage, parentPackage)
 		case models.GreaterOp:
-			return i.executeComparisonOp(node.LeftNode, node.RightNode, greaterOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, greaterOp, rootDir, thisPackage, parentPackage)
 		case models.GreaterOrEqualsOp:
-			return i.executeComparisonOp(node.LeftNode, node.RightNode, greaterOrEqualsOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, greaterOrEqualsOp, rootDir, thisPackage, parentPackage)
 		case models.LessOp:
-			return i.executeComparisonOp(node.LeftNode, node.RightNode, lessOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, lessOp, rootDir, thisPackage, parentPackage)
 		case models.LessOrEqualsOp:
-			return i.executeComparisonOp(node.LeftNode, node.RightNode, lessOrEqualsOp, rootDir, currentFile)
+			return i.executeComparisonOp(node.LeftNode, node.RightNode, lessOrEqualsOp, rootDir, thisPackage, parentPackage)
 		case models.Assign:
-			result, err := i.executeNode(node.RightNode, rootDir, currentFile)
+			result, err := i.executeNode(node.RightNode, rootDir, thisPackage, parentPackage)
 			if err != nil {
 				return nil, err
 			}
 
 			switch assignmentNode := node.LeftNode.(type) {
 			case ast.VariableNode:
-				return nil, i.setVar(assignmentNode.Variable.Text, result)
+				return nil, i.setVar(thisPackage, assignmentNode.Variable.Text, result)
 			case ast.FunctionCallNode:
 				return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
 			case ast.RandomAccessOperationNode:
-				variable, err := i.executeNode(assignmentNode.Operand, rootDir, currentFile)
+				variable, err := i.executeNode(assignmentNode.Operand, rootDir, thisPackage, parentPackage)
 				if err != nil {
 					return nil, err
 				}
 
-				variable, err = i.executeRandomAccessSetOp(assignmentNode.Index, variable, result, rootDir, currentFile)
+				variable, err = i.executeRandomAccessSetOp(
+					assignmentNode.Index, variable, result, rootDir, thisPackage, parentPackage,
+				)
 				if err != nil {
 					return nil, err
 				}
@@ -319,12 +340,14 @@ func (i *Interpreter) executeNode(
 				for {
 					switch external := operand.(type) {
 					case ast.RandomAccessOperationNode:
-						opVar, err := i.executeNode(external.Operand, rootDir, currentFile)
+						opVar, err := i.executeNode(external.Operand, rootDir, thisPackage, parentPackage)
 						if err != nil {
 							return nil, err
 						}
 
-						variable, err = i.executeRandomAccessSetOp(external.Index, opVar, variable, rootDir, currentFile)
+						variable, err = i.executeRandomAccessSetOp(
+							external.Index, opVar, variable, rootDir, thisPackage, parentPackage,
+						)
 						if err != nil {
 							return nil, err
 						}
@@ -332,7 +355,7 @@ func (i *Interpreter) executeNode(
 						operand = external.Operand
 						continue
 					case ast.VariableNode:
-						err = i.setVar(external.Variable.Text, variable)
+						err = i.setVar(thisPackage, external.Variable.Text, variable)
 					}
 
 					break
@@ -340,7 +363,7 @@ func (i *Interpreter) executeNode(
 
 				return variable, nil
 			case ast.AttrOpNode:
-				variable, err := i.executeNode(assignmentNode.Expression, rootDir, currentFile)
+				variable, err := i.executeNode(assignmentNode.Expression, rootDir, thisPackage, parentPackage)
 				if err != nil {
 					return nil, err
 				}
@@ -351,7 +374,7 @@ func (i *Interpreter) executeNode(
 				}
 
 				if assignmentNode.Base != nil {
-					return variable, i.setVar(assignmentNode.Base.Text, variable)
+					return variable, i.setVar(thisPackage, assignmentNode.Base.Text, variable)
 				}
 
 				return variable, nil
@@ -361,22 +384,22 @@ func (i *Interpreter) executeNode(
 		}
 
 	case ast.RandomAccessOperationNode:
-		return i.executeRandomAccessGetOp(node.Operand, node.Index, rootDir, currentFile)
+		return i.executeRandomAccessGetOp(node.Operand, node.Index, rootDir, thisPackage, parentPackage)
 
 	case ast.ListSlicingNode:
-		container, err := i.executeNode(node.Operand, rootDir, currentFile)
+		container, err := i.executeNode(node.Operand, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}
 
 		if container.TypeHash() == types.ListTypeHash {
-			fromIdx, err := i.executeNode(node.LeftIndex, rootDir, currentFile)
+			fromIdx, err := i.executeNode(node.LeftIndex, rootDir, thisPackage, parentPackage)
 			if err != nil {
 				return nil, err
 			}
 
 			if fromIdx.TypeHash() == types.IntegerTypeHash {
-				toIdx, err := i.executeNode(node.RightIndex, rootDir, currentFile)
+				toIdx, err := i.executeNode(node.RightIndex, rootDir, thisPackage, parentPackage)
 				if err != nil {
 					return nil, err
 				}
@@ -398,16 +421,16 @@ func (i *Interpreter) executeNode(
 			container.TypeName(),
 		))
 
-	case ast.IfSequenceNode:
-		return i.executeIfSequence(node.Blocks, node.ElseBlock, rootDir, currentFile)
+	case ast.IfNode:
+		return i.executeIfSequence(node.Blocks, node.ElseBlock, rootDir, thisPackage, parentPackage)
 
 	case ast.ForEachNode:
-		container, err := i.executeNode(node.Container, rootDir, currentFile)
+		container, err := i.executeNode(node.Container, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}
 
-		return i.executeForEachLoop(node.IndexVar, node.ItemVar, container, node.Body, currentFile)
+		return i.executeForEachLoop(node.IndexVar, node.ItemVar, container, node.Body, thisPackage, parentPackage)
 
 	case ast.RealTypeNode:
 		return types.NewRealType(node.Value.Text)
@@ -424,7 +447,7 @@ func (i *Interpreter) executeNode(
 	case ast.ListTypeNode:
 		list := types.NewListType()
 		for _, valueNode := range node.Values {
-			value, err := i.executeNode(valueNode, rootDir, currentFile)
+			value, err := i.executeNode(valueNode, rootDir, thisPackage, parentPackage)
 			if err != nil {
 				return nil, err
 			}
@@ -437,12 +460,12 @@ func (i *Interpreter) executeNode(
 	case ast.DictionaryTypeNode:
 		dict := types.NewDictionaryType()
 		for keyNode, valueNode := range node.Map {
-			key, err := i.executeNode(keyNode, rootDir, currentFile)
+			key, err := i.executeNode(keyNode, rootDir, thisPackage, parentPackage)
 			if err != nil {
 				return nil, err
 			}
 
-			value, err := i.executeNode(valueNode, rootDir, currentFile)
+			value, err := i.executeNode(valueNode, rootDir, thisPackage, parentPackage)
 			if err != nil {
 				return nil, err
 			}
@@ -456,14 +479,14 @@ func (i *Interpreter) executeNode(
 		return dict, nil
 
 	case ast.VariableNode:
-		val, err := i.getVar(node.Variable.Text)
+		val, err := i.getVar(thisPackage, node.Variable.Text)
 		if err != nil {
 			return nil, err
 		}
 
 		return val, nil
 	case ast.AttrOpNode:
-		parent, err := i.executeNode(node.Expression, rootDir, currentFile)
+		parent, err := i.executeNode(node.Expression, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}
@@ -479,20 +502,22 @@ func (i *Interpreter) executeNode(
 	return nil, util.RuntimeError("невідома помилка")
 }
 
+// executeAST
+// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) executeAST(
-	scope map[string]types.ValueType, file string, tree *ast.AST,
+	scope map[string]types.ValueType, thisPackage, parentPackage string, tree *ast.AST,
 ) (types.ValueType, map[string]types.ValueType, error) {
 	var filePath string
 	var dir string
 	var err error
-	if file == "<стдввід>" {
+	if thisPackage == "<стдввід>" {
 		filePath = "<стдввід>"
 		dir, err = os.Getwd()
 		if err != nil {
 			return nil, scope, util.InternalError(err.Error())
 		}
 	} else {
-		filePath, err = filepath.Abs(file)
+		filePath, err = filepath.Abs(thisPackage)
 		if err != nil {
 			return nil, scope, util.InternalError(err.Error())
 		}
@@ -501,9 +526,9 @@ func (i *Interpreter) executeAST(
 	}
 
 	var result types.ValueType = nil
-	i.pushScope(scope)
+	i.pushScope(thisPackage, scope)
 	for _, node := range tree.Nodes {
-		result, err = i.executeNode(node, dir, file)
+		result, err = i.executeNode(node, dir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, scope, errors.New(fmt.Sprintf(
 				"  Файл \"%s\", рядок %d\n    %s\n%s",
@@ -516,20 +541,22 @@ func (i *Interpreter) executeAST(
 		//}
 	}
 
-	scope = i.popScope()
+	scope = i.popScope(thisPackage)
 	return result, scope, nil
 }
 
+// executeBlock
+// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) executeBlock(
-	scope map[string]types.ValueType, tokens []models.Token, currentFile string,
+	scope map[string]types.ValueType, tokens []models.Token, thisPackage, parentPackage string,
 ) (types.ValueType, error) {
-	p := parser.NewParser(currentFile, tokens)
+	p := parser.NewParser(thisPackage, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
 		return nil, err
 	}
 
-	result, _, err := i.executeAST(scope, currentFile, asTree)
+	result, _, err := i.executeAST(scope, thisPackage, parentPackage, asTree)
 	if err != nil {
 		return nil, err
 	}
@@ -537,23 +564,25 @@ func (i *Interpreter) executeBlock(
 	return result, nil
 }
 
+// Execute
+// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) Execute(
-	scope map[string]types.ValueType, file string, code string,
+	thisPackage, parentPackage string, scope map[string]types.ValueType, code string,
 ) (types.ValueType, map[string]types.ValueType, error) {
-	lexer := src.NewLexer(file, code)
+	lexer := src.NewLexer(thisPackage, code)
 	tokens, err := lexer.Lex()
 	if err != nil {
 		return nil, scope, err
 	}
 
-	p := parser.NewParser(file, tokens)
+	p := parser.NewParser(thisPackage, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
 		return nil, scope, err
 	}
 
 	var result types.ValueType
-	result, scope, err = i.executeAST(scope, file, asTree)
+	result, scope, err = i.executeAST(scope, thisPackage, parentPackage, asTree)
 	if err != nil {
 		return nil, scope, err
 	}
@@ -561,18 +590,15 @@ func (i *Interpreter) Execute(
 	return result, scope, nil
 }
 
+// ExecuteFile
+// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) ExecuteFile(
-	content []byte, hashSum string, filePath string, isBuiltin bool,
+	packageName, parentPackage string, content []byte, isBuiltin bool,
 ) (types.ValueType, error) {
-	packageInterpreter := NewInterpreter(i.stdRoot, hashSum, i.currentPackageHash)
-	_, scope, err := packageInterpreter.Execute(map[string]types.ValueType{}, filePath, string(content))
+	_, scope, err := i.Execute(packageName, parentPackage, map[string]types.ValueType{}, string(content))
 	if err != nil {
 		return nil, err
 	}
 
-	for key, pkg := range packageInterpreter.includedPackages {
-		i.includedPackages[key] = pkg
-	}
-
-	return types.NewPackageType(isBuiltin, filePath, scope), nil
+	return types.NewPackageType(isBuiltin, packageName, parentPackage, scope), nil
 }

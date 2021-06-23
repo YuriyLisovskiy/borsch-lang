@@ -28,7 +28,7 @@ func (p *Parser) parseIfSequence() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		ifNode := ast.NewIfSequenceNode(conditionNode, blockOfCode)
+		ifNode := ast.NewIfNode(conditionNode, blockOfCode)
 		for p.match(models.TokenTypesList[models.Else]) != nil {
 			if p.match(models.TokenTypesList[models.If]) != nil {
 				_, err := p.require(models.TokenTypesList[models.LPar])

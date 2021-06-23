@@ -20,8 +20,8 @@ func (t *Token) String() string {
 const (
 	SingleLineComment = iota
 	MultiLineComment
-	IncludeStdDirective
-	IncludeDirective
+	ImportStdDirective
+	ImportDirective
 	Arrow
 	RealNumber
 	IntegerNumber
@@ -61,20 +61,20 @@ const (
 )
 
 var tokenTypeNames = map[int]string{
-	SingleLineComment:   "однорядковий коментар",
-	MultiLineComment:    "багаторядковий коментар",
-	IncludeStdDirective: "директива підключення файлу стандартної бібліотеки",
-	IncludeDirective:    "директива підключення файлу",
-	Arrow:               "стрілка",
-	RealNumber:          "дійсне число",
-	IntegerNumber:       "ціле число",
-	String:              "рядок",
-	Bool:                "логічний тип",
-	Semicolon:           "крапка з комою",
-	Colon:               "двокрапка",
-	Space:               "пропуск",
-	ExponentOp:          "оператор піднесення до степеня",
-	ModuloOp:            "оператор остачі від ділення",
+	SingleLineComment:  "однорядковий коментар",
+	MultiLineComment:   "багаторядковий коментар",
+	ImportStdDirective: "директива підключення файлу стандартної бібліотеки",
+	ImportDirective:    "директива підключення файлу",
+	Arrow:              "стрілка",
+	RealNumber:         "дійсне число",
+	IntegerNumber:      "ціле число",
+	String:             "рядок",
+	Bool:               "логічний тип",
+	Semicolon:          "крапка з комою",
+	Colon:              "двокрапка",
+	Space:              "пропуск",
+	ExponentOp:         "оператор піднесення до степеня",
+	ModuloOp:           "оператор остачі від ділення",
 	EqualsOp:            "умова рівності",
 	NotEqualsOp:         "умова нерівності",
 	GreaterOrEqualsOp:   "умова 'більше або дорівнює'",
@@ -136,14 +136,14 @@ var TokenTypesList = map[int]TokenType{
 		Name:  MultiLineComment,
 		Regex: regexp.MustCompile("^(/\\*)(.|\\n)*?(\\*/)"),
 	},
-	IncludeStdDirective: {
-		Name: IncludeStdDirective,
+	ImportStdDirective: {
+		Name: ImportStdDirective,
 		Regex: regexp.MustCompile(
 			"^@\\s*<\\s*([^.\\\\/<\\r\\n].*[^>\\r\\n])\\s*>",
 		),
 	},
-	IncludeDirective: {
-		Name: IncludeDirective,
+	ImportDirective: {
+		Name: ImportDirective,
 		Regex: regexp.MustCompile(
 			"^@\\s*\"\\s*([^\"\\r\\n].*[^\"\\r\\n])\\s*\"",
 		),

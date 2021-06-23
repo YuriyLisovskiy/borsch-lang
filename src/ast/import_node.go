@@ -4,7 +4,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/models"
 )
 
-type IncludeDirectiveNode struct {
+type ImportNode struct {
 	Directive models.Token
 	Name      string
 	FilePath  string
@@ -13,9 +13,9 @@ type IncludeDirectiveNode struct {
 	rowNumber int
 }
 
-func NewIncludeDirectiveNode(directive models.Token, name string, isStd bool) IncludeDirectiveNode {
+func NewImportNode(directive models.Token, name string, isStd bool) ImportNode {
 	matches := directive.Type.Regex.FindAllStringSubmatch(directive.Text, -1)
-	return IncludeDirectiveNode{
+	return ImportNode{
 		Directive: directive,
 		Name:      name,
 		FilePath:  matches[0][1],
@@ -24,10 +24,10 @@ func NewIncludeDirectiveNode(directive models.Token, name string, isStd bool) In
 	}
 }
 
-func (n IncludeDirectiveNode) String() string {
+func (n ImportNode) String() string {
 	return n.Directive.String()
 }
 
-func (n IncludeDirectiveNode) RowNumber() int {
+func (n ImportNode) RowNumber() int {
 	return n.rowNumber
 }
