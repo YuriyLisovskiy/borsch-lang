@@ -28,14 +28,17 @@ func (i *Interpreter) executeForEachLoop(
 				}
 			}
 
-			result, forceReturn, err := i.executeBlock(scope, body, thisPackage, parentPackage)
+			_, forceReturn, err := i.executeBlock(scope, body, thisPackage, parentPackage)
 			if err != nil {
 				return nil, false, err
 			}
 
-			if result != nil {
-				return result, forceReturn, nil
+			if forceReturn {
+				return types.NilType{}, forceReturn, nil
 			}
+			//if result != nil {
+			//	return result, forceReturn, nil
+			//}
 		}
 	default:
 		return nil, false, util.RuntimeError(fmt.Sprintf(
@@ -43,5 +46,5 @@ func (i *Interpreter) executeForEachLoop(
 		))
 	}
 
-	return nil, false, nil
+	return types.NilType{}, false, nil
 }

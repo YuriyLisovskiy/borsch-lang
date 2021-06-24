@@ -58,8 +58,10 @@ const (
 	Comma
 	FunctionDef
 	Return
+	Nil
 	Name
 	TripleDot
+	QuestionMark
 	AttrAccessOp
 )
 
@@ -104,8 +106,10 @@ var tokenTypeNames = map[int]string{
 	Comma:              "кома",
 	FunctionDef:        "визначення функції",
 	Return:             "повернення значення",
+	Nil:             "нуль",
 	Name:               "назва",
 	TripleDot:          "три крапки",
+	QuestionMark:       "знак запитання",
 	AttrAccessOp:       "оператор доступу до атрибута",
 }
 
@@ -298,6 +302,10 @@ var TokenTypesList = map[int]TokenType{
 		Name:  Return,
 		Regex: regexp.MustCompile("^повернути"),
 	},
+	Nil: {
+		Name:  Nil,
+		Regex: regexp.MustCompile("^нуль"),
+	},
 	Name: {
 		Name:  Name,
 		Regex: regexp.MustCompile("^" + RawNameRegex),
@@ -305,6 +313,10 @@ var TokenTypesList = map[int]TokenType{
 	TripleDot: {
 		Name:  TripleDot,
 		Regex: regexp.MustCompile("^\\.{3}"),
+	},
+	QuestionMark: {
+		Name:  QuestionMark,
+		Regex: regexp.MustCompile("^\\?"),
 	},
 	AttrAccessOp: {
 		Name:  AttrAccessOp,

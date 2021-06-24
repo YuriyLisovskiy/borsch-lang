@@ -31,5 +31,5 @@ func (i *Interpreter) executeIfSequence(
 		return i.executeBlock(map[string]types.ValueType{}, elseBlock, thisPackage, parentPackage)
 	}
 
-	return nil, false, nil
+	return types.NilType{}, false, nil
 }

@@ -328,7 +328,7 @@ func (i *Interpreter) executeNode(
 
 			switch leftNode := node.LeftNode.(type) {
 			case ast.VariableNode:
-				return nil, false, i.setVar(thisPackage, leftNode.Variable.Text, rightNode)
+				return rightNode, false, i.setVar(thisPackage, leftNode.Variable.Text, rightNode)
 			case ast.CallOpNode:
 				return nil, false, util.RuntimeError("неможливо присвоїти значення виклику функції")
 			case ast.RandomAccessOperationNode:
@@ -370,7 +370,7 @@ func (i *Interpreter) executeNode(
 				}
 
 				return variable, false, nil
-			case ast.AttrOpNode:
+			case ast.AttrAccessOpNode:
 				base, _, err := i.executeNode(leftNode.Base, rootDir, thisPackage, parentPackage)
 				if err != nil {
 					return nil, false, err
@@ -497,6 +497,9 @@ func (i *Interpreter) executeNode(
 
 		return dict, false, nil
 
+	case ast.NilTypeNode:
+		return types.NilType{}, false, nil
+
 	case ast.VariableNode:
 		val, err := i.getVar(thisPackage, node.Variable.Text)
 		if err != nil {
@@ -505,7 +508,7 @@ func (i *Interpreter) executeNode(
 
 		return val, false, nil
 
-	case ast.AttrOpNode:
+	case ast.AttrAccessOpNode:
 		val, _, err := i.executeNode(node.Base, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, false, err

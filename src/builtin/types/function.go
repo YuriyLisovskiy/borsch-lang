@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"github.com/YuriyLisovskiy/borsch/src/util"
 )
@@ -9,6 +10,21 @@ type FunctionArgument struct {
 	TypeHash   int
 	Name       string
 	IsVariadic bool
+	IsNullable bool
+}
+
+type FunctionReturnType struct {
+	TypeHash   int
+	IsNullable bool
+}
+
+func (r *FunctionReturnType) String() string {
+	res := GetTypeName(r.TypeHash)
+	if r.IsNullable {
+		res += "?"
+	}
+
+	return res
 }
 
 func (fp FunctionArgument) TypeName() string {
@@ -19,13 +35,13 @@ type FunctionType struct {
 	Name       string
 	Arguments  []FunctionArgument
 	Callable   func([]ValueType, map[string]ValueType) (ValueType, error)
-	ReturnType int
+	ReturnType FunctionReturnType
 	IsBuiltin  bool
 	Attributes map[string]ValueType
 }
 
 func NewFunctionType(
-	name string, arguments []FunctionArgument, returnType int,
+	name string, arguments []FunctionArgument, returnType FunctionReturnType,
 	fn func([]ValueType, map[string]ValueType) (ValueType, error),
 ) FunctionType {
 	function := FunctionType{
@@ -46,7 +62,7 @@ func (t FunctionType) String() string {
 		template = "вбудована " + template
 	}
 
-	return fmt.Sprintf(template, t.Name, GetTypeName(t.ReturnType))
+	return fmt.Sprintf(template, t.Name, t.ReturnType.String())
 }
 
 func (t FunctionType) Representation() string {
@@ -96,4 +112,23 @@ func (t FunctionType) SetAttr(name string, value ValueType) (ValueType, error) {
 
 	t.Attributes[name] = value
 	return t, nil
+}
+
+func (t FunctionType) CompareTo(other ValueType) (int, error) {
+	switch right := other.(type) {
+	case NilType:
+	case FunctionType:
+		return -2, util.RuntimeError(fmt.Sprintf(
+			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
+			"%s", t.TypeName(), right.TypeName(),
+		))
+	default:
+		return -2, errors.New(fmt.Sprintf(
+			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+			"%s", t.TypeName(), right.TypeName(),
+		))
+	}
+
+	// -2 is something other than -1, 0 or 1 and means 'not equals'
+	return -2, nil
 }

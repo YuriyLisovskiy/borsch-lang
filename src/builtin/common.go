@@ -24,7 +24,7 @@ func Assert(expected, actual types.ValueType, errorTemplate string) error {
 	}
 
 	switch left := leftV.(type) {
-	case types.NoneType:
+	case types.NilType:
 		return nil
 	case types.RealType:
 		right := rightV.(types.RealType)

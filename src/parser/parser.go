@@ -152,6 +152,10 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, *models.Token, e
 		return dict, nil, nil
 	}
 
+	if nilToken := p.match(models.TokenTypesList[models.Nil]); nilToken != nil {
+		return ast.NewNilTypeNode(nilToken), nil, nil
+	}
+
 	if name := p.match(models.TokenTypesList[models.Name]); name != nil {
 		if p.match(models.TokenTypesList[models.LPar]) != nil {
 			return nil, name, nil

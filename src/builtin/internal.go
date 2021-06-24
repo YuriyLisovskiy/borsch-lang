@@ -32,13 +32,17 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "а",
 				IsVariadic: true,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			Print(args...)
-			return nil, nil
+			return types.NilType{}, nil
 		},
-		ReturnType: types.NoneTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.NilTypeHash,
+			IsNullable: true,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -49,13 +53,17 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "а",
 				IsVariadic: true,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			Print(append(args, types.StringType{Value: "\n"})...)
-			return nil, nil
+			return types.NilType{}, nil
 		},
-		ReturnType: types.NoneTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.NilTypeHash,
+			IsNullable: true,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -66,12 +74,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.StringTypeHash,
 				Name:       "повідомлення",
 				IsVariadic: true,
+				IsNullable: false,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return Input(args...)
 		},
-		ReturnType: types.StringTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.StringTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -84,6 +96,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "повідомлення",
 				IsVariadic: false,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
@@ -92,9 +105,12 @@ var RuntimeFunctions = map[string]types.ValueType{
 				strArgs = append(strArgs, arg.String())
 			}
 
-			return nil, util.RuntimeError(strings.Join(strArgs, " "))
+			return types.NilType{}, util.RuntimeError(strings.Join(strArgs, " "))
 		},
-		ReturnType: types.NoneTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.NilTypeHash,
+			IsNullable: true,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -105,12 +121,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.StringTypeHash,
 				Name:       "ключ",
 				IsVariadic: false,
+				IsNullable: false,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return types.StringType{Value: os.Getenv(args[0].String())}, nil
 		},
-		ReturnType: types.StringTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.StringTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -121,22 +141,40 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "очікуване",
 				IsVariadic: false,
+				IsNullable: true,
 			},
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "фактичне",
 				IsVariadic: false,
+				IsNullable: true,
 			},
 			{
 				TypeHash:   types.StringTypeHash,
 				Name:       "повідомлення_про_помилку",
-				IsVariadic: false,
+				IsVariadic: true,
+				IsNullable: false,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
-			return nil, Assert(args[0], args[1], args[2].String())
+			message := ""
+			if len(args) > 2 {
+				messageArgs := args[2:]
+				sz := len(messageArgs)
+				for c := 0; c < sz; c++ {
+					message += messageArgs[c].String()
+					if c < sz - 1 {
+						message += " "
+					}
+				}
+			}
+
+			return types.NilType{}, Assert(args[0], args[1], message)
 		},
-		ReturnType: types.NoneTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.NilTypeHash,
+			IsNullable: true,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -145,9 +183,12 @@ var RuntimeFunctions = map[string]types.ValueType{
 		Arguments: []types.FunctionArgument{},
 		Callable: func([]types.ValueType, map[string]types.ValueType) (types.ValueType, error) {
 			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.AuthorName)
-			return nil, nil
+			return types.NilType{}, nil
 		},
-		ReturnType: types.NoneTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.NilTypeHash,
+			IsNullable: true,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -156,9 +197,12 @@ var RuntimeFunctions = map[string]types.ValueType{
 		Arguments: []types.FunctionArgument{},
 		Callable: func([]types.ValueType, map[string]types.ValueType) (types.ValueType, error) {
 			fmt.Println(build.License)
-			return nil, nil
+			return types.NilType{}, nil
 		},
-		ReturnType: types.NoneTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.NilTypeHash,
+			IsNullable: true,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -169,12 +213,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.StringTypeHash,
 				Name:       "слово",
 				IsVariadic: false,
+				IsNullable: false,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
-			return nil, Help(args[0].String())
+			return types.NilType{}, Help(args[0].String())
 		},
-		ReturnType: types.NoneTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.NilTypeHash,
+			IsNullable: true,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -187,12 +235,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.IntegerTypeHash,
 				Name:       "код",
 				IsVariadic: false,
+				IsNullable: false,
 			},
 		},
 		Callable: func(args []types.ValueType, kwargs map[string]types.ValueType) (types.ValueType, error) {
-			return nil, Exit(args[0].(types.IntegerType).Value)
+			return types.NilType{}, Exit(args[0].(types.IntegerType).Value)
 		},
-		ReturnType: types.NoneTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.NilTypeHash,
+			IsNullable: true,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -205,12 +257,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToInteger(args...)
 		},
-		ReturnType: types.IntegerTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.IntegerTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -221,12 +277,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToReal(args...)
 		},
-		ReturnType: types.RealTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.RealTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -237,12 +297,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToString(args...)
 		},
-		ReturnType: types.StringTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.StringTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -253,12 +317,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToBool(args...)
 		},
-		ReturnType: types.BoolTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.BoolTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -269,12 +337,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "елементи",
 				IsVariadic: true,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToList(args...)
 		},
-		ReturnType: types.ListTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.ListTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -285,12 +357,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "значення",
 				IsVariadic: true,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return ToDictionary(args...)
 		},
-		ReturnType: types.DictionaryTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.DictionaryTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -303,12 +379,16 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "послідовність",
 				IsVariadic: false,
+				IsNullable: false,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return Length(args[0])
 		},
-		ReturnType: types.IntegerTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.IntegerTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -319,17 +399,22 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.ListTypeHash,
 				Name:       "вхідний_список",
 				IsVariadic: false,
+				IsNullable: false,
 			},
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "елементи",
 				IsVariadic: true,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return AppendToList(args[0].(types.ListType), args[1:]...)
 		},
-		ReturnType: types.ListTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.ListTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},
@@ -340,17 +425,22 @@ var RuntimeFunctions = map[string]types.ValueType{
 				TypeHash:   types.DictionaryTypeHash,
 				Name:       "вхідний_словник",
 				IsVariadic: false,
+				IsNullable: false,
 			},
 			{
 				TypeHash:   types.AnyTypeHash,
 				Name:       "ключ",
 				IsVariadic: false,
+				IsNullable: true,
 			},
 		},
 		Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
 			return RemoveFromDictionary(args[0].(types.DictionaryType), args[1])
 		},
-		ReturnType: types.DictionaryTypeHash,
+		ReturnType: types.FunctionReturnType{
+			TypeHash:   types.DictionaryTypeHash,
+			IsNullable: false,
+		},
 		IsBuiltin:  true,
 		Attributes: map[string]types.ValueType{},
 	},

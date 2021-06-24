@@ -4,7 +4,7 @@ import "errors"
 
 const (
 	AnyTypeHash = iota
-	NoneTypeHash
+	NilTypeHash
 	RealTypeHash
 	IntegerTypeHash
 	StringTypeHash
@@ -22,6 +22,7 @@ type ValueType interface {
 	TypeName() string
 	GetAttr(string) (ValueType, error)
 	SetAttr(string, ValueType) (ValueType, error)
+	CompareTo(ValueType) (int, error)
 }
 
 type SequentialType interface {
@@ -45,8 +46,8 @@ func GetTypeName(typeValue int) string {
 	switch typeValue {
 	case AnyTypeHash:
 		return "абиякий"
-	case NoneTypeHash:
-		return "без типу"
+	case NilTypeHash:
+		return "нульовий"
 	case RealTypeHash:
 		return "дійсний"
 	case IntegerTypeHash:
@@ -72,8 +73,8 @@ func GetTypeHash(typeName string) int {
 	switch typeName {
 	case "абиякий":
 		return AnyTypeHash
-	case "без типу":
-		return NoneTypeHash
+	case "нульовий":
+		return NilTypeHash
 	case "дійсний":
 		return RealTypeHash
 	case "цілий":

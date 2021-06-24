@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/models"
 )
 
-func (p *Parser) parseParameter() (types.FunctionArgument, error) {
+func (p *Parser) parseArgument() (types.FunctionArgument, error) {
 	paramName, err := p.require(models.TokenTypesList[models.Name])
 	if err != nil {
 		return types.FunctionArgument{}, errors.New(fmt.Sprintf("%s аргументу", err.Error()))
@@ -34,10 +34,12 @@ func (p *Parser) parseParameter() (types.FunctionArgument, error) {
 		return types.FunctionArgument{}, errors.New(fmt.Sprintf("'%s' не є типом", typeName.Text))
 	}
 
+	isNullable := p.match(models.TokenTypesList[models.QuestionMark]) != nil
 	return types.FunctionArgument{
 		TypeHash:   types.GetTypeHash(typeName.Text),
 		Name:       paramName.Text,
 		IsVariadic: isVariadic,
+		IsNullable: isNullable,
 	}, nil
 }
 
@@ -56,17 +58,17 @@ func (p *Parser) parseFunctionDefinition() (ast.ExpressionNode, error) {
 		var parameters []types.FunctionArgument
 		if p.match(models.TokenTypesList[models.RPar]) == nil {
 			for {
-				parameter, err := p.parseParameter()
+				argument, err := p.parseArgument()
 				if err != nil {
 					return nil, err
 				}
 
-				parameters = append(parameters, parameter)
+				parameters = append(parameters, argument)
 				if p.match(models.TokenTypesList[models.Comma]) == nil {
 					break
 				}
 
-				if parameter.IsVariadic {
+				if argument.IsVariadic {
 					return nil, errors.New("'...' можна використовувати лише для останнього аргумента")
 				}
 			}
@@ -88,7 +90,10 @@ func (p *Parser) parseFunctionDefinition() (ast.ExpressionNode, error) {
 			}
 		}
 
-		retType := types.NoneTypeHash
+		retType := types.FunctionReturnType{
+			TypeHash:   types.NilTypeHash,
+			IsNullable: true,
+		}
 		if p.match(models.TokenTypesList[models.Arrow]) != nil {
 			retTypeName, err := p.require(models.TokenTypesList[models.Name])
 			if err != nil {
@@ -99,7 +104,8 @@ func (p *Parser) parseFunctionDefinition() (ast.ExpressionNode, error) {
 				return nil, errors.New(fmt.Sprintf("'%s' не є типом", retTypeName.Text))
 			}
 
-			retType = types.GetTypeHash(retTypeName.Text)
+			retType.TypeHash = types.GetTypeHash(retTypeName.Text)
+			retType.IsNullable = p.match(models.TokenTypesList[models.QuestionMark]) != nil
 		}
 
 		body, err := p.readScope()

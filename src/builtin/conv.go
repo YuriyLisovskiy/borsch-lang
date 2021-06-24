@@ -13,7 +13,7 @@ func ToInteger(args ...types.ValueType) (types.ValueType, error) {
 	}
 
 	if len(args) != 1 {
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"функція 'цілий()' приймає лише один аргумент (отримано %d)", len(args),
 		))
 	}
@@ -26,7 +26,7 @@ func ToInteger(args ...types.ValueType) (types.ValueType, error) {
 	case types.StringType:
 		intVal, err := strconv.ParseInt(vt.Value, 10, 64)
 		if err != nil {
-			return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+			return nil, util.RuntimeError(fmt.Sprintf(
 				"некоректний літерал для функції 'цілий()' з основою 10: '%s'", vt.Value,
 			))
 		}
@@ -39,7 +39,7 @@ func ToInteger(args ...types.ValueType) (types.ValueType, error) {
 
 		return types.IntegerType{Value: 0}, nil
 	default:
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як ціле число", args[0].TypeName(),
 		))
 	}
@@ -51,7 +51,7 @@ func ToReal(args ...types.ValueType) (types.ValueType, error) {
 	}
 
 	if len(args) != 1 {
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"функція 'дійсний()' приймає лише один аргумент (отримано %d)", len(args),
 		))
 	}
@@ -64,7 +64,7 @@ func ToReal(args ...types.ValueType) (types.ValueType, error) {
 	case types.StringType:
 		realVal, err := strconv.ParseFloat(vt.Value, 64)
 		if err != nil {
-			return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+			return nil, util.RuntimeError(fmt.Sprintf(
 				"не вдалося перетворити рядок у дійсне число: '%s'", vt.Value,
 			))
 		}
@@ -77,7 +77,7 @@ func ToReal(args ...types.ValueType) (types.ValueType, error) {
 
 		return types.RealType{Value: 0.0}, nil
 	default:
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як дійсне число", args[0].TypeName(),
 		))
 	}
@@ -89,7 +89,7 @@ func ToString(args ...types.ValueType) (types.ValueType, error) {
 	}
 
 	if len(args) != 1 {
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"функція 'рядок()' приймає лише один аргумент (отримано %d)", len(args),
 		))
 	}
@@ -97,10 +97,10 @@ func ToString(args ...types.ValueType) (types.ValueType, error) {
 	switch vt := args[0].(type) {
 	case types.StringType:
 		return vt, nil
-	case types.RealType, types.IntegerType, types.BoolType, types.NoneType:
+	case types.RealType, types.IntegerType, types.BoolType, types.NilType:
 		return types.StringType{Value: vt.String()}, nil
 	default:
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як рядок", args[0].TypeName(),
 		))
 	}
@@ -112,7 +112,7 @@ func ToBool(args ...types.ValueType) (types.ValueType, error) {
 	}
 
 	if len(args) != 1 {
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"функція 'логічний()' приймає лише один аргумент (отримано %d)", len(args),
 		))
 	}
@@ -126,10 +126,10 @@ func ToBool(args ...types.ValueType) (types.ValueType, error) {
 		return types.BoolType{Value: vt.Value != ""}, nil
 	case types.BoolType:
 		return vt, nil
-	case types.NoneType:
+	case types.NilType:
 		return types.BoolType{Value: false}, nil
 	default:
-		return types.NoneType{}, util.RuntimeError(fmt.Sprintf(
+		return nil, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як логічне значення", args[0].TypeName(),
 		))
 	}

@@ -10,14 +10,14 @@ import (
 type FunctionDefNode struct {
 	Name       models.Token
 	Arguments  []types.FunctionArgument
-	ReturnType int
+	ReturnType types.FunctionReturnType
 	Body       []models.Token
 
 	rowNumber int
 }
 
 func NewFunctionDefNode(
-	name models.Token, args []types.FunctionArgument, retType int, body []models.Token,
+	name models.Token, args []types.FunctionArgument, retType types.FunctionReturnType, body []models.Token,
 ) FunctionDefNode {
 	return FunctionDefNode{
 		Name:       name,
@@ -37,10 +37,14 @@ func (n FunctionDefNode) String() string {
 		}
 
 		strParam += param.TypeName()
+		if param.IsNullable {
+			strParam += "?"
+		}
+
 		params = append(params, strParam)
 	}
 
-	return "функція " + n.Name.Text + "(" + strings.Join(params, ", ") + ") -> " + types.GetTypeName(n.ReturnType)
+	return "функція " + n.Name.Text + "(" + strings.Join(params, ", ") + ") -> " + n.ReturnType.String()
 }
 
 func (n FunctionDefNode) RowNumber() int {

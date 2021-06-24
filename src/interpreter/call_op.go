@@ -78,11 +78,20 @@ func (i *Interpreter) executeCallOp(
 				return nil, err
 			}
 
+			// TODO: remove
 			if arg == nil {
-				arg = types.NoneType{}
+				//arg = types.NilType{}
+				panic("fatal: argument is nil")
 			}
 
-			if function.Arguments[c].TypeHash != types.AnyTypeHash && arg.TypeHash() != function.Arguments[c].TypeHash {
+			if arg.TypeHash() == types.NilTypeHash {
+				if function.Arguments[c].TypeHash != types.NilTypeHash && !function.Arguments[c].IsNullable {
+					return nil, util.RuntimeError(fmt.Sprintf(
+						"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
+						function.Arguments[c].Name, arg.String(),
+					))
+				}
+			} else if function.Arguments[c].TypeHash != types.AnyTypeHash && arg.TypeHash() != function.Arguments[c].TypeHash {
 				return nil, util.RuntimeError(fmt.Sprintf(
 					"аргумент '%s' очікує параметр з типом '%s', отримано '%s'",
 					function.Arguments[c].Name, function.Arguments[c].TypeName(), arg.TypeName(),
@@ -125,14 +134,23 @@ func (i *Interpreter) executeCallOp(
 			return nil, err
 		}
 
+		// TODO: remove
 		if res == nil {
-			res = types.NoneType{}
+			res = types.NilType{}
+			panic("fatal: returned value is nil")
 		}
 
-		if function.ReturnType != types.AnyTypeHash && res.TypeHash() != function.ReturnType {
+		if res.TypeHash() == types.NilTypeHash {
+			if function.ReturnType.TypeHash != types.NilTypeHash && !function.ReturnType.IsNullable {
+				return nil, util.RuntimeError(fmt.Sprintf(
+					"'%s()' повертає ненульове значення, отримано '%s'",
+					function.Name, res.String(),
+				))
+			}
+		} else if function.ReturnType.TypeHash != types.AnyTypeHash && res.TypeHash() != function.ReturnType.TypeHash {
 			return nil, util.RuntimeError(fmt.Sprintf(
 				"'%s()' повертає значення типу '%s', отримано значення з типом '%s'",
-				function.Name, types.GetTypeName(function.ReturnType), res.TypeName(),
+				function.Name, function.ReturnType.String(), res.TypeName(),
 			))
 		}
 
