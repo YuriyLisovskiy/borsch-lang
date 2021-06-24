@@ -7,22 +7,32 @@ import (
 type AttrOpNode struct {
 	Base       *models.Token
 	Expression ExpressionNode
-	Attr       models.Token
+	Attr       ExpressionNode
 
 	rowNumber int
 }
 
-func NewGetAttrOpNode(base *models.Token, expression ExpressionNode, attr models.Token) AttrOpNode {
+func NewGetAttrOpNode(base *models.Token, expression ExpressionNode, attr ExpressionNode, rowNumber int) AttrOpNode {
 	return AttrOpNode{
 		Base:       base,
 		Expression: expression,
 		Attr:       attr,
-		rowNumber:  attr.Row,
+		rowNumber:  rowNumber,
 	}
 }
 
 func (n AttrOpNode) String() string {
-	return n.Expression.String() + "." + n.Attr.String()
+	res := n.Expression.String() + "."
+	switch attr := n.Attr.(type) {
+	case VariableNode:
+		res += attr.Variable.Text
+	case CallOpNode:
+		res = attr.String()
+	default:
+		panic("fatal error")
+	}
+
+	return res
 }
 
 func (n AttrOpNode) RowNumber() int {

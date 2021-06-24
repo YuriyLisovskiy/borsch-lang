@@ -213,7 +213,12 @@ func (i *Interpreter) executeNode(
 		return functionDef, false, i.setVar(thisPackage, node.Name.Text, functionDef)
 
 	case ast.CallOpNode:
-		res, err := i.executeCallOp(&node, rootDir, thisPackage, parentPackage)
+		callable, err := i.getVar(thisPackage, node.CallableName.Text)
+		if err != nil {
+			return nil, false, err
+		}
+
+		res, err := i.executeCallOp(&node, callable, rootDir, thisPackage, parentPackage)
 		return res, false, err
 
 	case ast.ReturnNode:
@@ -375,9 +380,16 @@ func (i *Interpreter) executeNode(
 					return nil, false, err
 				}
 
-				variable, err = variable.SetAttr(assignmentNode.Attr.Text, result)
-				if err != nil {
-					return nil, false, err
+				switch attr := assignmentNode.Attr.(type) {
+				case ast.VariableNode:
+					variable, err = variable.SetAttr(attr.Variable.Text, result)
+					if err != nil {
+						return nil, false, err
+					}
+				case ast.CallOpNode:
+					return nil, false, util.RuntimeError("неможливо присвоїти значення виклику функції")
+				default:
+					panic("fatal error")
 				}
 
 				if assignmentNode.Base != nil {
@@ -386,7 +398,7 @@ func (i *Interpreter) executeNode(
 
 				return variable, false, nil
 			default:
-				return nil, false, util.RuntimeError("неможливо присвоїти значення")
+				panic("fatal error")
 			}
 		}
 
@@ -502,17 +514,51 @@ func (i *Interpreter) executeNode(
 		return val, false, nil
 
 	case ast.AttrOpNode:
-		parent, _, err := i.executeNode(node.Expression, rootDir, thisPackage, parentPackage)
+		val, _, err := i.executeNode(node.Expression, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, false, err
 		}
 
-		val, err := parent.GetAttr(node.Attr.Text)
-		if err != nil {
-			return nil, false, err
+		if node.Attr != nil {
+			switch attr := node.Attr.(type) {
+			case ast.VariableNode:
+				//val, _, err := i.executeNode(node.Expression, rootDir, thisPackage, parentPackage)
+				//if err != nil {
+				//	return nil, false, err
+				//}
+
+				val, err = val.GetAttr(attr.Variable.Text)
+				if err != nil {
+					return nil, false, err
+				}
+
+				return val, false, nil
+			case ast.CallOpNode:
+				//val, _, err := i.executeNode(attr.Parent, rootDir, thisPackage, parentPackage)
+				//if err != nil {
+				//	return nil, false, err
+				//}
+
+				//val, err = i.executeCallOp(&attr, rootDir, thisPackage, parentPackage)
+				//return res, false, err
+
+				val, err = val.GetAttr(attr.CallableName.Text)
+				if err != nil {
+					return nil, false, err
+				}
+
+				val, err = i.executeCallOp(&attr, val, rootDir, thisPackage, parentPackage)
+				if err != nil {
+					return nil, false, err
+				}
+
+				return val, false, nil
+			}
+		} else {
+			panic("unknown error")
 		}
 
-		return val, false, nil
+		//return val, false, nil
 	}
 
 	return nil, false, util.RuntimeError("невідома помилка")

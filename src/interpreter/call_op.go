@@ -8,14 +8,9 @@ import (
 )
 
 func (i *Interpreter) executeCallOp(
-	node *ast.CallOpNode, rootDir, thisPackage, parentPackage string,
+	node *ast.CallOpNode, callable types.ValueType, rootDir, thisPackage, parentPackage string,
 ) (types.ValueType, error) {
-	attr, err := i.getVar(thisPackage, node.CallableName.Text)
-	if err != nil {
-		return nil, err
-	}
-
-	switch function := attr.(type) {
+	switch function := callable.(type) {
 	case types.FunctionType:
 		parametersLen := len(node.Parameters)
 		argsLen := len(function.Arguments)
@@ -145,7 +140,7 @@ func (i *Interpreter) executeCallOp(
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
 			"неможливо застосувати оператор виклику до об'єкта '%s' з типом '%s'",
-			node.CallableName.Text, attr.TypeName(),
+			node.CallableName.Text, callable.TypeName(),
 		))
 	}
 }

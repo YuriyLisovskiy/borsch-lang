@@ -40,6 +40,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.NoneTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"друкр": types.FunctionType{
 		Name: "друкр",
@@ -56,6 +57,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.NoneTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"ввід": types.FunctionType{
 		Name: "ввід",
@@ -71,6 +73,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.StringTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 
 	// Common
@@ -93,6 +96,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.NoneTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"середовище": types.FunctionType{
 		Name: "середовище",
@@ -108,6 +112,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.StringTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"підтвердити": types.FunctionType{
 		Name: "підтвердити",
@@ -133,6 +138,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.NoneTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"авторське_право": types.FunctionType{
 		Name:      "авторське_право",
@@ -143,6 +149,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.NoneTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"ліцензія": types.FunctionType{
 		Name:      "ліцензія",
@@ -153,6 +160,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.NoneTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"допомога": types.FunctionType{
 		Name: "допомога",
@@ -168,6 +176,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.NoneTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 
 	// System calls
@@ -185,6 +194,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.NoneTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 
 	// Conversion
@@ -202,6 +212,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.IntegerTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"дійсний": types.FunctionType{
 		Name: "дійсний",
@@ -217,6 +228,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.RealTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"рядок": types.FunctionType{
 		Name: "рядок",
@@ -232,6 +244,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.StringTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"логічний": types.FunctionType{
 		Name: "логічний",
@@ -247,6 +260,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.BoolTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"список": types.FunctionType{
 		Name: "список",
@@ -262,6 +276,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.ListTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"словник": types.FunctionType{
 		Name: "словник",
@@ -277,6 +292,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.DictionaryTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 
 	// Utilities
@@ -294,6 +310,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.IntegerTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"додати": types.FunctionType{
 		Name: "додати",
@@ -314,6 +331,7 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.ListTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 	"вилучити": types.FunctionType{
 		Name: "вилучити",
@@ -334,5 +352,6 @@ var GlobalScope = map[string]types.ValueType{
 		},
 		ReturnType: types.DictionaryTypeHash,
 		IsBuiltin:  true,
+		Attributes: map[string]types.ValueType{},
 	},
 }

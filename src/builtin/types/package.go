@@ -43,6 +43,18 @@ func (t PackageType) TypeName() string {
 }
 
 func (t PackageType) GetAttr(name string) (ValueType, error) {
+	if name == "__атрибути__" {
+		dict := NewDictionaryType()
+		for key, val := range t.Attributes {
+			err := dict.SetElement(StringType{key}, val)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return dict, nil
+	}
+
 	if val, ok := t.Attributes[name]; ok {
 		return val, nil
 	}
@@ -64,5 +76,8 @@ func (t PackageType) SetAttr(name string, value ValueType) (ValueType, error) {
 		))
 	}
 
-	return nil, util.AttributeError(t.TypeName(), name)
+	t.Attributes[name] = value
+	return t, nil
+
+	//return nil, util.AttributeError(t.TypeName(), name)
 }
