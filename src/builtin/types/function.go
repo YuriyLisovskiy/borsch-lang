@@ -13,6 +13,29 @@ type FunctionArgument struct {
 	IsNullable bool
 }
 
+func (fa *FunctionArgument) String() string {
+	res := fa.Name
+	if fa.IsVariadic {
+		res += "..."
+	}
+
+	res += GetTypeName(fa.TypeHash)
+	if fa.IsNullable {
+		res += "?"
+	}
+
+	return res
+}
+
+func (fa FunctionArgument) TypeName() string {
+	res := GetTypeName(fa.TypeHash)
+	if fa.IsNullable {
+		res += "?"
+	}
+
+	return res
+}
+
 type FunctionReturnType struct {
 	TypeHash   int
 	IsNullable bool
@@ -25,10 +48,6 @@ func (r *FunctionReturnType) String() string {
 	}
 
 	return res
-}
-
-func (fp FunctionArgument) TypeName() string {
-	return GetTypeName(fp.TypeHash)
 }
 
 type FunctionType struct {

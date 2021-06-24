@@ -113,7 +113,14 @@ func (i *Interpreter) executeCallOp(
 							return nil, err
 						}
 
-						if lastArgument.TypeHash != types.AnyTypeHash && arg.TypeHash() != lastArgument.TypeHash {
+						if arg.TypeHash() == types.NilTypeHash {
+							if lastArgument.TypeHash != types.NilTypeHash && !lastArgument.IsNullable {
+								return nil, util.RuntimeError(fmt.Sprintf(
+									"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
+									lastArgument.Name, arg.String(),
+								))
+							}
+						} else if lastArgument.TypeHash != types.AnyTypeHash && arg.TypeHash() != lastArgument.TypeHash {
 							return nil, util.RuntimeError(fmt.Sprintf(
 								"аргумент '%s' очікує список параметрів з типом '%s', отримано '%s'",
 								lastArgument.Name, lastArgument.TypeName(), arg.TypeName(),

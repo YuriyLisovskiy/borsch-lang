@@ -42,23 +42,23 @@ const (
 )
 
 var opTypeNames = map[Operator]string{
-	exponentOp:        "піднесення до степеня",
-	moduloOp:          "остачі від ділення",
-	sumOp:             "додавання",
-	subOp:             "віднімання",
-	mulOp:             "множення",
-	divOp:             "ділення",
+	exponentOp:        "**",
+	moduloOp:          "%",
+	sumOp:             "+",
+	subOp:             "-",
+	mulOp:             "*",
+	divOp:             "/",
 	unaryMinus:        "унарного мінуса",
 	unaryPlus:         "унарного плюса",
-	andOp:             "логічного 'і'",
-	orOp:              "логічного 'або'",
-	notOp:             "логічного заперечення",
-	equalsOp:          "рівності",
-	notEqualsOp:       "нерівності",
-	greaterOp:         "'більше'",
-	greaterOrEqualsOp: "'більше або дорівнює'",
-	lessOp:            "'менше'",
-	lessOrEqualsOp:    "'менше або дорівнює'",
+	andOp:             "&&",
+	orOp:              "||",
+	notOp:             "!",
+	equalsOp:          "==",
+	notEqualsOp:       "!=",
+	greaterOp:         ">",
+	greaterOrEqualsOp: ">=",
+	lessOp:            "<",
+	lessOrEqualsOp:    "<=",
 }
 
 func (op Operator) Description() string {
