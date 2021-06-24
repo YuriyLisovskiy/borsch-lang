@@ -14,9 +14,11 @@ import (
 	"path/filepath"
 )
 
+type Operator int
+
 const (
 	// math
-	exponentOp = iota
+	exponentOp Operator = iota
 	moduloOp
 	sumOp
 	subOp
@@ -38,8 +40,6 @@ const (
 	lessOp
 	lessOrEqualsOp
 )
-
-type Operator int
 
 var opTypeNames = map[Operator]string{
 	exponentOp:        "піднесення до степеня",
@@ -97,7 +97,7 @@ func (i *Interpreter) pushScope(packageName string, scope map[string]types.Value
 func (i *Interpreter) popScope(packageName string) map[string]types.ValueType {
 	if scopes, ok := i.scopes[packageName]; ok {
 		if len(scopes) == 0 {
-			panic("Not enough scopes")
+			panic("fatal: not enough scopes")
 		}
 
 		scope := scopes[len(scopes)-1]
@@ -105,7 +105,7 @@ func (i *Interpreter) popScope(packageName string) map[string]types.ValueType {
 		return scope
 	}
 
-	panic(fmt.Sprintf("Scopes for '%s' package does not exist", packageName))
+	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
 }
 
 func (i *Interpreter) getVar(packageName string, name string) (types.ValueType, error) {
@@ -117,12 +117,10 @@ func (i *Interpreter) getVar(packageName string, name string) (types.ValueType, 
 			}
 		}
 
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"ідентифікатор '%s' не визначений", name,
-		))
+		return nil, util.RuntimeError(fmt.Sprintf("ідентифікатор '%s' не визначений", name))
 	}
 
-	panic(fmt.Sprintf("Scopes for '%s' package does not exist", packageName))
+	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
 }
 
 func (i *Interpreter) setVar(packageName, name string, value types.ValueType) error {
@@ -157,11 +155,9 @@ func (i *Interpreter) setVar(packageName, name string, value types.ValueType) er
 		return nil
 	}
 
-	panic(fmt.Sprintf("Scopes for '%s' package does not exist", packageName))
+	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
 }
 
-// executeNode
-// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) executeNode(
 	rootNode ast.ExpressionNode, rootDir string, thisPackage, parentPackage string,
 ) (types.ValueType, bool, error) {
@@ -240,7 +236,7 @@ func (i *Interpreter) executeNode(
 
 			return nil, false, util.RuntimeError(fmt.Sprintf(
 				"непідтримуваний тип операнда для оператора %s: '%s'",
-				Operator(notOp).Description(), operand.TypeName(),
+				notOp.Description(), operand.TypeName(),
 			))
 		case models.Add:
 			switch operandVal := operand.(type) {
@@ -256,7 +252,7 @@ func (i *Interpreter) executeNode(
 
 			return nil, false, util.RuntimeError(fmt.Sprintf(
 				"непідтримуваний тип операнда для оператора %s: '%s'",
-				Operator(unaryPlus).Description(), operand.TypeName(),
+				unaryPlus.Description(), operand.TypeName(),
 			))
 		case models.Sub:
 			switch operandVal := operand.(type) {
@@ -325,30 +321,30 @@ func (i *Interpreter) executeNode(
 			res, err := i.executeComparisonOp(node.LeftNode, node.RightNode, lessOrEqualsOp, rootDir, thisPackage, parentPackage)
 			return res, false, err
 		case models.Assign:
-			result, _, err := i.executeNode(node.RightNode, rootDir, thisPackage, parentPackage)
+			rightNode, _, err := i.executeNode(node.RightNode, rootDir, thisPackage, parentPackage)
 			if err != nil {
 				return nil, false, err
 			}
 
-			switch assignmentNode := node.LeftNode.(type) {
+			switch leftNode := node.LeftNode.(type) {
 			case ast.VariableNode:
-				return nil, false, i.setVar(thisPackage, assignmentNode.Variable.Text, result)
+				return nil, false, i.setVar(thisPackage, leftNode.Variable.Text, rightNode)
 			case ast.CallOpNode:
 				return nil, false, util.RuntimeError("неможливо присвоїти значення виклику функції")
 			case ast.RandomAccessOperationNode:
-				variable, _, err := i.executeNode(assignmentNode.Operand, rootDir, thisPackage, parentPackage)
+				variable, _, err := i.executeNode(leftNode.Operand, rootDir, thisPackage, parentPackage)
 				if err != nil {
 					return nil, false, err
 				}
 
 				variable, err = i.executeRandomAccessSetOp(
-					assignmentNode.Index, variable, result, rootDir, thisPackage, parentPackage,
+					leftNode.Index, variable, rightNode, rootDir, thisPackage, parentPackage,
 				)
 				if err != nil {
 					return nil, false, err
 				}
 
-				operand := assignmentNode.Operand
+				operand := leftNode.Operand
 				for {
 					switch external := operand.(type) {
 					case ast.RandomAccessOperationNode:
@@ -375,30 +371,26 @@ func (i *Interpreter) executeNode(
 
 				return variable, false, nil
 			case ast.AttrOpNode:
-				variable, _, err := i.executeNode(assignmentNode.Expression, rootDir, thisPackage, parentPackage)
+				base, _, err := i.executeNode(leftNode.Base, rootDir, thisPackage, parentPackage)
 				if err != nil {
 					return nil, false, err
 				}
 
-				switch attr := assignmentNode.Attr.(type) {
+				switch attrNode := leftNode.Attr.(type) {
 				case ast.VariableNode:
-					variable, err = variable.SetAttr(attr.Variable.Text, result)
+					base, err = base.SetAttr(attrNode.Variable.Text, rightNode)
 					if err != nil {
 						return nil, false, err
 					}
 				case ast.CallOpNode:
 					return nil, false, util.RuntimeError("неможливо присвоїти значення виклику функції")
 				default:
-					panic("fatal error")
+					panic("fatal: invalid node")
 				}
 
-				if assignmentNode.Base != nil {
-					return variable, false, i.setVar(thisPackage, assignmentNode.Base.Text, variable)
-				}
-
-				return variable, false, nil
+				return base, false, nil
 			default:
-				panic("fatal error")
+				panic("fatal: invalid node")
 			}
 		}
 
@@ -514,58 +506,39 @@ func (i *Interpreter) executeNode(
 		return val, false, nil
 
 	case ast.AttrOpNode:
-		val, _, err := i.executeNode(node.Expression, rootDir, thisPackage, parentPackage)
+		val, _, err := i.executeNode(node.Base, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, false, err
 		}
 
-		if node.Attr != nil {
-			switch attr := node.Attr.(type) {
-			case ast.VariableNode:
-				//val, _, err := i.executeNode(node.Expression, rootDir, thisPackage, parentPackage)
-				//if err != nil {
-				//	return nil, false, err
-				//}
-
-				val, err = val.GetAttr(attr.Variable.Text)
-				if err != nil {
-					return nil, false, err
-				}
-
-				return val, false, nil
-			case ast.CallOpNode:
-				//val, _, err := i.executeNode(attr.Parent, rootDir, thisPackage, parentPackage)
-				//if err != nil {
-				//	return nil, false, err
-				//}
-
-				//val, err = i.executeCallOp(&attr, rootDir, thisPackage, parentPackage)
-				//return res, false, err
-
-				val, err = val.GetAttr(attr.CallableName.Text)
-				if err != nil {
-					return nil, false, err
-				}
-
-				val, err = i.executeCallOp(&attr, val, rootDir, thisPackage, parentPackage)
-				if err != nil {
-					return nil, false, err
-				}
-
-				return val, false, nil
+		switch attr := node.Attr.(type) {
+		case ast.VariableNode:
+			val, err = val.GetAttr(attr.Variable.Text)
+			if err != nil {
+				return nil, false, err
 			}
-		} else {
-			panic("unknown error")
-		}
 
-		//return val, false, nil
+			return val, false, nil
+		case ast.CallOpNode:
+			val, err = val.GetAttr(attr.CallableName.Text)
+			if err != nil {
+				return nil, false, err
+			}
+
+			val, err = i.executeCallOp(&attr, val, rootDir, thisPackage, parentPackage)
+			if err != nil {
+				return nil, false, err
+			}
+
+			return val, false, nil
+		default:
+			panic("fatal: invalid node")
+		}
 	}
 
 	return nil, false, util.RuntimeError("невідома помилка")
 }
 
-// executeAST
-// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) executeAST(
 	scope map[string]types.ValueType, thisPackage, parentPackage string, tree *ast.AST,
 ) (types.ValueType, map[string]types.ValueType, bool, error) {
@@ -608,8 +581,6 @@ func (i *Interpreter) executeAST(
 	return result, scope, forceReturn, nil
 }
 
-// executeBlock
-// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) executeBlock(
 	scope map[string]types.ValueType, tokens []models.Token, thisPackage, parentPackage string,
 ) (types.ValueType, bool, error) {
@@ -627,8 +598,6 @@ func (i *Interpreter) executeBlock(
 	return result, forceReturn, nil
 }
 
-// Execute
-// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) Execute(
 	thisPackage, parentPackage string, scope map[string]types.ValueType, code string,
 ) (types.ValueType, map[string]types.ValueType, error) {
@@ -644,7 +613,7 @@ func (i *Interpreter) Execute(
 		return nil, scope, err
 	}
 
-	i.pushScope(thisPackage, builtin.GlobalScope)
+	i.pushScope(thisPackage, builtin.RuntimeFunctions)
 	var result types.ValueType
 	result, scope, _, err = i.executeAST(scope, thisPackage, parentPackage, asTree)
 	if err != nil {
@@ -654,8 +623,6 @@ func (i *Interpreter) Execute(
 	return result, scope, nil
 }
 
-// ExecuteFile
-// 'thisPackage' is an absolute path to current package file
 func (i *Interpreter) ExecuteFile(
 	packageName, parentPackage string, content []byte, isBuiltin bool,
 ) (types.ValueType, error) {

@@ -6,49 +6,26 @@ import (
 	"github.com/YuriyLisovskiy/borsch/src/models"
 )
 
-func (p *Parser) parseAttrAccess(parent ast.ExpressionNode) (ast.ExpressionNode, error) {
+func (p *Parser) parseAttrAccess(base ast.ExpressionNode) (ast.ExpressionNode, error) {
 	if name := p.match(models.TokenTypesList[models.Name]); name != nil {
 		var attr ast.ExpressionNode = nil
 		if p.match(models.TokenTypesList[models.LPar]) != nil {
 			var err error
-			attr, err = p.parseFunctionCall(name, parent)
+			attr, err = p.parseFunctionCall(name)
 			if err != nil {
 				return nil, err
 			}
-
-			attr, err = p.parseRandomAccessOperation(attr)
-			if err != nil {
-				return nil, err
-			}
-
-			//if randomAccessOp != nil {
-			//	parent = randomAccessOp
-			//}
-			//name = nil
 		} else {
 			attr = ast.NewVariableNode(*name)
 		}
 
-		var baseToken *models.Token = nil
-		switch node := parent.(type) {
-		case ast.AttrOpNode:
-			//baseToken = node.Attr
-		case ast.VariableNode:
-			baseToken = &node.Variable
-		}
-
-		parent = ast.NewGetAttrOpNode(baseToken, parent, attr, name.Row)
-		randomAccessOp, err := p.parseRandomAccessOperation(parent)
+		result, err := p.parseRandomAccessOperation(ast.NewGetAttrOpNode(base, attr, name.Row))
 		if err != nil {
 			return nil, err
 		}
 
-		if randomAccessOp != nil {
-			parent = randomAccessOp
-		}
-
 		if dot := p.match(models.TokenTypesList[models.AttrAccessOp]); dot != nil {
-			return p.parseAttrAccess(parent)
+			return p.parseAttrAccess(result)
 		}
 
 		assignOperator := p.match(models.TokenTypesList[models.Assign])
@@ -58,11 +35,11 @@ func (p *Parser) parseAttrAccess(parent ast.ExpressionNode) (ast.ExpressionNode,
 				return nil, err
 			}
 
-			binaryNode := ast.NewBinOperationNode(*assignOperator, parent, rightNode)
+			binaryNode := ast.NewBinOperationNode(*assignOperator, result, rightNode)
 			return binaryNode, nil
 		}
 
-		return parent, nil
+		return result, nil
 	}
 
 	return nil, errors.New("очікується назва атрибута")

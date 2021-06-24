@@ -22,7 +22,7 @@ types.FunctionType{
 }
 */
 
-var GlobalScope = map[string]types.ValueType{
+var RuntimeFunctions = map[string]types.ValueType{
 
 	// I/O
 	"друк": types.FunctionType{

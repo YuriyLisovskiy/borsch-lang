@@ -116,7 +116,7 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 	}
 
 	if nameToken != nil {
-		funcCallNode, err := p.parseFunctionCall(nameToken, nil)
+		funcCallNode, err := p.parseFunctionCall(nameToken)
 		if err != nil {
 			return nil, err
 		}

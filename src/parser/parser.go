@@ -226,12 +226,12 @@ func (p *Parser) parseRandomAccessOperation(expr ast.ExpressionNode) (ast.Expres
 
 // parseFunctionCall parses call of function.
 // It assumes that name and left round bracket are parsed successfully.
-func (p *Parser) parseFunctionCall(name *models.Token, parent ast.ExpressionNode) (ast.ExpressionNode, error) {
+func (p *Parser) parseFunctionCall(name *models.Token) (ast.ExpressionNode, error) {
 	lPar := p.current()
 	if lPar != nil && lPar.Type.Name == models.LPar {
 		var args []ast.ExpressionNode
 		if p.match(models.TokenTypesList[models.RPar]) != nil {
-			return ast.NewCallOpNode(*name, parent, args), nil
+			return ast.NewCallOpNode(*name, args), nil
 		}
 
 		for {
@@ -251,7 +251,7 @@ func (p *Parser) parseFunctionCall(name *models.Token, parent ast.ExpressionNode
 			}
 		}
 
-		return ast.NewCallOpNode(*name, parent, args), nil
+		return ast.NewCallOpNode(*name, args), nil
 	}
 
 	return nil, errors.New("очікується відкриваюча дужка")
@@ -290,7 +290,7 @@ func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
 		var err error
 		var leftOperand ast.ExpressionNode
 		if p.match(models.TokenTypesList[models.LPar]) != nil {
-			leftOperand, err = p.parseFunctionCall(name, nil)
+			leftOperand, err = p.parseFunctionCall(name)
 			if err != nil {
 				return nil, err
 			}
