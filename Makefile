@@ -1,13 +1,13 @@
 BINARY=bin/borsch
 
 BUILD_TIME=`LC_ALL=uk_UA.utf8 date '+%b %d %Y, %T'`
-LDFLAGS=-ldflags "-X 'github.com/YuriyLisovskiy/borsch/src/cli/build.Time=${BUILD_TIME}'"
+LDFLAGS=-ldflags "-X 'github.com/YuriyLisovskiy/borsch/lang/cli/build.Time=${BUILD_TIME}'"
 
 all: build
 
 build:
 	mkdir -p bin/ && \
-	go build ${LDFLAGS} -o ${BINARY} src/cli/main.go
+	go build ${LDFLAGS} -o ${BINARY} lang/cli/main.go
 
 install:
 	mkdir -p /usr/local/lib/borsch-lang/std
