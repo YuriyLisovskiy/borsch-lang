@@ -8,9 +8,9 @@ import (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "print the version number of the Borsch programming language",
+	Short: "друк номеру збірки мови",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Borsch %s\n", build.Version)
+		fmt.Printf("%s %s\n", build.LanguageName, build.Version)
 	},
 }
 

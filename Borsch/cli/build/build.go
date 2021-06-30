@@ -3,13 +3,13 @@ package build
 var Time string
 
 const (
-	AppName    = "Борщ"
-	AuthorName = "Yuriy Lisovskiy"
-	Years      = "2021"
-	Version    = "0.1.0"
-	License    = `MIT License
+	LanguageName = "Борщ"
+	Author       = "Yuriy Lisovskiy"
+	Years        = "2021"
+	Version      = "0.1.0"
+	License      = `MIT License
 
-Copyright (c) ` + Years + ` Yuriy Lisovskiy
+Copyright (c) ` + Years + ` ` + Author + `
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

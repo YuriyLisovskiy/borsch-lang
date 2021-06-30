@@ -182,7 +182,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 		Name:      "авторське_право",
 		Arguments: []types.FunctionArgument{},
 		Callable: func([]types.ValueType, map[string]types.ValueType) (types.ValueType, error) {
-			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.AuthorName)
+			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
 			return types.NilType{}, nil
 		},
 		ReturnType: types.FunctionReturnType{

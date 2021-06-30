@@ -32,8 +32,8 @@ func (s *stack) pop() {
 	*s = (*s)[:len(*s)-1]
 }
 
-func precedence(opType int) int {
-	switch opType {
+func precedence(op models.Token) int {
+	switch op.Type.Name {
 	case models.OrOp:
 		return 1
 	case models.AndOp:
@@ -42,12 +42,26 @@ func precedence(opType int) int {
 		return 3
 	case models.LessOp, models.LessOrEqualsOp, models.EqualsOp, models.NotEqualsOp, models.GreaterOp, models.GreaterOrEqualsOp:
 		return 4
-	case models.Add, models.Sub:
+	case models.BitwiseOrOp:
 		return 5
-	case models.Mul, models.Div, models.ModuloOp:
+	case models.BitwiseXorOp:
 		return 6
-	case models.ExponentOp:
+	case models.BitwiseAndOp:
 		return 7
+	case models.BitwiseLeftShiftOp, models.BitwiseRightShiftOp:
+		return 8
+	case models.Add, models.Sub:
+		if op.IsUnaryOperator {
+			return 11
+		}
+
+		return 9
+	case models.Mul, models.Div, models.ModuloOp:
+		return 10
+	case models.ExponentOp:
+		return 12
+	case models.BitwiseNotOp:
+		return 11
 	default:
 		return 0
 	}
@@ -80,6 +94,9 @@ func (p *Parser) matchBinaryOperator() *models.Token {
 		models.TokenTypesList[models.EqualsOp], models.TokenTypesList[models.NotEqualsOp],
 		models.TokenTypesList[models.GreaterOp], models.TokenTypesList[models.GreaterOrEqualsOp],
 		models.TokenTypesList[models.LessOp], models.TokenTypesList[models.LessOrEqualsOp],
+		models.TokenTypesList[models.BitwiseLeftShiftOp], models.TokenTypesList[models.BitwiseRightShiftOp],
+		models.TokenTypesList[models.BitwiseAndOp], models.TokenTypesList[models.BitwiseXorOp],
+		models.TokenTypesList[models.BitwiseOrOp],
 	)
 }
 
@@ -87,6 +104,7 @@ func (p *Parser) parseUnaryOperator() *models.Token {
 	op := p.match(
 		models.TokenTypesList[models.NotOp],
 		models.TokenTypesList[models.Sub], models.TokenTypesList[models.Add],
+		models.TokenTypesList[models.BitwiseNotOp],
 	)
 	if op != nil {
 		op.IsUnaryOperator = true
@@ -189,7 +207,7 @@ func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
 	nodes.push(node)
 	operator := p.matchBinaryOperator()
 	for operator != nil {
-		for !operators.empty() && precedence(operators.top().(models.Token).Type.Name) >= precedence(operator.Type.Name) {
+		for !operators.empty() && precedence(operators.top().(models.Token)) >= precedence(*operator) {
 			buildOperationNode(&nodes, &operators)
 		}
 

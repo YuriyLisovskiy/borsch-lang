@@ -96,6 +96,10 @@ func (t FunctionType) TypeName() string {
 	return GetTypeName(t.TypeHash())
 }
 
+func (t FunctionType) AsBool() bool {
+	return true
+}
+
 func (t FunctionType) GetAttr(name string) (ValueType, error) {
 	if name == "__атрибути__" {
 		dict := NewDictionaryType()
@@ -133,6 +137,62 @@ func (t FunctionType) SetAttr(name string, value ValueType) (ValueType, error) {
 	return t, nil
 }
 
+func (t FunctionType) Pow(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) Plus() (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) Minus() (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) BitwiseNot() (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) Mul(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) Div(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) Mod(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) Add(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) Sub(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) BitwiseLeftShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) BitwiseRightShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) BitwiseAnd(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) BitwiseXor(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t FunctionType) BitwiseOr(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
 func (t FunctionType) CompareTo(other ValueType) (int, error) {
 	switch right := other.(type) {
 	case NilType:
@@ -152,26 +212,14 @@ func (t FunctionType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t FunctionType) Add(ValueType) (ValueType, error) {
-	return nil, nil
+func (t FunctionType) Not() (ValueType, error) {
+	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t FunctionType) Sub(ValueType) (ValueType, error) {
-	return nil, nil
+func (t FunctionType) And(other ValueType) (ValueType, error) {
+	return BoolType{Value: other.AsBool()}, nil
 }
 
-func (t FunctionType) Mul(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Div(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Pow(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Mod(ValueType) (ValueType, error) {
-	return nil, nil
+func (t FunctionType) Or(ValueType) (ValueType, error) {
+	return BoolType{Value: true}, nil
 }

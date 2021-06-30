@@ -8,7 +8,7 @@ import (
 
 var envCmd = &cobra.Command{
 	Use:   "env",
-	Short: "print Borsch environment information",
+	Short: "друк інформації про змінні середовища для мови Борщ",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("BORSCH_STD=\"%s\"\n", os.Getenv("BORSCH_STD"))
 	},

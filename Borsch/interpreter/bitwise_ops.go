@@ -7,7 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch/Borsch/util"
 )
 
-func (i *Interpreter) executeLogicalOp(
+func (i *Interpreter) executeBitwiseOp(
 	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType ops.Operator,
 	rootDir string, thisPackage, parentPackage string,
 ) (types.ValueType, error) {
@@ -23,18 +23,33 @@ func (i *Interpreter) executeLogicalOp(
 
 	var res types.ValueType
 	switch opType {
-	case ops.AndOp:
-		res, err = left.And(right)
+	case ops.BitwiseLeftShiftOp:
+		res, err = left.Add(right)
 		if err != nil {
-			return nil, err
+			return nil, util.RuntimeError(err.Error())
 		}
-	case ops.OrOp:
-		res, err = left.Or(right)
+	case ops.BitwiseRightShiftOp:
+		res, err = left.Sub(right)
 		if err != nil {
-			return nil, err
+			return nil, util.RuntimeError(err.Error())
+		}
+	case ops.BitwiseAndOp:
+		res, err = left.Mul(right)
+		if err != nil {
+			return nil, util.RuntimeError(err.Error())
+		}
+	case ops.BitwiseXorOp:
+		res, err = left.Div(right)
+		if err != nil {
+			return nil, util.RuntimeError(err.Error())
+		}
+	case ops.BitwiseOrOp:
+		res, err = left.Pow(right)
+		if err != nil {
+			return nil, util.RuntimeError(err.Error())
 		}
 	default:
-		panic("fatal: invalid binary operator")
+		panic("fatal: invalid bitwise operator")
 	}
 
 	if res != nil {

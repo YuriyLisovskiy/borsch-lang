@@ -20,15 +20,39 @@ type ValueType interface {
 	Representation() string
 	TypeHash() int
 	TypeName() string
+	AsBool() bool
 	GetAttr(string) (ValueType, error)
 	SetAttr(string, ValueType) (ValueType, error)
-	CompareTo(ValueType) (int, error)
-	Add(ValueType) (ValueType, error)
-	Sub(ValueType) (ValueType, error)
+
+	Pow(ValueType) (ValueType, error)
+
+	Plus() (ValueType, error)
+	Minus() (ValueType, error)
+	BitwiseNot() (ValueType, error)
+
 	Mul(ValueType) (ValueType, error)
 	Div(ValueType) (ValueType, error)
-	Pow(ValueType) (ValueType, error)
 	Mod(ValueType) (ValueType, error)
+
+	Add(ValueType) (ValueType, error)
+	Sub(ValueType) (ValueType, error)
+
+	BitwiseLeftShift(ValueType) (ValueType, error)
+	BitwiseRightShift(ValueType) (ValueType, error)
+
+	BitwiseAnd(ValueType) (ValueType, error)
+
+	BitwiseXor(ValueType) (ValueType, error)
+
+	BitwiseOr(ValueType) (ValueType, error)
+
+	CompareTo(ValueType) (int, error)
+
+	Not() (ValueType, error)
+
+	And(ValueType) (ValueType, error)
+
+	Or(ValueType) (ValueType, error)
 }
 
 type SequentialType interface {
@@ -106,7 +130,7 @@ func IsBuiltinType(typeName string) bool {
 	return GetTypeHash(typeName) != -1
 }
 
-func boolToInt(v bool) int64 {
+func boolToInt64(v bool) int64 {
 	if v {
 		return 1
 	}
@@ -120,4 +144,12 @@ func boolToFloat64(v bool) float64 {
 	}
 
 	return 0.0
+}
+
+func logicalAnd(l, r ValueType) (ValueType, error) {
+	return BoolType{Value: l.AsBool() && r.AsBool()}, nil
+}
+
+func logicalOr(l, r ValueType) (ValueType, error) {
+	return BoolType{Value: l.AsBool() || r.AsBool()}, nil
 }

@@ -38,6 +38,10 @@ func (t ListType) TypeName() string {
 	return GetTypeName(t.TypeHash())
 }
 
+func (t ListType) AsBool() bool {
+	return t.Length() != 0
+}
+
 func (t ListType) Length() int64 {
 	return int64(len(t.Values))
 }
@@ -87,36 +91,19 @@ func (t ListType) SetAttr(name string, _ ValueType) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
 
-func (t ListType) CompareTo(other ValueType) (int, error) {
-	switch right := other.(type) {
-	case NilType:
-	case ListType:
-		return -2, util.RuntimeError(fmt.Sprintf(
-			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-			"%s", t.TypeName(), right.TypeName(),
-		))
-	default:
-		return -2, errors.New(fmt.Sprintf(
-			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.TypeName(), right.TypeName(),
-		))
-	}
-
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
+func (t ListType) Pow(ValueType) (ValueType, error) {
+	return nil, nil
 }
 
-func (t ListType) Add(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case ListType:
-		t.Values = append(t.Values, o.Values...)
-		return t, nil
-	default:
-		return nil, nil
-	}
+func (t ListType) Plus() (ValueType, error) {
+	return nil, nil
 }
 
-func (t ListType) Sub(ValueType) (ValueType, error) {
+func (t ListType) Minus() (ValueType, error) {
+	return nil, nil
+}
+
+func (t ListType) BitwiseNot() (ValueType, error) {
 	return nil, nil
 }
 
@@ -141,10 +128,71 @@ func (t ListType) Div(ValueType) (ValueType, error) {
 	return nil, nil
 }
 
-func (t ListType) Pow(ValueType) (ValueType, error) {
+func (t ListType) Mod(ValueType) (ValueType, error) {
 	return nil, nil
 }
 
-func (t ListType) Mod(ValueType) (ValueType, error) {
+func (t ListType) Add(other ValueType) (ValueType, error) {
+	switch o := other.(type) {
+	case ListType:
+		t.Values = append(t.Values, o.Values...)
+		return t, nil
+	default:
+		return nil, nil
+	}
+}
+
+func (t ListType) Sub(ValueType) (ValueType, error) {
 	return nil, nil
+}
+
+func (t ListType) BitwiseLeftShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t ListType) BitwiseRightShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t ListType) BitwiseAnd(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t ListType) BitwiseXor(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t ListType) BitwiseOr(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t ListType) CompareTo(other ValueType) (int, error) {
+	switch right := other.(type) {
+	case NilType:
+	case ListType:
+		return -2, util.RuntimeError(fmt.Sprintf(
+			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
+			"%s", t.TypeName(), right.TypeName(),
+		))
+	default:
+		return -2, errors.New(fmt.Sprintf(
+			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+			"%s", t.TypeName(), right.TypeName(),
+		))
+	}
+
+	// -2 is something other than -1, 0 or 1 and means 'not equals'
+	return -2, nil
+}
+
+func (t ListType) Not() (ValueType, error) {
+	return BoolType{Value: !t.AsBool()}, nil
+}
+
+func (t ListType) And(other ValueType) (ValueType, error) {
+	return logicalAnd(t, other)
+}
+
+func (t ListType) Or(other ValueType) (ValueType, error) {
+	return logicalOr(t, other)
 }

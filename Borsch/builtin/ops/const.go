@@ -20,6 +20,14 @@ const (
 	OrOp
 	NotOp
 
+	// bitwise
+	UnaryBitwiseNotOp
+	BitwiseLeftShiftOp
+	BitwiseRightShiftOp
+	BitwiseAndOp
+	BitwiseXorOp
+	BitwiseOrOp
+
 	// conditional
 	EqualsOp
 	NotEqualsOp
@@ -30,23 +38,29 @@ const (
 )
 
 var opTypeNames = map[Operator]string{
-	PowOp:             "**",
-	ModuloOp:          "%",
-	AddOp:             "+",
-	SubOp:             "-",
-	MulOp:             "*",
-	DivOp:             "/",
-	UnaryMinus:        "унарного мінуса",
-	UnaryPlus:         "унарного плюса",
-	AndOp:             "&&",
-	OrOp:              "||",
-	NotOp:             "!",
-	EqualsOp:          "==",
-	NotEqualsOp:       "!=",
-	GreaterOp:         ">",
-	GreaterOrEqualsOp: ">=",
-	LessOp:            "<",
-	LessOrEqualsOp:    "<=",
+	PowOp:               "**",
+	ModuloOp:            "%",
+	AddOp:               "+",
+	SubOp:               "-",
+	MulOp:               "*",
+	DivOp:               "/",
+	UnaryMinus:          "-",
+	UnaryPlus:           "+",
+	AndOp:               "&&",
+	OrOp:                "||",
+	NotOp:               "!",
+	UnaryBitwiseNotOp:   "~",
+	BitwiseLeftShiftOp:  "<<",
+	BitwiseRightShiftOp: ">>",
+	BitwiseAndOp:        "&",
+	BitwiseXorOp:        "^",
+	BitwiseOrOp:         "|",
+	EqualsOp:            "==",
+	NotEqualsOp:         "!=",
+	GreaterOp:           ">",
+	GreaterOrEqualsOp:   ">=",
+	LessOp:              "<",
+	LessOrEqualsOp:      "<=",
 }
 
 func (op Operator) Description() string {

@@ -43,6 +43,10 @@ func (t PackageType) TypeName() string {
 	return GetTypeName(t.TypeHash())
 }
 
+func (t PackageType) AsBool() bool {
+	return true
+}
+
 func (t PackageType) GetAttr(name string) (ValueType, error) {
 	if name == "__атрибути__" {
 		dict := NewDictionaryType()
@@ -83,6 +87,62 @@ func (t PackageType) SetAttr(name string, value ValueType) (ValueType, error) {
 	//return nil, util.AttributeError(t.TypeName(), name)
 }
 
+func (t PackageType) Pow(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) Plus() (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) Minus() (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) BitwiseNot() (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) Mul(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) Div(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) Mod(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) Add(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) Sub(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) BitwiseLeftShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) BitwiseRightShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) BitwiseAnd(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) BitwiseXor(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t PackageType) BitwiseOr(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
 func (t PackageType) CompareTo(other ValueType) (int, error) {
 	switch right := other.(type) {
 	case NilType:
@@ -102,26 +162,14 @@ func (t PackageType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t PackageType) Add(ValueType) (ValueType, error) {
-	return nil, nil
+func (t PackageType) Not() (ValueType, error) {
+	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t PackageType) Sub(ValueType) (ValueType, error) {
-	return nil, nil
+func (t PackageType) And(other ValueType) (ValueType, error) {
+	return BoolType{Value: other.AsBool()}, nil
 }
 
-func (t PackageType) Mul(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) Div(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) Pow(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) Mod(ValueType) (ValueType, error) {
-	return nil, nil
+func (t PackageType) Or(ValueType) (ValueType, error) {
+	return BoolType{Value: true}, nil
 }

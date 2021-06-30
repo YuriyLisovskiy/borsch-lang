@@ -57,6 +57,10 @@ func (t DictionaryType) TypeName() string {
 	return GetTypeName(t.TypeHash())
 }
 
+func (t DictionaryType) AsBool() bool {
+	return t.Length() != 0
+}
+
 func (t DictionaryType) Length() int64 {
 	return int64(len(t.Map))
 }
@@ -106,6 +110,62 @@ func (t DictionaryType) SetAttr(name string, _ ValueType) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
 
+func (t DictionaryType) Pow(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) Plus() (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) Minus() (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) BitwiseNot() (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) Mul(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) Div(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) Mod(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) Add(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) Sub(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) BitwiseLeftShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) BitwiseRightShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) BitwiseAnd(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) BitwiseXor(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t DictionaryType) BitwiseOr(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
 func (t DictionaryType) CompareTo(other ValueType) (int, error) {
 	switch right := other.(type) {
 	case NilType:
@@ -125,26 +185,14 @@ func (t DictionaryType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t DictionaryType) Add(ValueType) (ValueType, error) {
-	return nil, nil
+func (t DictionaryType) Not() (ValueType, error) {
+	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t DictionaryType) Sub(ValueType) (ValueType, error) {
-	return nil, nil
+func (t DictionaryType) And(other ValueType) (ValueType, error) {
+	return logicalAnd(t, other)
 }
 
-func (t DictionaryType) Mul(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Div(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Pow(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Mod(ValueType) (ValueType, error) {
-	return nil, nil
+func (t DictionaryType) Or(other ValueType) (ValueType, error) {
+	return logicalOr(t, other)
 }

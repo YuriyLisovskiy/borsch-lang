@@ -54,7 +54,7 @@ func (i *Interpreter) executeArithmeticOp(
 			return nil, util.RuntimeError(err.Error())
 		}
 	default:
-		return nil, util.RuntimeError("невідомий оператор")
+		panic("fatal: invalid arithmetic operator")
 	}
 	
 	if res != nil {

@@ -32,6 +32,11 @@ const (
 	Space
 	ExponentOp
 	ModuloOp
+	BitwiseLeftShiftOp
+	BitwiseRightShiftOp
+	BitwiseAndOp
+	BitwiseXorOp
+	BitwiseOrOp
 	EqualsOp
 	NotEqualsOp
 	GreaterOrEqualsOp
@@ -51,6 +56,7 @@ const (
 	AndOp
 	OrOp
 	NotOp
+	BitwiseNotOp
 	LCurlyBracket
 	RCurlyBracket
 	LSquareBracket
@@ -99,6 +105,7 @@ var tokenTypeNames = map[int]string{
 	AndOp:              "оператор логічного 'і'",
 	OrOp:               "оператор логічного 'або'",
 	NotOp:              "оператор логічного заперечення",
+	BitwiseNotOp:       "унірний оператор заперечення",
 	LCurlyBracket:      "відкриваюча фігурна дужка",
 	RCurlyBracket:      "закриваюча фігурна дужка",
 	LSquareBracket:     "відкриваюча квадратна дужка",
@@ -106,7 +113,7 @@ var tokenTypeNames = map[int]string{
 	Comma:              "кома",
 	FunctionDef:        "визначення функції",
 	Return:             "повернення значення",
-	Nil:             "нуль",
+	Nil:                "нуль",
 	Name:               "назва",
 	TripleDot:          "три крапки",
 	QuestionMark:       "знак запитання",
@@ -198,6 +205,26 @@ var TokenTypesList = map[int]TokenType{
 		Name:  ModuloOp,
 		Regex: regexp.MustCompile("^%"),
 	},
+	BitwiseLeftShiftOp: {
+		Name: BitwiseLeftShiftOp,
+		Regex: regexp.MustCompile("^<<"),
+	},
+	BitwiseRightShiftOp: {
+		Name: BitwiseRightShiftOp,
+		Regex: regexp.MustCompile("^>>"),
+	},
+	BitwiseAndOp: {
+		Name: BitwiseAndOp,
+		Regex: regexp.MustCompile("^&"),
+	},
+	BitwiseXorOp: {
+		Name: BitwiseXorOp,
+		Regex: regexp.MustCompile("^\\^"),
+	},
+	BitwiseOrOp: {
+		Name: BitwiseOrOp,
+		Regex: regexp.MustCompile("^|"),
+	},
 	EqualsOp: {
 		Name:  EqualsOp,
 		Regex: regexp.MustCompile("^=="),
@@ -273,6 +300,10 @@ var TokenTypesList = map[int]TokenType{
 	NotOp: {
 		Name:  NotOp,
 		Regex: regexp.MustCompile("^!"),
+	},
+	BitwiseNotOp: {
+		Name: BitwiseNotOp,
+		Regex: regexp.MustCompile("^~"),
 	},
 	LCurlyBracket: {
 		Name:  LCurlyBracket,

@@ -28,6 +28,10 @@ func (t StringType) TypeName() string {
 	return GetTypeName(t.TypeHash())
 }
 
+func (t StringType) AsBool() bool {
+	return t.Length() != 0
+}
+
 func (t StringType) Length() int64 {
 	return int64(utf8.RuneCountInString(t.Value))
 }
@@ -90,6 +94,81 @@ func (t StringType) SetAttr(name string, _ ValueType) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
 
+func (t StringType) Pow(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) Plus() (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) Minus() (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) BitwiseNot() (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) Mul(other ValueType) (ValueType, error) {
+	switch o := other.(type) {
+	case IntegerType:
+		count := int(o.Value)
+		if count < 0 {
+			return StringType{Value: ""}, nil
+		}
+
+		return StringType{
+			Value: strings.Repeat(t.Value, count),
+		}, nil
+	default:
+		return nil, nil
+	}
+}
+
+func (t StringType) Div(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) Mod(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) Add(other ValueType) (ValueType, error) {
+	switch o := other.(type) {
+	case StringType:
+		return StringType{
+			Value: t.Value + o.Value,
+		}, nil
+	default:
+		return nil, nil
+	}
+}
+
+func (t StringType) Sub(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) BitwiseLeftShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) BitwiseRightShift(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) BitwiseAnd(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) BitwiseXor(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
+func (t StringType) BitwiseOr(ValueType) (ValueType, error) {
+	return nil, nil
+}
+
 func (t StringType) CompareTo(other ValueType) (int, error) {
 	switch right := other.(type) {
 	case NilType:
@@ -114,45 +193,14 @@ func (t StringType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t StringType) Add(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case StringType:
-		return StringType{
-			Value: t.Value + o.Value,
-		}, nil
-	default:
-		return nil, nil
-	}
+func (t StringType) Not() (ValueType, error) {
+	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t StringType) Sub(ValueType) (ValueType, error) {
-	return nil, nil
+func (t StringType) And(other ValueType) (ValueType, error) {
+	return logicalAnd(t, other)
 }
 
-func (t StringType) Mul(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case IntegerType:
-		count := int(o.Value)
-		if count < 0 {
-			return StringType{Value: ""}, nil
-		}
-
-		return StringType{
-			Value: strings.Repeat(t.Value, count),
-		}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t StringType) Div(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t StringType) Pow(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t StringType) Mod(ValueType) (ValueType, error) {
-	return nil, nil
+func (t StringType) Or(other ValueType) (ValueType, error) {
+	return logicalOr(t, other)
 }
