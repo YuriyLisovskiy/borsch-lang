@@ -24,27 +24,27 @@ func (i *Interpreter) executeBitwiseOp(
 	var res types.ValueType
 	switch opType {
 	case ops.BitwiseLeftShiftOp:
-		res, err = left.Add(right)
+		res, err = left.BitwiseLeftShift(right)
 		if err != nil {
 			return nil, util.RuntimeError(err.Error())
 		}
 	case ops.BitwiseRightShiftOp:
-		res, err = left.Sub(right)
+		res, err = left.BitwiseRightShift(right)
 		if err != nil {
 			return nil, util.RuntimeError(err.Error())
 		}
 	case ops.BitwiseAndOp:
-		res, err = left.Mul(right)
+		res, err = left.BitwiseAnd(right)
 		if err != nil {
 			return nil, util.RuntimeError(err.Error())
 		}
 	case ops.BitwiseXorOp:
-		res, err = left.Div(right)
+		res, err = left.BitwiseXor(right)
 		if err != nil {
 			return nil, util.RuntimeError(err.Error())
 		}
 	case ops.BitwiseOrOp:
-		res, err = left.Pow(right)
+		res, err = left.BitwiseOr(right)
 		if err != nil {
 			return nil, util.RuntimeError(err.Error())
 		}

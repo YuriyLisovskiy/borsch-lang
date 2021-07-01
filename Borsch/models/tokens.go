@@ -34,9 +34,7 @@ const (
 	ModuloOp
 	BitwiseLeftShiftOp
 	BitwiseRightShiftOp
-	BitwiseAndOp
 	BitwiseXorOp
-	BitwiseOrOp
 	EqualsOp
 	NotEqualsOp
 	GreaterOrEqualsOp
@@ -54,7 +52,9 @@ const (
 	Else
 	For
 	AndOp
+	BitwiseAndOp
 	OrOp
+	BitwiseOrOp
 	NotOp
 	BitwiseNotOp
 	LCurlyBracket
@@ -213,17 +213,9 @@ var TokenTypesList = map[int]TokenType{
 		Name: BitwiseRightShiftOp,
 		Regex: regexp.MustCompile("^>>"),
 	},
-	BitwiseAndOp: {
-		Name: BitwiseAndOp,
-		Regex: regexp.MustCompile("^&"),
-	},
 	BitwiseXorOp: {
 		Name: BitwiseXorOp,
 		Regex: regexp.MustCompile("^\\^"),
-	},
-	BitwiseOrOp: {
-		Name: BitwiseOrOp,
-		Regex: regexp.MustCompile("^|"),
 	},
 	EqualsOp: {
 		Name:  EqualsOp,
@@ -293,9 +285,17 @@ var TokenTypesList = map[int]TokenType{
 		Name:  AndOp,
 		Regex: regexp.MustCompile("^&&"),
 	},
+	BitwiseAndOp: {
+		Name: BitwiseAndOp,
+		Regex: regexp.MustCompile("^&"),
+	},
 	OrOp: {
 		Name:  OrOp,
 		Regex: regexp.MustCompile("^\\|\\|"),
+	},
+	BitwiseOrOp: {
+		Name: BitwiseOrOp,
+		Regex: regexp.MustCompile("^|"),
 	},
 	NotOp: {
 		Name:  NotOp,
