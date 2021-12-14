@@ -2,10 +2,10 @@ package interpreter
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/ast"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/ops"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func (i *Interpreter) executeComparisonOp(

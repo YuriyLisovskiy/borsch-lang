@@ -2,8 +2,8 @@ package parser
 
 import (
 	"errors"
-	"github.com/YuriyLisovskiy/borsch/Borsch/ast"
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
 func (p *Parser) parseIfSequence() (ast.ExpressionNode, error) {

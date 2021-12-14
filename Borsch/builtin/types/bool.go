@@ -3,13 +3,16 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
 	"math"
 	"strconv"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type BoolType struct {
-	Value bool
+	Value    bool
+	object   *ObjectType
+	package_ *PackageType
 }
 
 func NewBoolType(value string) (BoolType, error) {
@@ -25,7 +28,16 @@ func NewBoolType(value string) (BoolType, error) {
 		return BoolType{}, util.RuntimeError(err.Error())
 	}
 
-	return BoolType{Value: boolean}, nil
+	return BoolType{
+		Value: boolean,
+		object: newObjectType(
+			BoolTypeHash, map[string]ValueType{
+				"__документ__": &NilType{}, // TODO: set doc
+				"__пакет__":    BuiltinPackage,
+			},
+		),
+		package_: BuiltinPackage,
+	}, nil
 }
 
 func (t BoolType) String() string {
@@ -53,7 +65,7 @@ func (t BoolType) AsBool() bool {
 }
 
 func (t BoolType) GetAttr(name string) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
+	return t.object.GetAttribute(name)
 }
 
 func (t BoolType) SetAttr(name string, _ ValueType) (ValueType, error) {
@@ -263,10 +275,12 @@ func (t BoolType) CompareTo(other ValueType) (int, error) {
 			return 0, nil
 		}
 	default:
-		return 0, errors.New(fmt.Sprintf(
-			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.TypeName(), right.TypeName(),
-		))
+		return 0, errors.New(
+			fmt.Sprintf(
+				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"%s", t.TypeName(), right.TypeName(),
+			),
+		)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'

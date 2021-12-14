@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 	"strings"
 )
 

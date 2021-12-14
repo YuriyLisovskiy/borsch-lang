@@ -2,9 +2,10 @@ package interpreter
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/ast"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func (i *Interpreter) executeCallOp(
@@ -141,10 +142,10 @@ func (i *Interpreter) executeCallOp(
 			return nil, err
 		}
 
-		// TODO: remove
 		if res == nil {
 			res = types.NilType{}
-			panic("fatal: returned value is nil")
+			// TODO: remove
+			// panic("fatal: returned value is nil")
 		}
 
 		if res.TypeHash() == types.NilTypeHash {

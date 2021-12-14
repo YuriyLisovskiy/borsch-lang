@@ -2,16 +2,17 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch/Borsch/interpreter"
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
-	"github.com/peterh/liner"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/peterh/liner"
 )
 
 var (
@@ -40,7 +41,7 @@ func pushKeywords(parent, name string, value types.ValueType) {
 		}
 	case types.PackageType:
 		keywords = append(keywords, name)
-		for attrName, attrValue := range v.Attributes {
+		for attrName, attrValue := range v.Object.Attributes {
 			pushKeywords(name, attrName, attrValue)
 		}
 	}

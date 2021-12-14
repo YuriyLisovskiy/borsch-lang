@@ -3,32 +3,34 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type PackageType struct {
-	IsBuiltin  bool
-	Name       string
-	Parent     string
-	Attributes map[string]ValueType
+	IsBuiltin bool
+	Name      string
+	Parent    string
+	Object    *ObjectType
 }
 
 func NewPackageType(isBuiltin bool, name, parent string, attrs map[string]ValueType) PackageType {
+	attrs["__документ__"] = &NilType{} // TODO: set doc
 	return PackageType{
-		IsBuiltin:  isBuiltin,
-		Name:       name,
-		Parent:     parent,
-		Attributes: attrs,
+		IsBuiltin: isBuiltin,
+		Name:      name,
+		Parent:    parent,
+		Object:    newObjectType(PackageTypeHash, attrs),
 	}
 }
 
 func (t PackageType) String() string {
-	builtinStr := ""
+	name := t.Name
 	if t.IsBuiltin {
-		builtinStr = " (вбудований)"
+		name = "АТБ"
 	}
 
-	return fmt.Sprintf("<пакет '%s'%s>", t.Name, builtinStr)
+	return fmt.Sprintf("<пакет '%s'>", name)
 }
 
 func (t PackageType) Representation() string {
@@ -48,43 +50,17 @@ func (t PackageType) AsBool() bool {
 }
 
 func (t PackageType) GetAttr(name string) (ValueType, error) {
-	if name == "__атрибути__" {
-		dict := NewDictionaryType()
-		for key, val := range t.Attributes {
-			err := dict.SetElement(StringType{key}, val)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		return dict, nil
-	}
-
-	if val, ok := t.Attributes[name]; ok {
-		return val, nil
-	}
-
-	return nil, util.AttributeError(t.TypeName(), name)
+	return t.Object.GetAttribute(name)
 }
 
 // SetAttr assumes that attribute already exists.
 func (t PackageType) SetAttr(name string, value ValueType) (ValueType, error) {
-	if val, ok := t.Attributes[name]; ok {
-		if val.TypeHash() == value.TypeHash() {
-			t.Attributes[name] = value
-			return t, nil
-		}
-
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
-			value.TypeName(), name, val.TypeName(),
-		))
+	err := t.Object.SetAttribute(name, value)
+	if err != nil {
+		return nil, err
 	}
 
-	t.Attributes[name] = value
 	return t, nil
-
-	//return nil, util.AttributeError(t.TypeName(), name)
 }
 
 func (t PackageType) Pow(ValueType) (ValueType, error) {
@@ -147,15 +123,19 @@ func (t PackageType) CompareTo(other ValueType) (int, error) {
 	switch right := other.(type) {
 	case NilType:
 	case PackageType:
-		return -2, util.RuntimeError(fmt.Sprintf(
-			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-			"%s", t.TypeName(), right.TypeName(),
-		))
+		return -2, util.RuntimeError(
+			fmt.Sprintf(
+				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
+				"%s", t.TypeName(), right.TypeName(),
+			),
+		)
 	default:
-		return -2, errors.New(fmt.Sprintf(
-			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.TypeName(), right.TypeName(),
-		))
+		return -2, errors.New(
+			fmt.Sprintf(
+				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"%s", t.TypeName(), right.TypeName(),
+			),
+		)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'

@@ -6,7 +6,7 @@ LIB_DIR=/usr/local/lib/${APP_NAME}-lang
 BIN_DIR=/usr/local/bin
 
 BUILD_TIME=`LC_ALL=uk_UA.utf8 date '+%b %d %Y, %T'`
-LDFLAGS=-ldflags "-X 'github.com/YuriyLisovskiy/borsch/Borsch/cli/build.Time=${BUILD_TIME}'"
+LDFLAGS=-ldflags "-X 'github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build.Time=${BUILD_TIME}'"
 
 all: build
 

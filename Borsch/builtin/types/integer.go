@@ -3,14 +3,17 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type IntegerType struct {
 	Value int64
+	object   *ObjectType
+	package_ *PackageType
 }
 
 func NewIntegerType(value string) (IntegerType, error) {
@@ -19,7 +22,16 @@ func NewIntegerType(value string) (IntegerType, error) {
 		return IntegerType{}, util.RuntimeError(err.Error())
 	}
 
-	return IntegerType{Value: number}, nil
+	return IntegerType{
+		Value:    number,
+		object: newObjectType(
+			IntegerTypeHash, map[string]ValueType{
+				"__документ__": &NilType{}, // TODO: set doc
+				"__пакет__":    BuiltinPackage,
+			},
+		),
+		package_: BuiltinPackage,
+	}, nil
 }
 
 func (t IntegerType) String() string {
@@ -43,10 +55,10 @@ func (t IntegerType) AsBool() bool {
 }
 
 func (t IntegerType) GetAttr(name string) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
+	return t.object.GetAttribute(name)
 }
 
-func (t IntegerType) SetAttr(name string, _ ValueType) (ValueType, error) {
+func (t IntegerType) SetAttr(name string, value ValueType) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
 

@@ -3,17 +3,27 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
 	"strings"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type ListType struct {
 	Values []ValueType
+	object   *ObjectType
+	package_ *PackageType
 }
 
 func NewListType() ListType {
 	return ListType{
 		Values: []ValueType{},
+		object: newObjectType(
+			ListTypeHash, map[string]ValueType{
+				"__документ__": &NilType{}, // TODO: set doc
+				"__пакет__":    BuiltinPackage,
+			},
+		),
+		package_: BuiltinPackage,
 	}
 }
 
@@ -84,10 +94,10 @@ func (t ListType) Slice(from, to int64) (ValueType, error) {
 }
 
 func (t ListType) GetAttr(name string) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
+	return t.object.GetAttribute(name)
 }
 
-func (t ListType) SetAttr(name string, _ ValueType) (ValueType, error) {
+func (t ListType) SetAttr(name string, value ValueType) (ValueType, error) {
 	return nil, util.AttributeError(t.TypeName(), name)
 }
 

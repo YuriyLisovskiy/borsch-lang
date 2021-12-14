@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
 	"strings"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type DictionaryEntry struct {
@@ -16,11 +17,20 @@ type DictionaryEntry struct {
 
 type DictionaryType struct {
 	Map map[uint64]DictionaryEntry
+	object   *ObjectType
+	package_ *PackageType
 }
 
-func NewDictionaryType() DictionaryType {
-	return DictionaryType{
+func NewDictionaryType() *DictionaryType {
+	return &DictionaryType{
 		Map: map[uint64]DictionaryEntry{},
+		object: newObjectType(
+			DictionaryTypeHash, map[string]ValueType{
+				"__документ__": &NilType{}, // TODO: set doc
+				"__пакет__":    BuiltinPackage,
+			},
+		),
+		package_: BuiltinPackage,
 	}
 }
 
@@ -103,7 +113,7 @@ func (t *DictionaryType) RemoveElement(key ValueType) error {
 }
 
 func (t DictionaryType) GetAttr(name string) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
+	return t.object.GetAttribute(name)
 }
 
 func (t DictionaryType) SetAttr(name string, _ ValueType) (ValueType, error) {

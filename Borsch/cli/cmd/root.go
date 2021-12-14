@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/cli/build"
-	"github.com/YuriyLisovskiy/borsch/Borsch/interpreter"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
-	"github.com/spf13/cobra"
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/spf13/cobra"
 )
 
 var (

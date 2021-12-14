@@ -1,8 +1,9 @@
 package ast
 
 import (
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
 	"strconv"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
 type BoolTypeNode struct {

@@ -2,7 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/cli/build"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
 	"github.com/spf13/cobra"
 )
 

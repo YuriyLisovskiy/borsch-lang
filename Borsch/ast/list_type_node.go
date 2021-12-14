@@ -1,8 +1,9 @@
 package ast
 
 import (
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
 	"strings"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
 type ListTypeNode struct {

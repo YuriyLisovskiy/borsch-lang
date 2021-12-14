@@ -1,6 +1,11 @@
 package types
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+)
 
 const (
 	AnyTypeHash = iota
@@ -60,6 +65,69 @@ type SequentialType interface {
 	GetElement(int64) (ValueType, error)
 	SetElement(int64, ValueType) (ValueType, error)
 	Slice(int64, int64) (ValueType, error)
+}
+
+type ObjectType struct {
+	typeHash int
+	typeName string
+	Attributes map[string]ValueType
+}
+
+func newObjectType(typeHash int, attributes map[string]ValueType) *ObjectType {
+	return &ObjectType{
+		typeHash:   typeHash,
+		typeName:   GetTypeName(typeHash),
+		Attributes: attributes,
+	}
+}
+
+func (o ObjectType) makeAttributes() (*DictionaryType, error) {
+	dict := NewDictionaryType()
+	for key, val := range o.Attributes {
+		err := dict.SetElement(NewStringType(key), val)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return dict, nil
+}
+
+func (o ObjectType) GetTypeHash() int {
+	return o.typeHash
+}
+
+func (o ObjectType) GetTypeName() string {
+	return o.typeName
+}
+
+func (o ObjectType) GetAttribute(name string) (ValueType, error) {
+	if name == "__атрибути__" {
+		return o.makeAttributes()
+	}
+
+	if val, ok := o.Attributes[name]; ok {
+		return val, nil
+	}
+
+	return nil, util.AttributeError(o.GetTypeName(), name)
+}
+
+func (o ObjectType) SetAttribute(name string, value ValueType) error {
+	if val, ok := o.Attributes[name]; ok {
+		if val.TypeHash() == value.TypeHash() {
+			o.Attributes[name] = value
+			return nil
+		}
+
+		return util.RuntimeError(fmt.Sprintf(
+			"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
+			value.TypeName(), name, val.TypeName(),
+		))
+	}
+
+	o.Attributes[name] = value
+	return nil
 }
 
 func getIndex(index, length int64) (int64, error) {
@@ -152,4 +220,11 @@ func logicalAnd(l, r ValueType) (ValueType, error) {
 
 func logicalOr(l, r ValueType) (ValueType, error) {
 	return BoolType{Value: l.AsBool() || r.AsBool()}, nil
+}
+
+var BuiltinPackage = &PackageType{
+	IsBuiltin:  true,
+	Name:       "",
+	Parent:     "",
+	Object: newObjectType(PackageTypeHash, map[string]ValueType{}),
 }

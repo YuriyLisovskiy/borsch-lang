@@ -3,10 +3,11 @@ package borsch
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
 type Lexer struct {

@@ -3,8 +3,8 @@ package builtin
 import (
 	"bufio"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 	"os"
 	"strings"
 )

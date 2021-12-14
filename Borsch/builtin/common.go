@@ -2,8 +2,9 @@ package builtin
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func Assert(expected, actual types.ValueType, errorTemplate string) error {

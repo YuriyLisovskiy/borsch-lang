@@ -3,11 +3,12 @@ package parser
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/ast"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin"
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
 type Parser struct {

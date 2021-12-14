@@ -1,10 +1,10 @@
 package interpreter
 
 import (
-	"github.com/YuriyLisovskiy/borsch/Borsch/ast"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
 func (i *Interpreter) executeIfSequence(

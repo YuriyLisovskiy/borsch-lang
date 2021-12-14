@@ -3,15 +3,16 @@ package interpreter
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch"
-	"github.com/YuriyLisovskiy/borsch/Borsch/ast"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
-	"github.com/YuriyLisovskiy/borsch/Borsch/parser"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
 	"os"
 	"path/filepath"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/parser"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type Interpreter struct {
@@ -108,12 +109,22 @@ func (i *Interpreter) executeNode(
 		res, err := i.executeImport(&node, rootDir, thisPackage, parentPackage)
 		return res, false, err
 	case ast.FunctionDefNode:
+		// TODO: оптимізувати заповнення поля пакету для вузла функції.
+		functionPackage := types.NewPackageType(
+			false,
+			thisPackage,
+			parentPackage,
+			map[string]types.ValueType{}, // TODO: set attributes
+		)
 		functionDef := types.NewFunctionType(
-			node.Name.Text, node.Arguments, node.ReturnType,
+			node.Name.Text, node.Arguments,
 			func(_ []types.ValueType, kwargs map[string]types.ValueType) (types.ValueType, error) {
 				res, _, err := i.executeBlock(kwargs, node.Body, thisPackage, parentPackage)
 				return res, err
 			},
+			node.ReturnType,
+			&functionPackage,
+			"", // TODO: set doc
 		)
 		return functionDef, false, i.setVar(thisPackage, node.Name.Text, functionDef)
 
@@ -168,7 +179,7 @@ func (i *Interpreter) executeNode(
 		return res, false, err
 
 	case ast.StringTypeNode:
-		res := types.StringType{Value: node.Value.Text}
+		res := types.NewStringType(node.Value.Text)
 		return res, false, nil
 
 	case ast.BoolTypeNode:

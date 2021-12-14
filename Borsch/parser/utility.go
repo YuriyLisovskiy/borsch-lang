@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
 //func (p *Parser) readFunctionScope(retType int) ([]models.Token, error) {

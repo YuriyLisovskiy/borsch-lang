@@ -3,13 +3,29 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type StringType struct {
 	Value string
+	object   *ObjectType
+	package_ *PackageType
+}
+
+func NewStringType(value string) StringType {
+	return StringType{
+		Value:    value,
+		object: newObjectType(
+			StringTypeHash, map[string]ValueType{
+				"__документ__": &NilType{}, // TODO: set doc
+				"__пакет__":    BuiltinPackage,
+			},
+		),
+		package_: BuiltinPackage,
+	}
 }
 
 func (t StringType) String() string {
@@ -21,7 +37,7 @@ func (t StringType) Representation() string {
 }
 
 func (t StringType) TypeHash() int {
-	return StringTypeHash
+	return t.object.GetTypeHash()
 }
 
 func (t StringType) TypeName() string {
@@ -87,7 +103,7 @@ func (t StringType) Slice(from, to int64) (ValueType, error) {
 }
 
 func (t StringType) GetAttr(name string) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
+	return t.object.GetAttribute(name)
 }
 
 func (t StringType) SetAttr(name string, _ ValueType) (ValueType, error) {

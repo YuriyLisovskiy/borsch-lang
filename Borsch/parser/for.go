@@ -3,8 +3,8 @@ package parser
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/ast"
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
 func (p *Parser) parseForLoop() (ast.ExpressionNode, error) {

@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/YuriyLisovskiy/borsch/Borsch/models"
+import "github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 
 type BinOperationNode struct {
 	Operator  models.Token

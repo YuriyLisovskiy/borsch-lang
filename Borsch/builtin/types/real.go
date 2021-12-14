@@ -3,14 +3,17 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type RealType struct {
 	Value float64
+	object   *ObjectType
+	package_ *PackageType
 }
 
 func NewRealType(value string) (RealType, error) {
@@ -19,7 +22,16 @@ func NewRealType(value string) (RealType, error) {
 		return RealType{}, util.RuntimeError(err.Error())
 	}
 
-	return RealType{Value: number}, nil
+	return RealType{
+		Value:    number,
+		object: newObjectType(
+			RealTypeHash, map[string]ValueType{
+				"__документ__": &NilType{}, // TODO: set doc
+				"__пакет__":    BuiltinPackage,
+			},
+		),
+		package_: BuiltinPackage,
+	}, nil
 }
 
 func (t RealType) String() string {
@@ -43,7 +55,7 @@ func (t RealType) AsBool() bool {
 }
 
 func (t RealType) GetAttr(name string) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
+	return t.object.GetAttribute(name)
 }
 
 func (t RealType) SetAttr(name string, _ ValueType) (ValueType, error) {

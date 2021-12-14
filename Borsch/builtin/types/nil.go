@@ -3,7 +3,8 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type NilType struct {

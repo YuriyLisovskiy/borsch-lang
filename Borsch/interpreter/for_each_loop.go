@@ -2,9 +2,9 @@ package interpreter
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch/Borsch/models"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func (i *Interpreter) executeForEachLoop(

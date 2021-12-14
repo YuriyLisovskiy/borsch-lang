@@ -1,8 +1,8 @@
 package interpreter
 
 import (
-	"github.com/YuriyLisovskiy/borsch/Borsch/ast"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 )
 
 func (i *Interpreter) executeAttrAccessOp(
