@@ -31,7 +31,7 @@ func init() {
 	}
 }
 
-func pushKeywords(parent, name string, value types.ValueType) {
+func pushKeywords(parent, name string, value types.Type) {
 	switch v := value.(type) {
 	case types.SequentialType, types.DictionaryType, types.BoolType, types.IntegerType, types.NilType, types.RealType:
 		if parent != "" {
@@ -111,7 +111,7 @@ func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 		}
 	}
 
-	scope := map[string]types.ValueType{}
+	scope := map[string]types.Type{}
 	var quit bool
 	for {
 		code := ""
@@ -135,7 +135,7 @@ func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 			break
 		}
 
-		var result types.ValueType
+		var result types.Type
 		var err error
 		result, scope, err = interpreterInstance.Execute(
 			"<стдввід>", "", scope, strings.TrimPrefix(code, "\n"),

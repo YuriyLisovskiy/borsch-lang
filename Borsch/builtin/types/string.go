@@ -10,16 +10,17 @@ import (
 )
 
 type StringType struct {
+	Object
+
 	Value string
-	object   *ObjectType
 	package_ *PackageType
 }
 
 func NewStringType(value string) StringType {
 	return StringType{
 		Value:    value,
-		object: newObjectType(
-			StringTypeHash, map[string]ValueType{
+		Object: *newBuiltinObject(
+			StringTypeHash, map[string]Type{
 				"__документ__": &NilType{}, // TODO: set doc
 				"__пакет__":    BuiltinPackage,
 			},
@@ -36,14 +37,6 @@ func (t StringType) Representation() string {
 	return "\"" + t.String() + "\""
 }
 
-func (t StringType) TypeHash() int {
-	return t.object.GetTypeHash()
-}
-
-func (t StringType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
 func (t StringType) AsBool() bool {
 	return t.Length() != 0
 }
@@ -52,7 +45,7 @@ func (t StringType) Length() int64 {
 	return int64(utf8.RuneCountInString(t.Value))
 }
 
-func (t StringType) GetElement(index int64) (ValueType, error) {
+func (t StringType) GetElement(index int64) (Type, error) {
 	idx, err := getIndex(index, t.Length())
 	if err != nil {
 		return nil, err
@@ -61,7 +54,7 @@ func (t StringType) GetElement(index int64) (ValueType, error) {
 	return StringType{Value: string([]rune(t.Value)[idx])}, nil
 }
 
-func (t StringType) SetElement(index int64, value ValueType) (ValueType, error) {
+func (t StringType) SetElement(index int64, value Type) (Type, error) {
 	switch v := value.(type) {
 	case StringType:
 		idx, err := getIndex(index, t.Length())
@@ -78,13 +71,13 @@ func (t StringType) SetElement(index int64, value ValueType) (ValueType, error) 
 		target[idx] = runes[0]
 		t.Value = string(target)
 	default:
-		return nil, errors.New(fmt.Sprintf("неможливо вставити в рядок об'єкт типу '%s'", v.TypeName()))
+		return nil, errors.New(fmt.Sprintf("неможливо вставити в рядок об'єкт типу '%s'", v.GetTypeName()))
 	}
 
 	return t, nil
 }
 
-func (t StringType) Slice(from, to int64) (ValueType, error) {
+func (t StringType) Slice(from, to int64) (Type, error) {
 	fromIdx, err := getIndex(from, t.Length())
 	if err != nil {
 		return nil, err
@@ -102,31 +95,27 @@ func (t StringType) Slice(from, to int64) (ValueType, error) {
 	return StringType{Value: t.Value[fromIdx:toIdx]}, nil
 }
 
-func (t StringType) GetAttr(name string) (ValueType, error) {
-	return t.object.GetAttribute(name)
+func (t StringType) SetAttribute(name string, _ Type) (Type, error) {
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t StringType) SetAttr(name string, _ ValueType) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
-}
-
-func (t StringType) Pow(ValueType) (ValueType, error) {
+func (t StringType) Pow(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) Plus() (ValueType, error) {
+func (t StringType) Plus() (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) Minus() (ValueType, error) {
+func (t StringType) Minus() (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) BitwiseNot() (ValueType, error) {
+func (t StringType) BitwiseNot() (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) Mul(other ValueType) (ValueType, error) {
+func (t StringType) Mul(other Type) (Type, error) {
 	switch o := other.(type) {
 	case IntegerType:
 		count := int(o.Value)
@@ -142,15 +131,15 @@ func (t StringType) Mul(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t StringType) Div(ValueType) (ValueType, error) {
+func (t StringType) Div(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) Mod(ValueType) (ValueType, error) {
+func (t StringType) Mod(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) Add(other ValueType) (ValueType, error) {
+func (t StringType) Add(other Type) (Type, error) {
 	switch o := other.(type) {
 	case StringType:
 		return StringType{
@@ -161,31 +150,31 @@ func (t StringType) Add(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t StringType) Sub(ValueType) (ValueType, error) {
+func (t StringType) Sub(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) BitwiseLeftShift(ValueType) (ValueType, error) {
+func (t StringType) BitwiseLeftShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) BitwiseRightShift(ValueType) (ValueType, error) {
+func (t StringType) BitwiseRightShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) BitwiseAnd(ValueType) (ValueType, error) {
+func (t StringType) BitwiseAnd(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) BitwiseXor(ValueType) (ValueType, error) {
+func (t StringType) BitwiseXor(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) BitwiseOr(ValueType) (ValueType, error) {
+func (t StringType) BitwiseOr(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t StringType) CompareTo(other ValueType) (int, error) {
+func (t StringType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
 	case NilType:
 	case StringType:
@@ -201,7 +190,7 @@ func (t StringType) CompareTo(other ValueType) (int, error) {
 	default:
 		return 0, errors.New(fmt.Sprintf(
 			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.TypeName(), right.TypeName(),
+			"%s", t.GetTypeName(), right.GetTypeName(),
 		))
 	}
 
@@ -209,14 +198,14 @@ func (t StringType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t StringType) Not() (ValueType, error) {
+func (t StringType) Not() (Type, error) {
 	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t StringType) And(other ValueType) (ValueType, error) {
+func (t StringType) And(other Type) (Type, error) {
 	return logicalAnd(t, other)
 }
 
-func (t StringType) Or(other ValueType) (ValueType, error) {
+func (t StringType) Or(other Type) (Type, error) {
 	return logicalOr(t, other)
 }

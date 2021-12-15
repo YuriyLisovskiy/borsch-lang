@@ -8,7 +8,7 @@ import (
 )
 
 type FunctionArgument struct {
-	TypeHash   int
+	TypeHash   uint64
 	Name       string
 	IsVariadic bool
 	IsNullable bool
@@ -38,7 +38,7 @@ func (fa FunctionArgument) TypeName() string {
 }
 
 type FunctionReturnType struct {
-	TypeHash   int
+	TypeHash   uint64
 	IsNullable bool
 }
 
@@ -52,18 +52,19 @@ func (r *FunctionReturnType) String() string {
 }
 
 type FunctionType struct {
-	object     *ObjectType
+	Object
+
 	package_   *PackageType
 	Name       string
 	Arguments  []FunctionArgument
-	Callable   func([]ValueType, map[string]ValueType) (ValueType, error)
+	Callable   func([]Type, map[string]Type) (Type, error)
 	ReturnType FunctionReturnType
 }
 
 func NewFunctionType(
 	name string,
 	arguments []FunctionArgument,
-	handler func([]ValueType, map[string]ValueType) (ValueType, error),
+	handler func([]Type, map[string]Type) (Type, error),
 	returnType FunctionReturnType,
 	package_ *PackageType,
 	doc string,
@@ -74,8 +75,8 @@ func NewFunctionType(
 		Callable:   handler,
 		ReturnType: returnType,
 		package_:   package_,
-		object: newObjectType(
-			FunctionTypeHash, map[string]ValueType{
+		Object: *newBuiltinObject(
+			FunctionTypeHash, map[string]Type{
 				"__документ__": &StringType{Value: doc},
 				"__пакет__":    package_,
 			},
@@ -84,36 +85,30 @@ func NewFunctionType(
 }
 
 func (t FunctionType) String() string {
-	template := "функція '%s' з типом результату '%s'"
-	if t.package_.IsBuiltin {
-		template = "вбудована " + template
+	template := ""
+	if t.package_ != nil {
+		template = "функція '%s'"
+		if t.package_.IsBuiltin {
+			template = "вбудована " + template
+		}
+	} else {
+		template = "метод '%s'"
 	}
 
-	return fmt.Sprintf(template, t.Name, t.ReturnType.String())
+	template += " з типом результату '%s'"
+	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.Name, t.ReturnType.String())
 }
 
 func (t FunctionType) Representation() string {
 	return t.String()
 }
 
-func (t FunctionType) TypeHash() int {
-	return FunctionTypeHash
-}
-
-func (t FunctionType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
 func (t FunctionType) AsBool() bool {
 	return true
 }
 
-func (t FunctionType) GetAttr(name string) (ValueType, error) {
-	return t.object.GetAttribute(name)
-}
-
-func (t FunctionType) SetAttr(name string, value ValueType) (ValueType, error) {
-	err := t.object.SetAttribute(name, value)
+func (t FunctionType) SetAttribute(name string, value Type) (Type, error) {
+	err := t.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
 	}
@@ -121,77 +116,77 @@ func (t FunctionType) SetAttr(name string, value ValueType) (ValueType, error) {
 	return t, nil
 }
 
-func (t FunctionType) Pow(ValueType) (ValueType, error) {
+func (t FunctionType) Pow(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) Plus() (ValueType, error) {
+func (t FunctionType) Plus() (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) Minus() (ValueType, error) {
+func (t FunctionType) Minus() (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) BitwiseNot() (ValueType, error) {
+func (t FunctionType) BitwiseNot() (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) Mul(ValueType) (ValueType, error) {
+func (t FunctionType) Mul(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) Div(ValueType) (ValueType, error) {
+func (t FunctionType) Div(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) Mod(ValueType) (ValueType, error) {
+func (t FunctionType) Mod(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) Add(ValueType) (ValueType, error) {
+func (t FunctionType) Add(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) Sub(ValueType) (ValueType, error) {
+func (t FunctionType) Sub(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) BitwiseLeftShift(ValueType) (ValueType, error) {
+func (t FunctionType) BitwiseLeftShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) BitwiseRightShift(ValueType) (ValueType, error) {
+func (t FunctionType) BitwiseRightShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) BitwiseAnd(ValueType) (ValueType, error) {
+func (t FunctionType) BitwiseAnd(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) BitwiseXor(ValueType) (ValueType, error) {
+func (t FunctionType) BitwiseXor(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) BitwiseOr(ValueType) (ValueType, error) {
+func (t FunctionType) BitwiseOr(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t FunctionType) CompareTo(other ValueType) (int, error) {
+func (t FunctionType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
 	case NilType:
 	case FunctionType:
 		return -2, util.RuntimeError(
 			fmt.Sprintf(
 				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-				"%s", t.TypeName(), right.TypeName(),
+				"%s", t.GetTypeName(), right.GetTypeName(),
 			),
 		)
 	default:
 		return -2, errors.New(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-				"%s", t.TypeName(), right.TypeName(),
+				"%s", t.GetTypeName(), right.GetTypeName(),
 			),
 		)
 	}
@@ -200,14 +195,14 @@ func (t FunctionType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t FunctionType) Not() (ValueType, error) {
+func (t FunctionType) Not() (Type, error) {
 	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t FunctionType) And(other ValueType) (ValueType, error) {
+func (t FunctionType) And(other Type) (Type, error) {
 	return BoolType{Value: other.AsBool()}, nil
 }
 
-func (t FunctionType) Or(ValueType) (ValueType, error) {
+func (t FunctionType) Or(Type) (Type, error) {
 	return BoolType{Value: true}, nil
 }

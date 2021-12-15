@@ -10,25 +10,25 @@ import (
 func (i *Interpreter) executeIfSequence(
 	blocks []ast.ConditionBlock, elseBlock []models.Token,
 	rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, bool, error) {
+) (types.Type, bool, error) {
 	for _, block := range blocks {
 		result, _, err := i.executeNode(block.Condition, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, false, err
 		}
 
-		result, err = builtin.ToBool([]types.ValueType{result}...)
+		result, err = builtin.ToBool([]types.Type{result}...)
 		if err != nil {
 			return nil, false, err
 		}
 
 		if result.(types.BoolType).Value {
-			return i.executeBlock(map[string]types.ValueType{}, block.Tokens, thisPackage, parentPackage)
+			return i.executeBlock(map[string]types.Type{}, block.Tokens, thisPackage, parentPackage)
 		}
 	}
 
 	if len(elseBlock) > 0 {
-		return i.executeBlock(map[string]types.ValueType{}, elseBlock, thisPackage, parentPackage)
+		return i.executeBlock(map[string]types.Type{}, elseBlock, thisPackage, parentPackage)
 	}
 
 	return types.NilType{}, false, nil

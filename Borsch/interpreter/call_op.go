@@ -9,8 +9,8 @@ import (
 )
 
 func (i *Interpreter) executeCallOp(
-	node *ast.CallOpNode, callable types.ValueType, rootDir, thisPackage, parentPackage string,
-) (types.ValueType, error) {
+	node *ast.CallOpNode, callable types.Type, rootDir, thisPackage, parentPackage string,
+) (types.Type, error) {
 	switch function := callable.(type) {
 	case types.FunctionType:
 		parametersLen := len(node.Parameters)
@@ -70,8 +70,8 @@ func (i *Interpreter) executeCallOp(
 			}
 		}
 
-		var args []types.ValueType
-		kwargs := map[string]types.ValueType{}
+		var args []types.Type
+		kwargs := map[string]types.Type{}
 		var c int
 		for c = 0; c < argsLen; c++ {
 			arg, _, err := i.executeNode(node.Parameters[c], rootDir, thisPackage, parentPackage)
@@ -85,17 +85,17 @@ func (i *Interpreter) executeCallOp(
 				panic("fatal: argument is nil")
 			}
 
-			if arg.TypeHash() == types.NilTypeHash {
+			if arg.GetTypeHash() == types.NilTypeHash {
 				if function.Arguments[c].TypeHash != types.NilTypeHash && !function.Arguments[c].IsNullable {
 					return nil, util.RuntimeError(fmt.Sprintf(
 						"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
 						function.Arguments[c].Name, arg.String(),
 					))
 				}
-			} else if function.Arguments[c].TypeHash != types.AnyTypeHash && arg.TypeHash() != function.Arguments[c].TypeHash {
+			} else if function.Arguments[c].TypeHash != types.AnyTypeHash && arg.GetTypeHash() != function.Arguments[c].TypeHash {
 				return nil, util.RuntimeError(fmt.Sprintf(
 					"аргумент '%s' очікує параметр з типом '%s', отримано '%s'",
-					function.Arguments[c].Name, function.Arguments[c].TypeName(), arg.TypeName(),
+					function.Arguments[c].Name, function.Arguments[c].TypeName(), arg.GetTypeName(),
 				))
 			}
 
@@ -114,17 +114,17 @@ func (i *Interpreter) executeCallOp(
 							return nil, err
 						}
 
-						if arg.TypeHash() == types.NilTypeHash {
+						if arg.GetTypeHash() == types.NilTypeHash {
 							if lastArgument.TypeHash != types.NilTypeHash && !lastArgument.IsNullable {
 								return nil, util.RuntimeError(fmt.Sprintf(
 									"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
 									lastArgument.Name, arg.String(),
 								))
 							}
-						} else if lastArgument.TypeHash != types.AnyTypeHash && arg.TypeHash() != lastArgument.TypeHash {
+						} else if lastArgument.TypeHash != types.AnyTypeHash && arg.GetTypeHash() != lastArgument.TypeHash {
 							return nil, util.RuntimeError(fmt.Sprintf(
 								"аргумент '%s' очікує список параметрів з типом '%s', отримано '%s'",
-								lastArgument.Name, lastArgument.TypeName(), arg.TypeName(),
+								lastArgument.Name, lastArgument.TypeName(), arg.GetTypeName(),
 							))
 						}
 
@@ -148,17 +148,17 @@ func (i *Interpreter) executeCallOp(
 			// panic("fatal: returned value is nil")
 		}
 
-		if res.TypeHash() == types.NilTypeHash {
+		if res.GetTypeHash() == types.NilTypeHash {
 			if function.ReturnType.TypeHash != types.NilTypeHash && !function.ReturnType.IsNullable {
 				return nil, util.RuntimeError(fmt.Sprintf(
 					"'%s()' повертає ненульове значення, отримано '%s'",
 					function.Name, res.String(),
 				))
 			}
-		} else if function.ReturnType.TypeHash != types.AnyTypeHash && res.TypeHash() != function.ReturnType.TypeHash {
+		} else if function.ReturnType.TypeHash != types.AnyTypeHash && res.GetTypeHash() != function.ReturnType.TypeHash {
 			return nil, util.RuntimeError(fmt.Sprintf(
 				"'%s()' повертає значення типу '%s', отримано значення з типом '%s'",
-				function.Name, function.ReturnType.String(), res.TypeName(),
+				function.Name, function.ReturnType.String(), res.GetTypeName(),
 			))
 		}
 
@@ -166,7 +166,7 @@ func (i *Interpreter) executeCallOp(
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
 			"неможливо застосувати оператор виклику до об'єкта '%s' з типом '%s'",
-			node.CallableName.Text, callable.TypeName(),
+			node.CallableName.Text, callable.GetTypeName(),
 		))
 	}
 }

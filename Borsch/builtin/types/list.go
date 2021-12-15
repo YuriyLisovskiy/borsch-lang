@@ -9,16 +9,17 @@ import (
 )
 
 type ListType struct {
-	Values []ValueType
-	object   *ObjectType
+	Object
+
+	Values []Type
 	package_ *PackageType
 }
 
 func NewListType() ListType {
 	return ListType{
-		Values: []ValueType{},
-		object: newObjectType(
-			ListTypeHash, map[string]ValueType{
+		Values: []Type{},
+		Object: *newBuiltinObject(
+			ListTypeHash, map[string]Type{
 				"__документ__": &NilType{}, // TODO: set doc
 				"__пакет__":    BuiltinPackage,
 			},
@@ -40,14 +41,6 @@ func (t ListType) Representation() string {
 	return "[" + strings.Join(strValues, ", ") + "]"
 }
 
-func (t ListType) TypeHash() int {
-	return ListTypeHash
-}
-
-func (t ListType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
 func (t ListType) AsBool() bool {
 	return t.Length() != 0
 }
@@ -56,7 +49,7 @@ func (t ListType) Length() int64 {
 	return int64(len(t.Values))
 }
 
-func (t ListType) GetElement(index int64) (ValueType, error) {
+func (t ListType) GetElement(index int64) (Type, error) {
 	idx, err := getIndex(index, t.Length())
 	if err != nil {
 		return nil, err
@@ -65,7 +58,7 @@ func (t ListType) GetElement(index int64) (ValueType, error) {
 	return t.Values[idx], nil
 }
 
-func (t ListType) SetElement(index int64, value ValueType) (ValueType, error) {
+func (t ListType) SetElement(index int64, value Type) (Type, error) {
 	idx, err := getIndex(index, t.Length())
 	if err != nil {
 		return nil, err
@@ -75,7 +68,7 @@ func (t ListType) SetElement(index int64, value ValueType) (ValueType, error) {
 	return t, nil
 }
 
-func (t ListType) Slice(from, to int64) (ValueType, error) {
+func (t ListType) Slice(from, to int64) (Type, error) {
 	fromIdx, err := getIndex(from, t.Length())
 	if err != nil {
 		return nil, err
@@ -93,31 +86,27 @@ func (t ListType) Slice(from, to int64) (ValueType, error) {
 	return ListType{Values: t.Values[fromIdx:toIdx]}, nil
 }
 
-func (t ListType) GetAttr(name string) (ValueType, error) {
-	return t.object.GetAttribute(name)
+func (t ListType) SetAttribute(name string, _ Type) (Type, error) {
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t ListType) SetAttr(name string, value ValueType) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
-}
-
-func (t ListType) Pow(ValueType) (ValueType, error) {
+func (t ListType) Pow(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) Plus() (ValueType, error) {
+func (t ListType) Plus() (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) Minus() (ValueType, error) {
+func (t ListType) Minus() (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) BitwiseNot() (ValueType, error) {
+func (t ListType) BitwiseNot() (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) Mul(other ValueType) (ValueType, error) {
+func (t ListType) Mul(other Type) (Type, error) {
 	switch o := other.(type) {
 	case IntegerType:
 		count := int(o.Value)
@@ -134,15 +123,15 @@ func (t ListType) Mul(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t ListType) Div(ValueType) (ValueType, error) {
+func (t ListType) Div(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) Mod(ValueType) (ValueType, error) {
+func (t ListType) Mod(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) Add(other ValueType) (ValueType, error) {
+func (t ListType) Add(other Type) (Type, error) {
 	switch o := other.(type) {
 	case ListType:
 		t.Values = append(t.Values, o.Values...)
@@ -152,42 +141,42 @@ func (t ListType) Add(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t ListType) Sub(ValueType) (ValueType, error) {
+func (t ListType) Sub(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) BitwiseLeftShift(ValueType) (ValueType, error) {
+func (t ListType) BitwiseLeftShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) BitwiseRightShift(ValueType) (ValueType, error) {
+func (t ListType) BitwiseRightShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) BitwiseAnd(ValueType) (ValueType, error) {
+func (t ListType) BitwiseAnd(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) BitwiseXor(ValueType) (ValueType, error) {
+func (t ListType) BitwiseXor(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) BitwiseOr(ValueType) (ValueType, error) {
+func (t ListType) BitwiseOr(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t ListType) CompareTo(other ValueType) (int, error) {
+func (t ListType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
 	case NilType:
 	case ListType:
 		return -2, util.RuntimeError(fmt.Sprintf(
 			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-			"%s", t.TypeName(), right.TypeName(),
+			"%s", t.GetTypeName(), right.GetTypeName(),
 		))
 	default:
 		return -2, errors.New(fmt.Sprintf(
 			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.TypeName(), right.TypeName(),
+			"%s", t.GetTypeName(), right.GetTypeName(),
 		))
 	}
 
@@ -195,14 +184,14 @@ func (t ListType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t ListType) Not() (ValueType, error) {
+func (t ListType) Not() (Type, error) {
 	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t ListType) And(other ValueType) (ValueType, error) {
+func (t ListType) And(other Type) (Type, error) {
 	return logicalAnd(t, other)
 }
 
-func (t ListType) Or(other ValueType) (ValueType, error) {
+func (t ListType) Or(other Type) (Type, error) {
 	return logicalOr(t, other)
 }

@@ -11,21 +11,22 @@ import (
 )
 
 type DictionaryEntry struct {
-	Key   ValueType
-	Value ValueType
+	Key   Type
+	Value Type
 }
 
 type DictionaryType struct {
+	Object
+
 	Map map[uint64]DictionaryEntry
-	object   *ObjectType
 	package_ *PackageType
 }
 
 func NewDictionaryType() *DictionaryType {
 	return &DictionaryType{
 		Map: map[uint64]DictionaryEntry{},
-		object: newObjectType(
-			DictionaryTypeHash, map[string]ValueType{
+		Object: *newBuiltinObject(
+			DictionaryTypeHash, map[string]Type{
 				"__документ__": &NilType{}, // TODO: set doc
 				"__пакет__":    BuiltinPackage,
 			},
@@ -59,14 +60,6 @@ func (t DictionaryType) Representation() string {
 	return "{" + strings.Join(strValues, ", ") + "}"
 }
 
-func (t DictionaryType) TypeHash() int {
-	return DictionaryTypeHash
-}
-
-func (t DictionaryType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
 func (t DictionaryType) AsBool() bool {
 	return t.Length() != 0
 }
@@ -75,7 +68,7 @@ func (t DictionaryType) Length() int64 {
 	return int64(len(t.Map))
 }
 
-func (t DictionaryType) GetElement(key ValueType) (ValueType, error) {
+func (t DictionaryType) GetElement(key Type) (Type, error) {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return nil, err
@@ -88,7 +81,7 @@ func (t DictionaryType) GetElement(key ValueType) (ValueType, error) {
 	return nil, errors.New(fmt.Sprintf("значення за ключем '%s' не існує", key.String()))
 }
 
-func (t *DictionaryType) SetElement(key ValueType, value ValueType) error {
+func (t *DictionaryType) SetElement(key Type, value Type) error {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return err
@@ -98,7 +91,7 @@ func (t *DictionaryType) SetElement(key ValueType, value ValueType) error {
 	return nil
 }
 
-func (t *DictionaryType) RemoveElement(key ValueType) error {
+func (t *DictionaryType) RemoveElement(key Type) error {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return err
@@ -112,82 +105,78 @@ func (t *DictionaryType) RemoveElement(key ValueType) error {
 	return nil
 }
 
-func (t DictionaryType) GetAttr(name string) (ValueType, error) {
-	return t.object.GetAttribute(name)
+func (t DictionaryType) SetAttribute(name string, _ Type) (Type, error) {
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t DictionaryType) SetAttr(name string, _ ValueType) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
-}
-
-func (t DictionaryType) Pow(ValueType) (ValueType, error) {
+func (t DictionaryType) Pow(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) Plus() (ValueType, error) {
+func (t DictionaryType) Plus() (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) Minus() (ValueType, error) {
+func (t DictionaryType) Minus() (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) BitwiseNot() (ValueType, error) {
+func (t DictionaryType) BitwiseNot() (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) Mul(ValueType) (ValueType, error) {
+func (t DictionaryType) Mul(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) Div(ValueType) (ValueType, error) {
+func (t DictionaryType) Div(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) Mod(ValueType) (ValueType, error) {
+func (t DictionaryType) Mod(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) Add(ValueType) (ValueType, error) {
+func (t DictionaryType) Add(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) Sub(ValueType) (ValueType, error) {
+func (t DictionaryType) Sub(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) BitwiseLeftShift(ValueType) (ValueType, error) {
+func (t DictionaryType) BitwiseLeftShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) BitwiseRightShift(ValueType) (ValueType, error) {
+func (t DictionaryType) BitwiseRightShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) BitwiseAnd(ValueType) (ValueType, error) {
+func (t DictionaryType) BitwiseAnd(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) BitwiseXor(ValueType) (ValueType, error) {
+func (t DictionaryType) BitwiseXor(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) BitwiseOr(ValueType) (ValueType, error) {
+func (t DictionaryType) BitwiseOr(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t DictionaryType) CompareTo(other ValueType) (int, error) {
+func (t DictionaryType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
 	case NilType:
 	case DictionaryType:
 		return -2, util.RuntimeError(fmt.Sprintf(
 			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-			"%s", t.TypeName(), right.TypeName(),
+			"%s", t.GetTypeName(), right.GetTypeName(),
 		))
 	default:
 		return -2, errors.New(fmt.Sprintf(
 			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.TypeName(), right.TypeName(),
+			"%s", t.GetTypeName(), right.GetTypeName(),
 		))
 	}
 
@@ -195,14 +184,14 @@ func (t DictionaryType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t DictionaryType) Not() (ValueType, error) {
+func (t DictionaryType) Not() (Type, error) {
 	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t DictionaryType) And(other ValueType) (ValueType, error) {
+func (t DictionaryType) And(other Type) (Type, error) {
 	return logicalAnd(t, other)
 }
 
-func (t DictionaryType) Or(other ValueType) (ValueType, error) {
+func (t DictionaryType) Or(other Type) (Type, error) {
 	return logicalOr(t, other)
 }

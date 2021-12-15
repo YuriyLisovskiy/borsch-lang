@@ -295,7 +295,7 @@ var TokenTypesList = map[int]TokenType{
 	},
 	BitwiseOrOp: {
 		Name: BitwiseOrOp,
-		Regex: regexp.MustCompile("^|"),
+		Regex: regexp.MustCompile("^\\|"),
 	},
 	NotOp: {
 		Name:  NotOp,

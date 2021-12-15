@@ -17,10 +17,10 @@ import (
 
 type Interpreter struct {
 	stdRoot          string
-	scopes           map[string][]map[string]types.ValueType
+	scopes           map[string][]map[string]types.Type
 	currentPackage   string
 	parentPackage    string
-	includedPackages map[string]types.ValueType
+	includedPackages map[string]types.Type
 }
 
 func NewInterpreter(stdRoot, currentPackage, parentPackage string) *Interpreter {
@@ -28,16 +28,16 @@ func NewInterpreter(stdRoot, currentPackage, parentPackage string) *Interpreter 
 		stdRoot:          stdRoot,
 		currentPackage:   currentPackage,
 		parentPackage:    parentPackage,
-		scopes:           map[string][]map[string]types.ValueType{},
-		includedPackages: map[string]types.ValueType{},
+		scopes:           map[string][]map[string]types.Type{},
+		includedPackages: map[string]types.Type{},
 	}
 }
 
-func (i *Interpreter) pushScope(packageName string, scope map[string]types.ValueType) {
+func (i *Interpreter) pushScope(packageName string, scope map[string]types.Type) {
 	i.scopes[packageName] = append(i.scopes[packageName], scope)
 }
 
-func (i *Interpreter) popScope(packageName string) map[string]types.ValueType {
+func (i *Interpreter) popScope(packageName string) map[string]types.Type {
 	if scopes, ok := i.scopes[packageName]; ok {
 		if len(scopes) == 0 {
 			panic("fatal: not enough scopes")
@@ -51,7 +51,7 @@ func (i *Interpreter) popScope(packageName string) map[string]types.ValueType {
 	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
 }
 
-func (i *Interpreter) getVar(packageName string, name string) (types.ValueType, error) {
+func (i *Interpreter) getVar(packageName string, name string) (types.Type, error) {
 	if scopes, ok := i.scopes[packageName]; ok {
 		lastScopeIdx := len(scopes) - 1
 		for idx := lastScopeIdx; idx >= 0; idx-- {
@@ -66,23 +66,23 @@ func (i *Interpreter) getVar(packageName string, name string) (types.ValueType, 
 	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
 }
 
-func (i *Interpreter) setVar(packageName, name string, value types.ValueType) error {
+func (i *Interpreter) setVar(packageName, name string, value types.Type) error {
 	if scopes, ok := i.scopes[packageName]; ok {
 		scopesLen := len(scopes)
 		for idx := 0; idx < scopesLen; idx++ {
 			if oldValue, ok := scopes[idx][name]; ok {
-				if oldValue.TypeHash() != value.TypeHash() {
+				if oldValue.GetTypeHash() != value.GetTypeHash() {
 					if scopesLen == 1 {
 						return util.RuntimeError(fmt.Sprintf(
 							"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
-							value.TypeName(), name, oldValue.TypeName(),
+							value.GetTypeName(), name, oldValue.GetTypeName(),
 						))
 					}
 
 					// TODO: надрукувати нормальне попередження!
 					fmt.Println(fmt.Sprintf(
 						"Увага: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
-						value.TypeName(), oldValue.TypeName(), name,
+						value.GetTypeName(), oldValue.GetTypeName(), name,
 					))
 					break
 				}
@@ -103,7 +103,7 @@ func (i *Interpreter) setVar(packageName, name string, value types.ValueType) er
 
 func (i *Interpreter) executeNode(
 	rootNode ast.ExpressionNode, rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, bool, error) {
+) (types.Type, bool, error) {
 	switch node := rootNode.(type) {
 	case ast.ImportNode:
 		res, err := i.executeImport(&node, rootDir, thisPackage, parentPackage)
@@ -114,11 +114,11 @@ func (i *Interpreter) executeNode(
 			false,
 			thisPackage,
 			parentPackage,
-			map[string]types.ValueType{}, // TODO: set attributes
+			map[string]types.Type{}, // TODO: set attributes
 		)
 		functionDef := types.NewFunctionType(
 			node.Name.Text, node.Arguments,
-			func(_ []types.ValueType, kwargs map[string]types.ValueType) (types.ValueType, error) {
+			func(_ []types.Type, kwargs map[string]types.Type) (types.Type, error) {
 				res, _, err := i.executeBlock(kwargs, node.Body, thisPackage, parentPackage)
 				return res, err
 			},
@@ -240,8 +240,8 @@ func (i *Interpreter) executeNode(
 }
 
 func (i *Interpreter) executeAST(
-	scope map[string]types.ValueType, thisPackage, parentPackage string, tree *ast.AST,
-) (types.ValueType, map[string]types.ValueType, bool, error) {
+	scope map[string]types.Type, thisPackage, parentPackage string, tree *ast.AST,
+) (types.Type, map[string]types.Type, bool, error) {
 	var filePath string
 	var dir string
 	var err error
@@ -260,7 +260,7 @@ func (i *Interpreter) executeAST(
 		dir = filepath.Dir(filePath)
 	}
 
-	var result types.ValueType = nil
+	var result types.Type = nil
 	forceReturn := false
 	i.pushScope(thisPackage, scope)
 	for _, node := range tree.Nodes {
@@ -282,8 +282,8 @@ func (i *Interpreter) executeAST(
 }
 
 func (i *Interpreter) executeBlock(
-	scope map[string]types.ValueType, tokens []models.Token, thisPackage, parentPackage string,
-) (types.ValueType, bool, error) {
+	scope map[string]types.Type, tokens []models.Token, thisPackage, parentPackage string,
+) (types.Type, bool, error) {
 	p := parser.NewParser(thisPackage, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
@@ -299,8 +299,8 @@ func (i *Interpreter) executeBlock(
 }
 
 func (i *Interpreter) Execute(
-	thisPackage, parentPackage string, scope map[string]types.ValueType, code string,
-) (types.ValueType, map[string]types.ValueType, error) {
+	thisPackage, parentPackage string, scope map[string]types.Type, code string,
+) (types.Type, map[string]types.Type, error) {
 	lexer := borsch.NewLexer(thisPackage, code)
 	tokens, err := lexer.Lex()
 	if err != nil {
@@ -314,7 +314,7 @@ func (i *Interpreter) Execute(
 	}
 
 	i.pushScope(thisPackage, builtin.RuntimeFunctions)
-	var result types.ValueType
+	var result types.Type
 	result, scope, _, err = i.executeAST(scope, thisPackage, parentPackage, asTree)
 	if err != nil {
 		return nil, scope, err
@@ -325,8 +325,8 @@ func (i *Interpreter) Execute(
 
 func (i *Interpreter) ExecuteFile(
 	packageName, parentPackage string, content []byte, isBuiltin bool,
-) (types.ValueType, error) {
-	_, scope, err := i.Execute(packageName, parentPackage, map[string]types.ValueType{}, string(content))
+) (types.Type, error) {
+	_, scope, err := i.Execute(packageName, parentPackage, map[string]types.Type{}, string(content))
 	if err != nil {
 		return nil, err
 	}

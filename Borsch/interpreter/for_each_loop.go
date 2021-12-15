@@ -8,15 +8,15 @@ import (
 )
 
 func (i *Interpreter) executeForEachLoop(
-	indexVar, itemVar models.Token, containerValue types.ValueType,
+	indexVar, itemVar models.Token, containerValue types.Type,
 	body []models.Token, thisPackage, parentPackage string,
-) (types.ValueType, bool, error) {
+) (types.Type, bool, error) {
 	switch container := containerValue.(type) {
 	case types.SequentialType:
 		var err error
 		sz := container.Length()
 		for idx := int64(0); idx < sz; idx++ {
-			scope := map[string]types.ValueType{}
+			scope := map[string]types.Type{}
 			if indexVar.Text != "_" {
 				scope[indexVar.Text] = types.IntegerType{Value: idx}
 			}
@@ -42,7 +42,7 @@ func (i *Interpreter) executeForEachLoop(
 		}
 	default:
 		return nil, false, util.RuntimeError(fmt.Sprintf(
-			"тип '%s' не є об'єктом, по якому можна ітерувати", container.TypeName(),
+			"тип '%s' не є об'єктом, по якому можна ітерувати", container.GetTypeName(),
 		))
 	}
 

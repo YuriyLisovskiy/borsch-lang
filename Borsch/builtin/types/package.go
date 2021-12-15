@@ -8,19 +8,20 @@ import (
 )
 
 type PackageType struct {
+	Object
+
 	IsBuiltin bool
 	Name      string
 	Parent    string
-	Object    *ObjectType
 }
 
-func NewPackageType(isBuiltin bool, name, parent string, attrs map[string]ValueType) PackageType {
+func NewPackageType(isBuiltin bool, name, parent string, attrs map[string]Type) PackageType {
 	attrs["__документ__"] = &NilType{} // TODO: set doc
 	return PackageType{
 		IsBuiltin: isBuiltin,
 		Name:      name,
 		Parent:    parent,
-		Object:    newObjectType(PackageTypeHash, attrs),
+		Object:    *newBuiltinObject(PackageTypeHash, attrs),
 	}
 }
 
@@ -37,24 +38,11 @@ func (t PackageType) Representation() string {
 	return t.String()
 }
 
-func (t PackageType) TypeHash() int {
-	return PackageTypeHash
-}
-
-func (t PackageType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
 func (t PackageType) AsBool() bool {
 	return true
 }
 
-func (t PackageType) GetAttr(name string) (ValueType, error) {
-	return t.Object.GetAttribute(name)
-}
-
-// SetAttr assumes that attribute already exists.
-func (t PackageType) SetAttr(name string, value ValueType) (ValueType, error) {
+func (t PackageType) SetAttribute(name string, value Type) (Type, error) {
 	err := t.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
@@ -63,77 +51,77 @@ func (t PackageType) SetAttr(name string, value ValueType) (ValueType, error) {
 	return t, nil
 }
 
-func (t PackageType) Pow(ValueType) (ValueType, error) {
+func (t PackageType) Pow(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) Plus() (ValueType, error) {
+func (t PackageType) Plus() (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) Minus() (ValueType, error) {
+func (t PackageType) Minus() (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) BitwiseNot() (ValueType, error) {
+func (t PackageType) BitwiseNot() (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) Mul(ValueType) (ValueType, error) {
+func (t PackageType) Mul(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) Div(ValueType) (ValueType, error) {
+func (t PackageType) Div(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) Mod(ValueType) (ValueType, error) {
+func (t PackageType) Mod(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) Add(ValueType) (ValueType, error) {
+func (t PackageType) Add(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) Sub(ValueType) (ValueType, error) {
+func (t PackageType) Sub(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) BitwiseLeftShift(ValueType) (ValueType, error) {
+func (t PackageType) BitwiseLeftShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) BitwiseRightShift(ValueType) (ValueType, error) {
+func (t PackageType) BitwiseRightShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) BitwiseAnd(ValueType) (ValueType, error) {
+func (t PackageType) BitwiseAnd(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) BitwiseXor(ValueType) (ValueType, error) {
+func (t PackageType) BitwiseXor(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) BitwiseOr(ValueType) (ValueType, error) {
+func (t PackageType) BitwiseOr(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t PackageType) CompareTo(other ValueType) (int, error) {
+func (t PackageType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
 	case NilType:
 	case PackageType:
 		return -2, util.RuntimeError(
 			fmt.Sprintf(
 				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-				"%s", t.TypeName(), right.TypeName(),
+				"%s", t.GetTypeName(), right.GetTypeName(),
 			),
 		)
 	default:
 		return -2, errors.New(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-				"%s", t.TypeName(), right.TypeName(),
+				"%s", t.GetTypeName(), right.GetTypeName(),
 			),
 		)
 	}
@@ -142,14 +130,14 @@ func (t PackageType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t PackageType) Not() (ValueType, error) {
+func (t PackageType) Not() (Type, error) {
 	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t PackageType) And(other ValueType) (ValueType, error) {
+func (t PackageType) And(other Type) (Type, error) {
 	return BoolType{Value: other.AsBool()}, nil
 }
 
-func (t PackageType) Or(ValueType) (ValueType, error) {
+func (t PackageType) Or(Type) (Type, error) {
 	return BoolType{Value: true}, nil
 }

@@ -11,8 +11,9 @@ import (
 )
 
 type RealType struct {
+	Object
+
 	Value float64
-	object   *ObjectType
 	package_ *PackageType
 }
 
@@ -24,8 +25,8 @@ func NewRealType(value string) (RealType, error) {
 
 	return RealType{
 		Value:    number,
-		object: newObjectType(
-			RealTypeHash, map[string]ValueType{
+		Object: *newBuiltinObject(
+			RealTypeHash, map[string]Type{
 				"__документ__": &NilType{}, // TODO: set doc
 				"__пакет__":    BuiltinPackage,
 			},
@@ -42,27 +43,15 @@ func (t RealType) Representation() string {
 	return t.String()
 }
 
-func (t RealType) TypeHash() int {
-	return RealTypeHash
-}
-
-func (t RealType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
 func (t RealType) AsBool() bool {
 	return t.Value != 0.0
 }
 
-func (t RealType) GetAttr(name string) (ValueType, error) {
-	return t.object.GetAttribute(name)
+func (t RealType) SetAttribute(name string, _ Type) (Type, error) {
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t RealType) SetAttr(name string, _ ValueType) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
-}
-
-func (t RealType) Pow(other ValueType) (ValueType, error) {
+func (t RealType) Pow(other Type) (Type, error) {
 	switch o := other.(type) {
 	case RealType:
 		return RealType{
@@ -81,19 +70,19 @@ func (t RealType) Pow(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t RealType) Plus() (ValueType, error) {
+func (t RealType) Plus() (Type, error) {
 	return t, nil
 }
 
-func (t RealType) Minus() (ValueType, error) {
+func (t RealType) Minus() (Type, error) {
 	return RealType{Value: -t.Value}, nil
 }
 
-func (t RealType) BitwiseNot() (ValueType, error) {
+func (t RealType) BitwiseNot() (Type, error) {
 	return nil, nil
 }
 
-func (t RealType) Mul(other ValueType) (ValueType, error) {
+func (t RealType) Mul(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return RealType{
@@ -112,7 +101,7 @@ func (t RealType) Mul(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t RealType) Div(other ValueType) (ValueType, error) {
+func (t RealType) Div(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		if o.Value {
@@ -139,11 +128,11 @@ func (t RealType) Div(other ValueType) (ValueType, error) {
 	return nil, errors.New("ділення на нуль")
 }
 
-func (t RealType) Mod(ValueType) (ValueType, error) {
+func (t RealType) Mod(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t RealType) Add(other ValueType) (ValueType, error) {
+func (t RealType) Add(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return RealType{
@@ -162,7 +151,7 @@ func (t RealType) Add(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t RealType) Sub(other ValueType) (ValueType, error) {
+func (t RealType) Sub(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return RealType{
@@ -181,27 +170,27 @@ func (t RealType) Sub(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t RealType) BitwiseLeftShift(ValueType) (ValueType, error) {
+func (t RealType) BitwiseLeftShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t RealType) BitwiseRightShift(ValueType) (ValueType, error) {
+func (t RealType) BitwiseRightShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t RealType) BitwiseAnd(ValueType) (ValueType, error) {
+func (t RealType) BitwiseAnd(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t RealType) BitwiseXor(ValueType) (ValueType, error) {
+func (t RealType) BitwiseXor(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t RealType) BitwiseOr(ValueType) (ValueType, error) {
+func (t RealType) BitwiseOr(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t RealType) CompareTo(other ValueType) (int, error) {
+func (t RealType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
 	case NilType:
 	case BoolType:
@@ -239,7 +228,7 @@ func (t RealType) CompareTo(other ValueType) (int, error) {
 	default:
 		return 0, errors.New(fmt.Sprintf(
 			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.TypeName(), right.TypeName(),
+			"%s", t.GetTypeName(), right.GetTypeName(),
 		))
 	}
 
@@ -247,14 +236,14 @@ func (t RealType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t RealType) Not() (ValueType, error) {
+func (t RealType) Not() (Type, error) {
 	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t RealType) And(other ValueType) (ValueType, error) {
+func (t RealType) And(other Type) (Type, error) {
 	return logicalAnd(t, other)
 }
 
-func (t RealType) Or(other ValueType) (ValueType, error) {
+func (t RealType) Or(other Type) (Type, error) {
 	return logicalOr(t, other)
 }

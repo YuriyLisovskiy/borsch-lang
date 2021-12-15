@@ -23,7 +23,7 @@ types.FunctionType{
 }
 */
 
-var RuntimeFunctions = map[string]types.ValueType{
+var RuntimeFunctions = map[string]types.Type{
 
 	// I/O
 	"друк": types.NewFunctionType(
@@ -36,7 +36,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			Print(args...)
 			return types.NilType{}, nil
 		},
@@ -57,7 +57,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			Print(append(args, types.StringType{Value: "\n"})...)
 			return types.NilType{}, nil
 		},
@@ -78,7 +78,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: false,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return Input(args...)
 		},
 		types.FunctionReturnType{
@@ -100,7 +100,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			var strArgs []string
 			for _, arg := range args {
 				strArgs = append(strArgs, arg.String())
@@ -125,7 +125,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: false,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return types.StringType{Value: os.Getenv(args[0].String())}, nil
 		},
 		types.FunctionReturnType{
@@ -157,7 +157,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: false,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			message := ""
 			if len(args) > 2 {
 				messageArgs := args[2:]
@@ -182,7 +182,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 	"авторське_право": types.NewFunctionType(
 		"авторське_право",
 		[]types.FunctionArgument{},
-		func([]types.ValueType, map[string]types.ValueType) (types.ValueType, error) {
+		func([]types.Type, map[string]types.Type) (types.Type, error) {
 			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
 			return types.NilType{}, nil
 		},
@@ -196,7 +196,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 	"ліцензія": types.NewFunctionType(
 		"ліцензія",
 		[]types.FunctionArgument{},
-		func([]types.ValueType, map[string]types.ValueType) (types.ValueType, error) {
+		func([]types.Type, map[string]types.Type) (types.Type, error) {
 			fmt.Println(build.License)
 			return types.NilType{}, nil
 		},
@@ -217,7 +217,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: false,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return types.NilType{}, Help(args[0].String())
 		},
 		types.FunctionReturnType{
@@ -239,7 +239,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: false,
 			},
 		},
-		func(args []types.ValueType, kwargs map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, kwargs map[string]types.Type) (types.Type, error) {
 			return types.NilType{}, Exit(args[0].(types.IntegerType).Value)
 		},
 		types.FunctionReturnType{
@@ -261,7 +261,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return ToInteger(args...)
 		},
 		types.FunctionReturnType{
@@ -281,7 +281,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return ToReal(args...)
 		},
 		types.FunctionReturnType{
@@ -301,7 +301,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return ToString(args...)
 		},
 		types.FunctionReturnType{
@@ -321,7 +321,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return ToBool(args...)
 		},
 		types.FunctionReturnType{
@@ -341,7 +341,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return ToList(args...)
 		},
 		types.FunctionReturnType{
@@ -361,7 +361,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return ToDictionary(args...)
 		},
 		types.FunctionReturnType{
@@ -383,7 +383,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: false,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return Length(args[0])
 		},
 		types.FunctionReturnType{
@@ -409,7 +409,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return AppendToList(args[0].(types.ListType), args[1:]...)
 		},
 		types.FunctionReturnType{
@@ -435,7 +435,7 @@ var RuntimeFunctions = map[string]types.ValueType{
 				IsNullable: true,
 			},
 		},
-		func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
+		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
 			return RemoveFromDictionary(args[0].(types.DictionaryType), args[1])
 		},
 		types.FunctionReturnType{

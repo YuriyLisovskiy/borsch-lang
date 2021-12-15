@@ -9,7 +9,7 @@ import (
 
 func (i *Interpreter) executeRandomAccessGetOp(
 	targetNode, indexNode ast.ExpressionNode, rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, error) {
+) (types.Type, error) {
 	targetVal, _, err := i.executeNode(targetNode, rootDir, thisPackage, parentPackage)
 	if err != nil {
 		return nil, err
@@ -48,15 +48,15 @@ func (i *Interpreter) executeRandomAccessGetOp(
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
 			"неможливо застосувати оператор довільного доступу до об'єкта з типом '%s'",
-			target.TypeName(),
+			target.GetTypeName(),
 		))
 	}
 }
 
 func (i *Interpreter) executeRandomAccessSetOp(
-	indexNode ast.ExpressionNode, variable, value types.ValueType,
+	indexNode ast.ExpressionNode, variable, value types.Type,
 	rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, error) {
+) (types.Type, error) {
 	switch container := variable.(type) {
 	case types.SequentialType:
 		indexVal, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
@@ -90,7 +90,7 @@ func (i *Interpreter) executeRandomAccessSetOp(
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
 			"неможливо застосувати оператор довільного доступу до об'єкта з типом '%s'",
-			container.TypeName(),
+			container.GetTypeName(),
 		))
 	}
 }

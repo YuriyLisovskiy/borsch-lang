@@ -18,102 +18,102 @@ func (t NilType) Representation() string {
 	return t.String()
 }
 
-func (t NilType) TypeHash() int {
+func (t NilType) GetTypeHash() uint64 {
 	return NilTypeHash
 }
 
-func (t NilType) TypeName() string {
-	return GetTypeName(t.TypeHash())
+func (t NilType) GetTypeName() string {
+	return GetTypeName(t.GetTypeHash())
 }
 
 func (t NilType) AsBool() bool {
 	return false
 }
 
-func (t NilType) GetAttr(name string) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
+func (t NilType) GetAttribute(name string) (Type, error) {
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t NilType) SetAttr(name string, _ ValueType) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
+func (t NilType) SetAttribute(name string, _ Type) (Type, error) {
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t NilType) Pow(ValueType) (ValueType, error) {
+func (t NilType) Pow(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) Plus() (ValueType, error) {
+func (t NilType) Plus() (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) Minus() (ValueType, error) {
+func (t NilType) Minus() (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) BitwiseNot() (ValueType, error) {
+func (t NilType) BitwiseNot() (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) Mul(ValueType) (ValueType, error) {
+func (t NilType) Mul(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) Div(ValueType) (ValueType, error) {
+func (t NilType) Div(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) Mod(ValueType) (ValueType, error) {
+func (t NilType) Mod(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) Add(ValueType) (ValueType, error) {
+func (t NilType) Add(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) Sub(ValueType) (ValueType, error) {
+func (t NilType) Sub(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) BitwiseLeftShift(ValueType) (ValueType, error) {
+func (t NilType) BitwiseLeftShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) BitwiseRightShift(ValueType) (ValueType, error) {
+func (t NilType) BitwiseRightShift(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) BitwiseAnd(ValueType) (ValueType, error) {
+func (t NilType) BitwiseAnd(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) BitwiseXor(ValueType) (ValueType, error) {
+func (t NilType) BitwiseXor(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) BitwiseOr(ValueType) (ValueType, error) {
+func (t NilType) BitwiseOr(Type) (Type, error) {
 	return nil, nil
 }
 
-func (t NilType) CompareTo(other ValueType) (int, error) {
+func (t NilType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
 	case NilType:
 		return 0, nil
 	default:
 		return 0, errors.New(fmt.Sprintf(
 			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.TypeName(), right.TypeName(),
+			"%s", t.GetTypeName(), right.GetTypeName(),
 		))
 	}
 }
 
-func (t NilType) Not() (ValueType, error) {
+func (t NilType) Not() (Type, error) {
 	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t NilType) And(ValueType) (ValueType, error) {
+func (t NilType) And(Type) (Type, error) {
 	return BoolType{Value: false}, nil
 }
 
-func (t NilType) Or(other ValueType) (ValueType, error) {
+func (t NilType) Or(other Type) (Type, error) {
 	return BoolType{Value: other.AsBool()}, nil
 }

@@ -7,14 +7,14 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func Assert(expected, actual types.ValueType, errorTemplate string) error {
+func Assert(expected, actual types.Type, errorTemplate string) error {
 	leftV := expected
 	rightV := actual
-	if leftV.TypeHash() != rightV.TypeHash() {
+	if leftV.GetTypeHash() != rightV.GetTypeHash() {
 		return util.RuntimeError(
 			fmt.Sprintf(
 				"неможливо застосувати оператор умови рівності до значень типів '%s' та '%s'",
-				leftV.TypeName(), rightV.TypeName(),
+				leftV.GetTypeName(), rightV.GetTypeName(),
 			),
 		)
 	}
@@ -59,7 +59,7 @@ func Assert(expected, actual types.ValueType, errorTemplate string) error {
 
 	return util.RuntimeError(fmt.Sprintf(
 		"непідтримувані типи операндів для оператора умови рівності: '%s' і '%s'",
-		leftV.TypeName(), rightV.TypeName(),
+		leftV.GetTypeName(), rightV.GetTypeName(),
 	))
 }
 

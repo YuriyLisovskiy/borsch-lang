@@ -10,8 +10,9 @@ import (
 )
 
 type BoolType struct {
+	Object
+
 	Value    bool
-	object   *ObjectType
 	package_ *PackageType
 }
 
@@ -30,8 +31,8 @@ func NewBoolType(value string) (BoolType, error) {
 
 	return BoolType{
 		Value: boolean,
-		object: newObjectType(
-			BoolTypeHash, map[string]ValueType{
+		Object: *newBuiltinObject(
+			BoolTypeHash, map[string]Type{
 				"__документ__": &NilType{}, // TODO: set doc
 				"__пакет__":    BuiltinPackage,
 			},
@@ -52,27 +53,19 @@ func (t BoolType) Representation() string {
 	return t.String()
 }
 
-func (t BoolType) TypeHash() int {
-	return BoolTypeHash
-}
-
-func (t BoolType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
 func (t BoolType) AsBool() bool {
 	return t.Value
 }
 
-func (t BoolType) GetAttr(name string) (ValueType, error) {
-	return t.object.GetAttribute(name)
+func (t BoolType) SetAttribute(name string, _ Type) (Type, error) {
+	if t.Object.HasAttribute(name) {
+		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
+	}
+
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t BoolType) SetAttr(name string, _ ValueType) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
-}
-
-func (t BoolType) Pow(other ValueType) (ValueType, error) {
+func (t BoolType) Pow(other Type) (Type, error) {
 	switch o := other.(type) {
 	case RealType:
 		return RealType{
@@ -91,19 +84,19 @@ func (t BoolType) Pow(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t BoolType) Plus() (ValueType, error) {
+func (t BoolType) Plus() (Type, error) {
 	return IntegerType{Value: boolToInt64(t.Value)}, nil
 }
 
-func (t BoolType) Minus() (ValueType, error) {
+func (t BoolType) Minus() (Type, error) {
 	return IntegerType{Value: -boolToInt64(t.Value)}, nil
 }
 
-func (t BoolType) BitwiseNot() (ValueType, error) {
+func (t BoolType) BitwiseNot() (Type, error) {
 	return IntegerType{Value: ^boolToInt64(t.Value)}, nil
 }
 
-func (t BoolType) Mul(other ValueType) (ValueType, error) {
+func (t BoolType) Mul(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return IntegerType{
@@ -122,7 +115,7 @@ func (t BoolType) Mul(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t BoolType) Div(other ValueType) (ValueType, error) {
+func (t BoolType) Div(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		if o.Value {
@@ -149,7 +142,7 @@ func (t BoolType) Div(other ValueType) (ValueType, error) {
 	return nil, errors.New("ділення на нуль")
 }
 
-func (t BoolType) Mod(other ValueType) (ValueType, error) {
+func (t BoolType) Mod(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		if o.Value {
@@ -170,7 +163,7 @@ func (t BoolType) Mod(other ValueType) (ValueType, error) {
 	return nil, errors.New("ділення за модулем на нуль")
 }
 
-func (t BoolType) Add(other ValueType) (ValueType, error) {
+func (t BoolType) Add(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return IntegerType{
@@ -189,7 +182,7 @@ func (t BoolType) Add(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t BoolType) Sub(other ValueType) (ValueType, error) {
+func (t BoolType) Sub(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return IntegerType{
@@ -208,7 +201,7 @@ func (t BoolType) Sub(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t BoolType) BitwiseLeftShift(other ValueType) (ValueType, error) {
+func (t BoolType) BitwiseLeftShift(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return IntegerType{Value: boolToInt64(t.Value) << boolToInt64(o.Value)}, nil
@@ -219,7 +212,7 @@ func (t BoolType) BitwiseLeftShift(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t BoolType) BitwiseRightShift(other ValueType) (ValueType, error) {
+func (t BoolType) BitwiseRightShift(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return IntegerType{Value: boolToInt64(t.Value) >> boolToInt64(o.Value)}, nil
@@ -230,7 +223,7 @@ func (t BoolType) BitwiseRightShift(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t BoolType) BitwiseAnd(other ValueType) (ValueType, error) {
+func (t BoolType) BitwiseAnd(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return IntegerType{Value: boolToInt64(t.Value) & boolToInt64(o.Value)}, nil
@@ -241,7 +234,7 @@ func (t BoolType) BitwiseAnd(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t BoolType) BitwiseXor(other ValueType) (ValueType, error) {
+func (t BoolType) BitwiseXor(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return IntegerType{Value: boolToInt64(t.Value) ^ boolToInt64(o.Value)}, nil
@@ -252,7 +245,7 @@ func (t BoolType) BitwiseXor(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t BoolType) BitwiseOr(other ValueType) (ValueType, error) {
+func (t BoolType) BitwiseOr(other Type) (Type, error) {
 	switch o := other.(type) {
 	case BoolType:
 		return IntegerType{Value: boolToInt64(t.Value) | boolToInt64(o.Value)}, nil
@@ -263,7 +256,7 @@ func (t BoolType) BitwiseOr(other ValueType) (ValueType, error) {
 	}
 }
 
-func (t BoolType) CompareTo(other ValueType) (int, error) {
+func (t BoolType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
 	case NilType:
 	case BoolType:
@@ -278,7 +271,7 @@ func (t BoolType) CompareTo(other ValueType) (int, error) {
 		return 0, errors.New(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-				"%s", t.TypeName(), right.TypeName(),
+				"%s", t.GetTypeName(), right.GetTypeName(),
 			),
 		)
 	}
@@ -287,14 +280,14 @@ func (t BoolType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t BoolType) Not() (ValueType, error) {
+func (t BoolType) Not() (Type, error) {
 	return BoolType{Value: !t.AsBool()}, nil
 }
 
-func (t BoolType) And(other ValueType) (ValueType, error) {
+func (t BoolType) And(other Type) (Type, error) {
 	return logicalAnd(t, other)
 }
 
-func (t BoolType) Or(other ValueType) (ValueType, error) {
+func (t BoolType) Or(other Type) (Type, error) {
 	return logicalOr(t, other)
 }

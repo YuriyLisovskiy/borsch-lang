@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func ToInteger(args ...types.ValueType) (types.ValueType, error) {
+func ToInteger(args ...types.Type) (types.Type, error) {
 	if len(args) == 0 {
 		return types.IntegerType{Value: 0}, nil
 	}
@@ -40,12 +40,12 @@ func ToInteger(args ...types.ValueType) (types.ValueType, error) {
 		return types.IntegerType{Value: 0}, nil
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
-			"'%s' неможливо інтерпретувати як ціле число", args[0].TypeName(),
+			"'%s' неможливо інтерпретувати як ціле число", args[0].GetTypeName(),
 		))
 	}
 }
 
-func ToReal(args ...types.ValueType) (types.ValueType, error) {
+func ToReal(args ...types.Type) (types.Type, error) {
 	if len(args) == 0 {
 		return types.RealType{Value: 0.0}, nil
 	}
@@ -78,12 +78,12 @@ func ToReal(args ...types.ValueType) (types.ValueType, error) {
 		return types.RealType{Value: 0.0}, nil
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
-			"'%s' неможливо інтерпретувати як дійсне число", args[0].TypeName(),
+			"'%s' неможливо інтерпретувати як дійсне число", args[0].GetTypeName(),
 		))
 	}
 }
 
-func ToString(args ...types.ValueType) (types.ValueType, error) {
+func ToString(args ...types.Type) (types.Type, error) {
 	if len(args) == 0 {
 		return types.StringType{Value: ""}, nil
 	}
@@ -101,12 +101,12 @@ func ToString(args ...types.ValueType) (types.ValueType, error) {
 		return types.StringType{Value: vt.String()}, nil
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
-			"'%s' неможливо інтерпретувати як рядок", args[0].TypeName(),
+			"'%s' неможливо інтерпретувати як рядок", args[0].GetTypeName(),
 		))
 	}
 }
 
-func ToBool(args ...types.ValueType) (types.ValueType, error) {
+func ToBool(args ...types.Type) (types.Type, error) {
 	if len(args) == 0 {
 		return types.BoolType{Value: false}, nil
 	}
@@ -130,12 +130,12 @@ func ToBool(args ...types.ValueType) (types.ValueType, error) {
 		return types.BoolType{Value: false}, nil
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
-			"'%s' неможливо інтерпретувати як логічне значення", args[0].TypeName(),
+			"'%s' неможливо інтерпретувати як логічне значення", args[0].GetTypeName(),
 		))
 	}
 }
 
-func ToList(args ...types.ValueType) (types.ValueType, error) {
+func ToList(args ...types.Type) (types.Type, error) {
 	list := types.NewListType()
 	if len(args) == 0 {
 		return list, nil
@@ -148,7 +148,7 @@ func ToList(args ...types.ValueType) (types.ValueType, error) {
 	return list, nil
 }
 
-func ToDictionary(args ...types.ValueType) (types.ValueType, error) {
+func ToDictionary(args ...types.Type) (types.Type, error) {
 	dict := types.NewDictionaryType()
 	if len(args) == 0 {
 		return dict, nil
