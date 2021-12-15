@@ -39,28 +39,11 @@ func (i *Interpreter) executeLogicalOp(
 				},
 			)
 		default:
-			// TODO: повернути повідомлення, що атрибут не callable!
-			panic("NOT CALLABLE!")
+			return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
 		}
 	default:
 		panic("fatal: invalid binary operator")
 	}
-
-	// TODO: remove commented code!
-	// switch opType {
-	// case ops.AndOp:
-	// 	res, err = left.And(right)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// case ops.OrOp:
-	// 	res, err = left.Or(right)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// default:
-	// 	panic("fatal: invalid binary operator")
-	// }
 
 	if res != nil {
 		return res, nil

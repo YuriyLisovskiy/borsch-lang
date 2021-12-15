@@ -81,7 +81,7 @@ func (i *Interpreter) executeCallOp(
 
 			// TODO: remove
 			if arg == nil {
-				//arg = types.NilType{}
+				// arg = types.NilType{}
 				panic("fatal: argument is nil")
 			}
 
@@ -164,9 +164,6 @@ func (i *Interpreter) executeCallOp(
 
 		return res, nil
 	default:
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"неможливо застосувати оператор виклику до об'єкта '%s' з типом '%s'",
-			node.CallableName.Text, callable.GetTypeName(),
-		))
+		return nil, util.ObjectIsNotCallable(node.CallableName.Text, callable.GetTypeName())
 	}
 }

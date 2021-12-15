@@ -47,8 +47,7 @@ func (i *Interpreter) executeComparisonOp(
 
 				return res, nil
 			default:
-				// TODO: повернути повідомлення, що атрибут не callable!
-				panic("NOT CALLABLE!")
+				return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
 			}
 		case ops.GreaterOp, ops.GreaterOrEqualsOp, ops.LessOp, ops.LessOrEqualsOp:
 			return nil, util.RuntimeError(fmt.Sprintf(
@@ -58,26 +57,6 @@ func (i *Interpreter) executeComparisonOp(
 		default:
 			return nil, util.RuntimeError("невідомий оператор")
 		}
-
-		// TODO: remove commented code!
-		// res, err := left.CompareTo(right)
-		// if err != nil {
-		// 	return nil, util.RuntimeError(fmt.Sprintf(err.Error(), opType.Description()))
-		// }
-		//
-		// switch opType {
-		// case ops.EqualsOp:
-		// 	return types.BoolType{Value: res == 0}, nil
-		// case ops.NotEqualsOp:
-		// 	return types.BoolType{Value: res != 0}, nil
-		// case ops.GreaterOp, ops.GreaterOrEqualsOp, ops.LessOp, ops.LessOrEqualsOp:
-		// 	return nil, util.RuntimeError(fmt.Sprintf(
-		// 		"оператор %s невизначений для значень типів '%s' та '%s'",
-		// 		opType.Description(), left.TypeName(), right.TypeName(),
-		// 	))
-		// default:
-		// 	return nil, util.RuntimeError("невідомий оператор")
-		// }
 	default:
 		switch opType {
 		case ops.EqualsOp, ops.NotEqualsOp, ops.GreaterOp, ops.GreaterOrEqualsOp, ops.LessOp, ops.LessOrEqualsOp:
@@ -101,34 +80,10 @@ func (i *Interpreter) executeComparisonOp(
 
 				return res, nil
 			default:
-				// TODO: повернути повідомлення, що атрибут не callable!
-				panic("NOT CALLABLE!")
+				return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
 			}
 		default:
 			return nil, util.RuntimeError("невідомий оператор")
 		}
-
-		// TODO: remove commented code!
-		// res, err := left.CompareTo(right)
-		// if err != nil {
-		// 	return nil, util.RuntimeError(fmt.Sprintf(err.Error(), opType.Description()))
-		// }
-		//
-		// switch opType {
-		// case ops.EqualsOp:
-		// 	return types.BoolType{Value: res == 0}, nil
-		// case ops.NotEqualsOp:
-		// 	return types.BoolType{Value: res != 0}, nil
-		// case ops.GreaterOp:
-		// 	return types.BoolType{Value: res == 1}, nil
-		// case ops.GreaterOrEqualsOp:
-		// 	return types.BoolType{Value: res == 0 || res == 1}, nil
-		// case ops.LessOp:
-		// 	return types.BoolType{Value: res == -1}, nil
-		// case ops.LessOrEqualsOp:
-		// 	return types.BoolType{Value: res == 0 || res == -1}, nil
-		// default:
-		// 	return nil, util.RuntimeError("невідомий оператор")
-		// }
 	}
 }

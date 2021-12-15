@@ -18,22 +18,22 @@ func (i *Interpreter) executeUnaryOp(
 		return nil, err
 	}
 
-	var operator ops.Operator
+	var op ops.Operator
 	var res types.Type
 	switch node.Operator.Type.Name {
 	case models.Add:
-		operator = ops.UnaryPlus
+		op = ops.UnaryPlus
 	case models.Sub:
-		operator = ops.UnaryMinus
+		op = ops.UnaryMinus
 	case models.BitwiseNotOp:
-		operator = ops.UnaryBitwiseNotOp
+		op = ops.UnaryBitwiseNotOp
 	case models.NotOp:
-		operator = ops.NotOp
+		op = ops.NotOp
 	default:
 		return nil, util.RuntimeError("невідомий унарний оператор")
 	}
 
-	operatorFunc, err := operand.GetAttribute(operator.Caption())
+	operatorFunc, err := operand.GetAttribute(op.Caption())
 	if err != nil {
 		return nil, util.RuntimeError(err.Error())
 	}
@@ -42,8 +42,7 @@ func (i *Interpreter) executeUnaryOp(
 	case types.FunctionType:
 		res, err = operator.Callable([]types.Type{operand}, map[string]types.Type{"я": operand})
 	default:
-		// TODO: повернути повідомлення, що атрибут не callable!
-		panic("NOT CALLABLE!")
+		return nil, util.ObjectIsNotCallable(op.Caption(), operatorFunc.GetTypeName())
 	}
 
 	if res != nil {
@@ -53,7 +52,7 @@ func (i *Interpreter) executeUnaryOp(
 	return nil, util.RuntimeError(
 		fmt.Sprintf(
 			"непідтримуваний тип операнда для унарного оператора %s: '%s'",
-			operator.Description(), operand.GetTypeName(),
+			op.Description(), operand.GetTypeName(),
 		),
 	)
 }

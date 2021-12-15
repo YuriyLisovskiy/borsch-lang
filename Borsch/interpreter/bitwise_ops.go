@@ -42,44 +42,11 @@ func (i *Interpreter) executeBitwiseOp(
 				return nil, util.RuntimeError(err.Error())
 			}
 		default:
-			// TODO: повернути повідомлення, що атрибут не callable!
-			panic("NOT CALLABLE!")
+			return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
 		}
 	default:
 		panic("fatal: invalid bitwise operator")
 	}
-
-
-	// TODO: remove commented code!
-	// switch opType {
-	// case ops.BitwiseLeftShiftOp:
-	// 	res, err = left.BitwiseLeftShift(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// case ops.BitwiseRightShiftOp:
-	// 	res, err = left.BitwiseRightShift(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// case ops.BitwiseAndOp:
-	// 	res, err = left.BitwiseAnd(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// case ops.BitwiseXorOp:
-	// 	res, err = left.BitwiseXor(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// case ops.BitwiseOrOp:
-	// 	res, err = left.BitwiseOr(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// default:
-	// 	panic("fatal: invalid bitwise operator")
-	// }
 
 	if res != nil {
 		return res, nil

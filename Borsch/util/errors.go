@@ -31,3 +31,9 @@ func OperatorError(opName, lType, rType string) error {
 		opName, lType, rType,
 	))
 }
+
+func ObjectIsNotCallable(objectName, typeName string) error {
+	return RuntimeError(fmt.Sprintf(
+		"неможливо застосувати оператор виклику до об'єкта '%s' з типом '%s'", objectName, typeName,
+	))
+}

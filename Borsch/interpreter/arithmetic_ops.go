@@ -39,57 +39,8 @@ func (i *Interpreter) executeArithmeticOp(
 				},
 			)
 		default:
-			// TODO: повернути повідомлення, що атрибут не callable!
-			panic("NOT CALLABLE!")
+			return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
 		}
-
-
-	// TODO: remove commented code!
-	// case ops.AddOp:
-	// 	addFunc, err := left.GetAttr("__додати__")
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	//
-	// 	res, err = addFunc.(types.FunctionType).Callable(
-	// 		[]types.ValueType{left, right},
-	// 		map[string]types.ValueType{
-	// 			"я": left,
-	// 			"інший": right,
-	// 		},
-	// 	)
-	//
-	// 	// res, err = left.Add(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// case ops.SubOp:
-	// 	res, err = left.Sub(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// case ops.MulOp:
-	// 	res, err = left.Mul(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// case ops.DivOp:
-	// 	res, err = left.Div(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// case ops.PowOp:
-	// 	res, err = left.Pow(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-	// case ops.ModuloOp:
-	// 	res, err = left.Mod(right)
-	// 	if err != nil {
-	// 		return nil, util.RuntimeError(err.Error())
-	// 	}
-
-
 	default:
 		panic("fatal: invalid arithmetic operator")
 	}
