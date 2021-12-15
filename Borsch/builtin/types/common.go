@@ -30,6 +30,10 @@ type SequentialType interface {
 	Slice(int64, int64) (Type, error)
 }
 
+type CallableType interface {
+	Call([]Type, map[string]Type) (Type, error)
+}
+
 var BuiltinPackage = &PackageType{
 	IsBuiltin: true,
 	Name:      "",

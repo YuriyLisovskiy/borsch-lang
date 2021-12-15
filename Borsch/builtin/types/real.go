@@ -10,6 +10,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
+// RealType TODO: move methods impl to attributes
 type RealType struct {
 	Object
 

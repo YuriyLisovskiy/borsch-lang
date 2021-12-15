@@ -9,6 +9,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
+// StringType TODO: move methods impl to attributes
 type StringType struct {
 	Object
 

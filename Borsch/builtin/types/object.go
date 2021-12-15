@@ -7,9 +7,10 @@ import (
 )
 
 type Object struct {
-	typeHash   uint64
-	typeName   string
-	Attributes map[string]Type
+	typeHash    uint64
+	typeName    string
+	Attributes  map[string]Type
+	CallHandler func([]Type, map[string]Type) (Type, error)
 }
 
 func newBuiltinObject(typeHash uint64, attributes map[string]Type) *Object {
@@ -82,4 +83,12 @@ func (o Object) SetAttribute(name string, value Type) error {
 func (o Object) HasAttribute(name string) bool {
 	_, ok := o.Attributes[name]
 	return ok
+}
+
+func (o Object) Call(args []Type, kwArgs map[string]Type) (Type, error) {
+	if o.CallHandler != nil {
+		return o.CallHandler(args, kwArgs)
+	}
+
+	return nil, util.ObjectIsNotCallable(o.GetTypeName(), o.GetTypeName())
 }

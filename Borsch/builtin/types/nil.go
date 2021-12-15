@@ -7,6 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
+// NilType TODO: move methods impl to attributes
 type NilType struct {
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
+// PackageType TODO: move methods impl to attributes
 type PackageType struct {
 	Object
 

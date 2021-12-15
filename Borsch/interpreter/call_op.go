@@ -137,7 +137,7 @@ func (i *Interpreter) executeCallOp(
 			}
 		}
 
-		res, err := function.Callable(args, kwargs)
+		res, err := function.Call(args, kwargs)
 		if err != nil {
 			return nil, err
 		}

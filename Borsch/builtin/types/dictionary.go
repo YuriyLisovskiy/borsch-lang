@@ -15,6 +15,7 @@ type DictionaryEntry struct {
 	Value Type
 }
 
+// DictionaryType TODO: move methods impl to attributes
 type DictionaryType struct {
 	Object
 

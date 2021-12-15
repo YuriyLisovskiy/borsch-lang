@@ -39,8 +39,8 @@ func (i *Interpreter) executeUnaryOp(
 	}
 
 	switch operator := operatorFunc.(type) {
-	case types.FunctionType:
-		res, err = operator.Callable([]types.Type{operand}, map[string]types.Type{"я": operand})
+	case types.CallableType:
+		res, err = operator.Call([]types.Type{operand}, map[string]types.Type{"я": operand})
 	default:
 		return nil, util.ObjectIsNotCallable(op.Caption(), operatorFunc.GetTypeName())
 	}

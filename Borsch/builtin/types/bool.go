@@ -9,6 +9,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
+// BoolType TODO: move methods impl to attributes
 type BoolType struct {
 	Object
 

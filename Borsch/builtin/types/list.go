@@ -8,6 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
+// ListType TODO: move methods impl to attributes
 type ListType struct {
 	Object
 

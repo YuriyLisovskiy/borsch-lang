@@ -30,8 +30,8 @@ func (i *Interpreter) executeArithmeticOp(
 		}
 
 		switch operator := operatorFunc.(type) {
-		case types.FunctionType:
-			res, err = operator.Callable(
+		case types.CallableType:
+			res, err = operator.Call(
 				[]types.Type{left, right},
 				map[string]types.Type{
 					"я": left,

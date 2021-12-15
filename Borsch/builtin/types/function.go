@@ -57,7 +57,6 @@ type FunctionType struct {
 	package_   *PackageType
 	Name       string
 	Arguments  []FunctionArgument
-	Callable   func([]Type, map[string]Type) (Type, error)
 	ReturnType FunctionReturnType
 }
 
@@ -69,10 +68,9 @@ func NewFunctionType(
 	package_ *PackageType,
 	doc string,
 ) FunctionType {
-	return FunctionType{
+	function := FunctionType{
 		Name:       name,
 		Arguments:  arguments,
-		Callable:   handler,
 		ReturnType: returnType,
 		package_:   package_,
 		Object: *newBuiltinObject(
@@ -82,6 +80,9 @@ func NewFunctionType(
 			},
 		),
 	}
+
+	function.CallHandler = handler
+	return function
 }
 
 func (t FunctionType) String() string {
