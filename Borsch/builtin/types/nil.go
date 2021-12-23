@@ -4,117 +4,97 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-// NilType TODO: move methods impl to attributes
-type NilType struct {
+type NilInstance struct {
+	Object
 }
 
-func (t NilType) String() string {
+func NewNilInstance() NilInstance {
+	return NilInstance{Object: Object{
+		typeName:    GetTypeName(NilTypeHash),
+		Attributes:  nil,
+		callHandler: nil,
+	}}
+}
+
+func (t NilInstance) String() string {
 	return "нуль"
 }
 
-func (t NilType) Representation() string {
+func (t NilInstance) Representation() string {
 	return t.String()
 }
 
-func (t NilType) GetTypeHash() uint64 {
-	return NilTypeHash
+func (t NilInstance) GetTypeHash() uint64 {
+	return t.GetClass().GetTypeHash()
 }
 
-func (t NilType) GetTypeName() string {
-	return GetTypeName(t.GetTypeHash())
-}
-
-func (t NilType) AsBool() bool {
+func (t NilInstance) AsBool() bool {
 	return false
 }
 
-func (t NilType) GetAttribute(name string) (Type, error) {
+func (t NilInstance) GetAttribute(name string) (Type, error) {
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t NilType) SetAttribute(name string, _ Type) (Type, error) {
+func (t NilInstance) SetAttribute(name string, _ Type) (Type, error) {
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t NilType) Pow(Type) (Type, error) {
-	return nil, nil
+func (NilInstance) GetClass() *Class {
+	return Nil
 }
 
-func (t NilType) Plus() (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) Minus() (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) BitwiseNot() (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) Mul(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) Div(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) Mod(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) Add(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) Sub(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) BitwiseLeftShift(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) BitwiseRightShift(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) BitwiseAnd(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) BitwiseXor(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) BitwiseOr(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t NilType) CompareTo(other Type) (int, error) {
+func compareNils(self Type, other Type) (int, error) {
 	switch right := other.(type) {
-	case NilType:
+	case NilInstance:
 		return 0, nil
 	default:
 		return 0, errors.New(fmt.Sprintf(
 			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.GetTypeName(), right.GetTypeName(),
+			"%s", self.GetTypeName(), right.GetTypeName(),
 		))
 	}
 }
 
-func (t NilType) Not() (Type, error) {
-	return BoolType{Value: !t.AsBool()}, nil
-}
-
-func (t NilType) And(Type) (Type, error) {
-	return BoolType{Value: false}, nil
-}
-
-func (t NilType) Or(other Type) (Type, error) {
-	return BoolType{Value: other.AsBool()}, nil
+func newNilClass() *Class {
+	attributes := mergeAttributes(
+		map[string]Type{
+			// TODO: add doc
+			ops.ConstructorName: NewFunctionInstance(
+				ops.ConstructorName,
+				[]FunctionArgument{
+					{
+						TypeHash:   NilTypeHash,
+						Name:       "я",
+						IsVariadic: false,
+						IsNullable: false,
+					},
+				},
+				func(args *[]Type, _ *map[string]Type) (Type, error) {
+					return (*args)[0], nil
+				},
+				FunctionReturnType{
+					TypeHash:   NilTypeHash,
+					IsNullable: false,
+				},
+				nil,
+				"",
+			),
+		},
+		makeLogicalOperators(NilTypeHash),
+		makeComparisonOperators(NilTypeHash, compareNils),
+	)
+	return NewBuiltinClass(
+		NilTypeHash,
+		BuiltinPackage,
+		attributes,
+		"", // TODO: add doc
+		func() (Type, error) {
+			return NewNilInstance(), nil
+		},
+	)
 }

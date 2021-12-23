@@ -33,13 +33,13 @@ func init() {
 
 func pushKeywords(parent, name string, value types.Type) {
 	switch v := value.(type) {
-	case types.SequentialType, types.DictionaryType, types.BoolType, types.IntegerType, types.NilType, types.RealType:
+	case types.SequentialType, types.DictionaryInstance, types.BoolInstance, types.IntegerInstance, types.NilInstance, types.RealInstance:
 		if parent != "" {
 			//packages[parent] = append(packages[parent], name)
 		} else {
 			keywords = append(keywords, name)
 		}
-	case types.PackageType:
+	case types.PackageInstance:
 		keywords = append(keywords, name)
 		for attrName, attrValue := range v.Object.Attributes {
 			pushKeywords(name, attrName, attrValue)
@@ -144,7 +144,7 @@ func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 			fmt.Printf("Відстеження (стек викликів):\n%s\n", err.Error())
 		} else if result != nil {
 			switch result.(type) {
-			case types.NilType, types.PackageType:
+			case types.NilInstance, types.PackageInstance:
 			default:
 				fmt.Println(result.Representation())
 			}

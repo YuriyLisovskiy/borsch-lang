@@ -39,8 +39,17 @@ func (i *Interpreter) executeUnaryOp(
 	}
 
 	switch operator := operatorFunc.(type) {
-	case types.CallableType:
-		res, err = operator.Call([]types.Type{operand}, map[string]types.Type{"я": operand})
+	case *types.FunctionInstance:
+		args := []types.Type{operand}
+		kwargs := map[string]types.Type{"я": operand}
+		if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
+			return nil, err
+		}
+
+		res, err = operator.Call(&args, &kwargs)
+		if err != nil {
+			return nil, util.RuntimeError(err.Error())
+		}
 	default:
 		return nil, util.ObjectIsNotCallable(op.Caption(), operatorFunc.GetTypeName())
 	}

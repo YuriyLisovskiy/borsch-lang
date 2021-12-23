@@ -24,7 +24,7 @@ func (i *Interpreter) executeComparisonOp(
 	}
 
 	switch left.(type) {
-	case types.NilType, types.BoolType:
+	case types.NilInstance, types.BoolInstance:
 		switch opType {
 		case ops.EqualsOp, ops.NotEqualsOp:
 			operatorFunc, err := left.GetAttribute(opType.Caption())
@@ -33,14 +33,17 @@ func (i *Interpreter) executeComparisonOp(
 			}
 
 			switch operator := operatorFunc.(type) {
-			case types.CallableType:
-				res, err := operator.Call(
-					[]types.Type{left, right},
-					map[string]types.Type{
-						"я": left,
-						"інший": right,
-					},
-				)
+			case *types.FunctionInstance:
+				args := []types.Type{left, right}
+				kwargs := map[string]types.Type{
+					"я": left,
+					"інший": right,
+				}
+				if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
+					return nil, err
+				}
+
+				res, err := operator.Call(&args, &kwargs)
 				if err != nil {
 					return nil, util.RuntimeError(fmt.Sprintf(err.Error(), opType.Description()))
 				}
@@ -60,30 +63,32 @@ func (i *Interpreter) executeComparisonOp(
 	default:
 		switch opType {
 		case ops.EqualsOp, ops.NotEqualsOp, ops.GreaterOp, ops.GreaterOrEqualsOp, ops.LessOp, ops.LessOrEqualsOp:
-			operatorFunc, err := left.GetAttribute(opType.Caption())
-			if err != nil {
-				return nil, util.RuntimeError(err.Error())
-			}
-
-			switch operator := operatorFunc.(type) {
-			case types.CallableType:
-				res, err := operator.Call(
-					[]types.Type{left, right},
-					map[string]types.Type{
+			if operatorFunc, err := left.GetAttribute(opType.Caption()); err == nil {
+				switch operator := operatorFunc.(type) {
+				case *types.FunctionInstance:
+					args := []types.Type{left, right}
+					kwargs := map[string]types.Type{
 						"я": left,
 						"інший": right,
-					},
-				)
-				if err != nil {
-					return nil, util.RuntimeError(fmt.Sprintf(err.Error(), opType.Description()))
-				}
+					}
+					if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
+						return nil, err
+					}
 
-				return res, nil
-			default:
-				return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
+					res, err := operator.Call(&args, &kwargs)
+					if err != nil {
+						return nil, util.RuntimeError(fmt.Sprintf(err.Error(), opType.Description()))
+					}
+
+					return res, nil
+				default:
+					return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
+				}
 			}
 		default:
 			return nil, util.RuntimeError("невідомий оператор")
 		}
 	}
+
+	return nil, util.OperatorError(opType.Description(), left.GetTypeName(), right.GetTypeName())
 }

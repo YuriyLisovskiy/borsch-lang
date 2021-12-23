@@ -7,42 +7,21 @@ import (
 )
 
 type Object struct {
-	typeHash    uint64
 	typeName    string
 	Attributes  map[string]Type
-	CallHandler func([]Type, map[string]Type) (Type, error)
+	callHandler func(*[]Type, *map[string]Type) (Type, error)
 }
 
-func newBuiltinObject(typeHash uint64, attributes map[string]Type) *Object {
-	return &Object{
-		typeHash:   typeHash,
-		typeName:   GetTypeName(typeHash),
-		Attributes: attributes,
-	}
-}
-
-func newObject(typeName string, attributes map[string]Type) *Object {
-	return &Object{
-		typeHash:   hashObject(typeName),
-		typeName:   typeName,
-		Attributes: attributes,
-	}
-}
-
-func (o Object) makeAttributes() (*DictionaryType, error) {
-	dict := NewDictionaryType()
+func (o Object) makeAttributes() (DictionaryInstance, error) {
+	dict := NewDictionaryInstance()
 	for key, val := range o.Attributes {
-		err := dict.SetElement(NewStringType(key), val)
+		err := dict.SetElement(NewStringInstance(key), val)
 		if err != nil {
-			return nil, err
+			return DictionaryInstance{}, err
 		}
 	}
 
 	return dict, nil
-}
-
-func (o Object) GetTypeHash() uint64 {
-	return o.typeHash
 }
 
 func (o Object) GetTypeName() string {
@@ -50,18 +29,29 @@ func (o Object) GetTypeName() string {
 }
 
 func (o Object) GetAttribute(name string) (Type, error) {
-	if name == "__атрибути__" {
-		return o.makeAttributes()
-	}
+	if o.Attributes != nil {
+		if name == "__атрибути__" {
+			dict, err := o.makeAttributes()
+			if err != nil {
+				return nil, err
+			}
 
-	if val, ok := o.Attributes[name]; ok {
-		return val, nil
+			return dict, nil
+		}
+
+		if val, ok := o.Attributes[name]; ok {
+			return val, nil
+		}
 	}
 
 	return nil, util.AttributeNotFoundError(o.GetTypeName(), name)
 }
 
 func (o Object) SetAttribute(name string, value Type) error {
+	if o.Attributes == nil {
+		return util.AttributeNotFoundError(o.GetTypeName(), name)
+	}
+
 	if val, ok := o.Attributes[name]; ok {
 		if val.GetTypeHash() == value.GetTypeHash() {
 			o.Attributes[name] = value
@@ -85,9 +75,9 @@ func (o Object) HasAttribute(name string) bool {
 	return ok
 }
 
-func (o Object) Call(args []Type, kwArgs map[string]Type) (Type, error) {
-	if o.CallHandler != nil {
-		return o.CallHandler(args, kwArgs)
+func (o *Object) Call(args *[]Type, kwargs *map[string]Type) (Type, error) {
+	if o.callHandler != nil {
+		return o.callHandler(args, kwargs)
 	}
 
 	return nil, util.ObjectIsNotCallable(o.GetTypeName(), o.GetTypeName())

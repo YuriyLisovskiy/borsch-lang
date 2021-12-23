@@ -2,6 +2,7 @@ package interpreter
 
 import (
 	"fmt"
+
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
@@ -18,7 +19,7 @@ func (i *Interpreter) executeForEachLoop(
 		for idx := int64(0); idx < sz; idx++ {
 			scope := map[string]types.Type{}
 			if indexVar.Text != "_" {
-				scope[indexVar.Text] = types.IntegerType{Value: idx}
+				scope[indexVar.Text] = types.NewIntegerInstance(idx)
 			}
 
 			if itemVar.Text != "_" {
@@ -34,7 +35,7 @@ func (i *Interpreter) executeForEachLoop(
 			}
 
 			if forceReturn {
-				return types.NilType{}, forceReturn, nil
+				return types.NilInstance{}, forceReturn, nil
 			}
 			//if result != nil {
 			//	return result, forceReturn, nil
@@ -46,5 +47,5 @@ func (i *Interpreter) executeForEachLoop(
 		))
 	}
 
-	return types.NilType{}, false, nil
+	return types.NilInstance{}, false, nil
 }

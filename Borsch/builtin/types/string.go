@@ -6,58 +6,78 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-// StringType TODO: move methods impl to attributes
-type StringType struct {
+type StringInstance struct {
 	Object
-
 	Value string
-	package_ *PackageType
 }
 
-func NewStringType(value string) StringType {
-	return StringType{
-		Value:    value,
-		Object: *newBuiltinObject(
-			StringTypeHash, map[string]Type{
-				"__документ__": &NilType{}, // TODO: set doc
-				"__пакет__":    BuiltinPackage,
-			},
-		),
-		package_: BuiltinPackage,
+func NewStringInstance(value string) StringInstance {
+	return StringInstance{
+		Value: value,
+		Object: Object{
+			typeName:    GetTypeName(StringTypeHash),
+			Attributes:  nil,
+			callHandler: nil,
+		},
 	}
 }
 
-func (t StringType) String() string {
+func (t StringInstance) String() string {
 	return t.Value
 }
 
-func (t StringType) Representation() string {
+func (t StringInstance) Representation() string {
 	return "\"" + t.String() + "\""
 }
 
-func (t StringType) AsBool() bool {
+func (t StringInstance) GetTypeHash() uint64 {
+	return t.GetClass().GetTypeHash()
+}
+
+func (t StringInstance) AsBool() bool {
 	return t.Length() != 0
 }
 
-func (t StringType) Length() int64 {
+func (t StringInstance) SetAttribute(name string, _ Type) (Type, error) {
+	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
+	}
+
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
+}
+
+func (t StringInstance) GetAttribute(name string) (Type, error) {
+	if attribute, err := t.Object.GetAttribute(name); err == nil {
+		return attribute, nil
+	}
+
+	return t.GetClass().GetAttribute(name)
+}
+
+func (StringInstance) GetClass() *Class {
+	return String
+}
+
+func (t StringInstance) Length() int64 {
 	return int64(utf8.RuneCountInString(t.Value))
 }
 
-func (t StringType) GetElement(index int64) (Type, error) {
+func (t StringInstance) GetElement(index int64) (Type, error) {
 	idx, err := getIndex(index, t.Length())
 	if err != nil {
 		return nil, err
 	}
 
-	return StringType{Value: string([]rune(t.Value)[idx])}, nil
+	return NewStringInstance(string([]rune(t.Value)[idx])), nil
 }
 
-func (t StringType) SetElement(index int64, value Type) (Type, error) {
+func (t StringInstance) SetElement(index int64, value Type) (Type, error) {
 	switch v := value.(type) {
-	case StringType:
+	case StringInstance:
 		idx, err := getIndex(index, t.Length())
 		if err != nil {
 			return nil, err
@@ -78,7 +98,7 @@ func (t StringType) SetElement(index int64, value Type) (Type, error) {
 	return t, nil
 }
 
-func (t StringType) Slice(from, to int64) (Type, error) {
+func (t StringInstance) Slice(from, to int64) (Type, error) {
 	fromIdx, err := getIndex(from, t.Length())
 	if err != nil {
 		return nil, err
@@ -93,120 +113,99 @@ func (t StringType) Slice(from, to int64) (Type, error) {
 		return nil, errors.New("індекс рядка за межами послідовності")
 	}
 
-	return StringType{Value: t.Value[fromIdx:toIdx]}, nil
+	return NewStringInstance(t.Value[fromIdx:toIdx]), nil
 }
 
-func (t StringType) SetAttribute(name string, _ Type) (Type, error) {
-	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-}
-
-func (t StringType) Pow(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) Plus() (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) Minus() (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) BitwiseNot() (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) Mul(other Type) (Type, error) {
-	switch o := other.(type) {
-	case IntegerType:
-		count := int(o.Value)
-		if count < 0 {
-			return StringType{Value: ""}, nil
-		}
-
-		return StringType{
-			Value: strings.Repeat(t.Value, count),
-		}, nil
-	default:
-		return nil, nil
+func compareStrings(self, other Type) (int, error) {
+	left, ok := self.(StringInstance)
+	if !ok {
+		return 0, util.IncorrectUseOfFunctionError("compareStrings")
 	}
-}
 
-func (t StringType) Div(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) Mod(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) Add(other Type) (Type, error) {
-	switch o := other.(type) {
-	case StringType:
-		return StringType{
-			Value: t.Value + o.Value,
-		}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t StringType) Sub(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) BitwiseLeftShift(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) BitwiseRightShift(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) BitwiseAnd(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) BitwiseXor(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) BitwiseOr(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t StringType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
-	case NilType:
-	case StringType:
-		if t.Value == right.Value {
+	case NilInstance:
+	case StringInstance:
+		if left.Value == right.Value {
 			return 0, nil
 		}
 
-		if t.Value < right.Value {
+		if left.Value < right.Value {
 			return -1, nil
 		}
 
 		return 1, nil
 	default:
-		return 0, errors.New(fmt.Sprintf(
-			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.GetTypeName(), right.GetTypeName(),
-		))
+		return 0, errors.New(
+			fmt.Sprintf(
+				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"%s", left.GetTypeName(), right.GetTypeName(),
+			),
+		)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
 	return -2, nil
 }
 
-func (t StringType) Not() (Type, error) {
-	return BoolType{Value: !t.AsBool()}, nil
+func newStringBinaryOperator(
+	name string,
+	doc string,
+	handler func(StringInstance, Type) (Type, error),
+) *FunctionInstance {
+	return newBinaryOperator(
+		name, StringTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
+			if leftInstance, ok := left.(StringInstance); ok {
+				return handler(leftInstance, right)
+			}
+
+			return nil, util.IncorrectUseOfFunctionError(name)
+		},
+	)
 }
 
-func (t StringType) And(other Type) (Type, error) {
-	return logicalAnd(t, other)
-}
+func newStringClass() *Class {
+	attributes := mergeAttributes(
+		map[string]Type{
+			// TODO: add doc
+			ops.ConstructorName: newBuiltinConstructor(StringTypeHash, ToString, ""),
+			ops.MulOp.Caption(): newStringBinaryOperator(
+				// TODO: add doc
+				ops.MulOp.Caption(), "", func(self StringInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case IntegerInstance:
+						count := int(o.Value)
+						if count < 0 {
+							return NewStringInstance(""), nil
+						}
 
-func (t StringType) Or(other Type) (Type, error) {
-	return logicalOr(t, other)
+						return NewStringInstance(strings.Repeat(self.Value, count)), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.AddOp.Caption(): newStringBinaryOperator(
+				// TODO: add doc
+				ops.AddOp.Caption(), "", func(self StringInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case StringInstance:
+						return NewStringInstance(self.Value + o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+		},
+		makeLogicalOperators(StringTypeHash),
+		makeComparisonOperators(StringTypeHash, compareStrings),
+	)
+	return NewBuiltinClass(
+		StringTypeHash,
+		BuiltinPackage,
+		attributes,
+		"", // TODO: add doc
+		func() (Type, error) {
+			return NewStringInstance(""), nil
+		},
+	)
 }

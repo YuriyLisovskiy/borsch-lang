@@ -2,7 +2,6 @@ package interpreter
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
@@ -17,12 +16,12 @@ func (i *Interpreter) executeIfSequence(
 			return nil, false, err
 		}
 
-		result, err = builtin.ToBool([]types.Type{result}...)
+		result, err = types.ToBool([]types.Type{result}...)
 		if err != nil {
 			return nil, false, err
 		}
 
-		if result.(types.BoolType).Value {
+		if result.(types.BoolInstance).Value {
 			return i.executeBlock(map[string]types.Type{}, block.Tokens, thisPackage, parentPackage)
 		}
 	}
@@ -31,5 +30,5 @@ func (i *Interpreter) executeIfSequence(
 		return i.executeBlock(map[string]types.Type{}, elseBlock, thisPackage, parentPackage)
 	}
 
-	return types.NilType{}, false, nil
+	return types.NilInstance{}, false, nil
 }

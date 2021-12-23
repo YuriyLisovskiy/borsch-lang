@@ -23,7 +23,7 @@ func (i *Interpreter) executeRandomAccessGetOp(
 		}
 
 		switch index := indexVal.(type) {
-		case types.IntegerType:
+		case types.IntegerInstance:
 			elem, err := target.GetElement(index.Value)
 			if err != nil {
 				return nil, util.RuntimeError(err.Error())
@@ -33,7 +33,7 @@ func (i *Interpreter) executeRandomAccessGetOp(
 		default:
 			return nil, util.RuntimeError("індекси мають бути цілого типу")
 		}
-	case types.DictionaryType:
+	case types.DictionaryInstance:
 		key, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
@@ -65,7 +65,7 @@ func (i *Interpreter) executeRandomAccessSetOp(
 		}
 
 		switch index := indexVal.(type) {
-		case types.IntegerType:
+		case types.IntegerInstance:
 			newIterable, err := container.SetElement(index.Value, value)
 			if err != nil {
 				return nil, util.RuntimeError(err.Error())
@@ -75,7 +75,7 @@ func (i *Interpreter) executeRandomAccessSetOp(
 		default:
 			return nil, util.RuntimeError("індекси мають бути цілого типу")
 		}
-	case types.DictionaryType:
+	case types.DictionaryInstance:
 		key, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err

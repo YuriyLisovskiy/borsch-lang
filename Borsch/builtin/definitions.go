@@ -11,7 +11,7 @@ import (
 )
 
 /*
-types.FunctionType{
+types.FunctionInstance{
 	Name:       "",
 	Arguments: []types.FunctionArgument{},
 	Code:       nil,
@@ -23,10 +23,10 @@ types.FunctionType{
 }
 */
 
-var RuntimeFunctions = map[string]types.Type{
+var RuntimeObjects = map[string]types.Type{
 
 	// I/O
-	"друк": types.NewFunctionType(
+	"друк": types.NewFunctionInstance(
 		"друк",
 		[]types.FunctionArgument{
 			{
@@ -36,9 +36,9 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: true,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			Print(args...)
-			return types.NilType{}, nil
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			Print(*args...)
+			return types.NilInstance{}, nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -47,7 +47,7 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-	"друкр": types.NewFunctionType(
+	"друкр": types.NewFunctionInstance(
 		"друкр",
 		[]types.FunctionArgument{
 			{
@@ -57,9 +57,9 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: true,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			Print(append(args, types.StringType{Value: "\n"})...)
-			return types.NilType{}, nil
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			Print(append(*args, types.StringInstance{Value: "\n"})...)
+			return types.NilInstance{}, nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -68,7 +68,7 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-	"ввід": types.NewFunctionType(
+	"ввід": types.NewFunctionInstance(
 		"ввід",
 		[]types.FunctionArgument{
 			{
@@ -78,8 +78,8 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: false,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return Input(args...)
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			return Input(*args...)
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.StringTypeHash,
@@ -90,7 +90,7 @@ var RuntimeFunctions = map[string]types.Type{
 	),
 
 	// Common
-	"паніка": types.NewFunctionType(
+	"паніка": types.NewFunctionInstance(
 		"паніка",
 		[]types.FunctionArgument{
 			{
@@ -100,13 +100,13 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: true,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
 			var strArgs []string
-			for _, arg := range args {
+			for _, arg := range *args {
 				strArgs = append(strArgs, arg.String())
 			}
 
-			return types.NilType{}, util.RuntimeError(strings.Join(strArgs, " "))
+			return types.NilInstance{}, util.RuntimeError(strings.Join(strArgs, " "))
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -115,7 +115,7 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-	"середовище": types.NewFunctionType(
+	"середовище": types.NewFunctionInstance(
 		"середовище",
 		[]types.FunctionArgument{
 			{
@@ -125,8 +125,8 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: false,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return types.StringType{Value: os.Getenv(args[0].String())}, nil
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			return types.StringInstance{Value: os.Getenv((*args)[0].String())}, nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.StringTypeHash,
@@ -135,7 +135,7 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-	"підтвердити": types.NewFunctionType(
+	"підтвердити": types.NewFunctionInstance(
 		"підтвердити",
 		[]types.FunctionArgument{
 			{
@@ -157,10 +157,10 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: false,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
 			message := ""
-			if len(args) > 2 {
-				messageArgs := args[2:]
+			if len(*args) > 2 {
+				messageArgs := (*args)[2:]
 				sz := len(messageArgs)
 				for c := 0; c < sz; c++ {
 					message += messageArgs[c].String()
@@ -170,7 +170,7 @@ var RuntimeFunctions = map[string]types.Type{
 				}
 			}
 
-			return types.NilType{}, Assert(args[0], args[1], message)
+			return types.NilInstance{}, Assert((*args)[0], (*args)[1], message)
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -179,12 +179,12 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-	"авторське_право": types.NewFunctionType(
+	"авторське_право": types.NewFunctionInstance(
 		"авторське_право",
 		[]types.FunctionArgument{},
-		func([]types.Type, map[string]types.Type) (types.Type, error) {
+		func(*[]types.Type, *map[string]types.Type) (types.Type, error) {
 			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
-			return types.NilType{}, nil
+			return types.NilInstance{}, nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -193,12 +193,12 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-	"ліцензія": types.NewFunctionType(
+	"ліцензія": types.NewFunctionInstance(
 		"ліцензія",
 		[]types.FunctionArgument{},
-		func([]types.Type, map[string]types.Type) (types.Type, error) {
+		func(*[]types.Type, *map[string]types.Type) (types.Type, error) {
 			fmt.Println(build.License)
-			return types.NilType{}, nil
+			return types.NilInstance{}, nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -207,7 +207,7 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-	"допомога": types.NewFunctionType(
+	"допомога": types.NewFunctionInstance(
 		"допомога",
 		[]types.FunctionArgument{
 			{
@@ -217,8 +217,8 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: false,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return types.NilType{}, Help(args[0].String())
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			return types.NilInstance{}, Help((*args)[0].String())
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -229,7 +229,7 @@ var RuntimeFunctions = map[string]types.Type{
 	),
 
 	// System calls
-	"вихід": types.NewFunctionType(
+	"вихід": types.NewFunctionInstance(
 		"вихід",
 		[]types.FunctionArgument{
 			{
@@ -239,8 +239,8 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: false,
 			},
 		},
-		func(args []types.Type, kwargs map[string]types.Type) (types.Type, error) {
-			return types.NilType{}, Exit(args[0].(types.IntegerType).Value)
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			return types.NilInstance{}, Exit((*args)[0].(types.IntegerInstance).Value)
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -251,129 +251,17 @@ var RuntimeFunctions = map[string]types.Type{
 	),
 
 	// Conversion
-	"цілий": types.NewFunctionType(
-		"цілий",
-		[]types.FunctionArgument{
-			{
-				TypeHash:   types.AnyTypeHash,
-				Name:       "значення",
-				IsVariadic: true,
-				IsNullable: true,
-			},
-		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return ToInteger(args...)
-		},
-		types.FunctionReturnType{
-			TypeHash:   types.IntegerTypeHash,
-			IsNullable: false,
-		},
-		types.BuiltinPackage,
-		"", // TODO: add doc
-	),
-	"дійсний": types.NewFunctionType(
-		"дійсний",
-		[]types.FunctionArgument{
-			{
-				TypeHash:   types.AnyTypeHash,
-				Name:       "значення",
-				IsVariadic: true,
-				IsNullable: true,
-			},
-		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return ToReal(args...)
-		},
-		types.FunctionReturnType{
-			TypeHash:   types.RealTypeHash,
-			IsNullable: false,
-		},
-		types.BuiltinPackage,
-		"", // TODO: add doc
-	),
-	"рядок": types.NewFunctionType(
-		"рядок",
-		[]types.FunctionArgument{
-			{
-				TypeHash:   types.AnyTypeHash,
-				Name:       "значення",
-				IsVariadic: true,
-				IsNullable: true,
-			},
-		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return ToString(args...)
-		},
-		types.FunctionReturnType{
-			TypeHash:   types.StringTypeHash,
-			IsNullable: false,
-		},
-		types.BuiltinPackage,
-		"", // TODO: add doc
-	),
-	"логічний": types.NewFunctionType(
-		"логічний",
-		[]types.FunctionArgument{
-			{
-				TypeHash:   types.AnyTypeHash,
-				Name:       "значення",
-				IsVariadic: true,
-				IsNullable: true,
-			},
-		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return ToBool(args...)
-		},
-		types.FunctionReturnType{
-			TypeHash:   types.BoolTypeHash,
-			IsNullable: false,
-		},
-		types.BuiltinPackage,
-		"", // TODO: add doc
-	),
-	"список": types.NewFunctionType(
-		"список",
-		[]types.FunctionArgument{
-			{
-				TypeHash:   types.AnyTypeHash,
-				Name:       "елементи",
-				IsVariadic: true,
-				IsNullable: true,
-			},
-		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return ToList(args...)
-		},
-		types.FunctionReturnType{
-			TypeHash:   types.ListTypeHash,
-			IsNullable: false,
-		},
-		types.BuiltinPackage,
-		"", // TODO: add doc
-	),
-	"словник": types.NewFunctionType(
-		"словник",
-		[]types.FunctionArgument{
-			{
-				TypeHash:   types.AnyTypeHash,
-				Name:       "значення",
-				IsVariadic: true,
-				IsNullable: true,
-			},
-		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return ToDictionary(args...)
-		},
-		types.FunctionReturnType{
-			TypeHash:   types.DictionaryTypeHash,
-			IsNullable: false,
-		},
-		types.BuiltinPackage,
-		"", // TODO: add doc
-	),
+	"дійсний": types.Real,
+	"логічний": types.Bool,
+	// "пакет": types.Package,
+	"рядок": types.String,
+	"словник": types.Dictionary,
+	"список": types.List,
+	"функція": types.Function,
+	"цілий": types.Integer,
 
 	// Utilities
-	"довжина": types.NewFunctionType(
+	"довжина": types.NewFunctionInstance(
 		"довжина",
 		[]types.FunctionArgument{
 			{
@@ -383,8 +271,8 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: false,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return Length(args[0])
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			return Length((*args)[0])
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.IntegerTypeHash,
@@ -393,7 +281,7 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-	"додати": types.NewFunctionType(
+	"додати": types.NewFunctionInstance(
 		"додати",
 		[]types.FunctionArgument{
 			{
@@ -409,8 +297,8 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: true,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return AppendToList(args[0].(types.ListType), args[1:]...)
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			return AppendToList((*args)[0].(types.ListInstance), (*args)[1:]...)
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.ListTypeHash,
@@ -419,7 +307,7 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-	"вилучити": types.NewFunctionType(
+	"вилучити": types.NewFunctionInstance(
 		"вилучити",
 		[]types.FunctionArgument{
 			{
@@ -435,8 +323,8 @@ var RuntimeFunctions = map[string]types.Type{
 				IsNullable: true,
 			},
 		},
-		func(args []types.Type, _ map[string]types.Type) (types.Type, error) {
-			return RemoveFromDictionary(args[0].(types.DictionaryType), args[1])
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			return RemoveFromDictionary((*args)[0].(types.DictionaryInstance), (*args)[1])
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.DictionaryTypeHash,
@@ -445,4 +333,13 @@ var RuntimeFunctions = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
+}
+
+func init() {
+	sourCream := types.NewClass("Сметанка", types.BuiltinPackage, map[string]types.Type{
+		"ччч": types.NewStringInstance("Песто"),
+	}, "", func() (types.Type, error) {
+		return nil, nil
+	})
+	RuntimeObjects["Сметанка"] = sourCream
 }

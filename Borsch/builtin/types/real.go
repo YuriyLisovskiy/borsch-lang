@@ -7,120 +7,84 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-// RealType TODO: move methods impl to attributes
-type RealType struct {
+type RealInstance struct {
 	Object
-
 	Value float64
-	package_ *PackageType
 }
 
-func NewRealType(value string) (RealType, error) {
+func NewRealInstanceFromString(value string) (RealInstance, error) {
 	number, err := strconv.ParseFloat(strings.TrimSuffix(value, "f"), 64)
 	if err != nil {
-		return RealType{}, util.RuntimeError(err.Error())
+		return RealInstance{}, util.RuntimeError(err.Error())
 	}
 
-	return RealType{
-		Value:    number,
-		Object: *newBuiltinObject(
-			RealTypeHash, map[string]Type{
-				"__документ__": &NilType{}, // TODO: set doc
-				"__пакет__":    BuiltinPackage,
-			},
-		),
-		package_: BuiltinPackage,
-	}, nil
+	return NewRealInstance(number), nil
 }
 
-func (t RealType) String() string {
+func NewRealInstance(value float64) RealInstance {
+	return RealInstance{
+		Value: value,
+		Object: Object{
+			typeName:    GetTypeName(RealTypeHash),
+			Attributes:  nil,
+			callHandler: nil,
+		},
+	}
+}
+
+func (t RealInstance) String() string {
 	return strconv.FormatFloat(t.Value, 'f', -1, 64)
 }
 
-func (t RealType) Representation() string {
+func (t RealInstance) Representation() string {
 	return t.String()
 }
 
-func (t RealType) AsBool() bool {
+func (t RealInstance) GetTypeHash() uint64 {
+	return t.GetClass().GetTypeHash()
+}
+
+func (t RealInstance) AsBool() bool {
 	return t.Value != 0.0
 }
 
-func (t RealType) SetAttribute(name string, _ Type) (Type, error) {
+func (t RealInstance) SetAttribute(name string, _ Type) (Type, error) {
+	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
+	}
+
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t RealType) Pow(other Type) (Type, error) {
-	switch o := other.(type) {
-	case RealType:
-		return RealType{
-			Value: math.Pow(t.Value, o.Value),
-		}, nil
-	case IntegerType:
-		return RealType{
-			Value: math.Pow(t.Value, float64(o.Value)),
-		}, nil
-	case BoolType:
-		return RealType{
-			Value: math.Pow(t.Value, boolToFloat64(o.Value)),
-		}, nil
-	default:
-		return nil, nil
+func (t RealInstance) GetAttribute(name string) (Type, error) {
+	if attribute, err := t.Object.GetAttribute(name); err == nil {
+		return attribute, nil
 	}
+
+	return t.GetClass().GetAttribute(name)
 }
 
-func (t RealType) Plus() (Type, error) {
-	return t, nil
+func (RealInstance) GetClass() *Class {
+	return Real
 }
 
-func (t RealType) Minus() (Type, error) {
-	return RealType{Value: -t.Value}, nil
-}
-
-func (t RealType) BitwiseNot() (Type, error) {
-	return nil, nil
-}
-
-func (t RealType) Mul(other Type) (Type, error) {
+func (t RealInstance) Div(other Type) (Type, error) {
 	switch o := other.(type) {
-	case BoolType:
-		return RealType{
-			Value: t.Value * boolToFloat64(o.Value),
-		}, nil
-	case IntegerType:
-		return RealType{
-			Value: t.Value * float64(o.Value),
-		}, nil
-	case RealType:
-		return RealType{
-			Value: t.Value * o.Value,
-		}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t RealType) Div(other Type) (Type, error) {
-	switch o := other.(type) {
-	case BoolType:
+	case BoolInstance:
 		if o.Value {
-			return RealType{
-				Value: t.Value,
-			}, nil
+			return NewRealInstance(t.Value), nil
 		}
-	case IntegerType:
+	case IntegerInstance:
 		if o.Value != 0 {
-			return RealType{
-				Value: t.Value / float64(o.Value),
-			}, nil
+			return NewRealInstance(t.Value / float64(o.Value)), nil
 		}
-	case RealType:
+	case RealInstance:
 		if o.Value != 0.0 {
-			return RealType{
-				Value: t.Value / o.Value,
-			}, nil
+			return NewRealInstance(t.Value / o.Value), nil
 		}
 	default:
 		return nil, nil
@@ -129,122 +93,202 @@ func (t RealType) Div(other Type) (Type, error) {
 	return nil, errors.New("ділення на нуль")
 }
 
-func (t RealType) Mod(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t RealType) Add(other Type) (Type, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return RealType{
-			Value: t.Value + boolToFloat64(o.Value),
-		}, nil
-	case IntegerType:
-		return RealType{
-			Value: t.Value + float64(o.Value),
-		}, nil
-	case RealType:
-		return RealType{
-			Value: t.Value + o.Value,
-		}, nil
-	default:
-		return nil, nil
+func compareReals(self, other Type) (int, error) {
+	left, ok := self.(RealInstance)
+	if !ok {
+		return 0, util.IncorrectUseOfFunctionError("compareReals")
 	}
-}
 
-func (t RealType) Sub(other Type) (Type, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return RealType{
-			Value: t.Value - boolToFloat64(o.Value),
-		}, nil
-	case IntegerType:
-		return RealType{
-			Value: t.Value - float64(o.Value),
-		}, nil
-	case RealType:
-		return RealType{
-			Value: t.Value - o.Value,
-		}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t RealType) BitwiseLeftShift(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t RealType) BitwiseRightShift(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t RealType) BitwiseAnd(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t RealType) BitwiseXor(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t RealType) BitwiseOr(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t RealType) CompareTo(other Type) (int, error) {
 	switch right := other.(type) {
-	case NilType:
-	case BoolType:
+	case NilInstance:
+	case BoolInstance:
 		rightVal := boolToFloat64(right.Value)
-		if t.Value == rightVal {
+		if left.Value == rightVal {
 			return 0, nil
 		}
 
-		if t.Value < rightVal {
+		if left.Value < rightVal {
 			return -1, nil
 		}
 
 		return 1, nil
-	case IntegerType:
+	case IntegerInstance:
 		rightVal := float64(right.Value)
-		if t.Value == rightVal {
+		if left.Value == rightVal {
 			return 0, nil
 		}
 
-		if t.Value < rightVal {
+		if left.Value < rightVal {
 			return -1, nil
 		}
 
 		return 1, nil
-	case RealType:
-		if t.Value == right.Value {
+	case RealInstance:
+		if left.Value == right.Value {
 			return 0, nil
 		}
 
-		if t.Value < right.Value {
+		if left.Value < right.Value {
 			return -1, nil
 		}
 
 		return 1, nil
 	default:
-		return 0, errors.New(fmt.Sprintf(
-			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.GetTypeName(), right.GetTypeName(),
-		))
+		return 0, errors.New(
+			fmt.Sprintf(
+				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"%s", left.GetTypeName(), right.GetTypeName(),
+			),
+		)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
 	return -2, nil
 }
 
-func (t RealType) Not() (Type, error) {
-	return BoolType{Value: !t.AsBool()}, nil
+func newRealBinaryOperator(
+	name string,
+	doc string,
+	handler func(RealInstance, Type) (Type, error),
+) *FunctionInstance {
+	return newBinaryOperator(
+		name, RealTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
+			if leftInstance, ok := left.(RealInstance); ok {
+				return handler(leftInstance, right)
+			}
+
+			return nil, util.IncorrectUseOfFunctionError(name)
+		},
+	)
 }
 
-func (t RealType) And(other Type) (Type, error) {
-	return logicalAnd(t, other)
+func newRealUnaryOperator(
+	name string,
+	doc string,
+	handler func(RealInstance) (Type, error),
+) *FunctionInstance {
+	return newUnaryOperator(
+		name, RealTypeHash, AnyTypeHash, doc, func(left Type) (Type, error) {
+			if leftInstance, ok := left.(RealInstance); ok {
+				return handler(leftInstance)
+			}
+
+			return nil, util.IncorrectUseOfFunctionError(name)
+		},
+	)
 }
 
-func (t RealType) Or(other Type) (Type, error) {
-	return logicalOr(t, other)
+func newRealClass() *Class {
+	attributes := mergeAttributes(
+		map[string]Type{
+			// TODO: add doc
+			ops.ConstructorName: newBuiltinConstructor(RealTypeHash, ToReal, ""),
+			ops.PowOp.Caption(): newRealBinaryOperator(
+				// TODO: add doc
+				ops.PowOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case RealInstance:
+						return NewRealInstance(math.Pow(self.Value, o.Value)), nil
+					case IntegerInstance:
+						return NewRealInstance(math.Pow(self.Value, float64(o.Value))), nil
+					case BoolInstance:
+						return NewRealInstance(math.Pow(self.Value, boolToFloat64(o.Value))), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.UnaryPlus.Caption(): newRealUnaryOperator(
+				// TODO: add doc
+				ops.UnaryPlus.Caption(), "", func(self RealInstance) (Type, error) {
+					return self, nil
+				},
+			),
+			ops.UnaryMinus.Caption(): newRealUnaryOperator(
+				// TODO: add doc
+				ops.UnaryMinus.Caption(), "", func(self RealInstance) (Type, error) {
+					return NewRealInstance(-self.Value), nil
+				},
+			),
+			ops.MulOp.Caption(): newRealBinaryOperator(
+				// TODO: add doc
+				ops.MulOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewRealInstance(self.Value * boolToFloat64(o.Value)), nil
+					case IntegerInstance:
+						return NewRealInstance(self.Value * float64(o.Value)), nil
+					case RealInstance:
+						return NewRealInstance(self.Value * o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.DivOp.Caption(): newRealBinaryOperator(
+				// TODO: add doc
+				ops.DivOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						if o.Value {
+							return NewRealInstance(self.Value), nil
+						}
+					case IntegerInstance:
+						if o.Value != 0 {
+							return NewRealInstance(self.Value / float64(o.Value)), nil
+						}
+					case RealInstance:
+						if o.Value != 0.0 {
+							return NewRealInstance(self.Value / o.Value), nil
+						}
+					default:
+						return nil, nil
+					}
+
+					return nil, errors.New("ділення на нуль")
+				},
+			),
+			ops.AddOp.Caption(): newRealBinaryOperator(
+				// TODO: add doc
+				ops.AddOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewRealInstance(self.Value + boolToFloat64(o.Value)), nil
+					case IntegerInstance:
+						return NewRealInstance(self.Value + float64(o.Value)), nil
+					case RealInstance:
+						return NewRealInstance(self.Value + o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.SubOp.Caption(): newRealBinaryOperator(
+				// TODO: add doc
+				ops.SubOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewRealInstance(self.Value - boolToFloat64(o.Value)), nil
+					case IntegerInstance:
+						return NewRealInstance(self.Value - float64(o.Value)), nil
+					case RealInstance:
+						return NewRealInstance(self.Value - o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+		},
+		makeLogicalOperators(RealTypeHash),
+		makeComparisonOperators(RealTypeHash, compareReals),
+	)
+	return NewBuiltinClass(
+		RealTypeHash,
+		BuiltinPackage,
+		attributes,
+		"", // TODO: add doc
+		func() (Type, error) {
+			return NewRealInstance(0), nil
+		},
+	)
 }

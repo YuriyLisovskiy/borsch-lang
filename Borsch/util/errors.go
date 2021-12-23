@@ -19,6 +19,12 @@ func AttributeNotFoundError(objTypeName, attrName string) error {
 	))
 }
 
+func CantSetAttributeOfBuiltinTypeError(objTypeName string) error {
+	return RuntimeError(fmt.Sprintf(
+		"неможливо встановлювати атрибути для вбудованого типу '%s'", objTypeName,
+	))
+}
+
 func AttributeIsReadOnlyError(objTypeName, attrName string) error {
 	return RuntimeError(fmt.Sprintf(
 		"атрибут '%s' об'єкта типу '%s' призначений лише для читання", attrName, objTypeName,
@@ -36,4 +42,20 @@ func ObjectIsNotCallable(objectName, typeName string) error {
 	return RuntimeError(fmt.Sprintf(
 		"неможливо застосувати оператор виклику до об'єкта '%s' з типом '%s'", objectName, typeName,
 	))
+}
+
+type InterpreterError struct {
+	message string
+}
+
+func NewInterpreterError(message string) InterpreterError {
+	return InterpreterError{message: message}
+}
+
+func (e InterpreterError) Error () string {
+	return fmt.Sprintf("InterpreterError: %s", e.message)
+}
+
+func IncorrectUseOfFunctionError(functionName string) error {
+	return InterpreterError{message: fmt.Sprintf("incorrect use of '%s' func", functionName)}
 }

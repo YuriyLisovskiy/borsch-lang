@@ -28,8 +28,8 @@ func (i *Interpreter) executeListSlicing(
 			}
 
 			if toIdx.GetTypeHash() == types.IntegerTypeHash {
-				res, err := container.(types.ListType).Slice(
-					fromIdx.(types.IntegerType).Value, toIdx.(types.IntegerType).Value,
+				res, err := container.(types.ListInstance).Slice(
+					fromIdx.(types.IntegerInstance).Value, toIdx.(types.IntegerInstance).Value,
 				)
 				return res, err
 			}

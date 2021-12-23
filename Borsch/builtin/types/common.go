@@ -31,12 +31,27 @@ type SequentialType interface {
 }
 
 type CallableType interface {
-	Call([]Type, map[string]Type) (Type, error)
+	Call(*[]Type, *map[string]Type) (Type, error)
 }
 
-var BuiltinPackage = &PackageType{
-	IsBuiltin: true,
-	Name:      "",
-	Parent:    "",
-	Object:    *newBuiltinObject(PackageTypeHash, map[string]Type{}),
+type Instance interface {
+	GetClass() *Class
+}
+
+var (
+	Bool = newBoolClass()
+	Dictionary = newDictionaryClass()
+	Function = newFunctionClass()
+	Integer = newIntegerClass()
+	List = newListClass()
+	Nil = newNilClass()
+	Package = NewPackageClass()
+	Real = newRealClass()
+	String = newStringClass()
+)
+
+var BuiltinPackage *PackageInstance = nil
+
+func init() {
+	BuiltinPackage = NewPackageInstance(true, "", "", map[string]Type{})
 }

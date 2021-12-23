@@ -1,10 +1,9 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 )
 
 type FunctionArgument struct {
@@ -51,41 +50,49 @@ func (r *FunctionReturnType) String() string {
 	return res
 }
 
-type FunctionType struct {
+type FunctionInstance struct {
 	Object
-
-	package_   *PackageType
+	package_   *PackageInstance
+	address    string
 	Name       string
 	Arguments  []FunctionArgument
 	ReturnType FunctionReturnType
 }
 
-func NewFunctionType(
+func NewFunctionInstance(
 	name string,
 	arguments []FunctionArgument,
-	handler func([]Type, map[string]Type) (Type, error),
+	handler func(*[]Type, *map[string]Type) (Type, error),
 	returnType FunctionReturnType,
-	package_ *PackageType,
+	package_ *PackageInstance,
 	doc string,
-) FunctionType {
-	function := FunctionType{
+) *FunctionInstance {
+	attributes := map[string]Type{}
+	if package_ != nil {
+		attributes[ops.PackageAttributeName] = package_
+	}
+
+	if len(doc) > 0 {
+		attributes[ops.DocAttributeName] = NewStringInstance(doc)
+	}
+
+	function := &FunctionInstance{
+		Object: Object{
+			typeName:    GetTypeName(FunctionTypeHash),
+			Attributes:  attributes,
+			callHandler: handler,
+		},
+		package_:   package_,
 		Name:       name,
 		Arguments:  arguments,
 		ReturnType: returnType,
-		package_:   package_,
-		Object: *newBuiltinObject(
-			FunctionTypeHash, map[string]Type{
-				"__документ__": &StringType{Value: doc},
-				"__пакет__":    package_,
-			},
-		),
 	}
 
-	function.CallHandler = handler
+	function.address = fmt.Sprintf("%p", function)
 	return function
 }
 
-func (t FunctionType) String() string {
+func (t FunctionInstance) String() string {
 	template := ""
 	if t.package_ != nil {
 		template = "функція '%s'"
@@ -96,19 +103,23 @@ func (t FunctionType) String() string {
 		template = "метод '%s'"
 	}
 
-	template += " з типом результату '%s'"
-	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.Name, t.ReturnType.String())
+	template += " за адресою %s"
+	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.Name, t.address)
 }
 
-func (t FunctionType) Representation() string {
+func (t FunctionInstance) Representation() string {
 	return t.String()
 }
 
-func (t FunctionType) AsBool() bool {
+func (t FunctionInstance) GetTypeHash() uint64 {
+	return t.GetClass().GetTypeHash()
+}
+
+func (t FunctionInstance) AsBool() bool {
 	return true
 }
 
-func (t FunctionType) SetAttribute(name string, value Type) (Type, error) {
+func (t FunctionInstance) SetAttribute(name string, value Type) (Type, error) {
 	err := t.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
@@ -117,93 +128,63 @@ func (t FunctionType) SetAttribute(name string, value Type) (Type, error) {
 	return t, nil
 }
 
-func (t FunctionType) Pow(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Plus() (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Minus() (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseNot() (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Mul(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Div(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Mod(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Add(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Sub(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseLeftShift(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseRightShift(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseAnd(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseXor(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseOr(Type) (Type, error) {
-	return nil, nil
-}
-
-func (t FunctionType) CompareTo(other Type) (int, error) {
-	switch right := other.(type) {
-	case NilType:
-	case FunctionType:
-		return -2, util.RuntimeError(
-			fmt.Sprintf(
-				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-				"%s", t.GetTypeName(), right.GetTypeName(),
-			),
-		)
-	default:
-		return -2, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-				"%s", t.GetTypeName(), right.GetTypeName(),
-			),
-		)
+func (t FunctionInstance) GetAttribute(name string) (Type, error) {
+	if attribute, err := t.Object.GetAttribute(name); err == nil {
+		return attribute, nil
 	}
 
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
+	return t.GetClass().GetAttribute(name)
 }
 
-func (t FunctionType) Not() (Type, error) {
-	return BoolType{Value: !t.AsBool()}, nil
+func (t FunctionInstance) GetClass() *Class {
+	return Function
 }
 
-func (t FunctionType) And(other Type) (Type, error) {
-	return BoolType{Value: other.AsBool()}, nil
-}
+func newFunctionClass() *Class {
+	attributes := mergeAttributes(
+		map[string]Type{
+			ops.CallOperatorName: NewFunctionInstance(
+				ops.CallOperatorName,
+				[]FunctionArgument{
+					{
+						TypeHash:   FunctionTypeHash,
+						Name:       "я",
+						IsVariadic: false,
+						IsNullable: false,
+					},
+					{
+						TypeHash:   AnyTypeHash,
+						Name:       "значення",
+						IsVariadic: true,
+						IsNullable: true,
+					},
+				},
+				func(args *[]Type, kwargs *map[string]Type) (Type, error) {
+					function := (*args)[0].(*FunctionInstance)
+					slicedArgs := (*args)[1:]
+					slicedKwargs := *kwargs
+					delete(slicedKwargs, "я")
+					if err := CheckFunctionArguments(function, &slicedArgs, &slicedKwargs); err != nil {
+						return nil, err
+					}
 
-func (t FunctionType) Or(Type) (Type, error) {
-	return BoolType{Value: true}, nil
+					return function.Call(&slicedArgs, &slicedKwargs)
+				},
+				FunctionReturnType{
+					TypeHash:   AnyTypeHash,
+					IsNullable: true,
+				},
+				nil,
+				"", // TODO: add doc
+			),
+		},
+		makeLogicalOperators(FunctionTypeHash),
+	)
+	return NewBuiltinClass(
+		FunctionTypeHash,
+		BuiltinPackage,
+		attributes,
+		"",  // TODO: add doc
+		nil, // CAUTION: segfault may be thrown when using without nil check!
+	)
 }

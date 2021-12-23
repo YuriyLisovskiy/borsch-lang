@@ -11,72 +11,98 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-type IntegerType struct {
+type IntegerInstance struct {
 	Object
-
-	Value    int64
-	package_ *PackageType
+	Value int64
 }
 
-func NewIntegerType(value string) (IntegerType, error) {
+func NewIntegerInstanceFromString(value string) (IntegerInstance, error) {
 	number, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		return IntegerType{}, util.RuntimeError(err.Error())
+		return IntegerInstance{}, util.RuntimeError(err.Error())
 	}
 
-	return IntegerType{
-		Object:   *newIntegerObject(),
-		Value:    number,
-		package_: BuiltinPackage,
-	}, nil
+	return NewIntegerInstance(number), nil
 }
 
-func (t IntegerType) String() string {
+func NewIntegerInstance(value int64) IntegerInstance {
+	return IntegerInstance{
+		Object: Object{
+			typeName:    GetTypeName(IntegerTypeHash),
+			Attributes:  nil,
+			callHandler: nil,
+		},
+		Value: value,
+	}
+}
+
+func (t IntegerInstance) String() string {
 	return fmt.Sprintf("%d", t.Value)
 }
 
-func (t IntegerType) Representation() string {
+func (t IntegerInstance) Representation() string {
 	return t.String()
 }
 
-func (t IntegerType) AsBool() bool {
+func (t IntegerInstance) GetTypeHash() uint64 {
+	return t.GetClass().GetTypeHash()
+}
+
+func (t IntegerInstance) AsBool() bool {
 	return t.Value != 0
 }
 
-func (t IntegerType) SetAttribute(name string, _ Type) (Type, error) {
-	if t.Object.HasAttribute(name) {
+func (t IntegerInstance) SetAttribute(name string, _ Type) (Type, error) {
+	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
 
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func compareTo(self IntegerType, other Type) (int, error) {
+func (t IntegerInstance) GetAttribute(name string) (Type, error) {
+	if attribute, err := t.Object.GetAttribute(name); err == nil {
+		return attribute, nil
+	}
+
+	return t.GetClass().GetAttribute(name)
+}
+
+func (IntegerInstance) GetClass() *Class {
+	return Integer
+}
+
+func compareIntegers(self Type, other Type) (int, error) {
+	left, ok := self.(IntegerInstance)
+	if !ok {
+		return 0, util.IncorrectUseOfFunctionError("compareIntegers")
+	}
+
 	switch right := other.(type) {
-	case NilType:
-	case BoolType:
+	case NilInstance:
+	case BoolInstance:
 		rightVal := boolToInt64(right.Value)
-		if self.Value == rightVal {
+		if left.Value == rightVal {
 			return 0, nil
 		}
 
-		if self.Value < rightVal {
+		if left.Value < rightVal {
 			return -1, nil
 		}
 
 		return 1, nil
-	case IntegerType:
-		if self.Value == right.Value {
+	case IntegerInstance:
+		if left.Value == right.Value {
 			return 0, nil
 		}
 
-		if self.Value < right.Value {
+		if left.Value < right.Value {
 			return -1, nil
 		}
 
 		return 1, nil
-	case RealType:
-		leftVal := float64(self.Value)
+	case RealInstance:
+		leftVal := float64(left.Value)
 		if leftVal == right.Value {
 			return 0, nil
 		}
@@ -99,116 +125,96 @@ func compareTo(self IntegerType, other Type) (int, error) {
 	return -2, nil
 }
 
-func newIntegerBinaryMethod(
+func newIntegerBinaryOperator(
 	name string,
 	doc string,
-	handler func(IntegerType, Type) (Type, error),
-) FunctionType {
-	return newBinaryMethod(
-		name, IntegerTypeHash, doc, func(left Type, right Type) (Type, error) {
-			return handler(left.(IntegerType), right)
-		},
-	)
-}
-
-func newIntegerUnaryMethod(
-	name string,
-	doc string,
-	handler func(IntegerType) (Type, error),
-) FunctionType {
-	return newUnaryMethod(
-		name, IntegerTypeHash, doc, func(left Type) (Type, error) {
-			return handler(left.(IntegerType))
-		},
-	)
-}
-
-func newComparisonMethod(operator ops.Operator, doc string, checker func(res int) bool) FunctionType {
-	return newIntegerBinaryMethod(
-		operator.Caption(), doc, func(self IntegerType, other Type) (Type, error) {
-			res, err := compareTo(self, other)
-			if err != nil {
-				return nil, err
+	handler func(IntegerInstance, Type) (Type, error),
+) *FunctionInstance {
+	return newBinaryOperator(
+		name, IntegerTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
+			if leftInstance, ok := left.(IntegerInstance); ok {
+				return handler(leftInstance, right)
 			}
 
-			return BoolType{Value: checker(res)}, nil
+			return nil, util.IncorrectUseOfFunctionError(name)
 		},
 	)
 }
 
-func newIntegerObject() *Object {
-	return newBuiltinObject(
-		IntegerTypeHash,
+func newIntegerUnaryOperator(
+	name string,
+	doc string,
+	handler func(IntegerInstance) (Type, error),
+) *FunctionInstance {
+	return newUnaryOperator(
+		name, IntegerTypeHash, AnyTypeHash, doc, func(left Type) (Type, error) {
+			if leftInstance, ok := left.(IntegerInstance); ok {
+				return handler(leftInstance)
+			}
+
+			return nil, util.IncorrectUseOfFunctionError(name)
+		},
+	)
+}
+
+func newIntegerClass() *Class {
+	attributes := mergeAttributes(
 		map[string]Type{
-			"__документ__": &NilType{}, // TODO: set doc
-			"__пакет__":    BuiltinPackage,
-			ops.PowOp.Caption(): newIntegerBinaryMethod(
+			// TODO: add doc
+			ops.ConstructorName: newBuiltinConstructor(IntegerTypeHash, ToInteger, ""),
+			ops.PowOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.PowOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.PowOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case RealType:
-						return RealType{
-							Value: math.Pow(float64(self.Value), o.Value),
-						}, nil
-					case IntegerType:
-						return IntegerType{
-							Value: int64(math.Pow(float64(self.Value), float64(o.Value))),
-						}, nil
-					case BoolType:
-						return IntegerType{
-							Value: int64(math.Pow(float64(self.Value), boolToFloat64(o.Value))),
-						}, nil
+					case RealInstance:
+						return NewRealInstance(math.Pow(float64(self.Value), o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(int64(math.Pow(float64(self.Value), float64(o.Value)))), nil
+					case BoolInstance:
+						return NewIntegerInstance(int64(math.Pow(float64(self.Value), boolToFloat64(o.Value)))), nil
 					default:
 						return nil, nil
 					}
 				},
 			),
-			ops.UnaryPlus.Caption(): newIntegerUnaryMethod(
+			ops.UnaryPlus.Caption(): newIntegerUnaryOperator(
 				// TODO: add doc
-				ops.UnaryPlus.Caption(), "", func(self IntegerType) (Type, error) {
+				ops.UnaryPlus.Caption(), "", func(self IntegerInstance) (Type, error) {
 					return self, nil
 				},
 			),
-			ops.UnaryMinus.Caption(): newIntegerUnaryMethod(
+			ops.UnaryMinus.Caption(): newIntegerUnaryOperator(
 				// TODO: add doc
-				ops.UnaryMinus.Caption(), "", func(self IntegerType) (Type, error) {
-					return IntegerType{Value: -self.Value}, nil
+				ops.UnaryMinus.Caption(), "", func(self IntegerInstance) (Type, error) {
+					return NewIntegerInstance(-self.Value), nil
 				},
 			),
-			ops.UnaryBitwiseNotOp.Caption(): newIntegerUnaryMethod(
+			ops.UnaryBitwiseNotOp.Caption(): newIntegerUnaryOperator(
 				// TODO: add doc
-				ops.UnaryBitwiseNotOp.Caption(), "", func(self IntegerType) (Type, error) {
-					return IntegerType{Value: ^self.Value}, nil
+				ops.UnaryBitwiseNotOp.Caption(), "", func(self IntegerInstance) (Type, error) {
+					return NewIntegerInstance(^self.Value), nil
 				},
 			),
-			ops.MulOp.Caption(): newIntegerBinaryMethod(
+			ops.MulOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.MulOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.MulOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
-						return IntegerType{
-							Value: self.Value * boolToInt64(o.Value),
-						}, nil
-					case IntegerType:
-						return IntegerType{
-							Value: self.Value * o.Value,
-						}, nil
-					case RealType:
-						return RealType{
-							Value: float64(self.Value) * o.Value,
-						}, nil
-					case StringType:
+					case BoolInstance:
+						return NewIntegerInstance(self.Value * boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(self.Value * o.Value), nil
+					case RealInstance:
+						return NewRealInstance(float64(self.Value) * o.Value), nil
+					case StringInstance:
 						count := int(self.Value)
 						if count <= 0 {
-							return StringType{Value: ""}, nil
+							return NewStringInstance(""), nil
 						}
 
-						return StringType{
-							Value: strings.Repeat(o.Value, count),
-						}, nil
-					case ListType:
+						return NewStringInstance(strings.Repeat(o.Value, count)), nil
+					case ListInstance:
 						count := int(self.Value)
-						list := NewListType()
+						list := NewListInstance()
 						if count > 0 {
 							for c := 0; c < count; c++ {
 								list.Values = append(list.Values, o.Values...)
@@ -221,27 +227,21 @@ func newIntegerObject() *Object {
 					}
 				},
 			),
-			ops.DivOp.Caption(): newIntegerBinaryMethod(
+			ops.DivOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.DivOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.DivOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
+					case BoolInstance:
 						if o.Value {
-							return RealType{
-								Value: float64(self.Value),
-							}, nil
+							return NewRealInstance(float64(self.Value)), nil
 						}
-					case IntegerType:
+					case IntegerInstance:
 						if o.Value != 0 {
-							return RealType{
-								Value: float64(self.Value) / float64(o.Value),
-							}, nil
+							return NewRealInstance(float64(self.Value) / float64(o.Value)), nil
 						}
-					case RealType:
+					case RealInstance:
 						if o.Value != 0.0 {
-							return RealType{
-								Value: float64(self.Value) / o.Value,
-							}, nil
+							return NewRealInstance(float64(self.Value) / o.Value), nil
 						}
 					default:
 						return nil, nil
@@ -250,21 +250,17 @@ func newIntegerObject() *Object {
 					return nil, errors.New("ділення на нуль")
 				},
 			),
-			ops.ModuloOp.Caption(): newIntegerBinaryMethod(
+			ops.ModuloOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.ModuloOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.ModuloOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
+					case BoolInstance:
 						if o.Value {
-							return IntegerType{
-								Value: self.Value % boolToInt64(o.Value),
-							}, nil
+							return NewIntegerInstance(self.Value % boolToInt64(o.Value)), nil
 						}
-					case IntegerType:
+					case IntegerInstance:
 						if o.Value != 0 {
-							return IntegerType{
-								Value: self.Value % o.Value,
-							}, nil
+							return NewIntegerInstance(self.Value % o.Value), nil
 						}
 					default:
 						return nil, nil
@@ -273,167 +269,112 @@ func newIntegerObject() *Object {
 					return nil, errors.New("ділення за модулем на нуль")
 				},
 			),
-			ops.AddOp.Caption(): newIntegerBinaryMethod(
+			ops.AddOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.AddOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.AddOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
-						return IntegerType{
-							Value: self.Value + boolToInt64(o.Value),
-						}, nil
-					case IntegerType:
-						return IntegerType{
-							Value: self.Value + o.Value,
-						}, nil
-					case RealType:
-						return RealType{
-							Value: float64(self.Value) + o.Value,
-						}, nil
+					case BoolInstance:
+						return NewIntegerInstance(self.Value + boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(self.Value + o.Value), nil
+					case RealInstance:
+						return NewRealInstance(float64(self.Value) + o.Value), nil
 					default:
 						return nil, nil
 					}
 				},
 			),
-			ops.SubOp.Caption(): newIntegerBinaryMethod(
+			ops.SubOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.SubOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.SubOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
-						return IntegerType{
-							Value: self.Value - boolToInt64(o.Value),
-						}, nil
-					case IntegerType:
-						return IntegerType{
-							Value: self.Value - o.Value,
-						}, nil
-					case RealType:
-						return RealType{
-							Value: float64(self.Value) - o.Value,
-						}, nil
+					case BoolInstance:
+						return NewIntegerInstance(self.Value - boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(self.Value - o.Value), nil
+					case RealInstance:
+						return NewRealInstance(float64(self.Value) - o.Value), nil
 					default:
 						return nil, nil
 					}
 				},
 			),
-			ops.BitwiseLeftShiftOp.Caption(): newIntegerBinaryMethod(
+			ops.BitwiseLeftShiftOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseLeftShiftOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.BitwiseLeftShiftOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
-						return IntegerType{Value: self.Value << boolToInt64(o.Value)}, nil
-					case IntegerType:
-						return IntegerType{Value: self.Value << o.Value}, nil
+					case BoolInstance:
+						return NewIntegerInstance(self.Value << boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(self.Value << o.Value), nil
 					default:
 						return nil, nil
 					}
 				},
 			),
-			ops.BitwiseRightShiftOp.Caption(): newIntegerBinaryMethod(
+			ops.BitwiseRightShiftOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseRightShiftOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.BitwiseRightShiftOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
-						return IntegerType{Value: self.Value >> boolToInt64(o.Value)}, nil
-					case IntegerType:
-						return IntegerType{Value: self.Value >> o.Value}, nil
+					case BoolInstance:
+						return NewIntegerInstance(self.Value >> boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(self.Value >> o.Value), nil
 					default:
 						return nil, nil
 					}
 				},
 			),
-			ops.BitwiseAndOp.Caption(): newIntegerBinaryMethod(
+			ops.BitwiseAndOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseAndOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.BitwiseAndOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
-						return IntegerType{Value: self.Value & boolToInt64(o.Value)}, nil
-					case IntegerType:
-						return IntegerType{Value: self.Value & o.Value}, nil
+					case BoolInstance:
+						return NewIntegerInstance(self.Value & boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(self.Value & o.Value), nil
 					default:
 						return nil, nil
 					}
 				},
 			),
-			ops.BitwiseXorOp.Caption(): newIntegerBinaryMethod(
+			ops.BitwiseXorOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseXorOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.BitwiseXorOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
-						return IntegerType{Value: self.Value ^ boolToInt64(o.Value)}, nil
-					case IntegerType:
-						return IntegerType{Value: self.Value ^ o.Value}, nil
+					case BoolInstance:
+						return NewIntegerInstance(self.Value ^ boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(self.Value ^ o.Value), nil
 					default:
 						return nil, nil
 					}
 				},
 			),
-			ops.BitwiseOrOp.Caption(): newIntegerBinaryMethod(
+			ops.BitwiseOrOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseOrOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
+				ops.BitwiseOrOp.Caption(), "", func(self IntegerInstance, other Type) (Type, error) {
 					switch o := other.(type) {
-					case BoolType:
-						return IntegerType{Value: self.Value | boolToInt64(o.Value)}, nil
-					case IntegerType:
-						return IntegerType{Value: self.Value | o.Value}, nil
+					case BoolInstance:
+						return NewIntegerInstance(self.Value | boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(self.Value | o.Value), nil
 					default:
 						return nil, nil
 					}
 				},
 			),
-			ops.NotOp.Caption(): newIntegerUnaryMethod(
-				// TODO: add doc
-				ops.NotOp.Caption(), "", func(self IntegerType) (Type, error) {
-					return BoolType{Value: !self.AsBool()}, nil
-				},
-			),
-			ops.AndOp.Caption(): newIntegerBinaryMethod(
-				// TODO: add doc
-				ops.AndOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
-					return logicalAnd(self, other)
-				},
-			),
-			ops.OrOp.Caption(): newIntegerBinaryMethod(
-				// TODO: add doc
-				ops.OrOp.Caption(), "", func(self IntegerType, other Type) (Type, error) {
-					return logicalOr(self, other)
-				},
-			),
-			ops.EqualsOp.Caption(): newComparisonMethod(
-				// TODO: add doc
-				ops.EqualsOp, "", func(res int) bool {
-					return res == 0
-				},
-			),
-			ops.NotEqualsOp.Caption(): newComparisonMethod(
-				// TODO: add doc
-				ops.NotEqualsOp, "", func(res int) bool {
-					return res != 0
-				},
-			),
-			ops.GreaterOp.Caption(): newComparisonMethod(
-				// TODO: add doc
-				ops.GreaterOp, "", func(res int) bool {
-					return res == 1
-				},
-			),
-			ops.GreaterOrEqualsOp.Caption(): newComparisonMethod(
-				// TODO: add doc
-				ops.GreaterOrEqualsOp, "", func(res int) bool {
-					return res == 0 || res == 1
-				},
-			),
-			ops.LessOp.Caption(): newComparisonMethod(
-				// TODO: add doc
-				ops.LessOp, "", func(res int) bool {
-					return res == -1
-				},
-			),
-			ops.LessOrEqualsOp.Caption(): newComparisonMethod(
-				// TODO: add doc
-				ops.LessOrEqualsOp, "", func(res int) bool {
-					return res == 0 || res == -1
-				},
-			),
+		},
+		makeLogicalOperators(IntegerTypeHash),
+		makeComparisonOperators(IntegerTypeHash, compareIntegers),
+	)
+	return NewBuiltinClass(
+		IntegerTypeHash,
+		BuiltinPackage,
+		attributes,
+		"", // TODO: add doc
+		func() (Type, error) {
+			return NewIntegerInstance(0), nil
 		},
 	)
 }

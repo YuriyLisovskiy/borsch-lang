@@ -34,5 +34,5 @@ func Input(args ...types.Type) (types.Type, error) {
 		return nil, util.InternalError(err.Error())
 	}
 
-	return types.StringType{Value: strings.TrimSuffix(input, "\n")}, nil
+	return types.StringInstance{Value: strings.TrimSuffix(input, "\n")}, nil
 }

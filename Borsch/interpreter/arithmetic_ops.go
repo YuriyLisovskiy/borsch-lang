@@ -30,14 +30,20 @@ func (i *Interpreter) executeArithmeticOp(
 		}
 
 		switch operator := operatorFunc.(type) {
-		case types.CallableType:
-			res, err = operator.Call(
-				[]types.Type{left, right},
-				map[string]types.Type{
-					"я": left,
-					"інший": right,
-				},
-			)
+		case *types.FunctionInstance:
+			args := []types.Type{left, right}
+			kwargs := map[string]types.Type{
+				"я": left,
+				"інший": right,
+			}
+			if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
+				return nil, err
+			}
+
+			res, err = operator.Call(&args, &kwargs)
+			if err != nil {
+				return nil, util.RuntimeError(err.Error())
+			}
 		default:
 			return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
 		}

@@ -1,29 +1,29 @@
-package builtin
+package types
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 	"strconv"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func ToInteger(args ...types.Type) (types.Type, error) {
+func ToInteger(args ...Type) (Type, error) {
 	if len(args) == 0 {
-		return types.IntegerType{Value: 0}, nil
+		return NewIntegerInstance(0), nil
 	}
 
 	if len(args) != 1 {
 		return nil, util.RuntimeError(fmt.Sprintf(
-			"функція 'цілий()' приймає лише один аргумент (отримано %d)", len(args),
+			"'цілий()' приймає лише один аргумент (отримано %d)", len(args),
 		))
 	}
 
 	switch vt := args[0].(type) {
-	case types.RealType:
-		return types.IntegerType{Value: int64(vt.Value)}, nil
-	case types.IntegerType:
+	case RealInstance:
+		return NewIntegerInstance(int64(vt.Value)), nil
+	case IntegerInstance:
 		return vt, nil
-	case types.StringType:
+	case StringInstance:
 		intVal, err := strconv.ParseInt(vt.Value, 10, 64)
 		if err != nil {
 			return nil, util.RuntimeError(fmt.Sprintf(
@@ -31,13 +31,13 @@ func ToInteger(args ...types.Type) (types.Type, error) {
 			))
 		}
 
-		return types.IntegerType{Value: intVal}, nil
-	case types.BoolType:
+		return NewIntegerInstance(intVal), nil
+	case BoolInstance:
 		if vt.Value {
-			return types.IntegerType{Value: 1}, nil
+			return NewIntegerInstance(1), nil
 		}
 
-		return types.IntegerType{Value: 0}, nil
+		return NewIntegerInstance(0), nil
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як ціле число", args[0].GetTypeName(),
@@ -45,9 +45,9 @@ func ToInteger(args ...types.Type) (types.Type, error) {
 	}
 }
 
-func ToReal(args ...types.Type) (types.Type, error) {
+func ToReal(args ...Type) (Type, error) {
 	if len(args) == 0 {
-		return types.RealType{Value: 0.0}, nil
+		return NewRealInstance(0.0), nil
 	}
 
 	if len(args) != 1 {
@@ -57,11 +57,11 @@ func ToReal(args ...types.Type) (types.Type, error) {
 	}
 
 	switch vt := args[0].(type) {
-	case types.RealType:
+	case RealInstance:
 		return vt, nil
-	case types.IntegerType:
-		return types.RealType{Value: float64(vt.Value)}, nil
-	case types.StringType:
+	case IntegerInstance:
+		return NewRealInstance(float64(vt.Value)), nil
+	case StringInstance:
 		realVal, err := strconv.ParseFloat(vt.Value, 64)
 		if err != nil {
 			return nil, util.RuntimeError(fmt.Sprintf(
@@ -69,13 +69,13 @@ func ToReal(args ...types.Type) (types.Type, error) {
 			))
 		}
 
-		return types.RealType{Value: realVal}, nil
-	case types.BoolType:
+		return NewRealInstance(realVal), nil
+	case BoolInstance:
 		if vt.Value {
-			return types.RealType{Value: 1.0}, nil
+			return NewRealInstance(1.0), nil
 		}
 
-		return types.RealType{Value: 0.0}, nil
+		return NewRealInstance(0.0), nil
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як дійсне число", args[0].GetTypeName(),
@@ -83,9 +83,9 @@ func ToReal(args ...types.Type) (types.Type, error) {
 	}
 }
 
-func ToString(args ...types.Type) (types.Type, error) {
+func ToString(args ...Type) (Type, error) {
 	if len(args) == 0 {
-		return types.StringType{Value: ""}, nil
+		return NewStringInstance(""), nil
 	}
 
 	if len(args) != 1 {
@@ -95,10 +95,10 @@ func ToString(args ...types.Type) (types.Type, error) {
 	}
 
 	switch vt := args[0].(type) {
-	case types.StringType:
+	case StringInstance:
 		return vt, nil
-	case types.RealType, types.IntegerType, types.BoolType, types.NilType:
-		return types.StringType{Value: vt.String()}, nil
+	case RealInstance, IntegerInstance, BoolInstance, NilInstance:
+		return NewStringInstance(vt.String()), nil
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як рядок", args[0].GetTypeName(),
@@ -106,9 +106,9 @@ func ToString(args ...types.Type) (types.Type, error) {
 	}
 }
 
-func ToBool(args ...types.Type) (types.Type, error) {
+func ToBool(args ...Type) (Type, error) {
 	if len(args) == 0 {
-		return types.BoolType{Value: false}, nil
+		return NewBoolInstance(false), nil
 	}
 
 	if len(args) != 1 {
@@ -118,16 +118,16 @@ func ToBool(args ...types.Type) (types.Type, error) {
 	}
 
 	switch vt := args[0].(type) {
-	case types.RealType:
-		return types.BoolType{Value: vt.Value != 0.0}, nil
-	case types.IntegerType:
-		return types.BoolType{Value: vt.Value != 0}, nil
-	case types.StringType:
-		return types.BoolType{Value: vt.Value != ""}, nil
-	case types.BoolType:
+	case RealInstance:
+		return NewBoolInstance(vt.Value != 0.0), nil
+	case IntegerInstance:
+		return NewBoolInstance(vt.Value != 0), nil
+	case StringInstance:
+		return NewBoolInstance(vt.Value != ""), nil
+	case BoolInstance:
 		return vt, nil
-	case types.NilType:
-		return types.BoolType{Value: false}, nil
+	case NilInstance:
+		return NewBoolInstance(false), nil
 	default:
 		return nil, util.RuntimeError(fmt.Sprintf(
 			"'%s' неможливо інтерпретувати як логічне значення", args[0].GetTypeName(),
@@ -135,8 +135,8 @@ func ToBool(args ...types.Type) (types.Type, error) {
 	}
 }
 
-func ToList(args ...types.Type) (types.Type, error) {
-	list := types.NewListType()
+func ToList(args ...Type) (Type, error) {
+	list := NewListInstance()
 	if len(args) == 0 {
 		return list, nil
 	}
@@ -148,8 +148,8 @@ func ToList(args ...types.Type) (types.Type, error) {
 	return list, nil
 }
 
-func ToDictionary(args ...types.Type) (types.Type, error) {
-	dict := types.NewDictionaryType()
+func ToDictionary(args ...Type) (Type, error) {
+	dict := NewDictionaryInstance()
 	if len(args) == 0 {
 		return dict, nil
 	}
@@ -161,9 +161,9 @@ func ToDictionary(args ...types.Type) (types.Type, error) {
 	}
 
 	switch keys := args[0].(type) {
-	case types.ListType:
+	case ListInstance:
 		switch values := args[1].(type) {
-		case types.ListType:
+		case ListInstance:
 			if keys.Length() != values.Length() {
 				return nil, util.RuntimeError(fmt.Sprintf(
 					"довжина списку ключів має співпадати з довжиною списку значень",

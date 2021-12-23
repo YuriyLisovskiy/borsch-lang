@@ -109,21 +109,20 @@ func (i *Interpreter) executeNode(
 		res, err := i.executeImport(&node, rootDir, thisPackage, parentPackage)
 		return res, false, err
 	case ast.FunctionDefNode:
-		// TODO: оптимізувати заповнення поля пакету для вузла функції.
-		functionPackage := types.NewPackageType(
+		functionPackage := types.NewPackageInstance(
 			false,
 			thisPackage,
 			parentPackage,
 			map[string]types.Type{}, // TODO: set attributes
 		)
-		functionDef := types.NewFunctionType(
+		functionDef := types.NewFunctionInstance(
 			node.Name.Text, node.Arguments,
-			func(_ []types.Type, kwargs map[string]types.Type) (types.Type, error) {
-				res, _, err := i.executeBlock(kwargs, node.Body, thisPackage, parentPackage)
+			func(_ *[]types.Type, kwargs *map[string]types.Type) (types.Type, error) {
+				res, _, err := i.executeBlock(*kwargs, node.Body, thisPackage, parentPackage)
 				return res, err
 			},
 			node.ReturnType,
-			&functionPackage,
+			functionPackage,
 			"", // TODO: set doc
 		)
 		return functionDef, false, i.setVar(thisPackage, node.Name.Text, functionDef)
@@ -171,23 +170,23 @@ func (i *Interpreter) executeNode(
 		)
 
 	case ast.RealTypeNode:
-		res, err := types.NewRealType(node.Value.Text)
+		res, err := types.NewRealInstanceFromString(node.Value.Text)
 		return res, false, err
 
 	case ast.IntegerTypeNode:
-		res, err := types.NewIntegerType(node.Value.Text)
+		res, err := types.NewIntegerInstanceFromString(node.Value.Text)
 		return res, false, err
 
 	case ast.StringTypeNode:
-		res := types.NewStringType(node.Value.Text)
+		res := types.NewStringInstance(node.Value.Text)
 		return res, false, nil
 
 	case ast.BoolTypeNode:
-		res, err := types.NewBoolType(node.Value.Text)
+		res, err := types.NewBoolInstanceFromString(node.Value.Text)
 		return res, false, err
 
 	case ast.ListTypeNode:
-		list := types.NewListType()
+		list := types.NewListInstance()
 		for _, valueNode := range node.Values {
 			value, _, err := i.executeNode(valueNode, rootDir, thisPackage, parentPackage)
 			if err != nil {
@@ -200,7 +199,7 @@ func (i *Interpreter) executeNode(
 		return list, false, nil
 
 	case ast.DictionaryTypeNode:
-		dict := types.NewDictionaryType()
+		dict := types.NewDictionaryInstance()
 		for keyNode, valueNode := range node.Map {
 			key, _, err := i.executeNode(keyNode, rootDir, thisPackage, parentPackage)
 			if err != nil {
@@ -221,7 +220,7 @@ func (i *Interpreter) executeNode(
 		return dict, false, nil
 
 	case ast.NilTypeNode:
-		return types.NilType{}, false, nil
+		return types.NilInstance{}, false, nil
 
 	case ast.VariableNode:
 		val, err := i.getVar(thisPackage, node.Variable.Text)
@@ -313,7 +312,7 @@ func (i *Interpreter) Execute(
 		return nil, scope, err
 	}
 
-	i.pushScope(thisPackage, builtin.RuntimeFunctions)
+	i.pushScope(thisPackage, builtin.RuntimeObjects)
 	var result types.Type
 	result, scope, _, err = i.executeAST(scope, thisPackage, parentPackage, asTree)
 	if err != nil {
@@ -331,5 +330,5 @@ func (i *Interpreter) ExecuteFile(
 		return nil, err
 	}
 
-	return types.NewPackageType(isBuiltin, packageName, parentPackage, scope), nil
+	return types.NewPackageInstance(isBuiltin, packageName, parentPackage, scope), nil
 }

@@ -25,31 +25,31 @@ func Assert(expected, actual types.Type, errorTemplate string) error {
 	}
 
 	switch left := leftV.(type) {
-	case types.NilType:
+	case types.NilInstance:
 		return nil
-	case types.RealType:
-		right := rightV.(types.RealType)
+	case types.RealInstance:
+		right := rightV.(types.RealInstance)
 		if left.Value != right.Value {
 			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(), right.String()))
 		}
 
 		return nil
-	case types.IntegerType:
-		right := rightV.(types.IntegerType)
+	case types.IntegerInstance:
+		right := rightV.(types.IntegerInstance)
 		if left.Value != right.Value {
 			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(), right.String()))
 		}
 
 		return nil
-	case types.StringType:
-		right := rightV.(types.StringType)
+	case types.StringInstance:
+		right := rightV.(types.StringInstance)
 		if left.Value != right.Value {
 			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(), right.String()))
 		}
 
 		return nil
-	case types.BoolType:
-		right := rightV.(types.BoolType)
+	case types.BoolInstance:
+		right := rightV.(types.BoolInstance)
 		if left.Value != right.Value {
 			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(), right.String()))
 		}

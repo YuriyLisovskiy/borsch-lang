@@ -10,9 +10,9 @@ import (
 func Length(sequence types.Type) (types.Type, error) {
 	switch arg := sequence.(type) {
 	case types.SequentialType:
-		return types.IntegerType{Value: arg.Length()}, nil
-	case types.DictionaryType:
-		return types.IntegerType{Value: arg.Length()}, nil
+		return types.NewIntegerInstance(arg.Length()), nil
+	case types.DictionaryInstance:
+		return types.NewIntegerInstance(arg.Length()), nil
 	}
 
 	return nil, util.RuntimeError(fmt.Sprintf(
@@ -20,7 +20,7 @@ func Length(sequence types.Type) (types.Type, error) {
 	))
 }
 
-func AppendToList(list types.ListType, values ...types.Type) (types.Type, error) {
+func AppendToList(list types.ListInstance, values ...types.Type) (types.Type, error) {
 	for _, value := range values {
 		list.Values = append(list.Values, value)
 	}
@@ -28,7 +28,7 @@ func AppendToList(list types.ListType, values ...types.Type) (types.Type, error)
 	return list, nil
 }
 
-func RemoveFromDictionary(dict types.DictionaryType, key types.Type) (types.Type, error) {
+func RemoveFromDictionary(dict types.DictionaryInstance, key types.Type) (types.Type, error) {
 	err := dict.RemoveElement(key)
 	if err != nil {
 		return nil, util.RuntimeError(err.Error())
