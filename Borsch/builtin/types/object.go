@@ -82,3 +82,14 @@ func (o *Object) Call(args *[]Type, kwargs *map[string]Type) (Type, error) {
 
 	return nil, util.ObjectIsNotCallable(o.GetTypeName(), o.GetTypeName())
 }
+
+func (o Object) Copy() Object {
+	object := Object{
+		typeName: o.typeName,
+	}
+	for k, v := range o.Attributes {
+		object.Attributes[k] = v
+	}
+
+	return object
+}

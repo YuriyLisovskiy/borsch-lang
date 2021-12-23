@@ -333,6 +333,32 @@ var RuntimeObjects = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
+	"копіювати": types.NewFunctionInstance(
+		"копіювати",
+		[]types.FunctionArgument{
+			{
+				TypeHash:   types.AnyTypeHash,
+				Name:       "значення",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+		},
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			switch value := (*args)[0].(type) {
+			case *types.ClassInstance:
+				copied := value.Copy()
+				return copied, nil
+			default:
+				return value, nil
+			}
+		},
+		types.FunctionReturnType{
+			TypeHash:   types.AnyTypeHash,
+			IsNullable: false,
+		},
+		types.BuiltinPackage,
+		"", // TODO: add doc
+	),
 }
 
 func init() {
@@ -342,4 +368,6 @@ func init() {
 		return nil, nil
 	})
 	RuntimeObjects["Сметанка"] = sourCream
+
+	RuntimeObjects["сметанка_для_борщу"] = types.NewClassInstance(sourCream, map[string]types.Type{})
 }
