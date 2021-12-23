@@ -7,34 +7,32 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type DictionaryEntry struct {
-	Key   ValueType
-	Value ValueType
+	Key   Type
+	Value Type
 }
 
-type DictionaryType struct {
+type DictionaryInstance struct {
+	Object
 	Map map[uint64]DictionaryEntry
-	object   *ObjectType
-	package_ *PackageType
 }
 
-func NewDictionaryType() *DictionaryType {
-	return &DictionaryType{
+func NewDictionaryInstance() DictionaryInstance {
+	return DictionaryInstance{
 		Map: map[uint64]DictionaryEntry{},
-		object: newObjectType(
-			DictionaryTypeHash, map[string]ValueType{
-				"__документ__": &NilType{}, // TODO: set doc
-				"__пакет__":    BuiltinPackage,
-			},
-		),
-		package_: BuiltinPackage,
+		Object: Object{
+			typeName:    GetTypeName(DictionaryTypeHash),
+			Attributes:  nil,
+			callHandler: nil,
+		},
 	}
 }
 
-func (t DictionaryType) calcHash(obj interface{}) (uint64, error) {
+func (t DictionaryInstance) calcHash(obj interface{}) (uint64, error) {
 	h := sha256.New()
 	_, err := h.Write([]byte(fmt.Sprintf("%v", obj)))
 	if err != nil {
@@ -44,38 +42,56 @@ func (t DictionaryType) calcHash(obj interface{}) (uint64, error) {
 	return binary.BigEndian.Uint64(h.Sum(nil)), nil
 }
 
-func (t DictionaryType) String() string {
+func (t DictionaryInstance) String() string {
 	return t.Representation()
 }
 
-func (t DictionaryType) Representation() string {
+func (t DictionaryInstance) Representation() string {
 	var strValues []string
 	for _, value := range t.Map {
-		strValues = append(strValues, fmt.Sprintf(
-			"%s: %s", value.Key.Representation(), value.Value.Representation(),
-		))
+		strValues = append(
+			strValues, fmt.Sprintf(
+				"%s: %s", value.Key.Representation(), value.Value.Representation(),
+			),
+		)
 	}
 
 	return "{" + strings.Join(strValues, ", ") + "}"
 }
 
-func (t DictionaryType) TypeHash() int {
-	return DictionaryTypeHash
+func (t DictionaryInstance) GetTypeHash() uint64 {
+	return t.GetClass().GetTypeHash()
 }
 
-func (t DictionaryType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
-func (t DictionaryType) AsBool() bool {
+func (t DictionaryInstance) AsBool() bool {
 	return t.Length() != 0
 }
 
-func (t DictionaryType) Length() int64 {
+func (t DictionaryInstance) SetAttribute(name string, _ Type) (Type, error) {
+	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
+	}
+
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
+}
+
+func (t DictionaryInstance) GetAttribute(name string) (Type, error) {
+	if attribute, err := t.Object.GetAttribute(name); err == nil {
+		return attribute, nil
+	}
+
+	return t.GetClass().GetAttribute(name)
+}
+
+func (t DictionaryInstance) GetClass() *Class {
+	return Dictionary
+}
+
+func (t DictionaryInstance) Length() int64 {
 	return int64(len(t.Map))
 }
 
-func (t DictionaryType) GetElement(key ValueType) (ValueType, error) {
+func (t DictionaryInstance) GetElement(key Type) (Type, error) {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return nil, err
@@ -88,7 +104,7 @@ func (t DictionaryType) GetElement(key ValueType) (ValueType, error) {
 	return nil, errors.New(fmt.Sprintf("значення за ключем '%s' не існує", key.String()))
 }
 
-func (t *DictionaryType) SetElement(key ValueType, value ValueType) error {
+func (t *DictionaryInstance) SetElement(key Type, value Type) error {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return err
@@ -98,7 +114,7 @@ func (t *DictionaryType) SetElement(key ValueType, value ValueType) error {
 	return nil
 }
 
-func (t *DictionaryType) RemoveElement(key ValueType) error {
+func (t *DictionaryInstance) RemoveElement(key Type) error {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return err
@@ -112,97 +128,45 @@ func (t *DictionaryType) RemoveElement(key ValueType) error {
 	return nil
 }
 
-func (t DictionaryType) GetAttr(name string) (ValueType, error) {
-	return t.object.GetAttribute(name)
-}
-
-func (t DictionaryType) SetAttr(name string, _ ValueType) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
-}
-
-func (t DictionaryType) Pow(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Plus() (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Minus() (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) BitwiseNot() (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Mul(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Div(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Mod(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Add(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) Sub(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) BitwiseLeftShift(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) BitwiseRightShift(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) BitwiseAnd(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) BitwiseXor(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) BitwiseOr(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t DictionaryType) CompareTo(other ValueType) (int, error) {
+func compareDictionaries(self Type, other Type) (int, error) {
 	switch right := other.(type) {
-	case NilType:
-	case DictionaryType:
-		return -2, util.RuntimeError(fmt.Sprintf(
-			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-			"%s", t.TypeName(), right.TypeName(),
-		))
+	case NilInstance:
+	case *DictionaryInstance, DictionaryInstance:
+		return -2, util.RuntimeError(
+			fmt.Sprintf(
+				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
+				"%s", self.GetTypeName(), right.GetTypeName(),
+			),
+		)
 	default:
-		return -2, errors.New(fmt.Sprintf(
-			"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-			"%s", t.TypeName(), right.TypeName(),
-		))
+		return -2, errors.New(
+			fmt.Sprintf(
+				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"%s", self.GetTypeName(), right.GetTypeName(),
+			),
+		)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
 	return -2, nil
 }
 
-func (t DictionaryType) Not() (ValueType, error) {
-	return BoolType{Value: !t.AsBool()}, nil
-}
-
-func (t DictionaryType) And(other ValueType) (ValueType, error) {
-	return logicalAnd(t, other)
-}
-
-func (t DictionaryType) Or(other ValueType) (ValueType, error) {
-	return logicalOr(t, other)
+func newDictionaryClass() *Class {
+	attributes := mergeAttributes(
+		map[string]Type{
+			// TODO: add doc
+			ops.ConstructorName: newBuiltinConstructor(DictionaryTypeHash, ToDictionary, ""),
+		},
+		makeLogicalOperators(DictionaryTypeHash),
+		makeComparisonOperators(DictionaryTypeHash, compareDictionaries),
+	)
+	return NewBuiltinClass(
+		DictionaryTypeHash,
+		BuiltinPackage,
+		attributes,
+		"", // TODO: add doc
+		func() (Type, error) {
+			return NewDictionaryInstance(), nil
+		},
+	)
 }

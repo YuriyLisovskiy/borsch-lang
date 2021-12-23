@@ -17,10 +17,10 @@ import (
 
 type Interpreter struct {
 	stdRoot          string
-	scopes           map[string][]map[string]types.ValueType
+	scopes           map[string][]map[string]types.Type
 	currentPackage   string
 	parentPackage    string
-	includedPackages map[string]types.ValueType
+	includedPackages map[string]types.Type
 }
 
 func NewInterpreter(stdRoot, currentPackage, parentPackage string) *Interpreter {
@@ -28,16 +28,16 @@ func NewInterpreter(stdRoot, currentPackage, parentPackage string) *Interpreter 
 		stdRoot:          stdRoot,
 		currentPackage:   currentPackage,
 		parentPackage:    parentPackage,
-		scopes:           map[string][]map[string]types.ValueType{},
-		includedPackages: map[string]types.ValueType{},
+		scopes:           map[string][]map[string]types.Type{},
+		includedPackages: map[string]types.Type{},
 	}
 }
 
-func (i *Interpreter) pushScope(packageName string, scope map[string]types.ValueType) {
+func (i *Interpreter) pushScope(packageName string, scope map[string]types.Type) {
 	i.scopes[packageName] = append(i.scopes[packageName], scope)
 }
 
-func (i *Interpreter) popScope(packageName string) map[string]types.ValueType {
+func (i *Interpreter) popScope(packageName string) map[string]types.Type {
 	if scopes, ok := i.scopes[packageName]; ok {
 		if len(scopes) == 0 {
 			panic("fatal: not enough scopes")
@@ -51,7 +51,7 @@ func (i *Interpreter) popScope(packageName string) map[string]types.ValueType {
 	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
 }
 
-func (i *Interpreter) getVar(packageName string, name string) (types.ValueType, error) {
+func (i *Interpreter) getVar(packageName string, name string) (types.Type, error) {
 	if scopes, ok := i.scopes[packageName]; ok {
 		lastScopeIdx := len(scopes) - 1
 		for idx := lastScopeIdx; idx >= 0; idx-- {
@@ -66,24 +66,28 @@ func (i *Interpreter) getVar(packageName string, name string) (types.ValueType, 
 	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
 }
 
-func (i *Interpreter) setVar(packageName, name string, value types.ValueType) error {
+func (i *Interpreter) setVar(packageName, name string, value types.Type) error {
 	if scopes, ok := i.scopes[packageName]; ok {
 		scopesLen := len(scopes)
 		for idx := 0; idx < scopesLen; idx++ {
 			if oldValue, ok := scopes[idx][name]; ok {
-				if oldValue.TypeHash() != value.TypeHash() {
+				if oldValue.GetTypeHash() != value.GetTypeHash() {
 					if scopesLen == 1 {
-						return util.RuntimeError(fmt.Sprintf(
-							"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
-							value.TypeName(), name, oldValue.TypeName(),
-						))
+						return util.RuntimeError(
+							fmt.Sprintf(
+								"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
+								value.GetTypeName(), name, oldValue.GetTypeName(),
+							),
+						)
 					}
 
 					// TODO: надрукувати нормальне попередження!
-					fmt.Println(fmt.Sprintf(
-						"Увага: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
-						value.TypeName(), oldValue.TypeName(), name,
-					))
+					fmt.Println(
+						fmt.Sprintf(
+							"Увага: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
+							value.GetTypeName(), oldValue.GetTypeName(), name,
+						),
+					)
 					break
 				}
 
@@ -103,30 +107,42 @@ func (i *Interpreter) setVar(packageName, name string, value types.ValueType) er
 
 func (i *Interpreter) executeNode(
 	rootNode ast.ExpressionNode, rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, bool, error) {
+) (types.Type, bool, error) {
 	switch node := rootNode.(type) {
 	case ast.ImportNode:
 		res, err := i.executeImport(&node, rootDir, thisPackage, parentPackage)
 		return res, false, err
+
 	case ast.FunctionDefNode:
-		// TODO: оптимізувати заповнення поля пакету для вузла функції.
-		functionPackage := types.NewPackageType(
+		functionPackage := types.NewPackageInstance(
 			false,
 			thisPackage,
 			parentPackage,
-			map[string]types.ValueType{}, // TODO: set attributes
+			map[string]types.Type{}, // TODO: set attributes
 		)
-		functionDef := types.NewFunctionType(
+		functionDef := types.NewFunctionInstance(
 			node.Name.Text, node.Arguments,
-			func(_ []types.ValueType, kwargs map[string]types.ValueType) (types.ValueType, error) {
-				res, _, err := i.executeBlock(kwargs, node.Body, thisPackage, parentPackage)
+			func(_ *[]types.Type, kwargs *map[string]types.Type) (types.Type, error) {
+				res, _, err := i.executeBlock(*kwargs, node.Body, thisPackage, parentPackage)
 				return res, err
 			},
 			node.ReturnType,
-			&functionPackage,
+			functionPackage,
 			"", // TODO: set doc
 		)
 		return functionDef, false, i.setVar(thisPackage, node.Name.Text, functionDef)
+
+	case ast.ClassDefNode:
+		classPackage := types.NewPackageInstance(
+			false,
+			thisPackage,
+			parentPackage,
+			map[string]types.Type{}, // TODO: set attributes
+		)
+		// TODO: set doc
+		// TODO: set attributes
+		classDef := types.NewClass(node.Name.Text, classPackage, map[string]types.Type{}, node.Doc.Text)
+		return classDef, false, i.setVar(thisPackage, node.Name.Text, classDef)
 
 	case ast.CallOpNode:
 		callable, err := i.getVar(thisPackage, node.CallableName.Text)
@@ -140,7 +156,7 @@ func (i *Interpreter) executeNode(
 	case ast.ReturnNode:
 		res, _, err := i.executeNode(node.Value, rootDir, thisPackage, parentPackage)
 		return res, true, err
-		
+
 	case ast.UnaryOperationNode:
 		res, err := i.executeUnaryOp(&node, rootDir, thisPackage, parentPackage)
 		return res, false, err
@@ -171,23 +187,23 @@ func (i *Interpreter) executeNode(
 		)
 
 	case ast.RealTypeNode:
-		res, err := types.NewRealType(node.Value.Text)
+		res, err := types.NewRealInstanceFromString(node.Value.Text)
 		return res, false, err
 
 	case ast.IntegerTypeNode:
-		res, err := types.NewIntegerType(node.Value.Text)
+		res, err := types.NewIntegerInstanceFromString(node.Value.Text)
 		return res, false, err
 
 	case ast.StringTypeNode:
-		res := types.NewStringType(node.Value.Text)
+		res := types.NewStringInstance(node.Value.Text)
 		return res, false, nil
 
 	case ast.BoolTypeNode:
-		res, err := types.NewBoolType(node.Value.Text)
+		res, err := types.NewBoolInstanceFromString(node.Value.Text)
 		return res, false, err
 
 	case ast.ListTypeNode:
-		list := types.NewListType()
+		list := types.NewListInstance()
 		for _, valueNode := range node.Values {
 			value, _, err := i.executeNode(valueNode, rootDir, thisPackage, parentPackage)
 			if err != nil {
@@ -200,7 +216,7 @@ func (i *Interpreter) executeNode(
 		return list, false, nil
 
 	case ast.DictionaryTypeNode:
-		dict := types.NewDictionaryType()
+		dict := types.NewDictionaryInstance()
 		for keyNode, valueNode := range node.Map {
 			key, _, err := i.executeNode(keyNode, rootDir, thisPackage, parentPackage)
 			if err != nil {
@@ -221,7 +237,7 @@ func (i *Interpreter) executeNode(
 		return dict, false, nil
 
 	case ast.NilTypeNode:
-		return types.NilType{}, false, nil
+		return types.NewNilInstance(), false, nil
 
 	case ast.VariableNode:
 		val, err := i.getVar(thisPackage, node.Variable.Text)
@@ -240,8 +256,8 @@ func (i *Interpreter) executeNode(
 }
 
 func (i *Interpreter) executeAST(
-	scope map[string]types.ValueType, thisPackage, parentPackage string, tree *ast.AST,
-) (types.ValueType, map[string]types.ValueType, bool, error) {
+	scope map[string]types.Type, thisPackage, parentPackage string, tree *ast.AST,
+) (types.Type, map[string]types.Type, bool, error) {
 	var filePath string
 	var dir string
 	var err error
@@ -260,16 +276,18 @@ func (i *Interpreter) executeAST(
 		dir = filepath.Dir(filePath)
 	}
 
-	var result types.ValueType = nil
+	var result types.Type = nil
 	forceReturn := false
 	i.pushScope(thisPackage, scope)
 	for _, node := range tree.Nodes {
 		result, forceReturn, err = i.executeNode(node, dir, thisPackage, parentPackage)
 		if err != nil {
-			return nil, scope, false, errors.New(fmt.Sprintf(
-				"  Файл \"%s\", рядок %d\n    %s\n%s",
-				filePath, node.RowNumber(), node.String(), err.Error(),
-			))
+			return nil, scope, false, errors.New(
+				fmt.Sprintf(
+					"  Файл \"%s\", рядок %d\n    %s\n%s",
+					filePath, node.RowNumber(), node.String(), err.Error(),
+				),
+			)
 		}
 
 		if forceReturn {
@@ -282,8 +300,8 @@ func (i *Interpreter) executeAST(
 }
 
 func (i *Interpreter) executeBlock(
-	scope map[string]types.ValueType, tokens []models.Token, thisPackage, parentPackage string,
-) (types.ValueType, bool, error) {
+	scope map[string]types.Type, tokens []models.Token, thisPackage, parentPackage string,
+) (types.Type, bool, error) {
 	p := parser.NewParser(thisPackage, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
@@ -299,8 +317,8 @@ func (i *Interpreter) executeBlock(
 }
 
 func (i *Interpreter) Execute(
-	thisPackage, parentPackage string, scope map[string]types.ValueType, code string,
-) (types.ValueType, map[string]types.ValueType, error) {
+	thisPackage, parentPackage string, scope map[string]types.Type, code string,
+) (types.Type, map[string]types.Type, error) {
 	lexer := borsch.NewLexer(thisPackage, code)
 	tokens, err := lexer.Lex()
 	if err != nil {
@@ -313,8 +331,8 @@ func (i *Interpreter) Execute(
 		return nil, scope, err
 	}
 
-	i.pushScope(thisPackage, builtin.RuntimeFunctions)
-	var result types.ValueType
+	i.pushScope(thisPackage, builtin.RuntimeObjects)
+	var result types.Type
 	result, scope, _, err = i.executeAST(scope, thisPackage, parentPackage, asTree)
 	if err != nil {
 		return nil, scope, err
@@ -325,11 +343,11 @@ func (i *Interpreter) Execute(
 
 func (i *Interpreter) ExecuteFile(
 	packageName, parentPackage string, content []byte, isBuiltin bool,
-) (types.ValueType, error) {
-	_, scope, err := i.Execute(packageName, parentPackage, map[string]types.ValueType{}, string(content))
+) (types.Type, error) {
+	_, scope, err := i.Execute(packageName, parentPackage, map[string]types.Type{}, string(content))
 	if err != nil {
 		return nil, err
 	}
 
-	return types.NewPackageType(isBuiltin, packageName, parentPackage, scope), nil
+	return types.NewPackageInstance(isBuiltin, packageName, parentPackage, scope), nil
 }

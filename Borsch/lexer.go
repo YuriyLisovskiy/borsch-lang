@@ -119,6 +119,6 @@ func (l *Lexer) nextToken() (bool, error) {
 	underline := strings.Repeat(" ", len(runes[leftPos:l.pos])) + "^"
 	return false, errors.New(fmt.Sprintf(
 		"  Файл \"%s\", рядок %d\n    %s\n    %s\n%s",
-		l.filePath, rowNumber, codeFragment, underline, "Синтаксичка помилка: некоректний синтаксис",
+		l.filePath, rowNumber, codeFragment, underline, "Синтаксична помилка: некоректний синтаксис",
 	))
 }

@@ -10,7 +10,7 @@ import (
 
 func (i *Interpreter) executeImport(
 	node *ast.ImportNode, rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, error) {
+) (types.Type, error) {
 	if node.IsStd {
 		node.FilePath = filepath.Join(i.stdRoot, node.FilePath)
 	} else if !filepath.IsAbs(node.FilePath) {

@@ -6,16 +6,16 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-type BoolType struct {
-	Value    bool
-	object   *ObjectType
-	package_ *PackageType
+type BoolInstance struct {
+	Object
+	Value bool
 }
 
-func NewBoolType(value string) (BoolType, error) {
+func NewBoolInstanceFromString(value string) (BoolInstance, error) {
 	switch value {
 	case "істина":
 		value = "t"
@@ -25,22 +25,24 @@ func NewBoolType(value string) (BoolType, error) {
 
 	boolean, err := strconv.ParseBool(value)
 	if err != nil {
-		return BoolType{}, util.RuntimeError(err.Error())
+		return BoolInstance{}, util.RuntimeError(err.Error())
 	}
 
-	return BoolType{
-		Value: boolean,
-		object: newObjectType(
-			BoolTypeHash, map[string]ValueType{
-				"__документ__": &NilType{}, // TODO: set doc
-				"__пакет__":    BuiltinPackage,
-			},
-		),
-		package_: BuiltinPackage,
-	}, nil
+	return NewBoolInstance(boolean), nil
 }
 
-func (t BoolType) String() string {
+func NewBoolInstance(value bool) BoolInstance {
+	return BoolInstance{
+		Value: value,
+		Object: Object{
+			typeName:    GetTypeName(BoolTypeHash),
+			Attributes:  nil,
+			callHandler: nil,
+		},
+	}
+}
+
+func (t BoolInstance) String() string {
 	if t.Value {
 		return "істина"
 	}
@@ -48,237 +50,59 @@ func (t BoolType) String() string {
 	return "хиба"
 }
 
-func (t BoolType) Representation() string {
+func (t BoolInstance) Representation() string {
 	return t.String()
 }
 
-func (t BoolType) TypeHash() int {
-	return BoolTypeHash
+func (t BoolInstance) GetTypeHash() uint64 {
+	return t.GetClass().GetTypeHash()
 }
 
-func (t BoolType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
-func (t BoolType) AsBool() bool {
+func (t BoolInstance) AsBool() bool {
 	return t.Value
 }
 
-func (t BoolType) GetAttr(name string) (ValueType, error) {
-	return t.object.GetAttribute(name)
-}
-
-func (t BoolType) SetAttr(name string, _ ValueType) (ValueType, error) {
-	return nil, util.AttributeError(t.TypeName(), name)
-}
-
-func (t BoolType) Pow(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case RealType:
-		return RealType{
-			Value: math.Pow(boolToFloat64(t.Value), o.Value),
-		}, nil
-	case IntegerType:
-		return IntegerType{
-			Value: int64(math.Pow(boolToFloat64(t.Value), float64(o.Value))),
-		}, nil
-	case BoolType:
-		return IntegerType{
-			Value: int64(math.Pow(boolToFloat64(t.Value), boolToFloat64(o.Value))),
-		}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t BoolType) Plus() (ValueType, error) {
-	return IntegerType{Value: boolToInt64(t.Value)}, nil
-}
-
-func (t BoolType) Minus() (ValueType, error) {
-	return IntegerType{Value: -boolToInt64(t.Value)}, nil
-}
-
-func (t BoolType) BitwiseNot() (ValueType, error) {
-	return IntegerType{Value: ^boolToInt64(t.Value)}, nil
-}
-
-func (t BoolType) Mul(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return IntegerType{
-			Value: boolToInt64(t.Value) * boolToInt64(o.Value),
-		}, nil
-	case IntegerType:
-		return IntegerType{
-			Value: boolToInt64(t.Value) * o.Value,
-		}, nil
-	case RealType:
-		return RealType{
-			Value: boolToFloat64(t.Value) * o.Value,
-		}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t BoolType) Div(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		if o.Value {
-			return RealType{
-				Value: boolToFloat64(t.Value),
-			}, nil
-		}
-	case IntegerType:
-		if o.Value != 0 {
-			return RealType{
-				Value: boolToFloat64(t.Value) / float64(o.Value),
-			}, nil
-		}
-	case RealType:
-		if o.Value != 0.0 {
-			return RealType{
-				Value: boolToFloat64(t.Value) / o.Value,
-			}, nil
-		}
-	default:
-		return nil, nil
+func (t BoolInstance) SetAttribute(name string, _ Type) (Type, error) {
+	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
 
-	return nil, errors.New("ділення на нуль")
+	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t BoolType) Mod(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		if o.Value {
-			return IntegerType{
-				Value: boolToInt64(t.Value) % boolToInt64(o.Value),
-			}, nil
-		}
-	case IntegerType:
-		if o.Value != 0 {
-			return IntegerType{
-				Value: boolToInt64(t.Value) % o.Value,
-			}, nil
-		}
-	default:
-		return nil, nil
+func (t BoolInstance) GetAttribute(name string) (Type, error) {
+	if attribute, err := t.Object.GetAttribute(name); err == nil {
+		return attribute, nil
 	}
 
-	return nil, errors.New("ділення за модулем на нуль")
+	return t.GetClass().GetAttribute(name)
 }
 
-func (t BoolType) Add(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return IntegerType{
-			Value: boolToInt64(t.Value) + boolToInt64(o.Value),
-		}, nil
-	case IntegerType:
-		return IntegerType{
-			Value: boolToInt64(t.Value) + o.Value,
-		}, nil
-	case RealType:
-		return RealType{
-			Value: boolToFloat64(t.Value) + o.Value,
-		}, nil
-	default:
-		return nil, nil
+func (BoolInstance) GetClass() *Class {
+	return Bool
+}
+
+func compareBooleans(self Type, other Type) (int, error) {
+	left, ok := self.(BoolInstance)
+	if !ok {
+		return 0, util.IncorrectUseOfFunctionError("compareBooleans")
 	}
-}
 
-func (t BoolType) Sub(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return IntegerType{
-			Value: boolToInt64(t.Value) - boolToInt64(o.Value),
-		}, nil
-	case IntegerType:
-		return IntegerType{
-			Value: boolToInt64(t.Value) - o.Value,
-		}, nil
-	case RealType:
-		return RealType{
-			Value: boolToFloat64(t.Value) - o.Value,
-		}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t BoolType) BitwiseLeftShift(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return IntegerType{Value: boolToInt64(t.Value) << boolToInt64(o.Value)}, nil
-	case IntegerType:
-		return IntegerType{Value: boolToInt64(t.Value) << o.Value}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t BoolType) BitwiseRightShift(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return IntegerType{Value: boolToInt64(t.Value) >> boolToInt64(o.Value)}, nil
-	case IntegerType:
-		return IntegerType{Value: boolToInt64(t.Value) >> o.Value}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t BoolType) BitwiseAnd(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return IntegerType{Value: boolToInt64(t.Value) & boolToInt64(o.Value)}, nil
-	case IntegerType:
-		return IntegerType{Value: boolToInt64(t.Value) & o.Value}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t BoolType) BitwiseXor(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return IntegerType{Value: boolToInt64(t.Value) ^ boolToInt64(o.Value)}, nil
-	case IntegerType:
-		return IntegerType{Value: boolToInt64(t.Value) ^ o.Value}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t BoolType) BitwiseOr(other ValueType) (ValueType, error) {
-	switch o := other.(type) {
-	case BoolType:
-		return IntegerType{Value: boolToInt64(t.Value) | boolToInt64(o.Value)}, nil
-	case IntegerType:
-		return IntegerType{Value: boolToInt64(t.Value) | o.Value}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func (t BoolType) CompareTo(other ValueType) (int, error) {
 	switch right := other.(type) {
-	case NilType:
-	case BoolType:
-		if t.Value == right.Value {
+	case NilInstance:
+	case BoolInstance:
+		if left.Value == right.Value {
 			return 0, nil
 		}
-	case IntegerType, RealType:
-		if t.Value == right.AsBool() {
+	case IntegerInstance, RealInstance:
+		if left.Value == right.AsBool() {
 			return 0, nil
 		}
 	default:
 		return 0, errors.New(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-				"%s", t.TypeName(), right.TypeName(),
+				"%s", self.GetTypeName(), right.GetTypeName(),
 			),
 		)
 	}
@@ -287,14 +111,239 @@ func (t BoolType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t BoolType) Not() (ValueType, error) {
-	return BoolType{Value: !t.AsBool()}, nil
+func newBoolBinaryOperator(
+	name string,
+	doc string,
+	handler func(BoolInstance, Type) (Type, error),
+) *FunctionInstance {
+	return newBinaryOperator(
+		name, BoolTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
+			if leftInstance, ok := left.(BoolInstance); ok {
+				return handler(leftInstance, right)
+			}
+
+			return nil, util.IncorrectUseOfFunctionError(name)
+		},
+	)
 }
 
-func (t BoolType) And(other ValueType) (ValueType, error) {
-	return logicalAnd(t, other)
+func newBoolUnaryOperator(
+	name string,
+	doc string,
+	handler func(BoolInstance) (Type, error),
+) *FunctionInstance {
+	return newUnaryOperator(
+		name, BoolTypeHash, AnyTypeHash, doc, func(left Type) (Type, error) {
+			if leftInstance, ok := left.(BoolInstance); ok {
+				return handler(leftInstance)
+			}
+
+			return nil, util.IncorrectUseOfFunctionError(name)
+		},
+	)
 }
 
-func (t BoolType) Or(other ValueType) (ValueType, error) {
-	return logicalOr(t, other)
+func newBoolClass() *Class {
+	attributes := mergeAttributes(
+		map[string]Type{
+			// TODO: add doc
+			ops.ConstructorName: newBuiltinConstructor(BoolTypeHash, ToBool, ""),
+			ops.PowOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.PowOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case RealInstance:
+						return NewRealInstance(math.Pow(boolToFloat64(self.Value), o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(int64(math.Pow(boolToFloat64(self.Value), float64(o.Value)))), nil
+					case BoolInstance:
+						return NewIntegerInstance(int64(math.Pow(boolToFloat64(self.Value), boolToFloat64(o.Value)))), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.UnaryPlus.Caption(): newBoolUnaryOperator(
+				// TODO: add doc
+				ops.UnaryPlus.Caption(), "", func(self BoolInstance) (Type, error) {
+					return NewIntegerInstance(boolToInt64(self.Value)), nil
+				},
+			),
+			ops.UnaryMinus.Caption(): newBoolUnaryOperator(
+				// TODO: add doc
+				ops.UnaryMinus.Caption(), "", func(self BoolInstance) (Type, error) {
+					return NewIntegerInstance(-boolToInt64(self.Value)), nil
+				},
+			),
+			ops.UnaryBitwiseNotOp.Caption(): newBoolUnaryOperator(
+				// TODO: add doc
+				ops.UnaryBitwiseNotOp.Caption(), "", func(self BoolInstance) (Type, error) {
+					return NewIntegerInstance(^boolToInt64(self.Value)), nil
+				},
+			),
+			ops.MulOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.MulOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) * boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) * o.Value), nil
+					case RealInstance:
+						return NewRealInstance(boolToFloat64(self.Value) * o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.DivOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.DivOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						if o.Value {
+							return NewRealInstance(boolToFloat64(self.Value)), nil
+						}
+					case IntegerInstance:
+						if o.Value != 0 {
+							return NewRealInstance(boolToFloat64(self.Value) / float64(o.Value)), nil
+						}
+					case RealInstance:
+						if o.Value != 0.0 {
+							return NewRealInstance(boolToFloat64(self.Value) / o.Value), nil
+						}
+					default:
+						return nil, nil
+					}
+
+					return nil, errors.New("ділення на нуль")
+				},
+			),
+			ops.ModuloOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.ModuloOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						if o.Value {
+							return NewIntegerInstance(boolToInt64(self.Value) % boolToInt64(o.Value)), nil
+						}
+					case IntegerInstance:
+						if o.Value != 0 {
+							return NewIntegerInstance(boolToInt64(self.Value) % o.Value), nil
+						}
+					default:
+						return nil, nil
+					}
+
+					return nil, errors.New("ділення за модулем на нуль")
+				},
+			),
+			ops.AddOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.AddOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) + boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) + o.Value), nil
+					case RealInstance:
+						return NewRealInstance(boolToFloat64(self.Value) + o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.SubOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.SubOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) - boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) - o.Value), nil
+					case RealInstance:
+						return NewRealInstance(boolToFloat64(self.Value) - o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.BitwiseLeftShiftOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.BitwiseLeftShiftOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) << boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) << o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.BitwiseRightShiftOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.BitwiseRightShiftOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) >> boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) >> o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.BitwiseAndOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.BitwiseAndOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) & boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) & o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.BitwiseXorOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.BitwiseXorOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) ^ boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) ^ o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+			ops.BitwiseOrOp.Caption(): newBoolBinaryOperator(
+				// TODO: add doc
+				ops.BitwiseOrOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
+					switch o := other.(type) {
+					case BoolInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) | boolToInt64(o.Value)), nil
+					case IntegerInstance:
+						return NewIntegerInstance(boolToInt64(self.Value) | o.Value), nil
+					default:
+						return nil, nil
+					}
+				},
+			),
+		},
+		makeLogicalOperators(BoolTypeHash),
+		makeComparisonOperators(BoolTypeHash, compareBooleans),
+	)
+	return NewBuiltinClass(
+		BoolTypeHash,
+		BuiltinPackage,
+		attributes,
+		"", // TODO: add doc
+		func() (Type, error) {
+			return NewBoolInstance(false), nil
+		},
+	)
 }

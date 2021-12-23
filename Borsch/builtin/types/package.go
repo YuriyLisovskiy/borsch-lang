@@ -7,24 +7,27 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-type PackageType struct {
+type PackageInstance struct {
+	Object
 	IsBuiltin bool
 	Name      string
 	Parent    string
-	Object    *ObjectType
 }
 
-func NewPackageType(isBuiltin bool, name, parent string, attrs map[string]ValueType) PackageType {
-	attrs["__документ__"] = &NilType{} // TODO: set doc
-	return PackageType{
+func NewPackageInstance(isBuiltin bool, name, parent string, attributes map[string]Type) *PackageInstance {
+	return &PackageInstance{
 		IsBuiltin: isBuiltin,
 		Name:      name,
 		Parent:    parent,
-		Object:    newObjectType(PackageTypeHash, attrs),
+		Object: Object{
+			typeName:    GetTypeName(PackageTypeHash),
+			Attributes:  attributes,
+			callHandler: nil,
+		},
 	}
 }
 
-func (t PackageType) String() string {
+func (t PackageInstance) String() string {
 	name := t.Name
 	if t.IsBuiltin {
 		name = "АТБ"
@@ -33,28 +36,35 @@ func (t PackageType) String() string {
 	return fmt.Sprintf("<пакет '%s'>", name)
 }
 
-func (t PackageType) Representation() string {
+func (t PackageInstance) Representation() string {
 	return t.String()
 }
 
-func (t PackageType) TypeHash() int {
-	return PackageTypeHash
+func (t PackageInstance) GetTypeHash() uint64 {
+	return t.GetClass().GetTypeHash()
 }
 
-func (t PackageType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
-func (t PackageType) AsBool() bool {
+func (t PackageInstance) AsBool() bool {
 	return true
 }
 
-func (t PackageType) GetAttr(name string) (ValueType, error) {
-	return t.Object.GetAttribute(name)
+func (t PackageInstance) GetAttribute(name string) (Type, error) {
+	if attribute, err := t.Object.GetAttribute(name); err == nil {
+		return attribute, nil
+	}
+
+	return t.GetClass().GetAttribute(name)
 }
 
-// SetAttr assumes that attribute already exists.
-func (t PackageType) SetAttr(name string, value ValueType) (ValueType, error) {
+func (t PackageInstance) SetAttribute(name string, value Type) (Type, error) {
+	if t.IsBuiltin {
+		if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+			return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
+		}
+
+		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
+	}
+
 	err := t.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
@@ -63,77 +73,25 @@ func (t PackageType) SetAttr(name string, value ValueType) (ValueType, error) {
 	return t, nil
 }
 
-func (t PackageType) Pow(ValueType) (ValueType, error) {
-	return nil, nil
+func (PackageInstance) GetClass() *Class {
+	return Package
 }
 
-func (t PackageType) Plus() (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) Minus() (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) BitwiseNot() (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) Mul(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) Div(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) Mod(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) Add(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) Sub(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) BitwiseLeftShift(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) BitwiseRightShift(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) BitwiseAnd(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) BitwiseXor(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) BitwiseOr(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t PackageType) CompareTo(other ValueType) (int, error) {
+func comparePackages(self Type, other Type) (int, error) {
 	switch right := other.(type) {
-	case NilType:
-	case PackageType:
+	case NilInstance:
+	case *PackageInstance, PackageInstance:
 		return -2, util.RuntimeError(
 			fmt.Sprintf(
 				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-				"%s", t.TypeName(), right.TypeName(),
+				"%s", self.GetTypeName(), right.GetTypeName(),
 			),
 		)
 	default:
 		return -2, errors.New(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-				"%s", t.TypeName(), right.TypeName(),
+				"%s", self.GetTypeName(), right.GetTypeName(),
 			),
 		)
 	}
@@ -142,14 +100,16 @@ func (t PackageType) CompareTo(other ValueType) (int, error) {
 	return -2, nil
 }
 
-func (t PackageType) Not() (ValueType, error) {
-	return BoolType{Value: !t.AsBool()}, nil
-}
-
-func (t PackageType) And(other ValueType) (ValueType, error) {
-	return BoolType{Value: other.AsBool()}, nil
-}
-
-func (t PackageType) Or(ValueType) (ValueType, error) {
-	return BoolType{Value: true}, nil
+func NewPackageClass() *Class {
+	attributes := mergeAttributes(
+		makeLogicalOperators(PackageTypeHash),
+		makeComparisonOperators(PackageTypeHash, comparePackages),
+	)
+	return NewBuiltinClass(
+		PackageTypeHash,
+		BuiltinPackage,
+		attributes,
+		"",  // TODO: add doc
+		nil, // CAUTION: segfault may be thrown when using without nil check!
+	)
 }

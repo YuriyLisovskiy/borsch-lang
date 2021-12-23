@@ -9,27 +9,27 @@ import (
 
 func (i *Interpreter) executeListSlicing(
 	node *ast.ListSlicingNode, rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, error) {
+) (types.Type, error) {
 	container, _, err := i.executeNode(node.Operand, rootDir, thisPackage, parentPackage)
 	if err != nil {
 		return nil, err
 	}
 
-	if container.TypeHash() == types.ListTypeHash {
+	if container.GetTypeHash() == types.ListTypeHash {
 		fromIdx, _, err := i.executeNode(node.LeftIndex, rootDir, thisPackage, parentPackage)
 		if err != nil {
 			return nil, err
 		}
 
-		if fromIdx.TypeHash() == types.IntegerTypeHash {
+		if fromIdx.GetTypeHash() == types.IntegerTypeHash {
 			toIdx, _, err := i.executeNode(node.RightIndex, rootDir, thisPackage, parentPackage)
 			if err != nil {
 				return nil, err
 			}
 
-			if toIdx.TypeHash() == types.IntegerTypeHash {
-				res, err := container.(types.ListType).Slice(
-					fromIdx.(types.IntegerType).Value, toIdx.(types.IntegerType).Value,
+			if toIdx.GetTypeHash() == types.IntegerTypeHash {
+				res, err := container.(types.ListInstance).Slice(
+					fromIdx.(types.IntegerInstance).Value, toIdx.(types.IntegerInstance).Value,
 				)
 				return res, err
 			}
@@ -42,6 +42,6 @@ func (i *Interpreter) executeListSlicing(
 
 	return nil, util.RuntimeError(fmt.Sprintf(
 		"неможливо застосувати оператор відсікання списку до об'єкта з типом '%s'",
-		container.TypeName(),
+		container.GetTypeName(),
 	))
 }

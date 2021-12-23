@@ -10,7 +10,7 @@ import (
 
 func (i *Interpreter) executeBinaryOp(
 	node *ast.BinOperationNode, rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, error) {
+) (types.Type, error) {
 	switch node.Operator.Type.Name {
 	case models.ExponentOp:
 		return i.executeArithmeticOp(node.LeftNode, node.RightNode, ops.PowOp, rootDir, thisPackage, parentPackage)
@@ -108,7 +108,7 @@ func (i *Interpreter) executeBinaryOp(
 
 			switch attrNode := leftNode.Attr.(type) {
 			case ast.VariableNode:
-				base, err = base.SetAttr(attrNode.Variable.Text, rightNode)
+				base, err = base.SetAttribute(attrNode.Variable.Text, rightNode)
 				if err != nil {
 					return nil, err
 				}

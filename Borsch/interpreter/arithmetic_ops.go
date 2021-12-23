@@ -10,7 +10,7 @@ import (
 func (i *Interpreter) executeArithmeticOp(
 	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType ops.Operator,
 	rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, error) {
+) (types.Type, error) {
 	left, _, err := i.executeNode(leftNode, rootDir, thisPackage, parentPackage)
 	if err != nil {
 		return nil, err
@@ -21,37 +21,31 @@ func (i *Interpreter) executeArithmeticOp(
 		return nil, err
 	}
 
-	var res types.ValueType
+	var res types.Type
 	switch opType {
-	case ops.AddOp:
-		res, err = left.Add(right)
+	case ops.AddOp, ops.SubOp, ops.MulOp, ops.DivOp, ops.PowOp, ops.ModuloOp:
+		operatorFunc, err := left.GetAttribute(opType.Caption())
 		if err != nil {
 			return nil, util.RuntimeError(err.Error())
 		}
-	case ops.SubOp:
-		res, err = left.Sub(right)
-		if err != nil {
-			return nil, util.RuntimeError(err.Error())
-		}
-	case ops.MulOp:
-		res, err = left.Mul(right)
-		if err != nil {
-			return nil, util.RuntimeError(err.Error())
-		}
-	case ops.DivOp:
-		res, err = left.Div(right)
-		if err != nil {
-			return nil, util.RuntimeError(err.Error())
-		}
-	case ops.PowOp:
-		res, err = left.Pow(right)
-		if err != nil {
-			return nil, util.RuntimeError(err.Error())
-		}
-	case ops.ModuloOp:
-		res, err = left.Mod(right)
-		if err != nil {
-			return nil, util.RuntimeError(err.Error())
+
+		switch operator := operatorFunc.(type) {
+		case *types.FunctionInstance:
+			args := []types.Type{left, right}
+			kwargs := map[string]types.Type{
+				"я": left,
+				"інший": right,
+			}
+			if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
+				return nil, err
+			}
+
+			res, err = operator.Call(&args, &kwargs)
+			if err != nil {
+				return nil, util.RuntimeError(err.Error())
+			}
+		default:
+			return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
 		}
 	default:
 		panic("fatal: invalid arithmetic operator")
@@ -61,5 +55,5 @@ func (i *Interpreter) executeArithmeticOp(
 		return res, nil
 	}
 
-	return nil, util.OperatorError(opType.Description(), left.TypeName(), right.TypeName())
+	return nil, util.OperatorError(opType.Description(), left.GetTypeName(), right.GetTypeName())
 }

@@ -1,14 +1,13 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 )
 
 type FunctionArgument struct {
-	TypeHash   int
+	TypeHash   uint64
 	Name       string
 	IsVariadic bool
 	IsNullable bool
@@ -38,7 +37,7 @@ func (fa FunctionArgument) TypeName() string {
 }
 
 type FunctionReturnType struct {
-	TypeHash   int
+	TypeHash   uint64
 	IsNullable bool
 }
 
@@ -51,69 +50,77 @@ func (r *FunctionReturnType) String() string {
 	return res
 }
 
-type FunctionType struct {
-	object     *ObjectType
-	package_   *PackageType
+type FunctionInstance struct {
+	Object
+	package_   *PackageInstance
+	address    string
 	Name       string
 	Arguments  []FunctionArgument
-	Callable   func([]ValueType, map[string]ValueType) (ValueType, error)
 	ReturnType FunctionReturnType
 }
 
-func NewFunctionType(
+func NewFunctionInstance(
 	name string,
 	arguments []FunctionArgument,
-	handler func([]ValueType, map[string]ValueType) (ValueType, error),
+	handler func(*[]Type, *map[string]Type) (Type, error),
 	returnType FunctionReturnType,
-	package_ *PackageType,
+	package_ *PackageInstance,
 	doc string,
-) FunctionType {
-	return FunctionType{
+) *FunctionInstance {
+	attributes := map[string]Type{}
+	if package_ != nil {
+		attributes[ops.PackageAttributeName] = package_
+	}
+
+	if len(doc) > 0 {
+		attributes[ops.DocAttributeName] = NewStringInstance(doc)
+	}
+
+	function := &FunctionInstance{
+		Object: Object{
+			typeName:    GetTypeName(FunctionTypeHash),
+			Attributes:  attributes,
+			callHandler: handler,
+		},
+		package_:   package_,
 		Name:       name,
 		Arguments:  arguments,
-		Callable:   handler,
 		ReturnType: returnType,
-		package_:   package_,
-		object: newObjectType(
-			FunctionTypeHash, map[string]ValueType{
-				"__документ__": &StringType{Value: doc},
-				"__пакет__":    package_,
-			},
-		),
-	}
-}
-
-func (t FunctionType) String() string {
-	template := "функція '%s' з типом результату '%s'"
-	if t.package_.IsBuiltin {
-		template = "вбудована " + template
 	}
 
-	return fmt.Sprintf(template, t.Name, t.ReturnType.String())
+	function.address = fmt.Sprintf("%p", function)
+	return function
 }
 
-func (t FunctionType) Representation() string {
+func (t FunctionInstance) String() string {
+	template := ""
+	if t.package_ != nil {
+		template = "функція '%s'"
+		if t.package_.IsBuiltin {
+			template = "вбудована " + template
+		}
+	} else {
+		template = "метод '%s'"
+	}
+
+	template += " за адресою %s"
+	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.Name, t.address)
+}
+
+func (t FunctionInstance) Representation() string {
 	return t.String()
 }
 
-func (t FunctionType) TypeHash() int {
-	return FunctionTypeHash
+func (t FunctionInstance) GetTypeHash() uint64 {
+	return t.GetClass().GetTypeHash()
 }
 
-func (t FunctionType) TypeName() string {
-	return GetTypeName(t.TypeHash())
-}
-
-func (t FunctionType) AsBool() bool {
+func (t FunctionInstance) AsBool() bool {
 	return true
 }
 
-func (t FunctionType) GetAttr(name string) (ValueType, error) {
-	return t.object.GetAttribute(name)
-}
-
-func (t FunctionType) SetAttr(name string, value ValueType) (ValueType, error) {
-	err := t.object.SetAttribute(name, value)
+func (t FunctionInstance) SetAttribute(name string, value Type) (Type, error) {
+	err := t.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
 	}
@@ -121,93 +128,63 @@ func (t FunctionType) SetAttr(name string, value ValueType) (ValueType, error) {
 	return t, nil
 }
 
-func (t FunctionType) Pow(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Plus() (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Minus() (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseNot() (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Mul(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Div(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Mod(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Add(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) Sub(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseLeftShift(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseRightShift(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseAnd(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseXor(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) BitwiseOr(ValueType) (ValueType, error) {
-	return nil, nil
-}
-
-func (t FunctionType) CompareTo(other ValueType) (int, error) {
-	switch right := other.(type) {
-	case NilType:
-	case FunctionType:
-		return -2, util.RuntimeError(
-			fmt.Sprintf(
-				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-				"%s", t.TypeName(), right.TypeName(),
-			),
-		)
-	default:
-		return -2, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
-				"%s", t.TypeName(), right.TypeName(),
-			),
-		)
+func (t FunctionInstance) GetAttribute(name string) (Type, error) {
+	if attribute, err := t.Object.GetAttribute(name); err == nil {
+		return attribute, nil
 	}
 
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
+	return t.GetClass().GetAttribute(name)
 }
 
-func (t FunctionType) Not() (ValueType, error) {
-	return BoolType{Value: !t.AsBool()}, nil
+func (t FunctionInstance) GetClass() *Class {
+	return Function
 }
 
-func (t FunctionType) And(other ValueType) (ValueType, error) {
-	return BoolType{Value: other.AsBool()}, nil
-}
+func newFunctionClass() *Class {
+	attributes := mergeAttributes(
+		map[string]Type{
+			ops.CallOperatorName: NewFunctionInstance(
+				ops.CallOperatorName,
+				[]FunctionArgument{
+					{
+						TypeHash:   FunctionTypeHash,
+						Name:       "я",
+						IsVariadic: false,
+						IsNullable: false,
+					},
+					{
+						TypeHash:   AnyTypeHash,
+						Name:       "значення",
+						IsVariadic: true,
+						IsNullable: true,
+					},
+				},
+				func(args *[]Type, kwargs *map[string]Type) (Type, error) {
+					function := (*args)[0].(*FunctionInstance)
+					slicedArgs := (*args)[1:]
+					slicedKwargs := *kwargs
+					delete(slicedKwargs, "я")
+					if err := CheckFunctionArguments(function, &slicedArgs, &slicedKwargs); err != nil {
+						return nil, err
+					}
 
-func (t FunctionType) Or(ValueType) (ValueType, error) {
-	return BoolType{Value: true}, nil
+					return function.Call(&slicedArgs, &slicedKwargs)
+				},
+				FunctionReturnType{
+					TypeHash:   AnyTypeHash,
+					IsNullable: true,
+				},
+				nil,
+				"", // TODO: add doc
+			),
+		},
+		makeLogicalOperators(FunctionTypeHash),
+	)
+	return NewBuiltinClass(
+		FunctionTypeHash,
+		BuiltinPackage,
+		attributes,
+		"",  // TODO: add doc
+		nil, // CAUTION: segfault may be thrown when using without nil check!
+	)
 }

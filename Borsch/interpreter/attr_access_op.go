@@ -7,7 +7,7 @@ import (
 
 func (i *Interpreter) executeAttrAccessOp(
 	node *ast.AttrAccessOpNode, rootDir string, thisPackage, parentPackage string,
-) (types.ValueType, error) {
+) (types.Type, error) {
 	val, _, err := i.executeNode(node.Base, rootDir, thisPackage, parentPackage)
 	if err != nil {
 		return nil, err
@@ -15,14 +15,14 @@ func (i *Interpreter) executeAttrAccessOp(
 
 	switch attr := node.Attr.(type) {
 	case ast.VariableNode:
-		val, err = val.GetAttr(attr.Variable.Text)
+		val, err = val.GetAttribute(attr.Variable.Text)
 		if err != nil {
 			return nil, err
 		}
 
 		return val, nil
 	case ast.CallOpNode:
-		val, err = val.GetAttr(attr.CallableName.Text)
+		val, err = val.GetAttribute(attr.CallableName.Text)
 		if err != nil {
 			return nil, err
 		}
