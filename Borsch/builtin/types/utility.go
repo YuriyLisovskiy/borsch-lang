@@ -403,7 +403,7 @@ func newBuiltinConstructor(itemTypeHash uint64, handler func(args ...Type) (Type
 			}
 
 			(*args)[0] = self
-			return NilInstance{}, nil
+			return NewNilInstance(), nil
 		},
 		FunctionReturnType{
 			TypeHash:   NilTypeHash,

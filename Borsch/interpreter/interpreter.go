@@ -73,17 +73,21 @@ func (i *Interpreter) setVar(packageName, name string, value types.Type) error {
 			if oldValue, ok := scopes[idx][name]; ok {
 				if oldValue.GetTypeHash() != value.GetTypeHash() {
 					if scopesLen == 1 {
-						return util.RuntimeError(fmt.Sprintf(
-							"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
-							value.GetTypeName(), name, oldValue.GetTypeName(),
-						))
+						return util.RuntimeError(
+							fmt.Sprintf(
+								"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
+								value.GetTypeName(), name, oldValue.GetTypeName(),
+							),
+						)
 					}
 
 					// TODO: надрукувати нормальне попередження!
-					fmt.Println(fmt.Sprintf(
-						"Увага: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
-						value.GetTypeName(), oldValue.GetTypeName(), name,
-					))
+					fmt.Println(
+						fmt.Sprintf(
+							"Увага: несумісні типи даних '%s' та '%s', змінна '%s' стає недоступною в поточному полі видимості",
+							value.GetTypeName(), oldValue.GetTypeName(), name,
+						),
+					)
 					break
 				}
 
@@ -108,6 +112,7 @@ func (i *Interpreter) executeNode(
 	case ast.ImportNode:
 		res, err := i.executeImport(&node, rootDir, thisPackage, parentPackage)
 		return res, false, err
+
 	case ast.FunctionDefNode:
 		functionPackage := types.NewPackageInstance(
 			false,
@@ -127,6 +132,18 @@ func (i *Interpreter) executeNode(
 		)
 		return functionDef, false, i.setVar(thisPackage, node.Name.Text, functionDef)
 
+	case ast.ClassDefNode:
+		classPackage := types.NewPackageInstance(
+			false,
+			thisPackage,
+			parentPackage,
+			map[string]types.Type{}, // TODO: set attributes
+		)
+		// TODO: set doc
+		// TODO: set attributes
+		classDef := types.NewClass(node.Name.Text, classPackage, map[string]types.Type{}, node.Doc.Text)
+		return classDef, false, i.setVar(thisPackage, node.Name.Text, classDef)
+
 	case ast.CallOpNode:
 		callable, err := i.getVar(thisPackage, node.CallableName.Text)
 		if err != nil {
@@ -139,7 +156,7 @@ func (i *Interpreter) executeNode(
 	case ast.ReturnNode:
 		res, _, err := i.executeNode(node.Value, rootDir, thisPackage, parentPackage)
 		return res, true, err
-		
+
 	case ast.UnaryOperationNode:
 		res, err := i.executeUnaryOp(&node, rootDir, thisPackage, parentPackage)
 		return res, false, err
@@ -220,7 +237,7 @@ func (i *Interpreter) executeNode(
 		return dict, false, nil
 
 	case ast.NilTypeNode:
-		return types.NilInstance{}, false, nil
+		return types.NewNilInstance(), false, nil
 
 	case ast.VariableNode:
 		val, err := i.getVar(thisPackage, node.Variable.Text)
@@ -265,10 +282,12 @@ func (i *Interpreter) executeAST(
 	for _, node := range tree.Nodes {
 		result, forceReturn, err = i.executeNode(node, dir, thisPackage, parentPackage)
 		if err != nil {
-			return nil, scope, false, errors.New(fmt.Sprintf(
-				"  Файл \"%s\", рядок %d\n    %s\n%s",
-				filePath, node.RowNumber(), node.String(), err.Error(),
-			))
+			return nil, scope, false, errors.New(
+				fmt.Sprintf(
+					"  Файл \"%s\", рядок %d\n    %s\n%s",
+					filePath, node.RowNumber(), node.String(), err.Error(),
+				),
+			)
 		}
 
 		if forceReturn {

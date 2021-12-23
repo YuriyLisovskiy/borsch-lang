@@ -50,8 +50,4 @@ var (
 	String = newStringClass()
 )
 
-var BuiltinPackage *PackageInstance = nil
-
-func init() {
-	BuiltinPackage = NewPackageInstance(true, "", "", map[string]Type{})
-}
+var BuiltinPackage = NewPackageInstance(true, "", "", map[string]Type{})

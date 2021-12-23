@@ -384,6 +384,19 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return functionNode, nil
 	}
 
+	classNode, err := p.parseClassDefinition()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.pos < 0 {
+		p.pos = 0
+	}
+
+	if classNode != nil {
+		return classNode, nil
+	}
+
 	returnNode, err := p.parseReturnStatement()
 	if err != nil {
 		return nil, err

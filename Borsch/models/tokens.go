@@ -63,6 +63,7 @@ const (
 	RSquareBracket
 	Comma
 	FunctionDef
+	ClassDef
 	Return
 	Nil
 	Name
@@ -112,6 +113,7 @@ var tokenTypeNames = map[int]string{
 	RSquareBracket:     "закриваюча квадратна дужка",
 	Comma:              "кома",
 	FunctionDef:        "визначення функції",
+	ClassDef:           "визначення класу",
 	Return:             "повернення значення",
 	Nil:                "нуль",
 	Name:               "назва",
@@ -134,10 +136,12 @@ func (t TokenType) Description() string {
 		return description
 	}
 
-	panic(fmt.Sprintf(
-		"Unable to retrieve description for '%d' token, please add it to 'tokenTypeNames' map first",
-		t.Name,
-	))
+	panic(
+		fmt.Sprintf(
+			"Unable to retrieve description for '%d' token, please add it to 'tokenTypeNames' map first",
+			t.Name,
+		),
+	)
 }
 
 const RawNameRegex = "[А-ЩЬЮЯҐЄІЇа-щьюяґєії_][А-ЩЬЮЯҐЄІЇа-щьюяґєії_0-9]*"
@@ -206,15 +210,15 @@ var TokenTypesList = map[int]TokenType{
 		Regex: regexp.MustCompile("^%"),
 	},
 	BitwiseLeftShiftOp: {
-		Name: BitwiseLeftShiftOp,
+		Name:  BitwiseLeftShiftOp,
 		Regex: regexp.MustCompile("^<<"),
 	},
 	BitwiseRightShiftOp: {
-		Name: BitwiseRightShiftOp,
+		Name:  BitwiseRightShiftOp,
 		Regex: regexp.MustCompile("^>>"),
 	},
 	BitwiseXorOp: {
-		Name: BitwiseXorOp,
+		Name:  BitwiseXorOp,
 		Regex: regexp.MustCompile("^\\^"),
 	},
 	EqualsOp: {
@@ -286,7 +290,7 @@ var TokenTypesList = map[int]TokenType{
 		Regex: regexp.MustCompile("^&&"),
 	},
 	BitwiseAndOp: {
-		Name: BitwiseAndOp,
+		Name:  BitwiseAndOp,
 		Regex: regexp.MustCompile("^&"),
 	},
 	OrOp: {
@@ -294,7 +298,7 @@ var TokenTypesList = map[int]TokenType{
 		Regex: regexp.MustCompile("^\\|\\|"),
 	},
 	BitwiseOrOp: {
-		Name: BitwiseOrOp,
+		Name:  BitwiseOrOp,
 		Regex: regexp.MustCompile("^\\|"),
 	},
 	NotOp: {
@@ -302,7 +306,7 @@ var TokenTypesList = map[int]TokenType{
 		Regex: regexp.MustCompile("^!"),
 	},
 	BitwiseNotOp: {
-		Name: BitwiseNotOp,
+		Name:  BitwiseNotOp,
 		Regex: regexp.MustCompile("^~"),
 	},
 	LCurlyBracket: {
@@ -328,6 +332,10 @@ var TokenTypesList = map[int]TokenType{
 	FunctionDef: {
 		Name:  FunctionDef,
 		Regex: regexp.MustCompile("^фн"),
+	},
+	ClassDef: {
+		Name:  ClassDef,
+		Regex: regexp.MustCompile("^клас"),
 	},
 	Return: {
 		Name:  Return,

@@ -19,13 +19,17 @@ func NewClass(
 	package_ *PackageInstance,
 	attributes map[string]Type,
 	doc string,
-	getEmptyInstance func() (Type, error),
 ) *Class {
-	return &Class{
-		Object:           *newClassObject(name, package_, attributes, doc),
-		typeHash:         hashObject(name),
-		GetEmptyInstance: getEmptyInstance,
+	class := &Class{
+		Object:   *newClassObject(name, package_, attributes, doc),
+		typeHash: hashObject(name),
 	}
+	class.GetEmptyInstance = func() (Type, error) {
+		// TODO: set default attributes
+		return NewClassInstance(class, map[string]Type{}), nil
+	}
+
+	return class
 }
 
 func NewBuiltinClass(
@@ -92,7 +96,7 @@ func newClassObject(name string, package_ *PackageInstance, attributes map[strin
 		if len(doc) > 0 {
 			attributes[ops.DocAttributeName] = NewStringInstance(doc)
 		} else {
-			attributes[ops.DocAttributeName] = NilInstance{}
+			attributes[ops.DocAttributeName] = NewNilInstance()
 		}
 	}
 
@@ -200,8 +204,8 @@ func (i ClassInstance) GetClass() *Class {
 
 func (i ClassInstance) Copy() *ClassInstance {
 	instance := ClassInstance{
-		Object:  i.Object.Copy(),
-		class:   i.class,
+		Object: i.Object.Copy(),
+		class:  i.class,
 	}
 	instance.Address = fmt.Sprintf("%p", &instance)
 	return &instance

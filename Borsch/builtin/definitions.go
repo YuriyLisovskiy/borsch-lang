@@ -38,7 +38,7 @@ var RuntimeObjects = map[string]types.Type{
 		},
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
 			Print(*args...)
-			return types.NilInstance{}, nil
+			return types.NewNilInstance(), nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -59,7 +59,7 @@ var RuntimeObjects = map[string]types.Type{
 		},
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
 			Print(append(*args, types.StringInstance{Value: "\n"})...)
-			return types.NilInstance{}, nil
+			return types.NewNilInstance(), nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -106,7 +106,7 @@ var RuntimeObjects = map[string]types.Type{
 				strArgs = append(strArgs, arg.String())
 			}
 
-			return types.NilInstance{}, util.RuntimeError(strings.Join(strArgs, " "))
+			return types.NewNilInstance(), util.RuntimeError(strings.Join(strArgs, " "))
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -170,7 +170,7 @@ var RuntimeObjects = map[string]types.Type{
 				}
 			}
 
-			return types.NilInstance{}, Assert((*args)[0], (*args)[1], message)
+			return types.NewNilInstance(), Assert((*args)[0], (*args)[1], message)
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -184,7 +184,7 @@ var RuntimeObjects = map[string]types.Type{
 		[]types.FunctionArgument{},
 		func(*[]types.Type, *map[string]types.Type) (types.Type, error) {
 			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
-			return types.NilInstance{}, nil
+			return types.NewNilInstance(), nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -198,7 +198,7 @@ var RuntimeObjects = map[string]types.Type{
 		[]types.FunctionArgument{},
 		func(*[]types.Type, *map[string]types.Type) (types.Type, error) {
 			fmt.Println(build.License)
-			return types.NilInstance{}, nil
+			return types.NewNilInstance(), nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -218,7 +218,7 @@ var RuntimeObjects = map[string]types.Type{
 			},
 		},
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
-			return types.NilInstance{}, Help((*args)[0].String())
+			return types.NewNilInstance(), Help((*args)[0].String())
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -240,7 +240,7 @@ var RuntimeObjects = map[string]types.Type{
 			},
 		},
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
-			return types.NilInstance{}, Exit((*args)[0].(types.IntegerInstance).Value)
+			return types.NewNilInstance(), Exit((*args)[0].(types.IntegerInstance).Value)
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -364,9 +364,7 @@ var RuntimeObjects = map[string]types.Type{
 func init() {
 	sourCream := types.NewClass("Сметанка", types.BuiltinPackage, map[string]types.Type{
 		"ччч": types.NewStringInstance("Песто"),
-	}, "", func() (types.Type, error) {
-		return nil, nil
-	})
+	}, "")
 	RuntimeObjects["Сметанка"] = sourCream
 
 	RuntimeObjects["сметанка_для_борщу"] = types.NewClassInstance(sourCream, map[string]types.Type{})

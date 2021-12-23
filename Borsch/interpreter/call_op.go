@@ -89,7 +89,7 @@ func (i *Interpreter) callFunction(
 
 		// TODO: remove
 		if arg == nil {
-			// arg = types.NilInstance{}
+			// arg = types.NewNilInstance()
 			panic("fatal: argument is nil")
 		}
 
@@ -159,7 +159,7 @@ func (i *Interpreter) callFunction(
 	}
 
 	if res == nil {
-		res = types.NilInstance{}
+		res = types.NewNilInstance()
 		// TODO: remove
 		// panic("fatal: returned value is nil")
 	}
