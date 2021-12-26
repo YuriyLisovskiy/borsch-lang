@@ -371,7 +371,7 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return forNode, nil
 	}
 
-	functionNode, err := p.parseFunctionDefinition()
+	functionNode, err := p.parseFunctionDefinition("")
 	if err != nil {
 		return nil, err
 	}

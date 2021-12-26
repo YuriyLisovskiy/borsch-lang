@@ -3,12 +3,13 @@ package parser
 import (
 	"errors"
 	"fmt"
+
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
-func (p *Parser) parseArgument() (types.FunctionArgument, error) {
+func (p *Parser) parseArgument(futureClass string) (types.FunctionArgument, error) {
 	paramName, err := p.require(models.TokenTypesList[models.Name])
 	if err != nil {
 		return types.FunctionArgument{}, errors.New(fmt.Sprintf("%s аргументу", err.Error()))
@@ -30,8 +31,8 @@ func (p *Parser) parseArgument() (types.FunctionArgument, error) {
 		return types.FunctionArgument{}, errors.New(fmt.Sprintf("%s типу", err.Error()))
 	}
 
-	if !types.IsBuiltinType(typeName.Text) {
-		return types.FunctionArgument{}, errors.New(fmt.Sprintf("'%s' не є типом", typeName.Text))
+	if !types.IsBuiltinType(typeName.Text) && futureClass != typeName.Text {
+		return types.FunctionArgument{}, errors.New(fmt.Sprintf("невідомий тип '%s'", typeName.Text))
 	}
 
 	isNullable := p.match(models.TokenTypesList[models.QuestionMark]) != nil
@@ -43,7 +44,7 @@ func (p *Parser) parseArgument() (types.FunctionArgument, error) {
 	}, nil
 }
 
-func (p *Parser) parseFunctionDefinition() (ast.ExpressionNode, error) {
+func (p *Parser) parseFunctionDefinition(futureClass string) (ast.ExpressionNode, error) {
 	if p.match(models.TokenTypesList[models.FunctionDef]) != nil {
 		name, err := p.require(models.TokenTypesList[models.Name])
 		if err != nil {
@@ -58,7 +59,7 @@ func (p *Parser) parseFunctionDefinition() (ast.ExpressionNode, error) {
 		var parameters []types.FunctionArgument
 		if p.match(models.TokenTypesList[models.RPar]) == nil {
 			for {
-				argument, err := p.parseArgument()
+				argument, err := p.parseArgument(futureClass)
 				if err != nil {
 					return nil, err
 				}
@@ -100,8 +101,8 @@ func (p *Parser) parseFunctionDefinition() (ast.ExpressionNode, error) {
 				return nil, errors.New(fmt.Sprintf("%s типу, який повертає функція", err.Error()))
 			}
 
-			if !types.IsBuiltinType(retTypeName.Text) {
-				return nil, errors.New(fmt.Sprintf("'%s' не є типом", retTypeName.Text))
+			if !types.IsBuiltinType(retTypeName.Text) && futureClass != retTypeName.Text {
+				return nil, errors.New(fmt.Sprintf("невідомий тип '%s'", retTypeName.Text))
 			}
 
 			retType.TypeHash = types.GetTypeHash(retTypeName.Text)

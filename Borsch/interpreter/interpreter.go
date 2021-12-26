@@ -105,6 +105,8 @@ func (i *Interpreter) setVar(packageName, name string, value types.Type) error {
 	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
 }
 
+// TODO: pass parent type from what call operation was performed, nil otherwise;
+//  this is useful for calling methods of custom classes.
 func (i *Interpreter) executeNode(
 	rootNode ast.ExpressionNode, rootDir string, thisPackage, parentPackage string,
 ) (types.Type, bool, error) {
@@ -141,7 +143,44 @@ func (i *Interpreter) executeNode(
 		)
 		// TODO: set doc
 		// TODO: set attributes
-		classDef := types.NewClass(node.Name.Text, classPackage, map[string]types.Type{}, node.Doc.Text)
+
+		attributes := map[string]types.Type{}
+		for _, attributeNode := range node.Attributes {
+			switch attribute := attributeNode.(type) {
+			case ast.BinOperationNode:
+				if attribute.Operator.Type.Name == models.Assign {
+					switch variableNode := attribute.LeftNode.(type) {
+					case ast.VariableNode:
+						res, _, err := i.executeNode(attribute.RightNode, rootDir, thisPackage, parentPackage)
+						if err != nil {
+							return nil, false, err
+						}
+
+						attributes[variableNode.Variable.Text] = res
+						continue
+					}
+				}
+			case ast.FunctionDefNode:
+				functionDef := types.NewFunctionInstance(
+					attribute.Name.Text, attribute.Arguments,
+					func(_ *[]types.Type, kwargs *map[string]types.Type) (types.Type, error) {
+						res, _, err := i.executeBlock(*kwargs, attribute.Body, thisPackage, parentPackage)
+						return res, err
+					},
+					attribute.ReturnType,
+					nil,
+					"", // TODO: set doc
+				)
+				attributes[attribute.Name.Text] = functionDef
+			}
+
+			_, _, err := i.executeNode(attributeNode, rootDir, thisPackage, parentPackage)
+			if err != nil {
+				return nil, false, err
+			}
+		}
+
+		classDef := types.NewClass(node.Name.Text, classPackage, attributes, node.Doc.Text)
 		return classDef, false, i.setVar(thisPackage, node.Name.Text, classDef)
 
 	case ast.CallOpNode:

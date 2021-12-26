@@ -5,17 +5,19 @@ import (
 )
 
 type ClassDefNode struct {
-	Name models.Token
-	Doc  models.Token
+	Name       models.Token
+	Doc        models.Token
+	Attributes []ExpressionNode
 
 	rowNumber int
 }
 
-func NewClassDefNode(name models.Token, doc models.Token) ClassDefNode {
+func NewClassDefNode(name models.Token, doc models.Token, attributes []ExpressionNode) ClassDefNode {
 	return ClassDefNode{
-		Name:      name,
-		Doc:       doc,
-		rowNumber: name.Row,
+		Name:       name,
+		Doc:        doc,
+		Attributes: attributes,
+		rowNumber:  name.Row,
 	}
 }
 
