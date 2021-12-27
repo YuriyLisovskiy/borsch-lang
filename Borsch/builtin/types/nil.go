@@ -81,6 +81,7 @@ func newNilClass() *Class {
 					TypeHash:   NilTypeHash,
 					IsNullable: false,
 				},
+				true,
 				nil,
 				"",
 			),

@@ -10,15 +10,17 @@ import (
 )
 
 func (i *Interpreter) executeComparisonOp(
-	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType ops.Operator,
-	rootDir string, thisPackage, parentPackage string,
+	ctx *Context,
+	leftNode ast.ExpressionNode,
+	rightNode ast.ExpressionNode,
+	opType ops.Operator,
 ) (types.Type, error) {
-	left, _, err := i.executeNode(leftNode, rootDir, thisPackage, parentPackage)
+	left, _, err := i.executeNode(ctx, leftNode)
 	if err != nil {
 		return nil, err
 	}
 
-	right, _, err := i.executeNode(rightNode, rootDir, thisPackage, parentPackage)
+	right, _, err := i.executeNode(ctx, rightNode)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +38,7 @@ func (i *Interpreter) executeComparisonOp(
 			case *types.FunctionInstance:
 				args := []types.Type{left, right}
 				kwargs := map[string]types.Type{
-					"я": left,
+					"я":     left,
 					"інший": right,
 				}
 				if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
@@ -53,10 +55,12 @@ func (i *Interpreter) executeComparisonOp(
 				return nil, util.ObjectIsNotCallable(opType.Caption(), operatorFunc.GetTypeName())
 			}
 		case ops.GreaterOp, ops.GreaterOrEqualsOp, ops.LessOp, ops.LessOrEqualsOp:
-			return nil, util.RuntimeError(fmt.Sprintf(
-				"оператор %s невизначений для значень типів '%s' та '%s'",
-				opType.Description(), left.GetTypeName(), right.GetTypeName(),
-			))
+			return nil, util.RuntimeError(
+				fmt.Sprintf(
+					"оператор %s невизначений для значень типів '%s' та '%s'",
+					opType.Description(), left.GetTypeName(), right.GetTypeName(),
+				),
+			)
 		default:
 			return nil, util.RuntimeError("невідомий оператор")
 		}
@@ -68,7 +72,7 @@ func (i *Interpreter) executeComparisonOp(
 				case *types.FunctionInstance:
 					args := []types.Type{left, right}
 					kwargs := map[string]types.Type{
-						"я": left,
+						"я":     left,
 						"інший": right,
 					}
 					if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {

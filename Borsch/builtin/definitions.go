@@ -44,6 +44,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.NilTypeHash,
 			IsNullable: true,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -65,6 +66,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.NilTypeHash,
 			IsNullable: true,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -85,6 +87,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.StringTypeHash,
 			IsNullable: false,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -112,6 +115,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.NilTypeHash,
 			IsNullable: true,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -132,6 +136,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.StringTypeHash,
 			IsNullable: false,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -176,6 +181,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.NilTypeHash,
 			IsNullable: true,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -190,6 +196,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.NilTypeHash,
 			IsNullable: true,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -204,6 +211,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.NilTypeHash,
 			IsNullable: true,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -224,6 +232,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.NilTypeHash,
 			IsNullable: true,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -246,6 +255,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.NilTypeHash,
 			IsNullable: true,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -278,6 +288,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.IntegerTypeHash,
 			IsNullable: false,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -304,6 +315,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.ListTypeHash,
 			IsNullable: false,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -330,6 +342,7 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.DictionaryTypeHash,
 			IsNullable: false,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
@@ -356,16 +369,8 @@ var RuntimeObjects = map[string]types.Type{
 			TypeHash:   types.AnyTypeHash,
 			IsNullable: false,
 		},
+		false,
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
-}
-
-func init() {
-	sourCream := types.NewClass("Сметанка", types.BuiltinPackage, map[string]types.Type{
-		"ччч": types.NewStringInstance("Песто"),
-	}, "")
-	RuntimeObjects["Сметанка"] = sourCream
-
-	RuntimeObjects["сметанка_для_борщу"] = types.NewClassInstance(sourCream, map[string]types.Type{})
 }

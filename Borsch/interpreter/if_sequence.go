@@ -7,11 +7,12 @@ import (
 )
 
 func (i *Interpreter) executeIfSequence(
-	blocks []ast.ConditionBlock, elseBlock []models.Token,
-	rootDir string, thisPackage, parentPackage string,
+	ctx *Context,
+	blocks []ast.ConditionBlock,
+	elseBlock []models.Token,
 ) (types.Type, bool, error) {
 	for _, block := range blocks {
-		result, _, err := i.executeNode(block.Condition, rootDir, thisPackage, parentPackage)
+		result, _, err := i.executeNode(ctx, block.Condition)
 		if err != nil {
 			return nil, false, err
 		}
@@ -22,12 +23,12 @@ func (i *Interpreter) executeIfSequence(
 		}
 
 		if result.(types.BoolInstance).Value {
-			return i.executeBlock(map[string]types.Type{}, block.Tokens, thisPackage, parentPackage)
+			return i.executeBlock(ctx, map[string]types.Type{}, block.Tokens)
 		}
 	}
 
 	if len(elseBlock) > 0 {
-		return i.executeBlock(map[string]types.Type{}, elseBlock, thisPackage, parentPackage)
+		return i.executeBlock(ctx, map[string]types.Type{}, elseBlock)
 	}
 
 	return types.NewNilInstance(), false, nil

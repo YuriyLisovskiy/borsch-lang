@@ -8,15 +8,17 @@ import (
 )
 
 func (i *Interpreter) executeLogicalOp(
-	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType ops.Operator,
-	rootDir string, thisPackage, parentPackage string,
+	ctx *Context,
+	leftNode ast.ExpressionNode,
+	rightNode ast.ExpressionNode,
+	opType ops.Operator,
 ) (types.Type, error) {
-	left, _, err := i.executeNode(leftNode, rootDir, thisPackage, parentPackage)
+	left, _, err := i.executeNode(ctx, leftNode)
 	if err != nil {
 		return nil, err
 	}
 
-	right, _, err := i.executeNode(rightNode, rootDir, thisPackage, parentPackage)
+	right, _, err := i.executeNode(ctx, rightNode)
 	if err != nil {
 		return nil, err
 	}
@@ -33,8 +35,8 @@ func (i *Interpreter) executeLogicalOp(
 		case *types.FunctionInstance:
 			args := []types.Type{left, right}
 			kwargs := map[string]types.Type{
-				"я": left,
-				"інший": right,
+				operator.Arguments[0].Name: left,
+				operator.Arguments[1].Name: right,
 			}
 			if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
 				return nil, err

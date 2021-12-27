@@ -8,16 +8,14 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (i *Interpreter) executeImport(
-	node *ast.ImportNode, rootDir string, thisPackage, parentPackage string,
-) (types.Type, error) {
+func (i *Interpreter) executeImport(ctx *Context, node *ast.ImportNode) (types.Type, error) {
 	if node.IsStd {
 		node.FilePath = filepath.Join(i.stdRoot, node.FilePath)
 	} else if !filepath.IsAbs(node.FilePath) {
-		node.FilePath = filepath.Join(rootDir, node.FilePath)
+		node.FilePath = filepath.Join(ctx.rootDir, node.FilePath)
 	}
 
-	if node.FilePath == parentPackage {
+	if node.FilePath == ctx.parentPackageName {
 		return nil, util.RuntimeError("циклічний імпорт заборонений")
 	}
 
@@ -29,16 +27,24 @@ func (i *Interpreter) executeImport(
 			return nil, err
 		}
 
-		pkg, err = i.ExecuteFile(node.FilePath, thisPackage, fileContent, node.IsStd)
+		newContext := &Context{
+			parentObject:      nil,
+			rootDir:           "",
+			package_:          types.NewPackageInstance(node.IsStd, node.FilePath, ctx.package_.Name, map[string]types.Type{}),
+			parentPackageName: ctx.package_.Name,
+		}
+
+		err = i.ExecuteFile(newContext, fileContent)
 		if err != nil {
 			return nil, err
 		}
 
+		pkg = newContext.package_
 		i.includedPackages[node.FilePath] = pkg
 	}
 
 	if node.Name != "" {
-		err := i.setVar(thisPackage, node.Name, pkg)
+		err := i.setVar(ctx.package_.Name, node.Name, pkg)
 		if err != nil {
 			return nil, err
 		}

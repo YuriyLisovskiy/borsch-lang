@@ -10,10 +10,8 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (i *Interpreter) executeUnaryOp(
-	node *ast.UnaryOperationNode, rootDir string, thisPackage, parentPackage string,
-) (types.Type, error) {
-	operand, _, err := i.executeNode(node.Operand, rootDir, thisPackage, parentPackage)
+func (i *Interpreter) executeUnaryOp(ctx *Context, node *ast.UnaryOperationNode) (types.Type, error) {
+	operand, _, err := i.executeNode(ctx, node.Operand)
 	if err != nil {
 		return nil, err
 	}

@@ -57,6 +57,7 @@ type FunctionInstance struct {
 	Name       string
 	Arguments  []FunctionArgument
 	ReturnType FunctionReturnType
+	IsMethod   bool
 }
 
 func NewFunctionInstance(
@@ -64,6 +65,7 @@ func NewFunctionInstance(
 	arguments []FunctionArgument,
 	handler func(*[]Type, *map[string]Type) (Type, error),
 	returnType FunctionReturnType,
+	isMethod bool,
 	package_ *PackageInstance,
 	doc string,
 ) *FunctionInstance {
@@ -86,6 +88,7 @@ func NewFunctionInstance(
 		Name:       name,
 		Arguments:  arguments,
 		ReturnType: returnType,
+		IsMethod:   isMethod,
 	}
 
 	function.address = fmt.Sprintf("%p", function)
@@ -174,6 +177,7 @@ func newFunctionClass() *Class {
 					TypeHash:   AnyTypeHash,
 					IsNullable: true,
 				},
+				true,
 				nil,
 				"", // TODO: add doc
 			),

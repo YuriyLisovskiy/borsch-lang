@@ -8,68 +8,64 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (i *Interpreter) executeBinaryOp(
-	node *ast.BinOperationNode, rootDir string, thisPackage, parentPackage string,
-) (types.Type, error) {
+func (i *Interpreter) executeBinaryOp(ctx *Context, node *ast.BinOperationNode) (types.Type, error) {
 	switch node.Operator.Type.Name {
 	case models.ExponentOp:
-		return i.executeArithmeticOp(node.LeftNode, node.RightNode, ops.PowOp, rootDir, thisPackage, parentPackage)
+		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.PowOp)
 	case models.ModuloOp:
-		return i.executeArithmeticOp(node.LeftNode, node.RightNode, ops.ModuloOp, rootDir, thisPackage, parentPackage)
+		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.ModuloOp)
 	case models.Add:
-		return i.executeArithmeticOp(node.LeftNode, node.RightNode, ops.AddOp, rootDir, thisPackage, parentPackage)
+		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.AddOp)
 	case models.Sub:
-		return i.executeArithmeticOp(node.LeftNode, node.RightNode, ops.SubOp, rootDir, thisPackage, parentPackage)
+		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.SubOp)
 	case models.Mul:
-		return i.executeArithmeticOp(node.LeftNode, node.RightNode, ops.MulOp, rootDir, thisPackage, parentPackage)
+		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.MulOp)
 	case models.Div:
-		return i.executeArithmeticOp(node.LeftNode, node.RightNode, ops.DivOp, rootDir, thisPackage, parentPackage)
+		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.DivOp)
 	case models.AndOp:
-		return i.executeLogicalOp(node.LeftNode, node.RightNode, ops.AndOp, rootDir, thisPackage, parentPackage)
+		return i.executeLogicalOp(ctx, node.LeftNode, node.RightNode, ops.AndOp)
 	case models.OrOp:
-		return i.executeLogicalOp(node.LeftNode, node.RightNode, ops.OrOp, rootDir, thisPackage, parentPackage)
+		return i.executeLogicalOp(ctx, node.LeftNode, node.RightNode, ops.OrOp)
 	case models.BitwiseLeftShiftOp:
-		return i.executeBitwiseOp(node.LeftNode, node.RightNode, ops.BitwiseLeftShiftOp, rootDir, thisPackage, parentPackage)
+		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseLeftShiftOp)
 	case models.BitwiseRightShiftOp:
-		return i.executeBitwiseOp(node.LeftNode, node.RightNode, ops.BitwiseRightShiftOp, rootDir, thisPackage, parentPackage)
+		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseRightShiftOp)
 	case models.BitwiseAndOp:
-		return i.executeBitwiseOp(node.LeftNode, node.RightNode, ops.BitwiseAndOp, rootDir, thisPackage, parentPackage)
+		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseAndOp)
 	case models.BitwiseXorOp:
-		return i.executeBitwiseOp(node.LeftNode, node.RightNode, ops.BitwiseXorOp, rootDir, thisPackage, parentPackage)
+		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseXorOp)
 	case models.BitwiseOrOp:
-		return i.executeBitwiseOp(node.LeftNode, node.RightNode, ops.BitwiseOrOp, rootDir, thisPackage, parentPackage)
+		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseOrOp)
 	case models.EqualsOp:
-		return i.executeComparisonOp(node.LeftNode, node.RightNode, ops.EqualsOp, rootDir, thisPackage, parentPackage)
+		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.EqualsOp)
 	case models.NotEqualsOp:
-		return i.executeComparisonOp(node.LeftNode, node.RightNode, ops.NotEqualsOp, rootDir, thisPackage, parentPackage)
+		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.NotEqualsOp)
 	case models.GreaterOp:
-		return i.executeComparisonOp(node.LeftNode, node.RightNode, ops.GreaterOp, rootDir, thisPackage, parentPackage)
+		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.GreaterOp)
 	case models.GreaterOrEqualsOp:
-		return i.executeComparisonOp(node.LeftNode, node.RightNode, ops.GreaterOrEqualsOp, rootDir, thisPackage, parentPackage)
+		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.GreaterOrEqualsOp)
 	case models.LessOp:
-		return i.executeComparisonOp(node.LeftNode, node.RightNode, ops.LessOp, rootDir, thisPackage, parentPackage)
+		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.LessOp)
 	case models.LessOrEqualsOp:
-		return i.executeComparisonOp(node.LeftNode, node.RightNode, ops.LessOrEqualsOp, rootDir, thisPackage, parentPackage)
+		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.LessOrEqualsOp)
 	case models.Assign:
-		rightNode, _, err := i.executeNode(node.RightNode, rootDir, thisPackage, parentPackage)
+		rightNode, _, err := i.executeNode(ctx, node.RightNode)
 		if err != nil {
 			return nil, err
 		}
 
 		switch leftNode := node.LeftNode.(type) {
 		case ast.VariableNode:
-			return rightNode, i.setVar(thisPackage, leftNode.Variable.Text, rightNode)
+			return rightNode, i.setVar(ctx.package_.Name, leftNode.Variable.Text, rightNode)
 		case ast.CallOpNode:
 			return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
 		case ast.RandomAccessOperationNode:
-			variable, _, err := i.executeNode(leftNode.Operand, rootDir, thisPackage, parentPackage)
+			variable, _, err := i.executeNode(ctx, leftNode.Operand)
 			if err != nil {
 				return nil, err
 			}
 
-			variable, err = i.executeRandomAccessSetOp(
-				leftNode.Index, variable, rightNode, rootDir, thisPackage, parentPackage,
-			)
+			variable, err = i.executeRandomAccessSetOp(ctx, leftNode.Index, variable, rightNode)
 			if err != nil {
 				return nil, err
 			}
@@ -78,14 +74,12 @@ func (i *Interpreter) executeBinaryOp(
 			for {
 				switch external := operand.(type) {
 				case ast.RandomAccessOperationNode:
-					opVar, _, err := i.executeNode(external.Operand, rootDir, thisPackage, parentPackage)
+					opVar, _, err := i.executeNode(ctx, external.Operand)
 					if err != nil {
 						return nil, err
 					}
 
-					variable, err = i.executeRandomAccessSetOp(
-						external.Index, opVar, variable, rootDir, thisPackage, parentPackage,
-					)
+					variable, err = i.executeRandomAccessSetOp(ctx, external.Index, opVar, variable)
 					if err != nil {
 						return nil, err
 					}
@@ -93,7 +87,7 @@ func (i *Interpreter) executeBinaryOp(
 					operand = external.Operand
 					continue
 				case ast.VariableNode:
-					err = i.setVar(thisPackage, external.Variable.Text, variable)
+					err = i.setVar(ctx.package_.Name, external.Variable.Text, variable)
 				}
 
 				break
@@ -101,7 +95,7 @@ func (i *Interpreter) executeBinaryOp(
 
 			return variable, nil
 		case ast.AttrAccessOpNode:
-			base, _, err := i.executeNode(leftNode.Base, rootDir, thisPackage, parentPackage)
+			base, _, err := i.executeNode(ctx, leftNode.Base)
 			if err != nil {
 				return nil, err
 			}

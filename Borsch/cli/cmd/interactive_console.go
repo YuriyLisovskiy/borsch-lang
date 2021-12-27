@@ -18,7 +18,7 @@ import (
 var (
 	historyFile = filepath.Join(os.TempDir(), ".borsch_interactive_console_history")
 	keywords    []string
-	//packages    map[string][]string
+	// packages    map[string][]string
 )
 
 func init() {
@@ -35,7 +35,7 @@ func pushKeywords(parent, name string, value types.Type) {
 	switch v := value.(type) {
 	case types.SequentialType, types.DictionaryInstance, types.BoolInstance, types.IntegerInstance, types.NilInstance, types.RealInstance:
 		if parent != "" {
-			//packages[parent] = append(packages[parent], name)
+			// packages[parent] = append(packages[parent], name)
 		} else {
 			keywords = append(keywords, name)
 		}
@@ -124,7 +124,10 @@ func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 			}
 
 			code += "\n" + fragment
-			if fragment == ";" || (!(strings.Contains(code, "{") || strings.Contains(code, "}")) && strings.HasSuffix(fragment, ";")) {
+			if fragment == ";" ||
+				(!(strings.Contains(code, "{") ||
+					strings.Contains(code, "}")) &&
+					strings.HasSuffix(fragment, ";")) {
 				break
 			}
 
@@ -138,7 +141,9 @@ func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 		var result types.Type
 		var err error
 		result, scope, err = interpreterInstance.Execute(
-			"<стдввід>", "", scope, strings.TrimPrefix(code, "\n"),
+			interpreterInstance.GetContext(),
+			scope,
+			strings.TrimPrefix(code, "\n"),
 		)
 		if err != nil {
 			fmt.Printf("Відстеження (стек викликів):\n%s\n", err.Error())

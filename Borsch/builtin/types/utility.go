@@ -75,7 +75,7 @@ func GetTypeHash(typeName string) uint64 {
 	case "функція":
 		return FunctionTypeHash
 	default:
-		return FunctionTypeHash + 1
+		return hashObject(typeName)
 	}
 }
 
@@ -262,6 +262,7 @@ func newBinaryOperator(
 			TypeHash:   returnTypeHash,
 			IsNullable: false,
 		},
+		true,
 		nil,
 		doc,
 	)
@@ -291,6 +292,7 @@ func newUnaryOperator(
 			TypeHash:   returnTypeHash,
 			IsNullable: false,
 		},
+		true,
 		nil,
 		doc,
 	)
@@ -409,6 +411,7 @@ func newBuiltinConstructor(itemTypeHash uint64, handler func(args ...Type) (Type
 			TypeHash:   NilTypeHash,
 			IsNullable: false,
 		},
+		true,
 		nil,
 		doc,
 	)

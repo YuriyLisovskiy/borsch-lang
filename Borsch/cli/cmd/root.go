@@ -46,7 +46,8 @@ var rootCmd = &cobra.Command{
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
-				_, err = interpret.ExecuteFile(filePath, "", content, false)
+				context := interpreter.NewContext(filePath, "", stdRoot)
+				err = interpret.ExecuteFile(context, content)
 				if err != nil {
 					fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 				}

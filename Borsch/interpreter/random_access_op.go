@@ -2,22 +2,24 @@ package interpreter
 
 import (
 	"fmt"
+
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (i *Interpreter) executeRandomAccessGetOp(
-	targetNode, indexNode ast.ExpressionNode, rootDir string, thisPackage, parentPackage string,
-) (types.Type, error) {
-	targetVal, _, err := i.executeNode(targetNode, rootDir, thisPackage, parentPackage)
+func (i *Interpreter) executeRandomAccessGetOp(ctx *Context, targetNode, indexNode ast.ExpressionNode) (
+	types.Type,
+	error,
+) {
+	targetVal, _, err := i.executeNode(ctx, targetNode)
 	if err != nil {
 		return nil, err
 	}
 
 	switch target := targetVal.(type) {
 	case types.SequentialType:
-		indexVal, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
+		indexVal, _, err := i.executeNode(ctx, indexNode)
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +36,7 @@ func (i *Interpreter) executeRandomAccessGetOp(
 			return nil, util.RuntimeError("індекси мають бути цілого типу")
 		}
 	case types.DictionaryInstance:
-		key, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
+		key, _, err := i.executeNode(ctx, indexNode)
 		if err != nil {
 			return nil, err
 		}
@@ -46,20 +48,24 @@ func (i *Interpreter) executeRandomAccessGetOp(
 
 		return elem, nil
 	default:
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"неможливо застосувати оператор довільного доступу до об'єкта з типом '%s'",
-			target.GetTypeName(),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"неможливо застосувати оператор довільного доступу до об'єкта з типом '%s'",
+				target.GetTypeName(),
+			),
+		)
 	}
 }
 
 func (i *Interpreter) executeRandomAccessSetOp(
-	indexNode ast.ExpressionNode, variable, value types.Type,
-	rootDir string, thisPackage, parentPackage string,
+	ctx *Context,
+	indexNode ast.ExpressionNode,
+	variable types.Type,
+	value types.Type,
 ) (types.Type, error) {
 	switch container := variable.(type) {
 	case types.SequentialType:
-		indexVal, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
+		indexVal, _, err := i.executeNode(ctx, indexNode)
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +82,7 @@ func (i *Interpreter) executeRandomAccessSetOp(
 			return nil, util.RuntimeError("індекси мають бути цілого типу")
 		}
 	case types.DictionaryInstance:
-		key, _, err := i.executeNode(indexNode, rootDir, thisPackage, parentPackage)
+		key, _, err := i.executeNode(ctx, indexNode)
 		if err != nil {
 			return nil, err
 		}
@@ -88,9 +94,11 @@ func (i *Interpreter) executeRandomAccessSetOp(
 
 		return container, nil
 	default:
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"неможливо застосувати оператор довільного доступу до об'єкта з типом '%s'",
-			container.GetTypeName(),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"неможливо застосувати оператор довільного доступу до об'єкта з типом '%s'",
+				container.GetTypeName(),
+			),
+		)
 	}
 }

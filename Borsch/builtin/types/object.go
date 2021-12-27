@@ -86,6 +86,7 @@ func (o *Object) Call(args *[]Type, kwargs *map[string]Type) (Type, error) {
 func (o Object) Copy() Object {
 	object := Object{
 		typeName: o.typeName,
+		Attributes: map[string]Type{},
 	}
 	for k, v := range o.Attributes {
 		object.Attributes[k] = v

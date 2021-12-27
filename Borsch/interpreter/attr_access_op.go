@@ -5,10 +5,8 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 )
 
-func (i *Interpreter) executeAttrAccessOp(
-	node *ast.AttrAccessOpNode, rootDir string, thisPackage, parentPackage string,
-) (types.Type, error) {
-	val, _, err := i.executeNode(node.Base, rootDir, thisPackage, parentPackage)
+func (i *Interpreter) executeAttrAccessOp(ctx *Context, node *ast.AttrAccessOpNode) (types.Type, error) {
+	val, _, err := i.executeNode(ctx, node.Base)
 	if err != nil {
 		return nil, err
 	}
@@ -22,17 +20,19 @@ func (i *Interpreter) executeAttrAccessOp(
 
 		return val, nil
 	case ast.CallOpNode:
-		val, err = val.GetAttribute(attr.CallableName.Text)
+		res, err := val.GetAttribute(attr.CallableName.Text)
 		if err != nil {
 			return nil, err
 		}
 
-		val, err = i.executeCallOp(&attr, val, rootDir, thisPackage, parentPackage)
+		ctx.parentObject = val
+		res, err = i.executeCallOp(ctx, &attr, res)
 		if err != nil {
 			return nil, err
 		}
 
-		return val, nil
+		ctx.parentObject = nil
+		return res, nil
 	default:
 		panic("fatal: invalid node")
 	}

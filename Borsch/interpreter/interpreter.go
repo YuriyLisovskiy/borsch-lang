@@ -20,17 +20,28 @@ type Interpreter struct {
 	scopes           map[string][]map[string]types.Type
 	currentPackage   string
 	parentPackage    string
+	context          *Context
 	includedPackages map[string]types.Type
 }
 
 func NewInterpreter(stdRoot, currentPackage, parentPackage string) *Interpreter {
 	return &Interpreter{
-		stdRoot:          stdRoot,
-		currentPackage:   currentPackage,
-		parentPackage:    parentPackage,
-		scopes:           map[string][]map[string]types.Type{},
+		stdRoot:        stdRoot,
+		currentPackage: currentPackage,
+		parentPackage:  parentPackage,
+		scopes:         map[string][]map[string]types.Type{},
+		context: &Context{
+			parentObject:      nil,
+			rootDir:           stdRoot,
+			package_:          types.NewPackageInstance(false, currentPackage, parentPackage, map[string]types.Type{}),
+			parentPackageName: parentPackage,
+		},
 		includedPackages: map[string]types.Type{},
 	}
+}
+
+func (i *Interpreter) GetContext() *Context {
+	return i.context
 }
 
 func (i *Interpreter) pushScope(packageName string, scope map[string]types.Type) {
@@ -107,40 +118,27 @@ func (i *Interpreter) setVar(packageName, name string, value types.Type) error {
 
 // TODO: pass parent type from what call operation was performed, nil otherwise;
 //  this is useful for calling methods of custom classes.
-func (i *Interpreter) executeNode(
-	rootNode ast.ExpressionNode, rootDir string, thisPackage, parentPackage string,
-) (types.Type, bool, error) {
+func (i *Interpreter) executeNode(ctx *Context, rootNode ast.ExpressionNode) (types.Type, bool, error) {
 	switch node := rootNode.(type) {
 	case ast.ImportNode:
-		res, err := i.executeImport(&node, rootDir, thisPackage, parentPackage)
+		res, err := i.executeImport(ctx, &node)
 		return res, false, err
 
 	case ast.FunctionDefNode:
-		functionPackage := types.NewPackageInstance(
-			false,
-			thisPackage,
-			parentPackage,
-			map[string]types.Type{}, // TODO: set attributes
-		)
 		functionDef := types.NewFunctionInstance(
 			node.Name.Text, node.Arguments,
 			func(_ *[]types.Type, kwargs *map[string]types.Type) (types.Type, error) {
-				res, _, err := i.executeBlock(*kwargs, node.Body, thisPackage, parentPackage)
+				res, _, err := i.executeBlock(ctx, *kwargs, node.Body)
 				return res, err
 			},
 			node.ReturnType,
-			functionPackage,
+			false,
+			ctx.package_,
 			"", // TODO: set doc
 		)
-		return functionDef, false, i.setVar(thisPackage, node.Name.Text, functionDef)
+		return functionDef, false, i.setVar(ctx.package_.Name, node.Name.Text, functionDef)
 
 	case ast.ClassDefNode:
-		classPackage := types.NewPackageInstance(
-			false,
-			thisPackage,
-			parentPackage,
-			map[string]types.Type{}, // TODO: set attributes
-		)
 		// TODO: set doc
 		// TODO: set attributes
 
@@ -151,7 +149,7 @@ func (i *Interpreter) executeNode(
 				if attribute.Operator.Type.Name == models.Assign {
 					switch variableNode := attribute.LeftNode.(type) {
 					case ast.VariableNode:
-						res, _, err := i.executeNode(attribute.RightNode, rootDir, thisPackage, parentPackage)
+						res, _, err := i.executeNode(ctx, attribute.RightNode)
 						if err != nil {
 							return nil, false, err
 						}
@@ -164,66 +162,65 @@ func (i *Interpreter) executeNode(
 				functionDef := types.NewFunctionInstance(
 					attribute.Name.Text, attribute.Arguments,
 					func(_ *[]types.Type, kwargs *map[string]types.Type) (types.Type, error) {
-						res, _, err := i.executeBlock(*kwargs, attribute.Body, thisPackage, parentPackage)
+						res, _, err := i.executeBlock(ctx, *kwargs, attribute.Body)
 						return res, err
 					},
 					attribute.ReturnType,
+					true,
 					nil,
 					"", // TODO: set doc
 				)
 				attributes[attribute.Name.Text] = functionDef
 			}
 
-			_, _, err := i.executeNode(attributeNode, rootDir, thisPackage, parentPackage)
+			_, _, err := i.executeNode(ctx, attributeNode)
 			if err != nil {
 				return nil, false, err
 			}
 		}
 
-		classDef := types.NewClass(node.Name.Text, classPackage, attributes, node.Doc.Text)
-		return classDef, false, i.setVar(thisPackage, node.Name.Text, classDef)
+		classDef := types.NewClass(node.Name.Text, ctx.package_, attributes, node.Doc.Text)
+		return classDef, false, i.setVar(ctx.package_.Name, node.Name.Text, classDef)
 
 	case ast.CallOpNode:
-		callable, err := i.getVar(thisPackage, node.CallableName.Text)
+		callable, err := i.getVar(ctx.package_.Name, node.CallableName.Text)
 		if err != nil {
 			return nil, false, err
 		}
 
-		res, err := i.executeCallOp(&node, callable, rootDir, thisPackage, parentPackage)
+		res, err := i.executeCallOp(ctx, &node, callable)
 		return res, false, err
 
 	case ast.ReturnNode:
-		res, _, err := i.executeNode(node.Value, rootDir, thisPackage, parentPackage)
+		res, _, err := i.executeNode(ctx, node.Value)
 		return res, true, err
 
 	case ast.UnaryOperationNode:
-		res, err := i.executeUnaryOp(&node, rootDir, thisPackage, parentPackage)
+		res, err := i.executeUnaryOp(ctx, &node)
 		return res, false, err
 
 	case ast.BinOperationNode:
-		res, err := i.executeBinaryOp(&node, rootDir, thisPackage, parentPackage)
+		res, err := i.executeBinaryOp(ctx, &node)
 		return res, false, err
 
 	case ast.RandomAccessOperationNode:
-		res, err := i.executeRandomAccessGetOp(node.Operand, node.Index, rootDir, thisPackage, parentPackage)
+		res, err := i.executeRandomAccessGetOp(ctx, node.Operand, node.Index)
 		return res, false, err
 
 	case ast.ListSlicingNode:
-		res, err := i.executeListSlicing(&node, rootDir, thisPackage, parentPackage)
+		res, err := i.executeListSlicing(ctx, &node)
 		return res, false, err
 
 	case ast.IfNode:
-		return i.executeIfSequence(node.Blocks, node.ElseBlock, rootDir, thisPackage, parentPackage)
+		return i.executeIfSequence(ctx, node.Blocks, node.ElseBlock)
 
 	case ast.ForEachNode:
-		container, _, err := i.executeNode(node.Container, rootDir, thisPackage, parentPackage)
+		container, _, err := i.executeNode(ctx, node.Container)
 		if err != nil {
 			return nil, false, err
 		}
 
-		return i.executeForEachLoop(
-			node.IndexVar, node.ItemVar, container, node.Body, thisPackage, parentPackage,
-		)
+		return i.executeForEachLoop(ctx, node.IndexVar, node.ItemVar, container, node.Body)
 
 	case ast.RealTypeNode:
 		res, err := types.NewRealInstanceFromString(node.Value.Text)
@@ -244,7 +241,7 @@ func (i *Interpreter) executeNode(
 	case ast.ListTypeNode:
 		list := types.NewListInstance()
 		for _, valueNode := range node.Values {
-			value, _, err := i.executeNode(valueNode, rootDir, thisPackage, parentPackage)
+			value, _, err := i.executeNode(ctx, valueNode)
 			if err != nil {
 				return nil, false, err
 			}
@@ -257,12 +254,12 @@ func (i *Interpreter) executeNode(
 	case ast.DictionaryTypeNode:
 		dict := types.NewDictionaryInstance()
 		for keyNode, valueNode := range node.Map {
-			key, _, err := i.executeNode(keyNode, rootDir, thisPackage, parentPackage)
+			key, _, err := i.executeNode(ctx, keyNode)
 			if err != nil {
 				return nil, false, err
 			}
 
-			value, _, err := i.executeNode(valueNode, rootDir, thisPackage, parentPackage)
+			value, _, err := i.executeNode(ctx, valueNode)
 			if err != nil {
 				return nil, false, err
 			}
@@ -279,7 +276,7 @@ func (i *Interpreter) executeNode(
 		return types.NewNilInstance(), false, nil
 
 	case ast.VariableNode:
-		val, err := i.getVar(thisPackage, node.Variable.Text)
+		val, err := i.getVar(ctx.package_.Name, node.Variable.Text)
 		if err != nil {
 			return nil, false, err
 		}
@@ -287,7 +284,7 @@ func (i *Interpreter) executeNode(
 		return val, false, nil
 
 	case ast.AttrAccessOpNode:
-		res, err := i.executeAttrAccessOp(&node, rootDir, thisPackage, parentPackage)
+		res, err := i.executeAttrAccessOp(ctx, &node)
 		return res, false, err
 	}
 
@@ -295,31 +292,30 @@ func (i *Interpreter) executeNode(
 }
 
 func (i *Interpreter) executeAST(
-	scope map[string]types.Type, thisPackage, parentPackage string, tree *ast.AST,
+	ctx *Context, scope map[string]types.Type, tree *ast.AST,
 ) (types.Type, map[string]types.Type, bool, error) {
 	var filePath string
-	var dir string
 	var err error
-	if thisPackage == "<стдввід>" {
+	if ctx.package_.Name == "<стдввід>" {
 		filePath = "<стдввід>"
-		dir, err = os.Getwd()
+		ctx.rootDir, err = os.Getwd()
 		if err != nil {
 			return nil, scope, false, util.InternalError(err.Error())
 		}
 	} else {
-		filePath, err = filepath.Abs(thisPackage)
+		filePath, err = filepath.Abs(ctx.package_.Name)
 		if err != nil {
 			return nil, scope, false, util.InternalError(err.Error())
 		}
 
-		dir = filepath.Dir(filePath)
+		ctx.rootDir = filepath.Dir(filePath)
 	}
 
 	var result types.Type = nil
 	forceReturn := false
-	i.pushScope(thisPackage, scope)
+	i.pushScope(ctx.package_.Name, scope)
 	for _, node := range tree.Nodes {
-		result, forceReturn, err = i.executeNode(node, dir, thisPackage, parentPackage)
+		result, forceReturn, err = i.executeNode(ctx, node)
 		if err != nil {
 			return nil, scope, false, errors.New(
 				fmt.Sprintf(
@@ -334,20 +330,22 @@ func (i *Interpreter) executeAST(
 		}
 	}
 
-	scope = i.popScope(thisPackage)
+	scope = i.popScope(ctx.package_.Name)
 	return result, scope, forceReturn, nil
 }
 
-func (i *Interpreter) executeBlock(
-	scope map[string]types.Type, tokens []models.Token, thisPackage, parentPackage string,
-) (types.Type, bool, error) {
-	p := parser.NewParser(thisPackage, tokens)
+func (i *Interpreter) executeBlock(ctx *Context, scope map[string]types.Type, tokens []models.Token) (
+	types.Type,
+	bool,
+	error,
+) {
+	p := parser.NewParser(ctx.package_.Name, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
 		return nil, false, err
 	}
 
-	result, _, forceReturn, err := i.executeAST(scope, thisPackage, parentPackage, asTree)
+	result, _, forceReturn, err := i.executeAST(ctx, scope, asTree)
 	if err != nil {
 		return nil, false, err
 	}
@@ -355,24 +353,26 @@ func (i *Interpreter) executeBlock(
 	return result, forceReturn, nil
 }
 
-func (i *Interpreter) Execute(
-	thisPackage, parentPackage string, scope map[string]types.Type, code string,
-) (types.Type, map[string]types.Type, error) {
-	lexer := borsch.NewLexer(thisPackage, code)
+func (i *Interpreter) Execute(ctx *Context, scope map[string]types.Type, code string) (
+	types.Type,
+	map[string]types.Type,
+	error,
+) {
+	lexer := borsch.NewLexer(ctx.package_.Name, code)
 	tokens, err := lexer.Lex()
 	if err != nil {
 		return nil, scope, err
 	}
 
-	p := parser.NewParser(thisPackage, tokens)
+	p := parser.NewParser(ctx.package_.Name, tokens)
 	asTree, err := p.Parse()
 	if err != nil {
 		return nil, scope, err
 	}
 
-	i.pushScope(thisPackage, builtin.RuntimeObjects)
+	i.pushScope(ctx.package_.Name, builtin.RuntimeObjects)
 	var result types.Type
-	result, scope, _, err = i.executeAST(scope, thisPackage, parentPackage, asTree)
+	result, scope, _, err = i.executeAST(ctx, scope, asTree)
 	if err != nil {
 		return nil, scope, err
 	}
@@ -380,13 +380,12 @@ func (i *Interpreter) Execute(
 	return result, scope, nil
 }
 
-func (i *Interpreter) ExecuteFile(
-	packageName, parentPackage string, content []byte, isBuiltin bool,
-) (types.Type, error) {
-	_, scope, err := i.Execute(packageName, parentPackage, map[string]types.Type{}, string(content))
+func (i *Interpreter) ExecuteFile(ctx *Context, content []byte) error {
+	_, scope, err := i.Execute(ctx, map[string]types.Type{}, string(content))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return types.NewPackageInstance(isBuiltin, packageName, parentPackage, scope), nil
+	ctx.package_.Attributes = scope
+	return nil
 }

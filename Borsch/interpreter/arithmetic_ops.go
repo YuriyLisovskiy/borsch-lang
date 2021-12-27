@@ -8,15 +8,17 @@ import (
 )
 
 func (i *Interpreter) executeArithmeticOp(
-	leftNode ast.ExpressionNode, rightNode ast.ExpressionNode, opType ops.Operator,
-	rootDir string, thisPackage, parentPackage string,
+	ctx *Context,
+	leftNode ast.ExpressionNode,
+	rightNode ast.ExpressionNode,
+	opType ops.Operator,
 ) (types.Type, error) {
-	left, _, err := i.executeNode(leftNode, rootDir, thisPackage, parentPackage)
+	left, _, err := i.executeNode(ctx, leftNode)
 	if err != nil {
 		return nil, err
 	}
 
-	right, _, err := i.executeNode(rightNode, rootDir, thisPackage, parentPackage)
+	right, _, err := i.executeNode(ctx, rightNode)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +35,7 @@ func (i *Interpreter) executeArithmeticOp(
 		case *types.FunctionInstance:
 			args := []types.Type{left, right}
 			kwargs := map[string]types.Type{
-				"я": left,
+				"я":     left,
 				"інший": right,
 			}
 			if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
@@ -50,7 +52,7 @@ func (i *Interpreter) executeArithmeticOp(
 	default:
 		panic("fatal: invalid arithmetic operator")
 	}
-	
+
 	if res != nil {
 		return res, nil
 	}

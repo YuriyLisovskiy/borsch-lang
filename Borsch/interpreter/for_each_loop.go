@@ -9,8 +9,10 @@ import (
 )
 
 func (i *Interpreter) executeForEachLoop(
-	indexVar, itemVar models.Token, containerValue types.Type,
-	body []models.Token, thisPackage, parentPackage string,
+	ctx *Context,
+	indexVar, itemVar models.Token,
+	containerValue types.Type,
+	body []models.Token,
 ) (types.Type, bool, error) {
 	switch container := containerValue.(type) {
 	case types.SequentialType:
@@ -29,7 +31,7 @@ func (i *Interpreter) executeForEachLoop(
 				}
 			}
 
-			_, forceReturn, err := i.executeBlock(scope, body, thisPackage, parentPackage)
+			_, forceReturn, err := i.executeBlock(ctx, scope, body)
 			if err != nil {
 				return nil, false, err
 			}
@@ -37,14 +39,16 @@ func (i *Interpreter) executeForEachLoop(
 			if forceReturn {
 				return types.NewNilInstance(), forceReturn, nil
 			}
-			//if result != nil {
+			// if result != nil {
 			//	return result, forceReturn, nil
-			//}
+			// }
 		}
 	default:
-		return nil, false, util.RuntimeError(fmt.Sprintf(
-			"тип '%s' не є об'єктом, по якому можна ітерувати", container.GetTypeName(),
-		))
+		return nil, false, util.RuntimeError(
+			fmt.Sprintf(
+				"тип '%s' не є об'єктом, по якому можна ітерувати", container.GetTypeName(),
+			),
+		)
 	}
 
 	return types.NewNilInstance(), false, nil

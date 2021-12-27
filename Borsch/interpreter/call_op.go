@@ -10,14 +10,13 @@ import (
 )
 
 func (i *Interpreter) callFunction(
+	ctx *Context,
 	node *ast.CallOpNode,
 	function *types.FunctionInstance,
 	args *[]types.Type,
 	kwargs *map[string]types.Type,
 	skipArgsCount int,
-	rootDir string,
-	thisPackage string,
-	parentPackage string,
+	isConstructor bool,
 ) (types.Type, error) {
 	parametersLen := len(node.Parameters) + skipArgsCount
 	argsLen := len(function.Arguments)
@@ -82,7 +81,7 @@ func (i *Interpreter) callFunction(
 
 	var c int
 	for c = 0; c < argsLen - skipArgsCount; c++ {
-		arg, _, err := i.executeNode(node.Parameters[c], rootDir, thisPackage, parentPackage)
+		arg, _, err := i.executeNode(ctx, node.Parameters[c])
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +120,7 @@ func (i *Interpreter) callFunction(
 			if len(node.Parameters) + skipArgsCount - parametersLen > 0 {
 				parametersLen = len(node.Parameters)
 				for k := c; k < parametersLen; k++ {
-					arg, _, err := i.executeNode(node.Parameters[k], rootDir, thisPackage, parentPackage)
+					arg, _, err := i.executeNode(ctx, node.Parameters[k])
 					if err != nil {
 						return nil, err
 					}
@@ -164,42 +163,45 @@ func (i *Interpreter) callFunction(
 		// panic("fatal: returned value is nil")
 	}
 
-	if res.GetTypeHash() == types.NilTypeHash {
-		if function.ReturnType.TypeHash != types.NilTypeHash && !function.ReturnType.IsNullable {
+	if isConstructor && res.GetTypeHash() != types.NilTypeHash {
+		return nil, util.RuntimeError(fmt.Sprintf(
+			"конструктор має повертати значення з типом 'нульовий', отримано '%s'",
+			res.String(),
+		))
+	} else {
+		if res.GetTypeHash() == types.NilTypeHash {
+			if function.ReturnType.TypeHash != types.NilTypeHash && !function.ReturnType.IsNullable {
+				return nil, util.RuntimeError(
+					fmt.Sprintf(
+						"'%s()' повертає ненульове значення, отримано '%s'",
+						function.Name, res.String(),
+					),
+				)
+			}
+		} else if function.ReturnType.TypeHash != types.AnyTypeHash && res.GetTypeHash() != function.ReturnType.TypeHash {
 			return nil, util.RuntimeError(
 				fmt.Sprintf(
-					"'%s()' повертає ненульове значення, отримано '%s'",
-					function.Name, res.String(),
+					"'%s()' повертає значення типу '%s', отримано значення з типом '%s'",
+					function.Name, function.ReturnType.String(), res.GetTypeName(),
 				),
 			)
 		}
-	} else if function.ReturnType.TypeHash != types.AnyTypeHash && res.GetTypeHash() != function.ReturnType.TypeHash {
-		return nil, util.RuntimeError(
-			fmt.Sprintf(
-				"'%s()' повертає значення типу '%s', отримано значення з типом '%s'",
-				function.Name, function.ReturnType.String(), res.GetTypeName(),
-			),
-		)
 	}
 
 	return res, nil
 }
 
-func (i *Interpreter) executeCallOp(
-	node *ast.CallOpNode, object types.Type, rootDir, thisPackage, parentPackage string,
-) (types.Type, error) {
+func (i *Interpreter) executeCallOp(ctx *Context, node *ast.CallOpNode, object types.Type) (types.Type, error) {
 	switch callable := object.(type) {
 	case *types.FunctionInstance:
-		return i.callFunction(
-			node,
-			callable,
-			&[]types.Type{},
-			&map[string]types.Type{},
-			0,
-			rootDir,
-			thisPackage,
-			parentPackage,
-		)
+		var args []types.Type
+		kwargs := map[string]types.Type{}
+		if callable.IsMethod && ctx.parentObject != nil && len(callable.Arguments) > 0 {
+			args = append(args, ctx.parentObject)
+			kwargs[callable.Arguments[0].Name] = ctx.parentObject
+		}
+
+		return i.callFunction(ctx, node, callable, &args, &kwargs, len(args), false)
 	case *types.Class:
 		constructorAttribute, err := callable.GetAttribute(ops.ConstructorName)
 		if err == nil {
@@ -211,17 +213,8 @@ func (i *Interpreter) executeCallOp(
 				}
 
 				args := []types.Type{instance}
-				kwargs := map[string]types.Type{"я": instance}
-				_, err = i.callFunction(
-					node,
-					constructor,
-					&args,
-					&kwargs,
-					1,
-					rootDir,
-					thisPackage,
-					parentPackage,
-				)
+				kwargs := map[string]types.Type{constructor.Arguments[0].Name: instance}
+				_, err = i.callFunction(ctx, node, constructor, &args, &kwargs, 1, true)
 				if err != nil {
 					return nil, err
 				}
@@ -235,17 +228,8 @@ func (i *Interpreter) executeCallOp(
 			switch callOperator := callOperatorAttribute.(type) {
 			case *types.FunctionInstance:
 				args := []types.Type{object}
-				kwargs := map[string]types.Type{"я": object}
-				return i.callFunction(
-					node,
-					callOperator,
-					&args,
-					&kwargs,
-					1,
-					rootDir,
-					thisPackage,
-					parentPackage,
-				)
+				kwargs := map[string]types.Type{callOperator.Arguments[0].Name: object}
+				return i.callFunction(ctx, node, callOperator, &args, &kwargs, 1, false)
 			}
 		}
 	}
