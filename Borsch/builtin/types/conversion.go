@@ -13,9 +13,11 @@ func ToInteger(args ...Type) (Type, error) {
 	}
 
 	if len(args) != 1 {
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"'цілий()' приймає лише один аргумент (отримано %d)", len(args),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"'цілий()' приймає лише один аргумент (отримано %d)", len(args),
+			),
+		)
 	}
 
 	switch vt := args[0].(type) {
@@ -26,9 +28,11 @@ func ToInteger(args ...Type) (Type, error) {
 	case StringInstance:
 		intVal, err := strconv.ParseInt(vt.Value, 10, 64)
 		if err != nil {
-			return nil, util.RuntimeError(fmt.Sprintf(
-				"некоректний літерал для функції 'цілий()' з основою 10: '%s'", vt.Value,
-			))
+			return nil, util.RuntimeError(
+				fmt.Sprintf(
+					"некоректний літерал для функції 'цілий()' з основою 10: '%s'", vt.Value,
+				),
+			)
 		}
 
 		return NewIntegerInstance(intVal), nil
@@ -39,9 +43,11 @@ func ToInteger(args ...Type) (Type, error) {
 
 		return NewIntegerInstance(0), nil
 	default:
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"'%s' неможливо інтерпретувати як ціле число", args[0].GetTypeName(),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"'%s' неможливо інтерпретувати як ціле число", args[0].GetTypeName(),
+			),
+		)
 	}
 }
 
@@ -51,9 +57,11 @@ func ToReal(args ...Type) (Type, error) {
 	}
 
 	if len(args) != 1 {
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"функція 'дійсний()' приймає лише один аргумент (отримано %d)", len(args),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"функція 'дійсний()' приймає лише один аргумент (отримано %d)", len(args),
+			),
+		)
 	}
 
 	switch vt := args[0].(type) {
@@ -64,9 +72,11 @@ func ToReal(args ...Type) (Type, error) {
 	case StringInstance:
 		realVal, err := strconv.ParseFloat(vt.Value, 64)
 		if err != nil {
-			return nil, util.RuntimeError(fmt.Sprintf(
-				"не вдалося перетворити рядок у дійсне число: '%s'", vt.Value,
-			))
+			return nil, util.RuntimeError(
+				fmt.Sprintf(
+					"не вдалося перетворити рядок у дійсне число: '%s'", vt.Value,
+				),
+			)
 		}
 
 		return NewRealInstance(realVal), nil
@@ -77,9 +87,11 @@ func ToReal(args ...Type) (Type, error) {
 
 		return NewRealInstance(0.0), nil
 	default:
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"'%s' неможливо інтерпретувати як дійсне число", args[0].GetTypeName(),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"'%s' неможливо інтерпретувати як дійсне число", args[0].GetTypeName(),
+			),
+		)
 	}
 }
 
@@ -89,21 +101,27 @@ func ToString(args ...Type) (Type, error) {
 	}
 
 	if len(args) != 1 {
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"функція 'рядок()' приймає лише один аргумент (отримано %d)", len(args),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"функція 'рядок()' приймає лише один аргумент (отримано %d)", len(args),
+			),
+		)
 	}
 
-	switch vt := args[0].(type) {
-	case StringInstance:
-		return vt, nil
-	case RealInstance, IntegerInstance, BoolInstance, NilInstance:
-		return NewStringInstance(vt.String()), nil
-	default:
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"'%s' неможливо інтерпретувати як рядок", args[0].GetTypeName(),
-		))
-	}
+	return NewStringInstance(args[0].String()), nil
+
+	// TODO: remove
+	// switch vt := args[0].(type) {
+	// case StringInstance:
+	// 	return vt, nil
+	// case RealInstance, IntegerInstance, BoolInstance, NilInstance:
+	// 	return NewStringInstance(vt.String()), nil
+	// default:
+	// 	return NewStringInstance(vt.String()), nil
+	// 	// return nil, util.RuntimeError(fmt.Sprintf(
+	// 	// 	"'%s' неможливо інтерпретувати як рядок", args[0].GetTypeName(),
+	// 	// ))
+	// }
 }
 
 func ToBool(args ...Type) (Type, error) {
@@ -112,9 +130,11 @@ func ToBool(args ...Type) (Type, error) {
 	}
 
 	if len(args) != 1 {
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"функція 'логічний()' приймає лише один аргумент (отримано %d)", len(args),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"функція 'логічний()' приймає лише один аргумент (отримано %d)", len(args),
+			),
+		)
 	}
 
 	switch vt := args[0].(type) {
@@ -129,9 +149,11 @@ func ToBool(args ...Type) (Type, error) {
 	case NilInstance:
 		return NewBoolInstance(false), nil
 	default:
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"'%s' неможливо інтерпретувати як логічне значення", args[0].GetTypeName(),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"'%s' неможливо інтерпретувати як логічне значення", args[0].GetTypeName(),
+			),
+		)
 	}
 }
 
@@ -155,9 +177,11 @@ func ToDictionary(args ...Type) (Type, error) {
 	}
 
 	if len(args) != 2 {
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"функція 'словник()' приймає два аргументи, або жодного (отримано %d)", len(args),
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"функція 'словник()' приймає два аргументи, або жодного (отримано %d)", len(args),
+			),
+		)
 	}
 
 	switch keys := args[0].(type) {
@@ -165,9 +189,11 @@ func ToDictionary(args ...Type) (Type, error) {
 		switch values := args[1].(type) {
 		case ListInstance:
 			if keys.Length() != values.Length() {
-				return nil, util.RuntimeError(fmt.Sprintf(
-					"довжина списку ключів має співпадати з довжиною списку значень",
-				))
+				return nil, util.RuntimeError(
+					fmt.Sprintf(
+						"довжина списку ключів має співпадати з довжиною списку значень",
+					),
+				)
 			}
 
 			length := keys.Length()
@@ -180,13 +206,17 @@ func ToDictionary(args ...Type) (Type, error) {
 
 			return dict, nil
 		default:
-			return nil, util.RuntimeError(fmt.Sprintf(
-				"функція 'словник()' другим аргументом приймає список значень",
-			))
+			return nil, util.RuntimeError(
+				fmt.Sprintf(
+					"функція 'словник()' другим аргументом приймає список значень",
+				),
+			)
 		}
 	default:
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"функція 'словник()' першим аргументом приймає список ключів",
-		))
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"функція 'словник()' першим аргументом приймає список ключів",
+			),
+		)
 	}
 }

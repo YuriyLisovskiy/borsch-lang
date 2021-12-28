@@ -331,7 +331,7 @@ var TokenTypesList = map[int]TokenType{
 	},
 	FunctionDef: {
 		Name:  FunctionDef,
-		Regex: regexp.MustCompile("^фн"),
+		Regex: regexp.MustCompile("^функція"),
 	},
 	ClassDef: {
 		Name:  ClassDef,

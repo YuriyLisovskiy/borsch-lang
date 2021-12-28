@@ -129,7 +129,7 @@ func (i ClassInstance) String() string {
 		switch __str__ := attribute.(type) {
 		case *FunctionInstance:
 			args := []Type{i}
-			kwargs := map[string]Type{"я": i}
+			kwargs := map[string]Type{__str__.Arguments[0].Name: i}
 			if err := CheckFunctionArguments(__str__, &args, &kwargs); err == nil {
 				result, err := __str__.Call(&args, &kwargs)
 				if err == nil {

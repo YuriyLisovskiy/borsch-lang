@@ -169,7 +169,7 @@ var RuntimeObjects = map[string]types.Type{
 				sz := len(messageArgs)
 				for c := 0; c < sz; c++ {
 					message += messageArgs[c].String()
-					if c < sz - 1 {
+					if c < sz-1 {
 						message += " "
 					}
 				}
@@ -261,13 +261,13 @@ var RuntimeObjects = map[string]types.Type{
 	),
 
 	// Conversion
-	"дійсний": types.Real,
+	"дійсний":  types.Real,
 	"логічний": types.Bool,
 	// "пакет": types.Package,
-	"рядок": types.String,
+	"рядок":   types.String,
 	"словник": types.Dictionary,
-	"список": types.List,
-	"функція": types.Function,
+	"список":  types.List,
+	// "функція": types.Function,
 	"цілий": types.Integer,
 
 	// Utilities

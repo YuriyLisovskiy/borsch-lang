@@ -80,7 +80,7 @@ func (i *Interpreter) callFunction(
 	}
 
 	var c int
-	for c = 0; c < argsLen - skipArgsCount; c++ {
+	for c = 0; c < argsLen-skipArgsCount; c++ {
 		arg, _, err := i.executeNode(ctx, node.Parameters[c])
 		if err != nil {
 			return nil, err
@@ -93,31 +93,33 @@ func (i *Interpreter) callFunction(
 		}
 
 		if arg.GetTypeHash() == types.NilTypeHash {
-			if function.Arguments[c + skipArgsCount].TypeHash != types.NilTypeHash && !function.Arguments[c + skipArgsCount].IsNullable {
+			if function.Arguments[c+skipArgsCount].TypeHash != types.NilTypeHash && !function.Arguments[c+skipArgsCount].IsNullable {
 				return nil, util.RuntimeError(
 					fmt.Sprintf(
 						"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
-						function.Arguments[c + skipArgsCount].Name, arg.String(),
+						function.Arguments[c+skipArgsCount].Name, arg.String(),
 					),
 				)
 			}
-		} else if function.Arguments[c + skipArgsCount].TypeHash != types.AnyTypeHash && arg.GetTypeHash() != function.Arguments[c + skipArgsCount].TypeHash {
+		} else if function.Arguments[c+skipArgsCount].TypeHash != types.AnyTypeHash && arg.GetTypeHash() != function.Arguments[c+skipArgsCount].TypeHash {
 			return nil, util.RuntimeError(
 				fmt.Sprintf(
 					"аргумент '%s' очікує параметр з типом '%s', отримано '%s'",
-					function.Arguments[c + skipArgsCount].Name, function.Arguments[c + skipArgsCount].TypeName(), arg.GetTypeName(),
+					function.Arguments[c+skipArgsCount].Name,
+					function.Arguments[c+skipArgsCount].TypeName(),
+					arg.GetTypeName(),
 				),
 			)
 		}
 
-		(*kwargs)[function.Arguments[c + skipArgsCount].Name] = arg
+		(*kwargs)[function.Arguments[c+skipArgsCount].Name] = arg
 		*args = append(*args, arg)
 	}
 
-	if len(function.Arguments) - skipArgsCount > 0 {
+	if len(function.Arguments)-skipArgsCount > 0 {
 		if lastArgument := function.Arguments[len(function.Arguments)-1]; lastArgument.IsVariadic {
 			lastParameter := types.NewListInstance()
-			if len(node.Parameters) + skipArgsCount - parametersLen > 0 {
+			if len(node.Parameters)+skipArgsCount-parametersLen > 0 {
 				parametersLen = len(node.Parameters)
 				for k := c; k < parametersLen; k++ {
 					arg, _, err := i.executeNode(ctx, node.Parameters[k])
@@ -163,11 +165,17 @@ func (i *Interpreter) callFunction(
 		// panic("fatal: returned value is nil")
 	}
 
-	if isConstructor && res.GetTypeHash() != types.NilTypeHash {
-		return nil, util.RuntimeError(fmt.Sprintf(
-			"конструктор має повертати значення з типом 'нульовий', отримано '%s'",
-			res.String(),
-		))
+	if isConstructor {
+		switch res.GetTypeHash() {
+		case types.NilTypeHash, (*args)[0].GetTypeHash():
+		default:
+			return nil, util.RuntimeError(
+				fmt.Sprintf(
+					"конструктор має повертати значення з типом '%s' або 'нульовий', отримано '%s'",
+					(*args)[0].GetTypeName(), res.String(),
+				),
+			)
+		}
 	} else {
 		if res.GetTypeHash() == types.NilTypeHash {
 			if function.ReturnType.TypeHash != types.NilTypeHash && !function.ReturnType.IsNullable {
