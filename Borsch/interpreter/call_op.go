@@ -176,24 +176,8 @@ func (i *Interpreter) callFunction(
 				),
 			)
 		}
-	} else {
-		if res.GetTypeHash() == types.NilTypeHash {
-			if function.ReturnType.TypeHash != types.NilTypeHash && !function.ReturnType.IsNullable {
-				return nil, util.RuntimeError(
-					fmt.Sprintf(
-						"'%s()' повертає ненульове значення, отримано '%s'",
-						function.Name, res.String(),
-					),
-				)
-			}
-		} else if function.ReturnType.TypeHash != types.AnyTypeHash && res.GetTypeHash() != function.ReturnType.TypeHash {
-			return nil, util.RuntimeError(
-				fmt.Sprintf(
-					"'%s()' повертає значення типу '%s', отримано значення з типом '%s'",
-					function.Name, function.ReturnType.String(), res.GetTypeName(),
-				),
-			)
-		}
+	} else if err := types.CheckResult(res, function); err != nil {
+		return nil, err
 	}
 
 	return res, nil

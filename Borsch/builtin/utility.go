@@ -7,32 +7,50 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func Length(sequence types.Type) (types.Type, error) {
-	switch arg := sequence.(type) {
-	case types.SequentialType:
-		return types.NewIntegerInstance(arg.Length()), nil
-	case types.DictionaryInstance:
-		return types.NewIntegerInstance(arg.Length()), nil
+func DeepCopy(object types.Type) (types.Type, error) {
+	switch value := object.(type) {
+	case *types.ClassInstance:
+		copied := value.Copy()
+		return copied, nil
+	default:
+		return value, nil
 	}
-
-	return nil, util.RuntimeError(fmt.Sprintf(
-		"об'єкт типу '%s' не має довжини", sequence.GetTypeName(),
-	))
 }
 
-func AppendToList(list types.ListInstance, values ...types.Type) (types.Type, error) {
-	for _, value := range values {
-		list.Values = append(list.Values, value)
-	}
-
-	return list, nil
-}
-
-func RemoveFromDictionary(dict types.DictionaryInstance, key types.Type) (types.Type, error) {
-	err := dict.RemoveElement(key)
+func runOperator(name string, object types.Type, expectedTypeName string, expectedTypeHash uint64) (types.Type, error) {
+	attribute, err := object.GetAttribute(name)
 	if err != nil {
-		return nil, util.RuntimeError(err.Error())
+		return nil, util.RuntimeError(fmt.Sprintf("об'єкт типу '%s' не має довжини", object.GetTypeName()))
 	}
 
-	return dict, nil
+	switch operator := attribute.(type) {
+	case *types.FunctionInstance:
+		args := []types.Type{object}
+		kwargs := map[string]types.Type{operator.Arguments[0].Name: object}
+		if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
+			return nil, err
+		}
+
+		result, err := operator.Call(&args, &kwargs)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := types.CheckResult(result, operator); err != nil {
+			return nil, err
+		}
+
+		if result.GetTypeHash() != expectedTypeHash {
+			return nil, util.RuntimeError(
+				fmt.Sprintf(
+					"'%s' має повертати значення з типом '%s', отримано '%s'",
+					name, expectedTypeName, result.GetTypeName(),
+				),
+			)
+		}
+
+		return result, nil
+	default:
+		return nil, util.ObjectIsNotCallable(name, attribute.GetTypeName())
+	}
 }

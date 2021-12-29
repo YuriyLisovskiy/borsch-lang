@@ -114,18 +114,19 @@ func (t *DictionaryInstance) SetElement(key Type, value Type) error {
 	return nil
 }
 
-func (t *DictionaryInstance) RemoveElement(key Type) error {
+func (t *DictionaryInstance) RemoveElement(key Type) (Type, error) {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if _, ok := t.Map[keyHash]; !ok {
-		return errors.New(fmt.Sprintf("значення за ключем '%s' не існує", key.String()))
+	value, ok := t.Map[keyHash]
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("значення за ключем '%s' не існує", key.String()))
 	}
 
 	delete(t.Map, keyHash)
-	return nil
+	return value.Value, nil
 }
 
 func compareDictionaries(self Type, other Type) (int, error) {
@@ -156,6 +157,42 @@ func newDictionaryClass() *Class {
 		map[string]Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(DictionaryTypeHash, ToDictionary, ""),
+
+			// TODO: add doc
+			ops.LengthOperatorName: newLengthOperator(ListTypeHash, getLength, ""),
+			"вилучити": NewFunctionInstance(
+				"вилучити",
+				[]FunctionArgument{
+					{
+						TypeHash:   DictionaryTypeHash,
+						Name:       "я",
+						IsVariadic: false,
+						IsNullable: false,
+					},
+					{
+						TypeHash:   AnyTypeHash,
+						Name:       "ключ",
+						IsVariadic: false,
+						IsNullable: true,
+					},
+				},
+				func(args *[]Type, _ *map[string]Type) (Type, error) {
+					dict := (*args)[0].(DictionaryInstance)
+					value, err := dict.RemoveElement((*args)[1])
+					if err != nil {
+						return nil, util.RuntimeError(err.Error())
+					}
+
+					return value, nil
+				},
+				FunctionReturnType{
+					TypeHash:   AnyTypeHash,
+					IsNullable: false,
+				},
+				true,
+				nil,
+				"", // TODO: add doc
+			),
 		},
 		makeLogicalOperators(DictionaryTypeHash),
 		makeComparisonOperators(DictionaryTypeHash, compareDictionaries),

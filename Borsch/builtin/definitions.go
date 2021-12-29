@@ -5,23 +5,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
-
-/*
-types.FunctionInstance{
-	Name:       "",
-	Arguments: []types.FunctionArgument{},
-	Code:       nil,
-	Callable: func(args []types.ValueType, _ map[string]types.ValueType) (types.ValueType, error) {
-
-	},
-	ReturnType: ,
-	IsBuiltin: true,
-}
-*/
 
 var RuntimeObjects = map[string]types.Type{
 
@@ -249,7 +237,8 @@ var RuntimeObjects = map[string]types.Type{
 			},
 		},
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
-			return types.NewNilInstance(), Exit((*args)[0].(types.IntegerInstance).Value)
+			os.Exit(int((*args)[0].(types.IntegerInstance).Value))
+			return types.NewNilInstance(), nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.NilTypeHash,
@@ -282,7 +271,13 @@ var RuntimeObjects = map[string]types.Type{
 			},
 		},
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
-			return Length((*args)[0])
+			sequence := (*args)[0]
+			return runOperator(
+				ops.LengthOperatorName,
+				sequence,
+				types.GetTypeName(types.IntegerTypeHash),
+				types.IntegerTypeHash,
+			)
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.IntegerTypeHash,
@@ -309,37 +304,16 @@ var RuntimeObjects = map[string]types.Type{
 			},
 		},
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
-			return AppendToList((*args)[0].(types.ListInstance), (*args)[1:]...)
+			list := (*args)[0].(types.ListInstance)
+			values := (*args)[1:]
+			for _, value := range values {
+				list.Values = append(list.Values, value)
+			}
+
+			return list, nil
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.ListTypeHash,
-			IsNullable: false,
-		},
-		false,
-		types.BuiltinPackage,
-		"", // TODO: add doc
-	),
-	"вилучити": types.NewFunctionInstance(
-		"вилучити",
-		[]types.FunctionArgument{
-			{
-				TypeHash:   types.DictionaryTypeHash,
-				Name:       "вхідний_словник",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-			{
-				TypeHash:   types.AnyTypeHash,
-				Name:       "ключ",
-				IsVariadic: false,
-				IsNullable: true,
-			},
-		},
-		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
-			return RemoveFromDictionary((*args)[0].(types.DictionaryInstance), (*args)[1])
-		},
-		types.FunctionReturnType{
-			TypeHash:   types.DictionaryTypeHash,
 			IsNullable: false,
 		},
 		false,
@@ -357,13 +331,7 @@ var RuntimeObjects = map[string]types.Type{
 			},
 		},
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
-			switch value := (*args)[0].(type) {
-			case *types.ClassInstance:
-				copied := value.Copy()
-				return copied, nil
-			default:
-				return value, nil
-			}
+			return DeepCopy((*args)[0])
 		},
 		types.FunctionReturnType{
 			TypeHash:   types.AnyTypeHash,

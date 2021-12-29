@@ -130,7 +130,7 @@ func newIntegerBinaryOperator(
 	doc string,
 	handler func(IntegerInstance, Type) (Type, error),
 ) *FunctionInstance {
-	return newBinaryOperator(
+	return newBinaryMethod(
 		name, IntegerTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
 				return handler(leftInstance, right)
@@ -146,7 +146,7 @@ func newIntegerUnaryOperator(
 	doc string,
 	handler func(IntegerInstance) (Type, error),
 ) *FunctionInstance {
-	return newUnaryOperator(
+	return newUnaryMethod(
 		name, IntegerTypeHash, AnyTypeHash, doc, func(left Type) (Type, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
 				return handler(leftInstance)

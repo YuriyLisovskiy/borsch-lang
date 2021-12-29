@@ -137,7 +137,7 @@ func newListBinaryOperator(
 	doc string,
 	handler func(ListInstance, Type) (Type, error),
 ) *FunctionInstance {
-	return newBinaryOperator(
+	return newBinaryMethod(
 		name, ListTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
 			if leftInstance, ok := left.(ListInstance); ok {
 				return handler(leftInstance, right)
@@ -153,6 +153,10 @@ func newListClass() *Class {
 		map[string]Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(ListTypeHash, ToList, ""),
+
+			// TODO: add doc
+			ops.LengthOperatorName: newLengthOperator(ListTypeHash, getLength, ""),
+
 			ops.MulOp.Caption(): newListBinaryOperator(
 				// TODO: add doc
 				ops.MulOp.Caption(), "", func(self ListInstance, other Type) (Type, error) {

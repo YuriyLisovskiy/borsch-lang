@@ -116,7 +116,7 @@ func newBoolBinaryOperator(
 	doc string,
 	handler func(BoolInstance, Type) (Type, error),
 ) *FunctionInstance {
-	return newBinaryOperator(
+	return newBinaryMethod(
 		name, BoolTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
 			if leftInstance, ok := left.(BoolInstance); ok {
 				return handler(leftInstance, right)
@@ -132,7 +132,7 @@ func newBoolUnaryOperator(
 	doc string,
 	handler func(BoolInstance) (Type, error),
 ) *FunctionInstance {
-	return newUnaryOperator(
+	return newUnaryMethod(
 		name, BoolTypeHash, AnyTypeHash, doc, func(left Type) (Type, error) {
 			if leftInstance, ok := left.(BoolInstance); ok {
 				return handler(leftInstance)
@@ -157,7 +157,14 @@ func newBoolClass() *Class {
 					case IntegerInstance:
 						return NewIntegerInstance(int64(math.Pow(boolToFloat64(self.Value), float64(o.Value)))), nil
 					case BoolInstance:
-						return NewIntegerInstance(int64(math.Pow(boolToFloat64(self.Value), boolToFloat64(o.Value)))), nil
+						return NewIntegerInstance(
+							int64(
+								math.Pow(
+									boolToFloat64(self.Value),
+									boolToFloat64(o.Value),
+								),
+							),
+						), nil
 					default:
 						return nil, nil
 					}

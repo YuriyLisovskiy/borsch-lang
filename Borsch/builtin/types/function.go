@@ -106,7 +106,7 @@ func (t FunctionInstance) String() string {
 		template = "метод '%s'"
 	}
 
-	template += " за адресою %s"
+	template += " з адресою %s"
 	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.Name, t.address)
 }
 

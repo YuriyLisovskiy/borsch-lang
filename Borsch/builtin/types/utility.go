@@ -83,6 +83,25 @@ func IsBuiltinType(typeName string) bool {
 	return GetTypeHash(typeName) <= FunctionTypeHash
 }
 
+func CheckResult(result Type, function *FunctionInstance) error {
+	if result.GetTypeHash() == NilTypeHash {
+		if function.ReturnType.TypeHash != NilTypeHash && !function.ReturnType.IsNullable {
+			return util.RuntimeError(
+				fmt.Sprintf("'%s()' повертає ненульове значення, отримано '%s'", function.Name, result.String()),
+			)
+		}
+	} else if function.ReturnType.TypeHash != AnyTypeHash && result.GetTypeHash() != function.ReturnType.TypeHash {
+		return util.RuntimeError(
+			fmt.Sprintf(
+				"'%s()' повертає значення типу '%s', отримано значення з типом '%s'",
+				function.Name, function.ReturnType.String(), result.GetTypeName(),
+			),
+		)
+	}
+
+	return nil
+}
+
 func CheckFunctionArguments(function *FunctionInstance, args *[]Type, _ *map[string]Type) error {
 	parametersLen := len(*args)
 	argsLen := len(function.Arguments)
@@ -222,6 +241,17 @@ func logicalOr(l, r Type) (Type, error) {
 	return NewBoolInstance(l.AsBool() || r.AsBool()), nil
 }
 
+func getLength(sequence Type) (int64, error) {
+	switch self := sequence.(type) {
+	case ListInstance:
+		return self.Length(), nil
+	case DictionaryInstance:
+		return self.Length(), nil
+	}
+
+	return 0, errors.New(fmt.Sprint("invalid type in length operator: ", sequence.GetTypeName()))
+}
+
 func mergeAttributes(a map[string]Type, b ...map[string]Type) map[string]Type {
 	for _, m := range b {
 		for key, val := range m {
@@ -232,9 +262,9 @@ func mergeAttributes(a map[string]Type, b ...map[string]Type) map[string]Type {
 	return a
 }
 
-func newBinaryOperator(
+func newBinaryMethod(
 	name string,
-	itemTypeHash uint64,
+	selfTypeHash uint64,
 	returnTypeHash uint64,
 	doc string,
 	handler func(Type, Type) (Type, error),
@@ -243,7 +273,7 @@ func newBinaryOperator(
 		name,
 		[]FunctionArgument{
 			{
-				TypeHash:   itemTypeHash,
+				TypeHash:   selfTypeHash,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
@@ -268,9 +298,9 @@ func newBinaryOperator(
 	)
 }
 
-func newUnaryOperator(
+func newUnaryMethod(
 	name string,
-	itemsTypeHash uint64,
+	selfTypeHash uint64,
 	returnTypeHash uint64,
 	doc string,
 	handler func(Type) (Type, error),
@@ -279,7 +309,7 @@ func newUnaryOperator(
 		name,
 		[]FunctionArgument{
 			{
-				TypeHash:   itemsTypeHash,
+				TypeHash:   selfTypeHash,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
@@ -305,7 +335,7 @@ func makeComparisonOperator(
 	comparator func(Type, Type) (int, error),
 	checker func(res int) bool,
 ) *FunctionInstance {
-	return newBinaryOperator(
+	return newBinaryMethod(
 		operator.Caption(), itemTypeHash, BoolTypeHash, doc, func(self Type, other Type) (Type, error) {
 			res, err := comparator(self, other)
 			if err != nil {
@@ -360,19 +390,19 @@ func makeComparisonOperators(itemTypeHash uint64, comparator func(Type, Type) (i
 
 func makeLogicalOperators(itemTypeHash uint64) map[string]Type {
 	return map[string]Type{
-		ops.NotOp.Caption(): newUnaryOperator(
+		ops.NotOp.Caption(): newUnaryMethod(
 			// TODO: add doc
 			ops.NotOp.Caption(), itemTypeHash, BoolTypeHash, "", func(self Type) (Type, error) {
 				return NewBoolInstance(!self.AsBool()), nil
 			},
 		),
-		ops.AndOp.Caption(): newBinaryOperator(
+		ops.AndOp.Caption(): newBinaryMethod(
 			// TODO: add doc
 			ops.AndOp.Caption(), itemTypeHash, BoolTypeHash, "", func(self Type, other Type) (Type, error) {
 				return logicalAnd(self, other)
 			},
 		),
-		ops.OrOp.Caption(): newBinaryOperator(
+		ops.OrOp.Caption(): newBinaryMethod(
 			// TODO: add doc
 			ops.OrOp.Caption(), itemTypeHash, BoolTypeHash, "", func(self Type, other Type) (Type, error) {
 				return logicalOr(self, other)
@@ -381,7 +411,11 @@ func makeLogicalOperators(itemTypeHash uint64) map[string]Type {
 	}
 }
 
-func newBuiltinConstructor(itemTypeHash uint64, handler func(args ...Type) (Type, error), doc string) *FunctionInstance {
+func newBuiltinConstructor(
+	itemTypeHash uint64,
+	handler func(args ...Type) (Type, error),
+	doc string,
+) *FunctionInstance {
 	return NewFunctionInstance(
 		ops.ConstructorName,
 		[]FunctionArgument{
@@ -409,6 +443,39 @@ func newBuiltinConstructor(itemTypeHash uint64, handler func(args ...Type) (Type
 		},
 		FunctionReturnType{
 			TypeHash:   NilTypeHash,
+			IsNullable: false,
+		},
+		true,
+		nil,
+		doc,
+	)
+}
+
+func newLengthOperator(
+	itemTypeHash uint64,
+	handler func(Type) (int64, error),
+	doc string,
+) *FunctionInstance {
+	return NewFunctionInstance(
+		ops.LengthOperatorName,
+		[]FunctionArgument{
+			{
+				TypeHash:   itemTypeHash,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+		},
+		func(args *[]Type, _ *map[string]Type) (Type, error) {
+			length, err := handler((*args)[0])
+			if err != nil {
+				return nil, err
+			}
+
+			return NewIntegerInstance(length), nil
+		},
+		FunctionReturnType{
+			TypeHash:   IntegerTypeHash,
 			IsNullable: false,
 		},
 		true,

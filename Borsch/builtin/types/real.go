@@ -151,7 +151,7 @@ func newRealBinaryOperator(
 	doc string,
 	handler func(RealInstance, Type) (Type, error),
 ) *FunctionInstance {
-	return newBinaryOperator(
+	return newBinaryMethod(
 		name, RealTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
 				return handler(leftInstance, right)
@@ -167,7 +167,7 @@ func newRealUnaryOperator(
 	doc string,
 	handler func(RealInstance) (Type, error),
 ) *FunctionInstance {
-	return newUnaryOperator(
+	return newUnaryMethod(
 		name, RealTypeHash, AnyTypeHash, doc, func(left Type) (Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
 				return handler(leftInstance)

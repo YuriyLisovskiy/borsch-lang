@@ -152,7 +152,7 @@ func newStringBinaryOperator(
 	doc string,
 	handler func(StringInstance, Type) (Type, error),
 ) *FunctionInstance {
-	return newBinaryOperator(
+	return newBinaryMethod(
 		name, StringTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
 			if leftInstance, ok := left.(StringInstance); ok {
 				return handler(leftInstance, right)
