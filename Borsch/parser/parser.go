@@ -12,16 +12,16 @@ import (
 )
 
 type Parser struct {
-	tokens     []models.Token
-	pos        int
-	fileName   string
+	tokens   []models.Token
+	pos      int
+	fileName string
 }
 
 func NewParser(fileName string, tokens []models.Token) *Parser {
 	return &Parser{
-		tokens:     tokens,
-		pos:        0,
-		fileName:   fileName,
+		tokens:   tokens,
+		pos:      0,
+		fileName: fileName,
 	}
 }
 
@@ -65,16 +65,22 @@ func (p *Parser) require(expected ...models.TokenType) (*models.Token, error) {
 
 func (p *Parser) checkForKeyword(name string) error {
 	if _, ok := builtin.RegisteredIdentifiers[name]; ok {
-		return errors.New(fmt.Sprintf(
-			"неможливо використати ідентифікатор '%s', оскільки він є вбудованим",
-			name,
-		))
+		return errors.New(
+			fmt.Sprintf(
+				"неможливо використати ідентифікатор '%s', оскільки він є вбудованим",
+				name,
+			),
+		)
 	}
 
 	return nil
 }
 
-func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, *models.Token, error) {
+func (p *Parser) parseVariableConstantOrAnonymousFunction(futureClass string) (
+	ast.ExpressionNode,
+	*models.Token,
+	error,
+) {
 	if number := p.match(models.TokenTypesList[models.RealNumber]); number != nil {
 		return ast.NewRealTypeNode(*number), nil, nil
 	}
@@ -98,7 +104,7 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, *models.Token, e
 		}
 
 		for {
-			valueNode, err := p.parseFormula()
+			valueNode, err := p.parseFormula(futureClass)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -124,7 +130,7 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, *models.Token, e
 
 		dict := ast.NewDictionaryTypeNode(*dictStart)
 		for {
-			keyNode, err := p.parseFormula()
+			keyNode, err := p.parseFormula(futureClass)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -134,7 +140,7 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, *models.Token, e
 				return nil, nil, err
 			}
 
-			valueNode, err := p.parseFormula()
+			valueNode, err := p.parseFormula(futureClass)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -182,12 +188,21 @@ func (p *Parser) parseVariableOrConstant() (ast.ExpressionNode, *models.Token, e
 		return variable, nil, nil
 	}
 
+	functionNode, err := p.parseFunctionDefinition(futureClass, true)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if functionNode != nil {
+		return functionNode, nil, nil
+	}
+
 	return nil, nil, errors.New("очікується змінна або вираз")
 }
 
 func (p *Parser) parseRandomAccessOperation(expr ast.ExpressionNode) (ast.ExpressionNode, error) {
 	if lSquareBracket := p.match(models.TokenTypesList[models.LSquareBracket]); lSquareBracket != nil {
-		indexNode, err := p.parseFormula()
+		indexNode, err := p.parseFormula("")
 		if err != nil {
 			return nil, err
 		}
@@ -213,7 +228,7 @@ func (p *Parser) parseRandomAccessOperation(expr ast.ExpressionNode) (ast.Expres
 			panic(errors.New("got invalid token"))
 		}
 
-		rIndexNode, err := p.parseFormula()
+		rIndexNode, err := p.parseFormula("")
 		if err != nil {
 			return nil, err
 		}
@@ -240,7 +255,7 @@ func (p *Parser) parseFunctionCall(name *models.Token) (ast.ExpressionNode, erro
 		}
 
 		for {
-			argNode, err := p.parseFormula()
+			argNode, err := p.parseFormula("")
 			if err != nil {
 				return nil, err
 			}
@@ -289,7 +304,7 @@ func (p *Parser) parseImport() (ast.ExpressionNode, error) {
 	return nil, nil
 }
 
-func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
+func (p *Parser) parseVariableAssignment(futureClass string) (ast.ExpressionNode, error) {
 	name := p.match(models.TokenTypesList[models.Name])
 	if name != nil {
 		var err error
@@ -316,13 +331,18 @@ func (p *Parser) parseVariableAssignment() (ast.ExpressionNode, error) {
 		if p.match(models.TokenTypesList[models.AttrAccessOp]) != nil {
 			leftOperand, err = p.parseAttrAccess(leftOperand)
 		} else if assignOp := p.match(models.TokenTypesList[models.Assign]); assignOp != nil {
-			rightOperand, err := p.parseFormula()
+			rightOperand, err := p.parseFormula(futureClass)
 			if err != nil {
 				return nil, err
 			}
 
-			binaryNode := ast.NewBinOperationNode(*assignOp, leftOperand, rightOperand)
-			return binaryNode, nil
+			if functionDefNode, ok := rightOperand.(ast.FunctionDefNode); ok {
+				functionDefNode.Name.Text = name.Text
+				functionDefNode.Name.Type = name.Type
+				return ast.NewBinOperationNode(*assignOp, leftOperand, functionDefNode), nil
+			}
+
+			return ast.NewBinOperationNode(*assignOp, leftOperand, rightOperand), nil
 		}
 
 		return leftOperand, nil
@@ -371,7 +391,7 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return forNode, nil
 	}
 
-	functionNode, err := p.parseFunctionDefinition("")
+	functionNode, err := p.parseFunctionDefinition("", false)
 	if err != nil {
 		return nil, err
 	}
@@ -410,7 +430,7 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return returnNode, nil
 	}
 
-	assignmentNode, err := p.parseVariableAssignment()
+	assignmentNode, err := p.parseVariableAssignment("")
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +448,7 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return assignmentNode, nil
 	}
 
-	codeNode, err := p.parseFormula()
+	codeNode, err := p.parseFormula("")
 	if err != nil {
 		return nil, err
 	}
@@ -461,12 +481,14 @@ func (p *Parser) Parse() (*ast.AST, error) {
 			}
 
 			tokenString := p.tokens[p.pos-1].String()
-			return nil, errors.New(fmt.Sprintf(
-				"  Файл \"%s\", рядок %d\n    %s\n    %s\nСинтаксична помилка: %s",
-				p.fileName, p.tokens[p.pos-1].Row,
-				tokenString, strings.Repeat(" ", utf8.RuneCountInString(tokenString))+"^",
-				err.Error(),
-			))
+			return nil, errors.New(
+				fmt.Sprintf(
+					"  Файл \"%s\", рядок %d\n    %s\n    %s\nСинтаксична помилка: %s",
+					p.fileName, p.tokens[p.pos-1].Row,
+					tokenString, strings.Repeat(" ", utf8.RuneCountInString(tokenString))+"^",
+					err.Error(),
+				),
+			)
 		}
 
 		asTree.AddNode(codeNode)

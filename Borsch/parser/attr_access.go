@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
@@ -30,7 +31,7 @@ func (p *Parser) parseAttrAccess(base ast.ExpressionNode) (ast.ExpressionNode, e
 
 		assignOp := p.match(models.TokenTypesList[models.Assign])
 		if assignOp != nil {
-			rightNode, err := p.parseFormula()
+			rightNode, err := p.parseFormula("")
 			if err != nil {
 				return nil, err
 			}

@@ -115,8 +115,8 @@ func (p *Parser) parseUnaryOperator() *models.Token {
 	return nil
 }
 
-func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
-	variableNode, nameToken, err := p.parseVariableOrConstant()
+func (p *Parser) parseExpression(futureClass string) (ast.ExpressionNode, error) {
+	variableNode, nameToken, err := p.parseVariableConstantOrAnonymousFunction(futureClass)
 	if err != nil {
 		return nil, err
 	}
@@ -159,9 +159,9 @@ func (p *Parser) parseExpression() (ast.ExpressionNode, error) {
 	return nil, errors.New("очікується змінна, або виклик функції")
 }
 
-func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
+func (p *Parser) parseParentheses(futureClass string) (ast.ExpressionNode, error) {
 	if p.match(models.TokenTypesList[models.LPar]) != nil {
-		node, err := p.parseFormula()
+		node, err := p.parseFormula(futureClass)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +183,7 @@ func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 		return node, nil
 	}
 
-	expr, err := p.parseExpression()
+	expr, err := p.parseExpression(futureClass)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (p *Parser) parseParentheses() (ast.ExpressionNode, error) {
 	return expr, nil
 }
 
-func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
+func (p *Parser) parseFormula(futureClass string) (ast.ExpressionNode, error) {
 	nodes := stack{}
 	operators := stack{}
 
@@ -200,7 +200,7 @@ func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
 		operators = append(operators, *unaryOp)
 	}
 
-	node, err := p.parseParentheses()
+	node, err := p.parseParentheses(futureClass)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (p *Parser) parseFormula() (ast.ExpressionNode, error) {
 		}
 
 		unaryOp = p.parseUnaryOperator()
-		node, err = p.parseParentheses()
+		node, err = p.parseParentheses(futureClass)
 		if err != nil {
 			return nil, err
 		}

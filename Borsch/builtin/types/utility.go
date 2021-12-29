@@ -47,6 +47,8 @@ func GetTypeName(typeValue uint64) string {
 		return "пакет"
 	case FunctionTypeHash:
 		return "функція"
+	case TypeClassTypeHash:
+		return "тип"
 	default:
 		return "невідомий"
 	}
@@ -74,6 +76,8 @@ func GetTypeHash(typeName string) uint64 {
 		return PackageTypeHash
 	case "функція":
 		return FunctionTypeHash
+	case "тип":
+		return TypeClassTypeHash
 	default:
 		return hashObject(typeName)
 	}

@@ -27,7 +27,9 @@ func (p *Parser) parseClassDefinition() (ast.ExpressionNode, error) {
 		// TODO: parse class scope
 		var attributes []ast.ExpressionNode
 		for {
-			functionNode, err := p.parseFunctionDefinition(name.Text)
+			p.skipSemicolons()
+
+			functionNode, err := p.parseFunctionDefinition(name.Text, false)
 			if err != nil {
 				return nil, err
 			}
@@ -36,7 +38,7 @@ func (p *Parser) parseClassDefinition() (ast.ExpressionNode, error) {
 				attributes = append(attributes, functionNode)
 			}
 
-			variableNode, err := p.parseVariableAssignment()
+			variableNode, err := p.parseVariableAssignment(name.Text)
 			if err != nil {
 				return nil, err
 			}

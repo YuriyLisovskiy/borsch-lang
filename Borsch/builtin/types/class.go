@@ -74,6 +74,10 @@ func (t Class) SetAttribute(name string, value Type) (Type, error) {
 	return t, nil
 }
 
+func (t Class) GetClass() *Class {
+	return TypeClass
+}
+
 func newClassObject(name string, package_ *PackageInstance, attributes map[string]Type, doc string) *Object {
 	object := &Object{
 		typeName:    name,

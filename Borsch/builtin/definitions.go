@@ -341,4 +341,5 @@ var RuntimeObjects = map[string]types.Type{
 		types.BuiltinPackage,
 		"", // TODO: add doc
 	),
+	"тип": types.TypeClass,
 }

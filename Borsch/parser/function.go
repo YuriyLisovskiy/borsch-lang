@@ -44,16 +44,25 @@ func (p *Parser) parseArgument(futureClass string) (types.FunctionArgument, erro
 	}, nil
 }
 
-func (p *Parser) parseFunctionDefinition(futureClass string) (ast.ExpressionNode, error) {
+func (p *Parser) parseFunctionDefinition(futureClass string, isAnonymous bool) (ast.ExpressionNode, error) {
 	if p.match(models.TokenTypesList[models.FunctionDef]) != nil {
-		name, err := p.require(models.TokenTypesList[models.Name])
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("%s функції", err.Error()))
+		nameToken := &models.Token{Text: ""}
+		if !isAnonymous {
+			var err error
+			nameToken, err = p.require(models.TokenTypesList[models.Name])
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("%s функції", err.Error()))
+			}
 		}
 
-		_, err = p.require(models.TokenTypesList[models.LPar])
+		lPar, err := p.require(models.TokenTypesList[models.LPar])
 		if err != nil {
 			return nil, err
+		}
+
+		if isAnonymous {
+			nameToken.Row = lPar.Row
+			nameToken.Pos = lPar.Pos
 		}
 
 		var parameters []types.FunctionArgument
@@ -83,9 +92,11 @@ func (p *Parser) parseFunctionDefinition(futureClass string) (ast.ExpressionNode
 		visited := map[string]bool{}
 		for _, parameter := range parameters {
 			if visited[parameter.Name] {
-				return nil, errors.New(fmt.Sprintf(
-					"аргумент '%s' є продубльованим у визначенні функції", parameter.Name,
-				))
+				return nil, errors.New(
+					fmt.Sprintf(
+						"аргумент '%s' є продубльованим у визначенні функції", parameter.Name,
+					),
+				)
 			} else {
 				visited[parameter.Name] = true
 			}
@@ -114,7 +125,7 @@ func (p *Parser) parseFunctionDefinition(futureClass string) (ast.ExpressionNode
 			return nil, err
 		}
 
-		functionNode := ast.NewFunctionDefNode(*name, parameters, retType, body)
+		functionNode := ast.NewFunctionDefNode(nameToken.Row, *nameToken, parameters, retType, body)
 		return functionNode, nil
 	}
 
@@ -128,7 +139,7 @@ func (p *Parser) parseReturnStatement() (ast.ExpressionNode, error) {
 			p.pos--
 		} else {
 			var err error
-			value, err = p.parseFormula()
+			value, err = p.parseFormula("")
 			if err != nil {
 				return nil, err
 			}

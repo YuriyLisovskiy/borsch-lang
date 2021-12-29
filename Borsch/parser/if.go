@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
@@ -13,7 +14,7 @@ func (p *Parser) parseIfSequence() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		conditionNode, err := p.parseFormula()
+		conditionNode, err := p.parseFormula("")
 		if err != nil {
 			return nil, err
 		}
@@ -36,7 +37,7 @@ func (p *Parser) parseIfSequence() (ast.ExpressionNode, error) {
 					return nil, err
 				}
 
-				conditionNode, err = p.parseFormula()
+				conditionNode, err = p.parseFormula("")
 				if err != nil {
 					return nil, err
 				}

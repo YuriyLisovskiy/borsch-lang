@@ -2,29 +2,36 @@ package ast
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
-	"strings"
 )
 
 type FunctionDefNode struct {
-	Name       models.Token
-	Arguments  []types.FunctionArgument
-	ReturnType types.FunctionReturnType
-	Body       []models.Token
+	Name        models.Token
+	Arguments   []types.FunctionArgument
+	ReturnType  types.FunctionReturnType
+	Body        []models.Token
+	IsAnonymous bool
 
 	rowNumber int
 }
 
 func NewFunctionDefNode(
-	name models.Token, args []types.FunctionArgument, retType types.FunctionReturnType, body []models.Token,
+	rowNumber int,
+	name models.Token,
+	args []types.FunctionArgument,
+	retType types.FunctionReturnType,
+	body []models.Token,
 ) FunctionDefNode {
 	return FunctionDefNode{
-		Name:       name,
-		Arguments:  args,
-		ReturnType: retType,
-		Body:       body,
-		rowNumber:  name.Row,
+		Name:        name,
+		Arguments:   args,
+		ReturnType:  retType,
+		Body:        body,
+		IsAnonymous: name.Text != "",
+		rowNumber:   rowNumber,
 	}
 }
 

@@ -11,6 +11,7 @@ const (
 	DictionaryTypeHash
 	PackageTypeHash
 	FunctionTypeHash
+	TypeClassTypeHash
 )
 
 type Type interface {
@@ -39,15 +40,16 @@ type Instance interface {
 }
 
 var (
-	Bool = newBoolClass()
+	Bool       = newBoolClass()
 	Dictionary = newDictionaryClass()
-	Function = newFunctionClass()
-	Integer = newIntegerClass()
-	List = newListClass()
-	Nil = newNilClass()
-	Package = NewPackageClass()
-	Real = newRealClass()
-	String = newStringClass()
+	Function   = newFunctionClass()
+	Integer    = newIntegerClass()
+	List       = newListClass()
+	Nil        = newNilClass()
+	Package    = NewPackageClass()
+	Real       = newRealClass()
+	String     = newStringClass()
+	TypeClass  = newTypeClass()
 )
 
 var BuiltinPackage = NewPackageInstance(true, "", "", map[string]Type{})
