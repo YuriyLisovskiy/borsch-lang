@@ -105,7 +105,7 @@ func (t ListInstance) Slice(from, to int64) (Type, error) {
 	}
 
 	listInstance := NewListInstance()
-	listInstance.Values = t.Values[fromIdx:toIdx]
+	listInstance.Values = t.Values[fromIdx : toIdx+1]
 	return listInstance, nil
 }
 
