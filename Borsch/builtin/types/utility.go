@@ -28,7 +28,7 @@ func getIndex(index, length int64) (int64, error) {
 func GetTypeName(typeValue uint64) string {
 	switch typeValue {
 	case AnyTypeHash:
-		return "абиякий"
+		return "довільний"
 	case NilTypeHash:
 		return "нульовий"
 	case RealTypeHash:
@@ -56,7 +56,7 @@ func GetTypeName(typeValue uint64) string {
 
 func GetTypeHash(typeName string) uint64 {
 	switch typeName {
-	case "абиякий":
+	case "довільний":
 		return AnyTypeHash
 	case "нульовий":
 		return NilTypeHash

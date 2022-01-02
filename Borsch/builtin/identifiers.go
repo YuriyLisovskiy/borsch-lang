@@ -18,13 +18,13 @@ var RegisteredIdentifiers = map[string]int{
 	"клас":   KeywordId,
 
 	// Types + cast functions
-	"абиякий":  TypeId,
-	"рядок":    TypeId,
-	"цілий":    TypeId,
-	"дійсний":  TypeId,
-	"логічний": TypeId,
-	"список":   TypeId,
-	"словник":  TypeId,
+	"довільний": TypeId,
+	"рядок":     TypeId,
+	"цілий":     TypeId,
+	"дійсний":   TypeId,
+	"логічний":  TypeId,
+	"список":    TypeId,
+	"словник":   TypeId,
 
 	// Functions
 	"друк":            FunctionId,
