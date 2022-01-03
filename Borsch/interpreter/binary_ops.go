@@ -56,7 +56,7 @@ func (i *Interpreter) executeBinaryOp(ctx *Context, node *ast.BinOperationNode) 
 
 		switch leftNode := node.LeftNode.(type) {
 		case ast.VariableNode:
-			return rightNode, i.setVar(ctx.package_.Name, leftNode.Variable.Text, rightNode)
+			return nil, i.setVar(ctx.package_.Name, leftNode.Variable.Text, rightNode)
 		case ast.CallOpNode:
 			return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
 		case ast.RandomAccessOperationNode:
@@ -93,7 +93,7 @@ func (i *Interpreter) executeBinaryOp(ctx *Context, node *ast.BinOperationNode) 
 				break
 			}
 
-			return variable, nil
+			return nil, nil
 		case ast.AttrAccessOpNode:
 			base, _, err := i.executeNode(ctx, leftNode.Base)
 			if err != nil {
@@ -112,7 +112,7 @@ func (i *Interpreter) executeBinaryOp(ctx *Context, node *ast.BinOperationNode) 
 				panic("fatal: invalid node")
 			}
 
-			return base, nil
+			return nil, nil
 		default:
 			panic("fatal: invalid node")
 		}

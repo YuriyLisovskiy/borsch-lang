@@ -37,7 +37,7 @@ func (i *Interpreter) executeForEachLoop(
 			}
 
 			if forceReturn {
-				return types.NewNilInstance(), forceReturn, nil
+				return nil, forceReturn, nil
 			}
 			// if result != nil {
 			//	return result, forceReturn, nil
@@ -51,5 +51,5 @@ func (i *Interpreter) executeForEachLoop(
 		)
 	}
 
-	return types.NewNilInstance(), false, nil
+	return nil, false, nil
 }
