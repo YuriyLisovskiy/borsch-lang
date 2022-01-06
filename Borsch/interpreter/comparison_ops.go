@@ -3,43 +3,31 @@ package interpreter
 import (
 	"fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func (i *Interpreter) executeComparisonOp(
-	ctx *Context,
-	leftNode ast.ExpressionNode,
-	rightNode ast.ExpressionNode,
+	leftOperand types.Type,
+	rightOperand types.Type,
 	opType ops.Operator,
 ) (types.Type, error) {
-	left, _, err := i.executeNode(ctx, leftNode)
-	if err != nil {
-		return nil, err
-	}
-
-	right, _, err := i.executeNode(ctx, rightNode)
-	if err != nil {
-		return nil, err
-	}
-
-	switch left.(type) {
+	switch leftOperand.(type) {
 	case types.NilInstance, types.BoolInstance:
 		switch opType {
 		case ops.EqualsOp, ops.NotEqualsOp:
-			operatorFunc, err := left.GetAttribute(opType.Caption())
+			operatorFunc, err := leftOperand.GetAttribute(opType.Caption())
 			if err != nil {
 				return nil, util.RuntimeError(err.Error())
 			}
 
 			switch operator := operatorFunc.(type) {
 			case *types.FunctionInstance:
-				args := []types.Type{left, right}
+				args := []types.Type{leftOperand, rightOperand}
 				kwargs := map[string]types.Type{
-					"я":     left,
-					"інший": right,
+					operator.Arguments[0].Name: leftOperand,
+					operator.Arguments[1].Name: rightOperand,
 				}
 				if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
 					return nil, err
@@ -58,7 +46,7 @@ func (i *Interpreter) executeComparisonOp(
 			return nil, util.RuntimeError(
 				fmt.Sprintf(
 					"оператор %s невизначений для значень типів '%s' та '%s'",
-					opType.Description(), left.GetTypeName(), right.GetTypeName(),
+					opType.Description(), leftOperand.GetTypeName(), rightOperand.GetTypeName(),
 				),
 			)
 		default:
@@ -67,13 +55,13 @@ func (i *Interpreter) executeComparisonOp(
 	default:
 		switch opType {
 		case ops.EqualsOp, ops.NotEqualsOp, ops.GreaterOp, ops.GreaterOrEqualsOp, ops.LessOp, ops.LessOrEqualsOp:
-			if operatorFunc, err := left.GetAttribute(opType.Caption()); err == nil {
+			if operatorFunc, err := leftOperand.GetAttribute(opType.Caption()); err == nil {
 				switch operator := operatorFunc.(type) {
 				case *types.FunctionInstance:
-					args := []types.Type{left, right}
+					args := []types.Type{leftOperand, rightOperand}
 					kwargs := map[string]types.Type{
-						"я":     left,
-						"інший": right,
+						operator.Arguments[0].Name: leftOperand,
+						operator.Arguments[1].Name: rightOperand,
 					}
 					if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
 						return nil, err
@@ -94,5 +82,5 @@ func (i *Interpreter) executeComparisonOp(
 		}
 	}
 
-	return nil, util.OperatorError(opType.Description(), left.GetTypeName(), right.GetTypeName())
+	return nil, util.OperatorError(opType.Description(), leftOperand.GetTypeName(), rightOperand.GetTypeName())
 }

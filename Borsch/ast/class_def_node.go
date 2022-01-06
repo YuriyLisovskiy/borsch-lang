@@ -6,13 +6,13 @@ import (
 
 type ClassDefNode struct {
 	Name       models.Token
-	Doc        models.Token
+	Doc        string
 	Attributes []ExpressionNode
 
 	rowNumber int
 }
 
-func NewClassDefNode(name models.Token, doc models.Token, attributes []ExpressionNode) ClassDefNode {
+func NewClassDefNode(name models.Token, doc string, attributes []ExpressionNode) ClassDefNode {
 	return ClassDefNode{
 		Name:       name,
 		Doc:        doc,

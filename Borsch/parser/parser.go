@@ -168,7 +168,7 @@ func (p *Parser) parseVariableConstantOrAnonymousFunction(futureClass string) (
 			return nil, name, nil
 		}
 
-		var variable ast.ExpressionNode = ast.NewVariableNode(*name)
+		var variable ast.ExpressionNode = ast.NewVariableNode(*name, "")
 		randomAccessOp, err := p.parseRandomAccessOperation(variable)
 		if err != nil {
 			return nil, nil, err
@@ -188,7 +188,7 @@ func (p *Parser) parseVariableConstantOrAnonymousFunction(futureClass string) (
 		return variable, nil, nil
 	}
 
-	functionNode, err := p.parseFunctionDefinition(futureClass, true)
+	functionNode, err := p.parseFunctionDefinition(futureClass, true, "")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -304,7 +304,7 @@ func (p *Parser) parseImport() (ast.ExpressionNode, error) {
 	return nil, nil
 }
 
-func (p *Parser) parseVariableAssignment(futureClass string) (ast.ExpressionNode, error) {
+func (p *Parser) parseVariableAssignment(futureClass string, doc string) (ast.ExpressionNode, error) {
 	name := p.match(models.TokenTypesList[models.Name])
 	if name != nil {
 		var err error
@@ -315,12 +315,14 @@ func (p *Parser) parseVariableAssignment(futureClass string) (ast.ExpressionNode
 				return nil, err
 			}
 		} else {
-			err = p.checkForKeyword(name.Text)
-			if err != nil {
-				return nil, err
+			if futureClass == "" {
+				err = p.checkForKeyword(name.Text)
+				if err != nil {
+					return nil, err
+				}
 			}
 
-			leftOperand = ast.NewVariableNode(*name)
+			leftOperand = ast.NewVariableNode(*name, doc)
 		}
 
 		leftOperand, err = p.parseRandomAccessOperation(leftOperand)
@@ -352,6 +354,11 @@ func (p *Parser) parseVariableAssignment(futureClass string) (ast.ExpressionNode
 }
 
 func (p *Parser) parseRow() (ast.ExpressionNode, error) {
+	doc := p.tryParseDoc()
+	if p.pos < 0 {
+		p.pos = 0
+	}
+
 	includeDirectiveNode, err := p.parseImport()
 	if err != nil {
 		return nil, err
@@ -391,7 +398,7 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return forNode, nil
 	}
 
-	functionNode, err := p.parseFunctionDefinition("", false)
+	functionNode, err := p.parseFunctionDefinition("", false, doc)
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +411,7 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return functionNode, nil
 	}
 
-	classNode, err := p.parseClassDefinition()
+	classNode, err := p.parseClassDefinition(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +437,7 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 		return returnNode, nil
 	}
 
-	assignmentNode, err := p.parseVariableAssignment("")
+	assignmentNode, err := p.parseVariableAssignment("", "")
 	if err != nil {
 		return nil, err
 	}
@@ -463,6 +470,17 @@ func (p *Parser) parseRow() (ast.ExpressionNode, error) {
 	}
 
 	return codeNode, nil
+}
+
+func (p *Parser) tryParseDoc() string {
+	if token := p.match(models.TokenTypesList[models.DocComment]); token != nil {
+		doc := strings.TrimLeft(token.Text, "/**\n\r")
+		if !strings.HasSuffix(doc, "\n\n") {
+			return strings.TrimRight(doc, "\n\r */")
+		}
+	}
+
+	return ""
 }
 
 func (p *Parser) skipSemicolons() {

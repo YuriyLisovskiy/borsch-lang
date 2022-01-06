@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 )
 
-func (p *Parser) parseClassDefinition() (ast.ExpressionNode, error) {
+func (p *Parser) parseClassDefinition(doc string) (ast.ExpressionNode, error) {
 	if p.match(models.TokenTypesList[models.ClassDef]) != nil {
 		name, err := p.require(models.TokenTypesList[models.Name])
 		if err != nil {
@@ -22,14 +22,13 @@ func (p *Parser) parseClassDefinition() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 
-		// TODO: parse doc
-
 		// TODO: parse class scope
 		var attributes []ast.ExpressionNode
 		for {
 			p.skipSemicolons()
+			doc := p.tryParseDoc()
 
-			functionNode, err := p.parseFunctionDefinition(name.Text, false)
+			functionNode, err := p.parseFunctionDefinition(name.Text, false, doc)
 			if err != nil {
 				return nil, err
 			}
@@ -38,7 +37,7 @@ func (p *Parser) parseClassDefinition() (ast.ExpressionNode, error) {
 				attributes = append(attributes, functionNode)
 			}
 
-			variableNode, err := p.parseVariableAssignment(name.Text)
+			variableNode, err := p.parseVariableAssignment(name.Text, doc)
 			if err != nil {
 				return nil, err
 			}
@@ -65,7 +64,7 @@ func (p *Parser) parseClassDefinition() (ast.ExpressionNode, error) {
 		// 	return nil, err
 		// }
 
-		classNode := ast.NewClassDefNode(*name, models.Token{}, attributes)
+		classNode := ast.NewClassDefNode(*name, doc, attributes)
 		return classNode, nil
 	}
 

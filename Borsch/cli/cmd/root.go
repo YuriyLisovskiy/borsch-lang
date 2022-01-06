@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
@@ -53,11 +54,11 @@ var rootCmd = &cobra.Command{
 				}
 			}
 		} else {
-			interpret := interpreter.NewInterpreter(stdRoot, "<стдввід>", "")
+			interpret := interpreter.NewInterpreter(stdRoot, builtin.RootPackageName, "")
 			fmt.Printf("%s %s (%s, %s)\n", build.LanguageName, build.Version, build.Time, strings.Title(runtime.GOOS))
 			fmt.Println(
-				"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.\n"+
-				"Натисніть CONTROL+D або CONTROL+C для виходу.",
+				"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.\n" +
+					"Натисніть CONTROL+D або CONTROL+C для виходу.",
 			)
 			runInteractiveConsole(interpret)
 		}

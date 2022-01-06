@@ -9,46 +9,7 @@ import (
 )
 
 func (i *Interpreter) executeBinaryOp(ctx *Context, node *ast.BinOperationNode) (types.Type, error) {
-	switch node.Operator.Type.Name {
-	case models.ExponentOp:
-		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.PowOp)
-	case models.ModuloOp:
-		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.ModuloOp)
-	case models.Add:
-		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.AddOp)
-	case models.Sub:
-		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.SubOp)
-	case models.Mul:
-		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.MulOp)
-	case models.Div:
-		return i.executeArithmeticOp(ctx, node.LeftNode, node.RightNode, ops.DivOp)
-	case models.AndOp:
-		return i.executeLogicalOp(ctx, node.LeftNode, node.RightNode, ops.AndOp)
-	case models.OrOp:
-		return i.executeLogicalOp(ctx, node.LeftNode, node.RightNode, ops.OrOp)
-	case models.BitwiseLeftShiftOp:
-		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseLeftShiftOp)
-	case models.BitwiseRightShiftOp:
-		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseRightShiftOp)
-	case models.BitwiseAndOp:
-		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseAndOp)
-	case models.BitwiseXorOp:
-		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseXorOp)
-	case models.BitwiseOrOp:
-		return i.executeBitwiseOp(ctx, node.LeftNode, node.RightNode, ops.BitwiseOrOp)
-	case models.EqualsOp:
-		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.EqualsOp)
-	case models.NotEqualsOp:
-		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.NotEqualsOp)
-	case models.GreaterOp:
-		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.GreaterOp)
-	case models.GreaterOrEqualsOp:
-		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.GreaterOrEqualsOp)
-	case models.LessOp:
-		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.LessOp)
-	case models.LessOrEqualsOp:
-		return i.executeComparisonOp(ctx, node.LeftNode, node.RightNode, ops.LessOrEqualsOp)
-	case models.Assign:
+	if node.Operator.Type.Name == models.Assign {
 		rightNode, _, err := i.executeNode(ctx, node.RightNode)
 		if err != nil {
 			return nil, err
@@ -56,7 +17,7 @@ func (i *Interpreter) executeBinaryOp(ctx *Context, node *ast.BinOperationNode) 
 
 		switch leftNode := node.LeftNode.(type) {
 		case ast.VariableNode:
-			return nil, i.setVar(ctx.package_.Name, leftNode.Variable.Text, rightNode)
+			return nil, i.setVar(ctx.GetPackageFromParent(), leftNode.Variable.Text, rightNode)
 		case ast.CallOpNode:
 			return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
 		case ast.RandomAccessOperationNode:
@@ -87,7 +48,7 @@ func (i *Interpreter) executeBinaryOp(ctx *Context, node *ast.BinOperationNode) 
 					operand = external.Operand
 					continue
 				case ast.VariableNode:
-					err = i.setVar(ctx.package_.Name, external.Variable.Text, variable)
+					err = i.setVar(ctx.GetPackageFromParent(), external.Variable.Text, variable)
 				}
 
 				break
@@ -116,6 +77,57 @@ func (i *Interpreter) executeBinaryOp(ctx *Context, node *ast.BinOperationNode) 
 		default:
 			panic("fatal: invalid node")
 		}
+	}
+
+	left, _, err := i.executeNode(ctx, node.LeftNode)
+	if err != nil {
+		return nil, err
+	}
+
+	right, _, err := i.executeNode(ctx, node.RightNode)
+	if err != nil {
+		return nil, err
+	}
+
+	switch node.Operator.Type.Name {
+	case models.ExponentOp:
+		return i.executeArithmeticOp(left, right, ops.PowOp)
+	case models.ModuloOp:
+		return i.executeArithmeticOp(left, right, ops.ModuloOp)
+	case models.Add:
+		return i.executeArithmeticOp(left, right, ops.AddOp)
+	case models.Sub:
+		return i.executeArithmeticOp(left, right, ops.SubOp)
+	case models.Mul:
+		return i.executeArithmeticOp(left, right, ops.MulOp)
+	case models.Div:
+		return i.executeArithmeticOp(left, right, ops.DivOp)
+	case models.AndOp:
+		return i.executeLogicalOp(left, right, ops.AndOp)
+	case models.OrOp:
+		return i.executeLogicalOp(left, right, ops.OrOp)
+	case models.BitwiseLeftShiftOp:
+		return i.executeBitwiseOp(left, right, ops.BitwiseLeftShiftOp)
+	case models.BitwiseRightShiftOp:
+		return i.executeBitwiseOp(left, right, ops.BitwiseRightShiftOp)
+	case models.BitwiseAndOp:
+		return i.executeBitwiseOp(left, right, ops.BitwiseAndOp)
+	case models.BitwiseXorOp:
+		return i.executeBitwiseOp(left, right, ops.BitwiseXorOp)
+	case models.BitwiseOrOp:
+		return i.executeBitwiseOp(left, right, ops.BitwiseOrOp)
+	case models.EqualsOp:
+		return i.executeComparisonOp(left, right, ops.EqualsOp)
+	case models.NotEqualsOp:
+		return i.executeComparisonOp(left, right, ops.NotEqualsOp)
+	case models.GreaterOp:
+		return i.executeComparisonOp(left, right, ops.GreaterOp)
+	case models.GreaterOrEqualsOp:
+		return i.executeComparisonOp(left, right, ops.GreaterOrEqualsOp)
+	case models.LessOp:
+		return i.executeComparisonOp(left, right, ops.LessOp)
+	case models.LessOrEqualsOp:
+		return i.executeComparisonOp(left, right, ops.LessOrEqualsOp)
 	default:
 		panic("fatal: invalid binary operator")
 	}

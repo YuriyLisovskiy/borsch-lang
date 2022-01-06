@@ -24,9 +24,11 @@ func NewLexer(filePath string, code string) *Lexer {
 		values = append(values, value)
 	}
 
-	sort.Slice(values, func(i, j int) bool {
-		return values[i].Name < values[j].Name
-	})
+	sort.Slice(
+		values, func(i, j int) bool {
+			return values[i].Name < values[j].Name
+		},
+	)
 
 	return &Lexer{
 		filePath:         filePath,
@@ -60,6 +62,10 @@ func (l *Lexer) Lex() ([]models.Token, error) {
 		case models.MultiLineComment, models.SingleLineComment:
 			rowCounter += strings.Count(token.Text, "\n")
 		default:
+			if token.Type.Name == models.DocComment {
+				rowCounter += strings.Count(token.Text, "\n")
+			}
+
 			token.Row = rowCounter
 			result = append(result, token)
 		}
@@ -117,8 +123,10 @@ func (l *Lexer) nextToken() (bool, error) {
 
 	codeFragment := string(runes[leftPos : rightPos-1])
 	underline := strings.Repeat(" ", len(runes[leftPos:l.pos])) + "^"
-	return false, errors.New(fmt.Sprintf(
-		"  Файл \"%s\", рядок %d\n    %s\n    %s\n%s",
-		l.filePath, rowNumber, codeFragment, underline, "Синтаксична помилка: некоректний синтаксис",
-	))
+	return false, errors.New(
+		fmt.Sprintf(
+			"  Файл \"%s\", рядок %d\n    %s\n    %s\n%s",
+			l.filePath, rowNumber, codeFragment, underline, "Синтаксична помилка: некоректний синтаксис",
+		),
+	)
 }

@@ -17,7 +17,7 @@ func (p *Parser) parseAttrAccess(base ast.ExpressionNode) (ast.ExpressionNode, e
 				return nil, err
 			}
 		} else {
-			attr = ast.NewVariableNode(*name)
+			attr = ast.NewVariableNode(*name, "")
 		}
 
 		result, err := p.parseRandomAccessOperation(ast.NewAttrAccessOpNode(base, attr, name.Row))

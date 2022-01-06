@@ -10,6 +10,7 @@ import (
 
 type FunctionDefNode struct {
 	Name        models.Token
+	Doc         string
 	Arguments   []types.FunctionArgument
 	ReturnType  types.FunctionReturnType
 	Body        []models.Token
@@ -21,12 +22,14 @@ type FunctionDefNode struct {
 func NewFunctionDefNode(
 	rowNumber int,
 	name models.Token,
+	doc string,
 	args []types.FunctionArgument,
 	retType types.FunctionReturnType,
 	body []models.Token,
 ) FunctionDefNode {
 	return FunctionDefNode{
 		Name:        name,
+		Doc:         doc,
 		Arguments:   args,
 		ReturnType:  retType,
 		Body:        body,

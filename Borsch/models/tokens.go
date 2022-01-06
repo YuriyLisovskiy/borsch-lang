@@ -19,6 +19,7 @@ func (t *Token) String() string {
 
 const (
 	SingleLineComment = iota
+	DocComment
 	MultiLineComment
 	ImportStdDirective
 	ImportDirective
@@ -74,6 +75,7 @@ const (
 
 var tokenTypeNames = map[int]string{
 	SingleLineComment:  "однорядковий коментар",
+	DocComment:         "документ",
 	MultiLineComment:   "багаторядковий коментар",
 	ImportStdDirective: "директива підключення файлу стандартної бібліотеки",
 	ImportDirective:    "директива підключення файлу",
@@ -152,6 +154,10 @@ var TokenTypesList = map[int]TokenType{
 	SingleLineComment: {
 		Name:  SingleLineComment,
 		Regex: regexp.MustCompile("^//[^\\n\\r]+?(?:\\*\\)|[\\n\\r])"),
+	},
+	DocComment: {
+		Name:  DocComment,
+		Regex: regexp.MustCompile("^(/\\*{2})(.|\\n)*?(\\*/)[\\n\\r]"),
 	},
 	MultiLineComment: {
 		Name:  MultiLineComment,

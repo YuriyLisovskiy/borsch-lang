@@ -11,6 +11,8 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
+const RootPackageName = "__кореневий__"
+
 var RuntimeObjects = map[string]types.Type{
 
 	// I/O

@@ -24,14 +24,12 @@ func (i *Interpreter) executeAttrAccessOp(ctx *Context, node *ast.AttrAccessOpNo
 		if err != nil {
 			return nil, err
 		}
-
-		ctx.parentObject = val
-		res, err = i.executeCallOp(ctx, &attr, res)
+		
+		res, err = i.executeCallOp(ctx.WithParent(val), &attr, res)
 		if err != nil {
 			return nil, err
 		}
 
-		ctx.parentObject = nil
 		return res, nil
 	default:
 		panic("fatal: invalid node")

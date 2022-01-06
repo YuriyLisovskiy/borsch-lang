@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (i *Interpreter) executeImport(ctx *Context, node *ast.ImportNode) (types.Type, error) {
+func (i *Interpreter) executeImport(ctx *Context, node *ast.ImportNode) error {
 	if node.IsStd {
 		node.FilePath = filepath.Join(i.stdRoot, node.FilePath)
 	} else if !filepath.IsAbs(node.FilePath) {
@@ -16,7 +16,7 @@ func (i *Interpreter) executeImport(ctx *Context, node *ast.ImportNode) (types.T
 	}
 
 	if node.FilePath == ctx.parentPackageName {
-		return nil, util.RuntimeError("циклічний імпорт заборонений")
+		return util.RuntimeError("циклічний імпорт заборонений")
 	}
 
 	pkg, ok := i.includedPackages[node.FilePath]
@@ -24,19 +24,23 @@ func (i *Interpreter) executeImport(ctx *Context, node *ast.ImportNode) (types.T
 		var err error
 		fileContent, err := util.ReadFile(node.FilePath)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		newContext := &Context{
-			parentObject:      nil,
-			rootDir:           "",
-			package_:          types.NewPackageInstance(node.IsStd, node.FilePath, ctx.package_.Name, map[string]types.Type{}),
+			rootDir: filepath.Dir(node.FilePath),
+			package_: types.NewPackageInstance(
+				node.IsStd,
+				node.FilePath,
+				ctx.package_.Name,
+				map[string]types.Type{},
+			),
 			parentPackageName: ctx.package_.Name,
 		}
-
+		newContext.parentObject = newContext.package_
 		err = i.ExecuteFile(newContext, fileContent)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		pkg = newContext.package_
@@ -44,11 +48,11 @@ func (i *Interpreter) executeImport(ctx *Context, node *ast.ImportNode) (types.T
 	}
 
 	if node.Name != "" {
-		err := i.setVar(ctx.package_.Name, node.Name, pkg)
+		err := i.setVar(ctx.GetPackageFromParent(), node.Name, pkg)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return pkg, nil
+	return nil
 }

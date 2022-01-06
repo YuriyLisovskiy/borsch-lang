@@ -10,10 +10,29 @@ type Context struct {
 }
 
 func NewContext(packageName, parentPackage, rootDir string) *Context {
-	return &Context{
+	context := &Context{
 		parentObject:      nil,
 		rootDir:           rootDir,
 		package_:          types.NewPackageInstance(false, packageName, parentPackage, map[string]types.Type{}),
 		parentPackageName: parentPackage,
 	}
+	context.parentObject = context.package_
+	return context
+}
+
+func (c *Context) WithParent(parent types.Type) *Context {
+	return &Context{
+		parentObject:      parent,
+		rootDir:           c.rootDir,
+		package_:          c.package_,
+		parentPackageName: c.parentPackageName,
+	}
+}
+
+func (c *Context) GetPackageFromParent() *types.PackageInstance {
+	if p, ok := c.parentObject.(*types.PackageInstance); ok {
+		return p
+	}
+
+	return nil
 }

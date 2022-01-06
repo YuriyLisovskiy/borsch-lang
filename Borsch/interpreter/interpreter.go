@@ -9,6 +9,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ast"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/models"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/parser"
@@ -18,24 +19,21 @@ import (
 type Interpreter struct {
 	stdRoot          string
 	scopes           map[string][]map[string]types.Type
-	currentPackage   string
-	parentPackage    string
 	context          *Context
 	includedPackages map[string]types.Type
 }
 
 func NewInterpreter(stdRoot, currentPackage, parentPackage string) *Interpreter {
+	context := &Context{
+		rootDir:           stdRoot,
+		package_:          types.NewPackageInstance(false, currentPackage, parentPackage, map[string]types.Type{}),
+		parentPackageName: parentPackage,
+	}
+	context.parentObject = context.package_
 	return &Interpreter{
-		stdRoot:        stdRoot,
-		currentPackage: currentPackage,
-		parentPackage:  parentPackage,
-		scopes:         map[string][]map[string]types.Type{},
-		context: &Context{
-			parentObject:      nil,
-			rootDir:           stdRoot,
-			package_:          types.NewPackageInstance(false, currentPackage, parentPackage, map[string]types.Type{}),
-			parentPackageName: parentPackage,
-		},
+		stdRoot:          stdRoot,
+		scopes:           map[string][]map[string]types.Type{},
+		context:          context,
 		includedPackages: map[string]types.Type{},
 	}
 }
@@ -77,8 +75,13 @@ func (i *Interpreter) getVar(packageName string, name string) (types.Type, error
 	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
 }
 
-func (i *Interpreter) setVar(packageName, name string, value types.Type) error {
-	if scopes, ok := i.scopes[packageName]; ok {
+func (i *Interpreter) setVar(package_ *types.PackageInstance, name string, value types.Type) error {
+	if package_ == nil {
+		// return errors.New("setVar: package is nil")
+		return nil
+	}
+
+	if scopes, ok := i.scopes[package_.Name]; ok {
 		scopesLen := len(scopes)
 		for idx := 0; idx < scopesLen; idx++ {
 			if oldValue, ok := scopes[idx][name]; ok {
@@ -103,26 +106,23 @@ func (i *Interpreter) setVar(packageName, name string, value types.Type) error {
 				}
 
 				scopes[idx][name] = value
-				i.scopes[packageName] = scopes
+				i.scopes[package_.Name] = scopes
 				return nil
 			}
 		}
 
 		scopes[scopesLen-1][name] = value
-		i.scopes[packageName] = scopes
+		i.scopes[package_.Name] = scopes
 		return nil
 	}
 
-	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", packageName))
+	panic(fmt.Sprintf("fatal: scopes for '%s' package does not exist", package_.Name))
 }
 
-// TODO: pass parent type from what call operation was performed, nil otherwise;
-//  this is useful for calling methods of custom classes.
 func (i *Interpreter) executeNode(ctx *Context, rootNode ast.ExpressionNode) (types.Type, bool, error) {
 	switch node := rootNode.(type) {
 	case ast.ImportNode:
-		res, err := i.executeImport(ctx, &node)
-		return res, false, err
+		return nil, false, i.executeImport(ctx, &node)
 
 	case ast.FunctionDefNode:
 		functionDef := types.NewFunctionInstance(
@@ -134,30 +134,36 @@ func (i *Interpreter) executeNode(ctx *Context, rootNode ast.ExpressionNode) (ty
 			node.ReturnType,
 			false,
 			ctx.package_,
-			"", // TODO: set doc
+			node.Doc,
 		)
-		return functionDef, false, i.setVar(ctx.package_.Name, node.Name.Text, functionDef)
+		return functionDef, false, i.setVar(ctx.GetPackageFromParent(), node.Name.Text, functionDef)
 
 	case ast.ClassDefNode:
-		// TODO: set doc
 		// TODO: set attributes
 
 		attributes := map[string]types.Type{}
+		classContext := ctx.WithParent(nil)
 		for _, attributeNode := range node.Attributes {
 			switch attribute := attributeNode.(type) {
 			case ast.BinOperationNode:
 				if attribute.Operator.Type.Name == models.Assign {
 					switch variableNode := attribute.LeftNode.(type) {
 					case ast.VariableNode:
-						res, _, err := i.executeNode(ctx, attribute.RightNode)
+						res, _, err := i.executeNode(classContext, attribute.RightNode)
 						if err != nil {
 							return nil, false, err
+						}
+
+						if _, ok := res.(*types.FunctionInstance); ok {
+							// Error is muted.
+							_, _ = res.SetAttribute(ops.DocAttributeName, types.NewStringInstance(variableNode.Doc))
 						}
 
 						attributes[variableNode.Variable.Text] = res
 						continue
 					}
 				}
+
 			case ast.FunctionDefNode:
 				functionDef := types.NewFunctionInstance(
 					attribute.Name.Text, attribute.Arguments,
@@ -168,19 +174,19 @@ func (i *Interpreter) executeNode(ctx *Context, rootNode ast.ExpressionNode) (ty
 					attribute.ReturnType,
 					true,
 					nil,
-					"", // TODO: set doc
+					attribute.Doc,
 				)
 				attributes[attribute.Name.Text] = functionDef
-			}
-
-			_, _, err := i.executeNode(ctx, attributeNode)
-			if err != nil {
-				return nil, false, err
+			default:
+				_, _, err := i.executeNode(classContext, attributeNode)
+				if err != nil {
+					return nil, false, err
+				}
 			}
 		}
 
-		classDef := types.NewClass(node.Name.Text, ctx.package_, attributes, node.Doc.Text)
-		return classDef, false, i.setVar(ctx.package_.Name, node.Name.Text, classDef)
+		classDef := types.NewClass(node.Name.Text, ctx.package_, attributes, node.Doc)
+		return nil, false, i.setVar(ctx.GetPackageFromParent(), node.Name.Text, classDef)
 
 	case ast.CallOpNode:
 		callable, err := i.getVar(ctx.package_.Name, node.CallableName.Text)
@@ -221,7 +227,6 @@ func (i *Interpreter) executeNode(ctx *Context, rootNode ast.ExpressionNode) (ty
 		}
 
 		return i.executeForEachLoop(ctx, node.IndexVar, node.ItemVar, container, node.Body)
-
 	case ast.RealTypeNode:
 		res, err := types.NewRealInstanceFromString(node.Value.Text)
 		return res, false, err
@@ -296,8 +301,8 @@ func (i *Interpreter) executeAST(
 ) (types.Type, map[string]types.Type, bool, error) {
 	var filePath string
 	var err error
-	if ctx.package_.Name == "<стдввід>" {
-		filePath = "<стдввід>"
+	if ctx.package_.Name == builtin.RootPackageName {
+		filePath = builtin.RootPackageName
 		ctx.rootDir, err = os.Getwd()
 		if err != nil {
 			return nil, scope, false, util.InternalError(err.Error())

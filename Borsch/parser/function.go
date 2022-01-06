@@ -44,7 +44,7 @@ func (p *Parser) parseArgument(futureClass string) (types.FunctionArgument, erro
 	}, nil
 }
 
-func (p *Parser) parseFunctionDefinition(futureClass string, isAnonymous bool) (ast.ExpressionNode, error) {
+func (p *Parser) parseFunctionDefinition(futureClass string, isAnonymous bool, doc string) (ast.ExpressionNode, error) {
 	if p.match(models.TokenTypesList[models.FunctionDef]) != nil {
 		nameToken := &models.Token{Text: ""}
 		if !isAnonymous {
@@ -125,7 +125,7 @@ func (p *Parser) parseFunctionDefinition(futureClass string, isAnonymous bool) (
 			return nil, err
 		}
 
-		functionNode := ast.NewFunctionDefNode(nameToken.Row, *nameToken, parameters, retType, body)
+		functionNode := ast.NewFunctionDefNode(nameToken.Row, *nameToken, doc, parameters, retType, body)
 		return functionNode, nil
 	}
 

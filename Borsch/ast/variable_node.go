@@ -6,13 +6,15 @@ import (
 
 type VariableNode struct {
 	Variable models.Token
+	Doc      string
 
 	rowNumber int
 }
 
-func NewVariableNode(variable models.Token) VariableNode {
+func NewVariableNode(variable models.Token, doc string) VariableNode {
 	return VariableNode{
 		Variable:  variable,
+		Doc:       doc,
 		rowNumber: variable.Row,
 	}
 }

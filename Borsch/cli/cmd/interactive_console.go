@@ -149,7 +149,7 @@ func runInteractiveConsole(interpreterInstance *interpreter.Interpreter) {
 			fmt.Printf("Відстеження (стек викликів):\n%s\n", err.Error())
 		} else if result != nil {
 			switch result.(type) {
-			case types.NilInstance, types.PackageInstance:
+			case types.NilInstance:
 			default:
 				fmt.Println(result.Representation())
 			}
