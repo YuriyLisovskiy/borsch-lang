@@ -160,11 +160,11 @@ func (i ClassInstance) GetTypeHash() uint64 {
 }
 
 func (i ClassInstance) AsBool() bool {
-	if attribute, err := i.GetAttribute("__логічний__"); err == nil {
+	if attribute, err := i.GetAttribute(ops.BoolOperatorName); err == nil {
 		switch __bool__ := attribute.(type) {
 		case *FunctionInstance:
 			args := []Type{i}
-			kwargs := map[string]Type{"я": i}
+			kwargs := map[string]Type{__bool__.Arguments[0].Name: i}
 			if err := CheckFunctionArguments(__bool__, &args, &kwargs); err == nil {
 				result, err := __bool__.Call(&args, &kwargs)
 				if err == nil {

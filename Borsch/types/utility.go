@@ -438,6 +438,18 @@ func makeLogicalOperators(itemTypeHash uint64) map[string]Type {
 	}
 }
 
+func makeCommonOperators(itemTypeHash uint64) map[string]Type {
+	return map[string]Type{
+		// TODO: add doc
+		ops.BoolOperatorName: newUnaryMethod(
+			ops.BoolOperatorName, itemTypeHash, BoolTypeHash, "",
+			func(self Type) (Type, error) {
+				return NewBoolInstance(self.AsBool()), nil
+			},
+		),
+	}
+}
+
 func newBuiltinConstructor(
 	itemTypeHash uint64,
 	handler func(args ...Type) (Type, error),

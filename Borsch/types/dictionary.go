@@ -142,7 +142,7 @@ func compareDictionaries(self Type, other Type) (int, error) {
 	default:
 		return -2, errors.New(
 			fmt.Sprintf(
-				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
 				"%s", self.GetTypeName(), right.GetTypeName(),
 			),
 		)
@@ -198,6 +198,7 @@ func newDictionaryClass() *Class {
 		},
 		makeLogicalOperators(DictionaryTypeHash),
 		makeComparisonOperators(DictionaryTypeHash, compareDictionaries),
+		makeCommonOperators(DictionaryTypeHash),
 	)
 	return NewBuiltinClass(
 		DictionaryTypeHash,

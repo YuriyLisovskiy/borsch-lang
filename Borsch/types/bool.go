@@ -101,7 +101,7 @@ func compareBooleans(self Type, other Type) (int, error) {
 	default:
 		return 0, errors.New(
 			fmt.Sprintf(
-				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
 				"%s", self.GetTypeName(), right.GetTypeName(),
 			),
 		)
@@ -148,12 +148,6 @@ func newBoolClass() *Class {
 		map[string]Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(BoolTypeHash, ToBool, ""),
-			// TODO: add doc
-			ops.BoolOperatorName: newBoolUnaryOperator(
-				ops.BoolOperatorName, "", func(instance BoolInstance) (Type, error) {
-					return instance, nil
-				},
-			),
 			ops.PowOp.Caption(): newBoolBinaryOperator(
 				// TODO: add doc
 				ops.PowOp.Caption(), "", func(self BoolInstance, other Type) (Type, error) {
@@ -349,6 +343,7 @@ func newBoolClass() *Class {
 		},
 		makeLogicalOperators(BoolTypeHash),
 		makeComparisonOperators(BoolTypeHash, compareBooleans),
+		makeCommonOperators(BoolTypeHash),
 	)
 	return NewBuiltinClass(
 		BoolTypeHash,

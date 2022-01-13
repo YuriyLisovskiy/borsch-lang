@@ -90,7 +90,7 @@ func comparePackages(self Type, other Type) (int, error) {
 	default:
 		return -2, errors.New(
 			fmt.Sprintf(
-				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
 				"%s", self.GetTypeName(), right.GetTypeName(),
 			),
 		)
@@ -104,6 +104,7 @@ func NewPackageClass() *Class {
 	attributes := mergeAttributes(
 		makeLogicalOperators(PackageTypeHash),
 		makeComparisonOperators(PackageTypeHash, comparePackages),
+		makeCommonOperators(PackageTypeHash),
 	)
 	return NewBuiltinClass(
 		PackageTypeHash,

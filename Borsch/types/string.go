@@ -137,7 +137,7 @@ func compareStrings(self, other Type) (int, error) {
 	default:
 		return 0, errors.New(
 			fmt.Sprintf(
-				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
 				"%s", left.GetTypeName(), right.GetTypeName(),
 			),
 		)
@@ -198,6 +198,7 @@ func newStringClass() *Class {
 		},
 		makeLogicalOperators(StringTypeHash),
 		makeComparisonOperators(StringTypeHash, compareStrings),
+		makeCommonOperators(StringTypeHash),
 	)
 	return NewBuiltinClass(
 		StringTypeHash,

@@ -115,7 +115,7 @@ func compareIntegers(self Type, other Type) (int, error) {
 	default:
 		return 0, errors.New(
 			fmt.Sprintf(
-				"неможливо застосувати оператор %s до значень типів '%s' та '%s'",
+				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
 				"%s", self.GetTypeName(), right.GetTypeName(),
 			),
 		)
@@ -367,6 +367,7 @@ func newIntegerClass() *Class {
 		},
 		makeLogicalOperators(IntegerTypeHash),
 		makeComparisonOperators(IntegerTypeHash, compareIntegers),
+		makeCommonOperators(IntegerTypeHash),
 	)
 	return NewBuiltinClass(
 		IntegerTypeHash,

@@ -185,6 +185,7 @@ func newFunctionClass() *Class {
 			),
 		},
 		makeLogicalOperators(FunctionTypeHash),
+		makeCommonOperators(FunctionTypeHash),
 	)
 	return NewBuiltinClass(
 		FunctionTypeHash,
