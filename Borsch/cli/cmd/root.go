@@ -3,12 +3,10 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"runtime"
-	"strings"
+	"path/filepath"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/grammar"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 	"github.com/spf13/cobra"
 )
@@ -41,26 +39,41 @@ var rootCmd = &cobra.Command{
 		}
 
 		if len(args) > 0 {
-			filePath := args[0]
-			interpret := interpreter.NewInterpreter(stdRoot, filePath, "")
-			content, err := util.ReadFile(filePath)
+			filePath, err := filepath.Abs(args[0])
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
+			packageCode, err := util.ReadFile(filePath)
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
-				context := interpreter.NewContext(filePath, "", stdRoot)
-				err = interpret.ExecuteFile(context, content)
+				parser, err := grammar.NewParser()
+				ast, err := parser.Parse(filePath, string(packageCode))
+				if err != nil {
+					fmt.Println(err.Error())
+					return
+				}
+
+				context := grammar.NewContext(filePath, nil)
+				context.PushScope(builtin.BuiltinScope)
+				package_, err := ast.Evaluate(context)
 				if err != nil {
 					fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
+					return
 				}
+
+				fmt.Println(package_.String())
 			}
 		} else {
-			interpret := interpreter.NewInterpreter(stdRoot, builtin.RootPackageName, "")
-			fmt.Printf("%s %s (%s, %s)\n", build.LanguageName, build.Version, build.Time, strings.Title(runtime.GOOS))
-			fmt.Println(
-				"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.\n" +
-					"Натисніть CONTROL+D або CONTROL+C для виходу.",
-			)
-			runInteractiveConsole(interpret)
+			// interpret := interpreter.NewInterpreter(stdRoot, builtin.RootPackageName, "")
+			// fmt.Printf("%s %s (%s, %s)\n", build.LanguageName, build.Version, build.Time, strings.Title(runtime.GOOS))
+			// fmt.Println(
+			// 	"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.\n" +
+			// 		"Натисніть CONTROL+D або CONTROL+C для виходу.",
+			// )
+			// runInteractiveConsole(interpret)
 		}
 	},
 }

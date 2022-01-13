@@ -3,7 +3,7 @@ package builtin
 import (
 	"fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
@@ -57,10 +57,12 @@ func Assert(expected, actual types.Type, errorTemplate string) error {
 		return nil
 	}
 
-	return util.RuntimeError(fmt.Sprintf(
-		"непідтримувані типи операндів для оператора умови рівності: '%s' і '%s'",
-		leftV.GetTypeName(), rightV.GetTypeName(),
-	))
+	return util.RuntimeError(
+		fmt.Sprintf(
+			"непідтримувані типи операндів для оператора умови рівності: '%s' і '%s'",
+			leftV.GetTypeName(), rightV.GetTypeName(),
+		),
+	)
 }
 
 func Help(word string) error {

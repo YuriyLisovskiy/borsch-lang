@@ -5,15 +5,15 @@ import (
 	"os"
 	"strings"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/ops"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
+	types "github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 const RootPackageName = "__кореневий__"
 
-var RuntimeObjects = map[string]types.Type{
+var BuiltinScope = map[string]types.Type{
 
 	// I/O
 	"друк": types.NewFunctionInstance(
@@ -30,9 +30,11 @@ var RuntimeObjects = map[string]types.Type{
 			Print(*args...)
 			return types.NewNilInstance(), nil
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.NilTypeHash,
-			IsNullable: true,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.NilTypeHash,
+				IsNullable: true,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -52,9 +54,11 @@ var RuntimeObjects = map[string]types.Type{
 			Print(append(*args, types.StringInstance{Value: "\n"})...)
 			return types.NewNilInstance(), nil
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.NilTypeHash,
-			IsNullable: true,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.NilTypeHash,
+				IsNullable: true,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -73,9 +77,11 @@ var RuntimeObjects = map[string]types.Type{
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
 			return Input(*args...)
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.StringTypeHash,
-			IsNullable: false,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.StringTypeHash,
+				IsNullable: false,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -101,9 +107,11 @@ var RuntimeObjects = map[string]types.Type{
 
 			return types.NewNilInstance(), util.RuntimeError(strings.Join(strArgs, " "))
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.NilTypeHash,
-			IsNullable: true,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.NilTypeHash,
+				IsNullable: true,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -122,9 +130,11 @@ var RuntimeObjects = map[string]types.Type{
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
 			return types.StringInstance{Value: os.Getenv((*args)[0].String())}, nil
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.StringTypeHash,
-			IsNullable: false,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.StringTypeHash,
+				IsNullable: false,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -167,9 +177,11 @@ var RuntimeObjects = map[string]types.Type{
 
 			return types.NewNilInstance(), Assert((*args)[0], (*args)[1], message)
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.NilTypeHash,
-			IsNullable: true,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.NilTypeHash,
+				IsNullable: true,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -182,9 +194,11 @@ var RuntimeObjects = map[string]types.Type{
 			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
 			return types.NewNilInstance(), nil
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.NilTypeHash,
-			IsNullable: true,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.NilTypeHash,
+				IsNullable: true,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -197,9 +211,11 @@ var RuntimeObjects = map[string]types.Type{
 			fmt.Println(build.License)
 			return types.NewNilInstance(), nil
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.NilTypeHash,
-			IsNullable: true,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.NilTypeHash,
+				IsNullable: true,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -218,9 +234,11 @@ var RuntimeObjects = map[string]types.Type{
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
 			return types.NewNilInstance(), Help((*args)[0].String())
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.NilTypeHash,
-			IsNullable: true,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.NilTypeHash,
+				IsNullable: true,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -242,9 +260,11 @@ var RuntimeObjects = map[string]types.Type{
 			os.Exit(int((*args)[0].(types.IntegerInstance).Value))
 			return types.NewNilInstance(), nil
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.NilTypeHash,
-			IsNullable: true,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.NilTypeHash,
+				IsNullable: true,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -281,9 +301,11 @@ var RuntimeObjects = map[string]types.Type{
 				types.IntegerTypeHash,
 			)
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.IntegerTypeHash,
-			IsNullable: false,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.IntegerTypeHash,
+				IsNullable: false,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -314,9 +336,11 @@ var RuntimeObjects = map[string]types.Type{
 
 			return list, nil
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.ListTypeHash,
-			IsNullable: false,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.ListTypeHash,
+				IsNullable: false,
+			},
 		},
 		false,
 		types.BuiltinPackage,
@@ -335,9 +359,11 @@ var RuntimeObjects = map[string]types.Type{
 		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
 			return DeepCopy((*args)[0])
 		},
-		types.FunctionReturnType{
-			TypeHash:   types.AnyTypeHash,
-			IsNullable: false,
+		[]types.FunctionReturnType{
+			{
+				TypeHash:   types.AnyTypeHash,
+				IsNullable: false,
+			},
 		},
 		false,
 		types.BuiltinPackage,

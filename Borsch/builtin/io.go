@@ -3,10 +3,11 @@ package builtin
 import (
 	"bufio"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 	"os"
 	"strings"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func Print(args ...types.Type) {
