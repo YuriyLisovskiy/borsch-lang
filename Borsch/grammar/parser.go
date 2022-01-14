@@ -13,8 +13,23 @@ type Parser struct {
 	parser *participle.Parser
 }
 
+var ParserInstance *Parser
+
+func init() {
+	var err error
+	ParserInstance, err = NewParser()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func NewParser() (*Parser, error) {
-	parser, err := participle.Build(&Package{}, participle.UseLookahead(2))
+	parser, err := participle.Build(
+		&Package{},
+		participle.UseLookahead(2),
+		participle.Unquote("String", "Char"),
+	)
+
 	if err != nil {
 		return nil, err
 	}

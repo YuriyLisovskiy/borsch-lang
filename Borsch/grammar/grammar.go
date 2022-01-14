@@ -44,15 +44,13 @@ type BlockStmts struct {
 type Stmt struct {
 	Pos lexer.Position
 
-	IfStmt          *IfStmt          `  @@`
-	WhileStmt       *WhileStmt       `| @@`
-	Block           *BlockStmts      `| "{" @@ "}"`
-	FunctionDef     *FunctionDef     `| @@`
-	ReturnStmt      *ReturnStmt      `| @@`
-	ImportSTDLib    *ImportSTDLib    `| @@`
-	ImportCustomLib *ImportCustomLib `| @@`
-	Expression      *Expression      `| (@@ ";")`
-	Empty           bool             `| @";"`
+	IfStmt      *IfStmt      `  @@`
+	WhileStmt   *WhileStmt   `| @@`
+	Block       *BlockStmts  `| "{" @@ "}"`
+	FunctionDef *FunctionDef `| @@`
+	ReturnStmt  *ReturnStmt  `| @@`
+	Expression  *Expression  `| (@@ ";")`
+	Empty       bool         `| @";"`
 }
 
 type FunctionBody struct {
@@ -79,18 +77,6 @@ type VariadicParameter struct {
 	Name       string `@Ident ":" "."".""."`
 	Type       string `@Ident`
 	IsNullable bool   `@"?"?`
-}
-
-// TODO: not working
-type ImportSTDLib struct {
-	Path     string `"@""'" @((.+)\/([^\/]+)) "'"`
-	Variable string `"-"">" @Ident`
-}
-
-// TODO: not working
-type ImportCustomLib struct {
-	Path     string `"@""\"" @((.+)\/([^\/]+)) "\""`
-	Variable string `"-"">" @Ident`
 }
 
 type Expression struct {
@@ -224,12 +210,11 @@ type Primary struct {
 type Constant struct {
 	Pos lexer.Position
 
-	Integer *int64        `  @Int`
-	Real    *float64      `| @Float`
-	Bool    *Boolean      `| @("істина" | "хиба")`
-	String  *string       `| @String`
-	List    []*Expression `| "[" ( @@ ","? )* "]"`
-	// List    []*Constant `| "[" (@@ ("," @@)* )? "]"`
+	Integer *int64      `  @Int`
+	Real    *float64    `| @Float`
+	Bool    *Boolean    `| @("істина" | "хиба")`
+	String  *string     `| @String`
+	List    []*Constant `| "[" (@@ ("," @@)* )? "]"`
 	// Dictionary    map[*Constant]*Constant    `| "{" (@@ ":" @@ ("," @@ ":" @@)* )? "}"`
 	// FunctionDef AnonymousFunctionDef `| @@`
 }

@@ -50,6 +50,11 @@ var rootCmd = &cobra.Command{
 				fmt.Println(err.Error())
 			} else {
 				parser, err := grammar.NewParser()
+				if err != nil {
+					fmt.Println(err.Error())
+					return
+				}
+
 				ast, err := parser.Parse(filePath, string(packageCode))
 				if err != nil {
 					fmt.Println(err.Error())

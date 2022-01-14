@@ -1,11 +1,14 @@
 package builtin
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/grammar"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	types "github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
@@ -274,7 +277,18 @@ var BuiltinScope = map[string]types.Type{
 	// Conversion
 	"дійсний":  types.Real,
 	"логічний": types.Bool,
-	// "пакет": types.Package,
+	// "пакет":    types.Package,
+	"пакет": types.NewFunctionInstance(
+		"пакет", nil,
+		func(args *[]types.Type, _ *map[string]types.Type) (types.Type, error) {
+			p, err := importPackage((*args)[0].(types.StringInstance).Value)
+			if err != nil {
+				return nil, err
+			}
+
+			return p, nil
+		}, nil, false, nil, "",
+	),
 	"рядок":   types.String,
 	"словник": types.Dictionary,
 	"список":  types.List,
@@ -370,4 +384,30 @@ var BuiltinScope = map[string]types.Type{
 		"", // TODO: add doc
 	),
 	"тип": types.TypeClass,
+}
+
+func importPackage(fullPath string) (*types.PackageInstance, error) {
+	filePath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	packageCode, err := util.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	ast, err := grammar.ParserInstance.Parse(filePath, string(packageCode))
+	if err != nil {
+		return nil, err
+	}
+
+	context := grammar.NewContext(filePath, nil)
+	context.PushScope(BuiltinScope)
+	package_, err := ast.Evaluate(context)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
+	}
+
+	return package_, nil
 }

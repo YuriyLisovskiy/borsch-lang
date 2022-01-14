@@ -175,12 +175,6 @@ func (s *Stmt) Evaluate(ctx *Context, inFunction bool) (types.Type, error) {
 		}
 
 		return s.ReturnStmt.Evaluate(ctx)
-	} else if s.ImportSTDLib != nil {
-		// TODO:
-		println()
-	} else if s.ImportCustomLib != nil {
-		// TODO:
-		println()
 	} else if s.Expression != nil {
 		return s.Expression.Evaluate(ctx)
 	} else if s.Empty {
@@ -281,8 +275,7 @@ func (c *Constant) Evaluate(ctx *Context) (types.Type, error) {
 	}
 
 	if c.String != nil {
-		str := *c.String
-		return types.NewStringInstance(str[1 : len(str)-1]), nil
+		return types.NewStringInstance(*c.String), nil
 	}
 
 	if c.List != nil {

@@ -102,6 +102,45 @@ func comparePackages(self Type, other Type) (int, error) {
 
 func NewPackageClass() *Class {
 	attributes := mergeAttributes(
+		// map[string]Type{
+		// 	// TODO: add doc
+		// 	ops.ConstructorName: NewFunctionInstance(
+		// 		ops.ConstructorName,
+		// 		[]FunctionArgument{
+		// 			{
+		// 				TypeHash:   PackageTypeHash,
+		// 				Name:       "я",
+		// 				IsVariadic: false,
+		// 				IsNullable: false,
+		// 			},
+		// 			{
+		// 				TypeHash:   StringTypeHash,
+		// 				Name:       "шлях",
+		// 				IsVariadic: false,
+		// 				IsNullable: false,
+		// 			},
+		// 		},
+		// 		func(args *[]Type, _ *map[string]Type) (Type, error) {
+		// 			self, err := importPackage((*args)[1].(StringInstance).Value)
+		// 			// self, err := handler((*args)[1:]...)
+		// 			if err != nil {
+		// 				return nil, err
+		// 			}
+		//
+		// 			(*args)[0] = self
+		// 			return NewNilInstance(), nil
+		// 		},
+		// 		[]FunctionReturnType{
+		// 			{
+		// 				TypeHash:   NilTypeHash,
+		// 				IsNullable: false,
+		// 			},
+		// 		},
+		// 		true,
+		// 		nil,
+		// 		"", // TODO: add doc
+		// 	),
+		// },
 		makeLogicalOperators(PackageTypeHash),
 		makeComparisonOperators(PackageTypeHash, comparePackages),
 		makeCommonOperators(PackageTypeHash),
