@@ -3,11 +3,12 @@ package builtin
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func Assert(expected, actual types.Type, errorTemplate string) error {
+func Assert(expected, actual common.Type, errorTemplate string) error {
 	leftV := expected
 	rightV := actual
 	if leftV.GetTypeHash() != rightV.GetTypeHash() {

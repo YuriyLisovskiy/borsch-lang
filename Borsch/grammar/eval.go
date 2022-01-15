@@ -4,18 +4,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-type Scope map[string]types.Type
+type Scope map[string]common.Type
 
-type OperatorEvaluatable interface {
-	Evaluate(*Context, types.Type) (types.Type, error)
-}
-
-func (p *Package) Evaluate(ctx *Context) (*types.PackageInstance, error) {
+func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 	ctx.PushScope(Scope{})
 	for _, stmt := range p.Stmts {
 		_, err := stmt.Evaluate(ctx, false)
@@ -29,25 +26,28 @@ func (p *Package) Evaluate(ctx *Context) (*types.PackageInstance, error) {
 		}
 	}
 
-	ctx.package_.Attributes = ctx.scopes[len(ctx.scopes)-1]
+	if err := ctx.BuildPackage(); err != nil {
+		return nil, err
+	}
+
 	ctx.PopScope()
-	return ctx.package_, nil
+	return ctx.GetPackage(), nil
 }
 
-func (s *WhileStmt) Evaluate(ctx *Context) (types.Type, error) {
+func (s *WhileStmt) Evaluate(ctx common.Context) (common.Type, error) {
 	// TODO:
 	panic("unreachable")
 }
 
-func (s *IfStmt) Evaluate(ctx *Context, inFunction bool) (types.Type, error) {
+func (s *IfStmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, error) {
 	if s.Condition != nil {
 		condition, err := s.Condition.Evaluate(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		var args []types.Type
-		kwargs := map[string]types.Type{}
+		var args []common.Type
+		kwargs := map[string]common.Type{}
 		conditionResult, err := callMethod(condition, ops.BoolOperatorName, &args, &kwargs)
 		if err != nil {
 			return nil, err
@@ -71,7 +71,7 @@ func (s *IfStmt) Evaluate(ctx *Context, inFunction bool) (types.Type, error) {
 
 		if len(s.ElseIfStmts) != 0 {
 			gotResult := false
-			var result types.Type = nil
+			var result common.Type = nil
 			var err error = nil
 			for _, stmt := range s.ElseIfStmts {
 				ctx.PushScope(Scope{})
@@ -108,7 +108,7 @@ func (s *IfStmt) Evaluate(ctx *Context, inFunction bool) (types.Type, error) {
 	return nil, errors.New("interpreter: condition is nil")
 }
 
-func (s *ElseIfStmt) Evaluate(ctx *Context, inFunction bool) (bool, types.Type, error) {
+func (s *ElseIfStmt) Evaluate(ctx common.Context, inFunction bool) (bool, common.Type, error) {
 	condition, err := s.Condition.Evaluate(ctx)
 	if err != nil {
 		return false, nil, err
@@ -133,7 +133,7 @@ func (s *ElseIfStmt) Evaluate(ctx *Context, inFunction bool) (bool, types.Type, 
 	return false, nil, nil
 }
 
-func (b *BlockStmts) Evaluate(ctx *Context, inFunction bool) (types.Type, error) {
+func (b *BlockStmts) Evaluate(ctx common.Context, inFunction bool) (common.Type, error) {
 	for _, stmt := range b.Stmts {
 		result, err := stmt.Evaluate(ctx, inFunction)
 		if err != nil {
@@ -148,7 +148,7 @@ func (b *BlockStmts) Evaluate(ctx *Context, inFunction bool) (types.Type, error)
 	return nil, nil
 }
 
-func (s *Stmt) Evaluate(ctx *Context, inFunction bool) (types.Type, error) {
+func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, error) {
 	if s.IfStmt != nil {
 		return s.IfStmt.Evaluate(ctx, inFunction)
 	} else if s.WhileStmt != nil {
@@ -168,7 +168,7 @@ func (s *Stmt) Evaluate(ctx *Context, inFunction bool) (types.Type, error) {
 			return nil, err
 		}
 
-		return function, ctx.setVar(s.FunctionDef.Name, function)
+		return function, ctx.SetVar(s.FunctionDef.Name, function)
 	} else if s.ReturnStmt != nil {
 		if !inFunction {
 			return nil, errors.New("'повернути' за межами функції")
@@ -184,11 +184,11 @@ func (s *Stmt) Evaluate(ctx *Context, inFunction bool) (types.Type, error) {
 	panic("unreachable")
 }
 
-func (b *FunctionBody) Evaluate(ctx *Context) (types.Type, error) {
+func (b *FunctionBody) Evaluate(ctx common.Context) (common.Type, error) {
 	return b.Stmts.Evaluate(ctx, true)
 }
 
-func (f *FunctionDef) Evaluate(ctx *Context) (types.Type, error) {
+func (f *FunctionDef) Evaluate(ctx common.Context) (common.Type, error) {
 	var arguments []types.FunctionArgument
 	for _, parameter := range f.Parameters {
 		arguments = append(
@@ -214,7 +214,7 @@ func (f *FunctionDef) Evaluate(ctx *Context) (types.Type, error) {
 	return types.NewFunctionInstance(
 		f.Name,
 		arguments,
-		func(_ *[]types.Type, kwargs *map[string]types.Type) (types.Type, error) {
+		func(_ interface{}, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
 			ctx.PushScope(*kwargs)
 			result, err := f.Body.Evaluate(ctx)
 			if err != nil {
@@ -226,12 +226,12 @@ func (f *FunctionDef) Evaluate(ctx *Context) (types.Type, error) {
 		},
 		returnTypes,
 		false,
-		ctx.package_,
+		ctx.GetPackage().(*types.PackageInstance),
 		"", // TODO: add doc
 	), nil
 }
 
-func (s *ReturnStmt) Evaluate(ctx *Context) (types.Type, error) {
+func (s *ReturnStmt) Evaluate(ctx common.Context) (common.Type, error) {
 	resultCount := len(s.Expressions)
 	switch {
 	case resultCount == 1:
@@ -253,7 +253,7 @@ func (s *ReturnStmt) Evaluate(ctx *Context) (types.Type, error) {
 	panic("unreachable")
 }
 
-func (e *Expression) Evaluate(ctx *Context) (types.Type, error) {
+func (e *Expression) Evaluate(ctx common.Context) (common.Type, error) {
 	if e.Assignment != nil {
 		return e.Assignment.Evaluate(ctx)
 	}
@@ -261,7 +261,7 @@ func (e *Expression) Evaluate(ctx *Context) (types.Type, error) {
 	panic("unreachable")
 }
 
-func (c *Constant) Evaluate(ctx *Context) (types.Type, error) {
+func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
 	if c.Integer != nil {
 		return types.NewIntegerInstance(*c.Integer), nil
 	}
@@ -295,8 +295,8 @@ func (c *Constant) Evaluate(ctx *Context) (types.Type, error) {
 	panic("unreachable")
 }
 
-func (a *Assignment) Evaluate(ctx *Context) (types.Type, error) {
-	var value types.Type = nil
+func (a *Assignment) Evaluate(ctx common.Context) (common.Type, error) {
+	var value common.Type = nil
 	if a.Next != nil {
 		var err error
 		value, err = a.Next.Evaluate(ctx, nil)
@@ -311,15 +311,15 @@ func (a *Assignment) Evaluate(ctx *Context) (types.Type, error) {
 // Evaluate executes LogicalAnd operation.
 // If `valueToSet` is nil, return variable or value from context,
 // set a new value or return an error otherwise.
-func (a *LogicalAnd) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *LogicalAnd) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	return evalBinaryOperator(ctx, valueToSet, ops.AndOp.Caption(), a.LogicalOr, a.Next)
 }
 
-func (a *LogicalOr) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *LogicalOr) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	return evalBinaryOperator(ctx, valueToSet, ops.OrOp.Caption(), a.LogicalNot, a.Next)
 }
 
-func (a *LogicalNot) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *LogicalNot) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	if a.Comparison != nil {
 		return a.Comparison.Evaluate(ctx, valueToSet)
 	}
@@ -330,13 +330,13 @@ func (a *LogicalNot) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, 
 			return nil, err
 		}
 
-		return callMethod(value, ops.NotOp.Caption(), &[]types.Type{}, nil)
+		return callMethod(value, ops.NotOp.Caption(), &[]common.Type{}, nil)
 	}
 
 	panic("unreachable")
 }
 
-func (a *Comparison) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *Comparison) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case ">=":
 		return evalBinaryOperator(ctx, valueToSet, ops.GreaterOrEqualsOp.Caption(), a.BitwiseOr, a.Next)
@@ -355,19 +355,19 @@ func (a *Comparison) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, 
 	}
 }
 
-func (a *BitwiseOr) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *BitwiseOr) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseOrOp.Caption(), a.BitwiseXor, a.Next)
 }
 
-func (a *BitwiseXor) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *BitwiseXor) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseXorOp.Caption(), a.BitwiseAnd, a.Next)
 }
 
-func (a *BitwiseAnd) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *BitwiseAnd) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseAndOp.Caption(), a.BitwiseShift, a.Next)
 }
 
-func (a *BitwiseShift) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *BitwiseShift) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "<<":
 		return evalBinaryOperator(ctx, valueToSet, ops.BitwiseLeftShiftOp.Caption(), a.Addition, a.Next)
@@ -378,7 +378,7 @@ func (a *BitwiseShift) Evaluate(ctx *Context, valueToSet types.Type) (types.Type
 	}
 }
 
-func (a *Addition) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *Addition) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "+":
 		return evalBinaryOperator(ctx, valueToSet, ops.AddOp.Caption(), a.MultiplicationOrMod, a.Next)
@@ -389,7 +389,7 @@ func (a *Addition) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, er
 	}
 }
 
-func (a *MultiplicationOrMod) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *MultiplicationOrMod) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "/":
 		return evalBinaryOperator(ctx, valueToSet, ops.DivOp.Caption(), a.Unary, a.Next)
@@ -402,7 +402,7 @@ func (a *MultiplicationOrMod) Evaluate(ctx *Context, valueToSet types.Type) (typ
 	}
 }
 
-func (a *Unary) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *Unary) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "+":
 		return evalUnaryOperator(ctx, ops.UnaryPlus.Caption(), a.Next)
@@ -415,11 +415,11 @@ func (a *Unary) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error
 	}
 }
 
-func (a *Exponent) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *Exponent) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	return evalBinaryOperator(ctx, valueToSet, ops.PowOp.Caption(), a.Primary, a.Next)
 }
 
-func (a *Primary) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
+func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	if a.Constant != nil {
 		if valueToSet != nil {
 			// TODO: change to normal description
@@ -435,11 +435,11 @@ func (a *Primary) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, err
 
 	if a.Ident != nil {
 		if valueToSet != nil {
-			err := ctx.setVar(*a.Ident, valueToSet)
+			err := ctx.SetVar(*a.Ident, valueToSet)
 			return valueToSet, err
 		}
 
-		return ctx.getVar(*a.Ident)
+		return ctx.GetVar(*a.Ident)
 	}
 
 	if a.SubExpression != nil {
@@ -473,8 +473,8 @@ func (a *Primary) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, err
 	panic("unreachable")
 }
 
-func (a *RandomAccess) Evaluate(ctx *Context, valueToSet types.Type) (types.Type, error) {
-	variable, err := ctx.getVar(a.Ident)
+func (a *RandomAccess) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+	variable, err := ctx.GetVar(a.Ident)
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +485,7 @@ func (a *RandomAccess) Evaluate(ctx *Context, valueToSet types.Type) (types.Type
 			return nil, err
 		}
 
-		return variable, ctx.setVar(a.Ident, variable)
+		return variable, ctx.SetVar(a.Ident, variable)
 	}
 
 	for _, indexExpression := range a.Index {
@@ -503,8 +503,8 @@ func (a *RandomAccess) Evaluate(ctx *Context, valueToSet types.Type) (types.Type
 	return variable, nil
 }
 
-func (a *CallFunc) Evaluate(ctx *Context) (types.Type, error) {
-	variable, err := ctx.getVar(a.Ident)
+func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
+	variable, err := ctx.GetVar(a.Ident)
 	if err != nil {
 		return nil, err
 	}
@@ -523,8 +523,8 @@ func (a *CallFunc) Evaluate(ctx *Context) (types.Type, error) {
 				return nil, err
 			}
 
-			args := []types.Type{instance}
-			kwargs := map[string]types.Type{constructor.Arguments[0].Name: instance}
+			args := []common.Type{instance}
+			kwargs := map[string]common.Type{constructor.Arguments[0].Name: instance}
 			for i, expressionArgument := range a.Arguments {
 				arg, err := expressionArgument.Evaluate(ctx)
 				if err != nil {
@@ -540,7 +540,7 @@ func (a *CallFunc) Evaluate(ctx *Context) (types.Type, error) {
 			}
 
 			ctx.PushScope(kwargs)
-			_, err = constructor.Call(&args, &kwargs)
+			_, err = constructor.Call(nil, &args, &kwargs)
 			if err != nil {
 				return nil, err
 			}
@@ -551,8 +551,8 @@ func (a *CallFunc) Evaluate(ctx *Context) (types.Type, error) {
 			return nil, util.ObjectIsNotCallable(a.Ident, callable.GetTypeName())
 		}
 	case *types.FunctionInstance:
-		var args []types.Type
-		kwargs := map[string]types.Type{}
+		var args []common.Type
+		kwargs := map[string]common.Type{}
 		for i, expressionArgument := range a.Arguments {
 			arg, err := expressionArgument.Evaluate(ctx)
 			if err != nil {
@@ -568,7 +568,7 @@ func (a *CallFunc) Evaluate(ctx *Context) (types.Type, error) {
 		}
 
 		ctx.PushScope(kwargs)
-		res, err := object.Call(&args, &kwargs)
+		res, err := object.Call(ParserInstance, &args, &kwargs)
 		if err != nil {
 			return nil, err
 		}
@@ -583,8 +583,8 @@ func (a *CallFunc) Evaluate(ctx *Context) (types.Type, error) {
 
 		switch callOperator := callable.(type) {
 		case *types.FunctionInstance:
-			args := []types.Type{variable}
-			kwargs := map[string]types.Type{callOperator.Arguments[0].Name: variable}
+			args := []common.Type{variable}
+			kwargs := map[string]common.Type{callOperator.Arguments[0].Name: variable}
 			for i, expressionArgument := range a.Arguments {
 				arg, err := expressionArgument.Evaluate(ctx)
 				if err != nil {
@@ -600,7 +600,7 @@ func (a *CallFunc) Evaluate(ctx *Context) (types.Type, error) {
 			}
 
 			ctx.PushScope(kwargs)
-			res, err := callOperator.Call(&args, &kwargs)
+			res, err := callOperator.Call(nil, &args, &kwargs)
 			if err != nil {
 				return nil, err
 			}

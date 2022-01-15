@@ -29,7 +29,7 @@ package cmd
 // 	}
 // }
 //
-// func pushKeywords(parent, name string, value types.Type) {
+// func pushKeywords(parent, name string, value common.Type) {
 // 	switch v := value.(type) {
 // 	case types.SequentialType, types.DictionaryInstance, types.BoolInstance, types.IntegerInstance, types.NilInstance, types.RealInstance:
 // 		if parent != "" {
@@ -109,7 +109,7 @@ package cmd
 // 		}
 // 	}
 //
-// 	scope := map[string]types.Type{}
+// 	scope := map[string]common.Type{}
 // 	var quit bool
 // 	for {
 // 		code := ""
@@ -136,7 +136,7 @@ package cmd
 // 			break
 // 		}
 //
-// 		var result types.Type
+// 		var result common.Type
 // 		var err error
 // 		result, scope, err = interpreterInstance.Execute(
 // 			interpreterInstance.GetContext(),

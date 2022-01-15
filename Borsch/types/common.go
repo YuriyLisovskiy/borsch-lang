@@ -1,5 +1,7 @@
 package types
 
+import "github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+
 const (
 	AnyTypeHash uint64 = iota + 1
 	NilTypeHash
@@ -13,27 +15,6 @@ const (
 	FunctionTypeHash
 	TypeClassTypeHash
 )
-
-type Type interface {
-	String() string
-	Representation() string
-	GetTypeHash() uint64
-	GetTypeName() string
-	AsBool() bool
-	GetAttribute(string) (Type, error)
-	SetAttribute(string, Type) (Type, error)
-}
-
-type SequentialType interface {
-	Length() int64
-	GetElement(int64) (Type, error)
-	SetElement(int64, Type) (Type, error)
-	Slice(int64, int64) (Type, error)
-}
-
-type CallableType interface {
-	Call(*[]Type, *map[string]Type) (Type, error)
-}
 
 type Instance interface {
 	GetClass() *Class
@@ -52,4 +33,4 @@ var (
 	TypeClass  = newTypeClass()
 )
 
-var BuiltinPackage = NewPackageInstance(true, "", "", map[string]Type{})
+var BuiltinPackage = NewPackageInstance(true, "", "", map[string]common.Type{})

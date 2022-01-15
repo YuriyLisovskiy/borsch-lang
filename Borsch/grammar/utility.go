@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func callMethod(object types.Type, funcName string, args *[]types.Type, kwargs *map[string]types.Type) (
-	types.Type,
+func callMethod(object common.Type, funcName string, args *[]common.Type, kwargs *map[string]common.Type) (
+	common.Type,
 	error,
 ) {
 	attribute, err := object.GetAttribute(funcName)
@@ -25,9 +26,9 @@ func callMethod(object types.Type, funcName string, args *[]types.Type, kwargs *
 			return nil, errors.New(fmt.Sprintf("%s is not a method", function.Representation()))
 		}
 
-		*args = append([]types.Type{object}, *args...)
+		*args = append([]common.Type{object}, *args...)
 		if kwargs == nil {
-			kwargs = &map[string]types.Type{}
+			kwargs = &map[string]common.Type{}
 		}
 
 		argsLen := len(*args)
@@ -39,7 +40,7 @@ func callMethod(object types.Type, funcName string, args *[]types.Type, kwargs *
 			return nil, err
 		}
 
-		res, err := function.Call(args, kwargs)
+		res, err := function.Call(nil, args, kwargs)
 		if err != nil {
 			return nil, util.RuntimeError(fmt.Sprintf(err.Error(), funcName))
 		}
@@ -50,12 +51,18 @@ func callMethod(object types.Type, funcName string, args *[]types.Type, kwargs *
 	}
 }
 
-func mustBool(result types.Type) (types.BoolInstance, error) {
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func mustBool(result common.Type) (types.BoolInstance, error) {
 	switch value := result.(type) {
 	case types.BoolInstance:
 		return value, nil
 	default:
-		var args []types.Type
+		var args []common.Type
 		boolResult, err := callMethod(value, ops.BoolOperatorName, &args, nil)
 		if err != nil {
 			return types.BoolInstance{}, err
@@ -66,12 +73,12 @@ func mustBool(result types.Type) (types.BoolInstance, error) {
 }
 
 func evalBinaryOperator(
-	ctx *Context,
-	valueToSet types.Type,
+	ctx common.Context,
+	valueToSet common.Type,
 	operatorName string,
-	current OperatorEvaluatable,
-	next OperatorEvaluatable,
-) (types.Type, error) {
+	current common.OperatorEvaluatable,
+	next common.OperatorEvaluatable,
+) (common.Type, error) {
 	left, err := current.Evaluate(ctx, valueToSet)
 	if err != nil {
 		return nil, err
@@ -83,28 +90,31 @@ func evalBinaryOperator(
 			return nil, err
 		}
 
-		return callMethod(left, operatorName, &[]types.Type{right}, nil)
+		return callMethod(left, operatorName, &[]common.Type{right}, nil)
 	}
 
 	return left, nil
 }
 
-func evalUnaryOperator(ctx *Context, operatorName string, operator OperatorEvaluatable) (types.Type, error) {
+func evalUnaryOperator(ctx common.Context, operatorName string, operator common.OperatorEvaluatable) (
+	common.Type,
+	error,
+) {
 	if operator != nil {
 		value, err := operator.Evaluate(ctx, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		return callMethod(value, operatorName, &[]types.Type{}, nil)
+		return callMethod(value, operatorName, &[]common.Type{}, nil)
 	}
 
 	panic("unreachable")
 }
 
-func evalSingleGetByIndexOperation(variable types.Type, index types.Type) (types.Type, error) {
+func evalSingleGetByIndexOperation(variable common.Type, index common.Type) (common.Type, error) {
 	switch iterable := variable.(type) {
-	case types.SequentialType:
+	case common.SequentialType:
 		switch integerIndex := index.(type) {
 		case types.IntegerInstance:
 			return iterable.GetElement(integerIndex.Value)
@@ -122,13 +132,13 @@ func evalSingleGetByIndexOperation(variable types.Type, index types.Type) (types
 }
 
 func evalSingleSetByIndexOperation(
-	ctx *Context,
-	variable types.Type,
+	ctx common.Context,
+	variable common.Type,
 	indices []*Expression,
-	value types.Type,
-) (types.Type, error) {
+	value common.Type,
+) (common.Type, error) {
 	switch iterable := variable.(type) {
-	case types.SequentialType:
+	case common.SequentialType:
 		index, err := indices[0].Evaluate(ctx)
 		if err != nil {
 			return nil, err

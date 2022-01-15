@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
@@ -52,7 +53,7 @@ func (t RealInstance) AsBool() bool {
 	return t.Value != 0.0
 }
 
-func (t RealInstance) SetAttribute(name string, _ Type) (Type, error) {
+func (t RealInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
 	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
@@ -60,7 +61,7 @@ func (t RealInstance) SetAttribute(name string, _ Type) (Type, error) {
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t RealInstance) GetAttribute(name string) (Type, error) {
+func (t RealInstance) GetAttribute(name string) (common.Type, error) {
 	if attribute, err := t.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}
@@ -72,7 +73,7 @@ func (RealInstance) GetClass() *Class {
 	return Real
 }
 
-func (t RealInstance) Div(other Type) (Type, error) {
+func (t RealInstance) Div(other common.Type) (common.Type, error) {
 	switch o := other.(type) {
 	case BoolInstance:
 		if o.Value {
@@ -93,7 +94,7 @@ func (t RealInstance) Div(other Type) (Type, error) {
 	return nil, errors.New("ділення на нуль")
 }
 
-func compareReals(self, other Type) (int, error) {
+func compareReals(self, other common.Type) (int, error) {
 	left, ok := self.(RealInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareReals")
@@ -149,10 +150,10 @@ func compareReals(self, other Type) (int, error) {
 func newRealBinaryOperator(
 	name string,
 	doc string,
-	handler func(RealInstance, Type) (Type, error),
+	handler func(RealInstance, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
-		name, RealTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
+		name, RealTypeHash, AnyTypeHash, doc, func(left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -165,10 +166,10 @@ func newRealBinaryOperator(
 func newRealUnaryOperator(
 	name string,
 	doc string,
-	handler func(RealInstance) (Type, error),
+	handler func(RealInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, RealTypeHash, AnyTypeHash, doc, func(left Type) (Type, error) {
+		name, RealTypeHash, AnyTypeHash, doc, func(left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
 				return handler(leftInstance)
 			}
@@ -180,12 +181,12 @@ func newRealUnaryOperator(
 
 func newRealClass() *Class {
 	attributes := mergeAttributes(
-		map[string]Type{
+		map[string]common.Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(RealTypeHash, ToReal, ""),
 			ops.PowOp.Caption(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.PowOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+				ops.PowOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case RealInstance:
 						return NewRealInstance(math.Pow(self.Value, o.Value)), nil
@@ -200,19 +201,19 @@ func newRealClass() *Class {
 			),
 			ops.UnaryPlus.Caption(): newRealUnaryOperator(
 				// TODO: add doc
-				ops.UnaryPlus.Caption(), "", func(self RealInstance) (Type, error) {
+				ops.UnaryPlus.Caption(), "", func(self RealInstance) (common.Type, error) {
 					return self, nil
 				},
 			),
 			ops.UnaryMinus.Caption(): newRealUnaryOperator(
 				// TODO: add doc
-				ops.UnaryMinus.Caption(), "", func(self RealInstance) (Type, error) {
+				ops.UnaryMinus.Caption(), "", func(self RealInstance) (common.Type, error) {
 					return NewRealInstance(-self.Value), nil
 				},
 			),
 			ops.MulOp.Caption(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.MulOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+				ops.MulOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewRealInstance(self.Value * boolToFloat64(o.Value)), nil
@@ -227,7 +228,7 @@ func newRealClass() *Class {
 			),
 			ops.DivOp.Caption(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.DivOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+				ops.DivOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						if o.Value {
@@ -250,7 +251,7 @@ func newRealClass() *Class {
 			),
 			ops.AddOp.Caption(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.AddOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+				ops.AddOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewRealInstance(self.Value + boolToFloat64(o.Value)), nil
@@ -265,7 +266,7 @@ func newRealClass() *Class {
 			),
 			ops.SubOp.Caption(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.SubOp.Caption(), "", func(self RealInstance, other Type) (Type, error) {
+				ops.SubOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewRealInstance(self.Value - boolToFloat64(o.Value)), nil
@@ -288,7 +289,7 @@ func newRealClass() *Class {
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc
-		func() (Type, error) {
+		func() (common.Type, error) {
 			return NewRealInstance(0), nil
 		},
 	)

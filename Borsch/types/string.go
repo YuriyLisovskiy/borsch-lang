@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
@@ -42,7 +43,7 @@ func (t StringInstance) AsBool() bool {
 	return t.Length() != 0
 }
 
-func (t StringInstance) SetAttribute(name string, _ Type) (Type, error) {
+func (t StringInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
 	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
@@ -50,7 +51,7 @@ func (t StringInstance) SetAttribute(name string, _ Type) (Type, error) {
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t StringInstance) GetAttribute(name string) (Type, error) {
+func (t StringInstance) GetAttribute(name string) (common.Type, error) {
 	if attribute, err := t.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}
@@ -66,7 +67,7 @@ func (t StringInstance) Length() int64 {
 	return int64(utf8.RuneCountInString(t.Value))
 }
 
-func (t StringInstance) GetElement(index int64) (Type, error) {
+func (t StringInstance) GetElement(index int64) (common.Type, error) {
 	idx, err := getIndex(index, t.Length())
 	if err != nil {
 		return nil, err
@@ -75,7 +76,7 @@ func (t StringInstance) GetElement(index int64) (Type, error) {
 	return NewStringInstance(string([]rune(t.Value)[idx])), nil
 }
 
-func (t StringInstance) SetElement(index int64, value Type) (Type, error) {
+func (t StringInstance) SetElement(index int64, value common.Type) (common.Type, error) {
 	switch v := value.(type) {
 	case StringInstance:
 		idx, err := getIndex(index, t.Length())
@@ -98,7 +99,7 @@ func (t StringInstance) SetElement(index int64, value Type) (Type, error) {
 	return t, nil
 }
 
-func (t StringInstance) Slice(from, to int64) (Type, error) {
+func (t StringInstance) Slice(from, to int64) (common.Type, error) {
 	fromIdx, err := getIndex(from, t.Length())
 	if err != nil {
 		return nil, err
@@ -116,7 +117,7 @@ func (t StringInstance) Slice(from, to int64) (Type, error) {
 	return NewStringInstance(t.Value[fromIdx:toIdx]), nil
 }
 
-func compareStrings(self, other Type) (int, error) {
+func compareStrings(self, other common.Type) (int, error) {
 	left, ok := self.(StringInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareStrings")
@@ -150,10 +151,10 @@ func compareStrings(self, other Type) (int, error) {
 func newStringBinaryOperator(
 	name string,
 	doc string,
-	handler func(StringInstance, Type) (Type, error),
+	handler func(StringInstance, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
-		name, StringTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
+		name, StringTypeHash, AnyTypeHash, doc, func(left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(StringInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -165,12 +166,12 @@ func newStringBinaryOperator(
 
 func newStringClass() *Class {
 	attributes := mergeAttributes(
-		map[string]Type{
+		map[string]common.Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(StringTypeHash, ToString, ""),
 			ops.MulOp.Caption(): newStringBinaryOperator(
 				// TODO: add doc
-				ops.MulOp.Caption(), "", func(self StringInstance, other Type) (Type, error) {
+				ops.MulOp.Caption(), "", func(self StringInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case IntegerInstance:
 						count := int(o.Value)
@@ -186,7 +187,7 @@ func newStringClass() *Class {
 			),
 			ops.AddOp.Caption(): newStringBinaryOperator(
 				// TODO: add doc
-				ops.AddOp.Caption(), "", func(self StringInstance, other Type) (Type, error) {
+				ops.AddOp.Caption(), "", func(self StringInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case StringInstance:
 						return NewStringInstance(self.Value + o.Value), nil
@@ -205,7 +206,7 @@ func newStringClass() *Class {
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc
-		func() (Type, error) {
+		func() (common.Type, error) {
 			return NewStringInstance(""), nil
 		},
 	)

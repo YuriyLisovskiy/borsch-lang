@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
 
@@ -63,13 +64,13 @@ type FunctionInstance struct {
 func NewFunctionInstance(
 	name string,
 	arguments []FunctionArgument,
-	handler func(*[]Type, *map[string]Type) (Type, error),
+	handler func(interface{}, *[]common.Type, *map[string]common.Type) (common.Type, error),
 	returnTypes []FunctionReturnType,
 	isMethod bool,
 	package_ *PackageInstance,
 	doc string,
 ) *FunctionInstance {
-	attributes := map[string]Type{}
+	attributes := map[string]common.Type{}
 	if package_ != nil {
 		attributes[ops.PackageAttributeName] = package_
 	}
@@ -122,7 +123,7 @@ func (t FunctionInstance) AsBool() bool {
 	return true
 }
 
-func (t FunctionInstance) SetAttribute(name string, value Type) (Type, error) {
+func (t FunctionInstance) SetAttribute(name string, value common.Type) (common.Type, error) {
 	err := t.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
@@ -131,7 +132,7 @@ func (t FunctionInstance) SetAttribute(name string, value Type) (Type, error) {
 	return t, nil
 }
 
-func (t FunctionInstance) GetAttribute(name string) (Type, error) {
+func (t FunctionInstance) GetAttribute(name string) (common.Type, error) {
 	if attribute, err := t.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}
@@ -145,7 +146,7 @@ func (t FunctionInstance) GetClass() *Class {
 
 func newFunctionClass() *Class {
 	attributes := mergeAttributes(
-		map[string]Type{
+		map[string]common.Type{
 			ops.CallOperatorName: NewFunctionInstance(
 				ops.CallOperatorName,
 				[]FunctionArgument{
@@ -162,7 +163,7 @@ func newFunctionClass() *Class {
 						IsNullable: true,
 					},
 				},
-				func(args *[]Type, kwargs *map[string]Type) (Type, error) {
+				func(_ interface{}, args *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
 					function := (*args)[0].(*FunctionInstance)
 					slicedArgs := (*args)[1:]
 					slicedKwargs := *kwargs
@@ -171,7 +172,7 @@ func newFunctionClass() *Class {
 						return nil, err
 					}
 
-					return function.Call(&slicedArgs, &slicedKwargs)
+					return function.Call(nil, &slicedArgs, &slicedKwargs)
 				},
 				[]FunctionReturnType{
 					{

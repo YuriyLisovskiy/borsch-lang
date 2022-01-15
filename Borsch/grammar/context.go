@@ -1,32 +1,24 @@
 package grammar
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-type Context struct {
-	scopes   []Scope
+type ContextImpl struct {
+	scopes   []map[string]common.Type
 	package_ *types.PackageInstance
 }
 
-func NewContext(packageFilename string, parentPackage *types.PackageInstance) *Context {
-	parentPackageName := ""
-	if parentPackage != nil {
-		parentPackageName = parentPackage.Name
-	}
-	return &Context{
-		package_: types.NewPackageInstance(false, packageFilename, parentPackageName, map[string]types.Type{}),
-	}
-}
-
-func (c *Context) PushScope(scope Scope) {
+func (c *ContextImpl) PushScope(scope map[string]common.Type) {
 	c.scopes = append(c.scopes, scope)
 }
 
-func (c *Context) PopScope() map[string]types.Type {
+func (c *ContextImpl) PopScope() map[string]common.Type {
 	if len(c.scopes) == 0 {
 		panic("fatal: not enough scopes")
 	}
@@ -37,7 +29,7 @@ func (c *Context) PopScope() map[string]types.Type {
 	return scope
 }
 
-func (c *Context) getVar(name string) (types.Type, error) {
+func (c *ContextImpl) GetVar(name string) (common.Type, error) {
 	lastScopeIdx := len(c.scopes) - 1
 	for idx := lastScopeIdx; idx >= 0; idx-- {
 		if val, ok := c.scopes[idx][name]; ok {
@@ -48,7 +40,7 @@ func (c *Context) getVar(name string) (types.Type, error) {
 	return nil, util.RuntimeError(fmt.Sprintf("ідентифікатор '%s' не визначений", name))
 }
 
-func (c *Context) setVar(name string, value types.Type) error {
+func (c *ContextImpl) SetVar(name string, value common.Type) error {
 	scopesLen := len(c.scopes)
 	for idx := 0; idx < scopesLen; idx++ {
 		if oldValue, ok := c.scopes[idx][name]; ok {
@@ -78,5 +70,24 @@ func (c *Context) setVar(name string, value types.Type) error {
 	}
 
 	c.scopes[scopesLen-1][name] = value
+	return nil
+}
+
+// GetPackage returns pointer to current evaluating package
+// instance without its scope. This method can be called during
+// the evaluation process.
+func (c *ContextImpl) GetPackage() common.Type {
+	return c.package_
+}
+
+// BuildPackage sets scope to package instance.
+// This method should be called after the package is evaluated.
+// After building the package, call GetPackage to retrieve it.
+func (c *ContextImpl) BuildPackage() error {
+	if len(c.scopes) == 0 {
+		return errors.New("not enough scopes")
+	}
+
+	c.package_.Attributes = c.scopes[len(c.scopes)-1]
 	return nil
 }

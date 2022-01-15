@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type DictionaryEntry struct {
-	Key   Type
-	Value Type
+	Key   common.Type
+	Value common.Type
 }
 
 type DictionaryInstance struct {
@@ -67,7 +68,7 @@ func (t DictionaryInstance) AsBool() bool {
 	return t.Length() != 0
 }
 
-func (t DictionaryInstance) SetAttribute(name string, _ Type) (Type, error) {
+func (t DictionaryInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
 	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
@@ -75,7 +76,7 @@ func (t DictionaryInstance) SetAttribute(name string, _ Type) (Type, error) {
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t DictionaryInstance) GetAttribute(name string) (Type, error) {
+func (t DictionaryInstance) GetAttribute(name string) (common.Type, error) {
 	if attribute, err := t.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}
@@ -91,7 +92,7 @@ func (t DictionaryInstance) Length() int64 {
 	return int64(len(t.Map))
 }
 
-func (t DictionaryInstance) GetElement(key Type) (Type, error) {
+func (t DictionaryInstance) GetElement(key common.Type) (common.Type, error) {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return nil, err
@@ -104,7 +105,7 @@ func (t DictionaryInstance) GetElement(key Type) (Type, error) {
 	return nil, errors.New(fmt.Sprintf("значення за ключем '%s' не існує", key.String()))
 }
 
-func (t *DictionaryInstance) SetElement(key Type, value Type) error {
+func (t *DictionaryInstance) SetElement(key common.Type, value common.Type) error {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return err
@@ -114,7 +115,7 @@ func (t *DictionaryInstance) SetElement(key Type, value Type) error {
 	return nil
 }
 
-func (t *DictionaryInstance) RemoveElement(key Type) (Type, error) {
+func (t *DictionaryInstance) RemoveElement(key common.Type) (common.Type, error) {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return nil, err
@@ -129,7 +130,7 @@ func (t *DictionaryInstance) RemoveElement(key Type) (Type, error) {
 	return value.Value, nil
 }
 
-func compareDictionaries(self Type, other Type) (int, error) {
+func compareDictionaries(self common.Type, other common.Type) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case *DictionaryInstance, DictionaryInstance:
@@ -154,7 +155,7 @@ func compareDictionaries(self Type, other Type) (int, error) {
 
 func newDictionaryClass() *Class {
 	attributes := mergeAttributes(
-		map[string]Type{
+		map[string]common.Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(DictionaryTypeHash, ToDictionary, ""),
 
@@ -176,7 +177,7 @@ func newDictionaryClass() *Class {
 						IsNullable: true,
 					},
 				},
-				func(args *[]Type, _ *map[string]Type) (Type, error) {
+				func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 					dict := (*args)[0].(DictionaryInstance)
 					value, err := dict.RemoveElement((*args)[1])
 					if err != nil {
@@ -205,7 +206,7 @@ func newDictionaryClass() *Class {
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc
-		func() (Type, error) {
+		func() (common.Type, error) {
 			return NewDictionaryInstance(), nil
 		},
 	)

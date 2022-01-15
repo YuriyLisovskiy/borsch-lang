@@ -3,13 +3,14 @@ package types
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type Object struct {
 	typeName    string
-	Attributes  map[string]Type
-	callHandler func(*[]Type, *map[string]Type) (Type, error)
+	Attributes  map[string]common.Type
+	callHandler func(interface{}, *[]common.Type, *map[string]common.Type) (common.Type, error)
 }
 
 func (o Object) makeAttributes() (DictionaryInstance, error) {
@@ -28,7 +29,7 @@ func (o Object) GetTypeName() string {
 	return o.typeName
 }
 
-func (o Object) GetAttribute(name string) (Type, error) {
+func (o Object) GetAttribute(name string) (common.Type, error) {
 	if o.Attributes != nil {
 		if name == "__атрибути__" {
 			dict, err := o.makeAttributes()
@@ -47,7 +48,7 @@ func (o Object) GetAttribute(name string) (Type, error) {
 	return nil, util.AttributeNotFoundError(o.GetTypeName(), name)
 }
 
-func (o Object) SetAttribute(name string, value Type) error {
+func (o Object) SetAttribute(name string, value common.Type) error {
 	if o.Attributes == nil {
 		return util.AttributeNotFoundError(o.GetTypeName(), name)
 	}
@@ -75,9 +76,9 @@ func (o Object) HasAttribute(name string) bool {
 	return ok
 }
 
-func (o *Object) Call(args *[]Type, kwargs *map[string]Type) (Type, error) {
+func (o *Object) Call(ctx interface{}, args *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
 	if o.callHandler != nil {
-		return o.callHandler(args, kwargs)
+		return o.callHandler(ctx, args, kwargs)
 	}
 
 	return nil, util.ObjectIsNotCallable(o.GetTypeName(), o.GetTypeName())
@@ -85,8 +86,8 @@ func (o *Object) Call(args *[]Type, kwargs *map[string]Type) (Type, error) {
 
 func (o Object) Copy() Object {
 	object := Object{
-		typeName: o.typeName,
-		Attributes: map[string]Type{},
+		typeName:   o.typeName,
+		Attributes: map[string]common.Type{},
 	}
 	for k, v := range o.Attributes {
 		object.Attributes[k] = v

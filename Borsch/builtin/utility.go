@@ -1,13 +1,16 @@
 package builtin
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func DeepCopy(object types.Type) (types.Type, error) {
+func DeepCopy(object common.Type) (common.Type, error) {
 	switch value := object.(type) {
 	case *types.ClassInstance:
 		copied := value.Copy()
@@ -17,7 +20,10 @@ func DeepCopy(object types.Type) (types.Type, error) {
 	}
 }
 
-func runOperator(name string, object types.Type, expectedTypeName string, expectedTypeHash uint64) (types.Type, error) {
+func runOperator(name string, object common.Type, expectedTypeName string, expectedTypeHash uint64) (
+	common.Type,
+	error,
+) {
 	attribute, err := object.GetAttribute(name)
 	if err != nil {
 		return nil, util.RuntimeError(fmt.Sprintf("об'єкт типу '%s' не має довжини", object.GetTypeName()))
@@ -25,13 +31,13 @@ func runOperator(name string, object types.Type, expectedTypeName string, expect
 
 	switch operator := attribute.(type) {
 	case *types.FunctionInstance:
-		args := []types.Type{object}
-		kwargs := map[string]types.Type{operator.Arguments[0].Name: object}
+		args := []common.Type{object}
+		kwargs := map[string]common.Type{operator.Arguments[0].Name: object}
 		if err := types.CheckFunctionArguments(operator, &args, &kwargs); err != nil {
 			return nil, err
 		}
 
-		result, err := operator.Call(&args, &kwargs)
+		result, err := operator.Call(nil, &args, &kwargs)
 		if err != nil {
 			return nil, err
 		}
@@ -53,4 +59,30 @@ func runOperator(name string, object types.Type, expectedTypeName string, expect
 	default:
 		return nil, util.ObjectIsNotCallable(name, attribute.GetTypeName())
 	}
+}
+
+func ImportPackage(baseScope map[string]common.Type, fullPath string, parser common.Parser) (common.Type, error) {
+	filePath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	packageCode, err := util.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	ast, err := parser.Parse(filePath, string(packageCode))
+	if err != nil {
+		return nil, err
+	}
+
+	context := parser.NewContext(filePath, nil)
+	context.PushScope(baseScope)
+	package_, err := ast.Evaluate(context)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
+	}
+
+	return package_, nil
 }

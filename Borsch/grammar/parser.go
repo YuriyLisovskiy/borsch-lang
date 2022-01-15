@@ -6,14 +6,12 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/alecthomas/participle/v2"
 )
 
-type Parser struct {
-	parser *participle.Parser
-}
-
-var ParserInstance *Parser
+var ParserInstance common.Parser
 
 func init() {
 	var err error
@@ -23,7 +21,11 @@ func init() {
 	}
 }
 
-func NewParser() (*Parser, error) {
+type ParserImpl struct {
+	parser *participle.Parser
+}
+
+func NewParser() (*ParserImpl, error) {
 	parser, err := participle.Build(
 		&Package{},
 		participle.UseLookahead(2),
@@ -34,10 +36,10 @@ func NewParser() (*Parser, error) {
 		return nil, err
 	}
 
-	return &Parser{parser: parser}, nil
+	return &ParserImpl{parser: parser}, nil
 }
 
-func (p *Parser) Parse(filename string, code string) (*Package, error) {
+func (p *ParserImpl) Parse(filename string, code string) (common.Evaluatable, error) {
 	packageAST := &Package{}
 	err := p.parser.ParseString(filename, code, packageAST)
 	if err != nil {
@@ -59,4 +61,14 @@ func (p *Parser) Parse(filename string, code string) (*Package, error) {
 	}
 
 	return packageAST, nil
+}
+
+func (p *ParserImpl) NewContext(packageFilename string, parentPackage common.Type) common.Context {
+	parentPackageName := ""
+	if parentPackage != nil {
+		parentPackageName = parentPackage.(*types.PackageInstance).Name
+	}
+	return &ContextImpl{
+		package_: types.NewPackageInstance(false, packageFilename, parentPackageName, map[string]common.Type{}),
+	}
 }

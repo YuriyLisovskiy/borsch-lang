@@ -7,7 +7,6 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/grammar"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 	"github.com/spf13/cobra"
 )
 
@@ -45,32 +44,40 @@ var rootCmd = &cobra.Command{
 				return
 			}
 
-			packageCode, err := util.ReadFile(filePath)
+			package_, err := builtin.ImportPackage(builtin.BuiltinScope, filePath, grammar.ParserInstance)
 			if err != nil {
 				fmt.Println(err.Error())
-			} else {
-				parser, err := grammar.NewParser()
-				if err != nil {
-					fmt.Println(err.Error())
-					return
-				}
-
-				ast, err := parser.Parse(filePath, string(packageCode))
-				if err != nil {
-					fmt.Println(err.Error())
-					return
-				}
-
-				context := grammar.NewContext(filePath, nil)
-				context.PushScope(builtin.BuiltinScope)
-				package_, err := ast.Evaluate(context)
-				if err != nil {
-					fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
-					return
-				}
-
-				fmt.Println(package_.String())
+				return
 			}
+
+			fmt.Println(package_.String())
+
+			// packageCode, err := util.ReadFile(filePath)
+			// if err != nil {
+			// 	fmt.Println(err.Error())
+			// } else {
+			// parser, err := grammar.NewParser()
+			// if err != nil {
+			// 	fmt.Println(err.Error())
+			// 	return
+			// }
+			//
+			// ast, err := parser.Parse(filePath, string(packageCode))
+			// if err != nil {
+			// 	fmt.Println(err.Error())
+			// 	return
+			// }
+			//
+			// context := grammar.NewContext(filePath, nil)
+			// context.PushScope(builtin.BuiltinScope)
+			// package_, err := ast.Evaluate(context)
+			// if err != nil {
+			// 	fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
+			// 	return
+			// }
+			//
+			// fmt.Println(package_.String())
+			// }
 		} else {
 			// interpret := interpreter.NewInterpreter(stdRoot, builtin.RootPackageName, "")
 			// fmt.Printf("%s %s (%s, %s)\n", build.LanguageName, build.Version, build.Time, strings.Title(runtime.GOOS))
@@ -85,7 +92,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.Flags().StringVarP(
-		&stdRoot, "lib", "l", "", "шлях до директорії зі стандартною бібліотекою мови",
+		&stdRoot, "lib", "l", "", "шлях до каталогу зі стандартною бібліотекою мови",
 	)
 }
 

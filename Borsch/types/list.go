@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type ListInstance struct {
 	Object
-	Values []Type
+	Values []common.Type
 }
 
 func NewListInstance() ListInstance {
 	return ListInstance{
-		Values: []Type{},
+		Values: []common.Type{},
 		Object: Object{
 			typeName:    GetTypeName(ListTypeHash),
 			Attributes:  nil,
@@ -46,7 +47,7 @@ func (t ListInstance) AsBool() bool {
 	return t.Length() != 0
 }
 
-func (t ListInstance) SetAttribute(name string, _ Type) (Type, error) {
+func (t ListInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
 	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
@@ -54,7 +55,7 @@ func (t ListInstance) SetAttribute(name string, _ Type) (Type, error) {
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t ListInstance) GetAttribute(name string) (Type, error) {
+func (t ListInstance) GetAttribute(name string) (common.Type, error) {
 	if attribute, err := t.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}
@@ -70,7 +71,7 @@ func (t ListInstance) Length() int64 {
 	return int64(len(t.Values))
 }
 
-func (t ListInstance) GetElement(index int64) (Type, error) {
+func (t ListInstance) GetElement(index int64) (common.Type, error) {
 	idx, err := getIndex(index, t.Length())
 	if err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ func (t ListInstance) GetElement(index int64) (Type, error) {
 	return t.Values[idx], nil
 }
 
-func (t ListInstance) SetElement(index int64, value Type) (Type, error) {
+func (t ListInstance) SetElement(index int64, value common.Type) (common.Type, error) {
 	idx, err := getIndex(index, t.Length())
 	if err != nil {
 		return nil, err
@@ -89,7 +90,7 @@ func (t ListInstance) SetElement(index int64, value Type) (Type, error) {
 	return t, nil
 }
 
-func (t ListInstance) Slice(from, to int64) (Type, error) {
+func (t ListInstance) Slice(from, to int64) (common.Type, error) {
 	fromIdx, err := getIndex(from, t.Length())
 	if err != nil {
 		return nil, err
@@ -109,7 +110,7 @@ func (t ListInstance) Slice(from, to int64) (Type, error) {
 	return listInstance, nil
 }
 
-func compareLists(self Type, other Type) (int, error) {
+func compareLists(self common.Type, other common.Type) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case ListInstance:
@@ -135,10 +136,10 @@ func compareLists(self Type, other Type) (int, error) {
 func newListBinaryOperator(
 	name string,
 	doc string,
-	handler func(ListInstance, Type) (Type, error),
+	handler func(ListInstance, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
-		name, ListTypeHash, AnyTypeHash, doc, func(left Type, right Type) (Type, error) {
+		name, ListTypeHash, AnyTypeHash, doc, func(left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(ListInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -150,7 +151,7 @@ func newListBinaryOperator(
 
 func newListClass() *Class {
 	attributes := mergeAttributes(
-		map[string]Type{
+		map[string]common.Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(ListTypeHash, ToList, ""),
 
@@ -159,7 +160,7 @@ func newListClass() *Class {
 
 			ops.MulOp.Caption(): newListBinaryOperator(
 				// TODO: add doc
-				ops.MulOp.Caption(), "", func(self ListInstance, other Type) (Type, error) {
+				ops.MulOp.Caption(), "", func(self ListInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case IntegerInstance:
 						count := int(o.Value)
@@ -178,7 +179,7 @@ func newListClass() *Class {
 			),
 			ops.AddOp.Caption(): newListBinaryOperator(
 				// TODO: add doc
-				ops.AddOp.Caption(), "", func(self ListInstance, other Type) (Type, error) {
+				ops.AddOp.Caption(), "", func(self ListInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case ListInstance:
 						self.Values = append(self.Values, o.Values...)
@@ -198,7 +199,7 @@ func newListClass() *Class {
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc
-		func() (Type, error) {
+		func() (common.Type, error) {
 			return NewListInstance(), nil
 		},
 	)

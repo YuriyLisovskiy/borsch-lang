@@ -6,11 +6,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func Print(args ...types.Type) {
+func Print(args ...common.Type) {
 	var strArgs []string
 	for _, arg := range args {
 		strArgs = append(strArgs, arg.String())
@@ -27,7 +28,7 @@ func Print(args ...types.Type) {
 	)
 }
 
-func Input(args ...types.Type) (types.Type, error) {
+func Input(args ...common.Type) (common.Type, error) {
 	Print(args...)
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')

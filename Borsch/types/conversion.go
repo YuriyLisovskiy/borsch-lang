@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func ToInteger(args ...Type) (Type, error) {
+func ToInteger(args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewIntegerInstance(0), nil
 	}
@@ -51,7 +52,7 @@ func ToInteger(args ...Type) (Type, error) {
 	}
 }
 
-func ToReal(args ...Type) (Type, error) {
+func ToReal(args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewRealInstance(0.0), nil
 	}
@@ -95,7 +96,7 @@ func ToReal(args ...Type) (Type, error) {
 	}
 }
 
-func ToString(args ...Type) (Type, error) {
+func ToString(args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewStringInstance(""), nil
 	}
@@ -124,7 +125,7 @@ func ToString(args ...Type) (Type, error) {
 	// }
 }
 
-func ToBool(args ...Type) (Type, error) {
+func ToBool(args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewBoolInstance(false), nil
 	}
@@ -157,7 +158,7 @@ func ToBool(args ...Type) (Type, error) {
 	}
 }
 
-func ToList(args ...Type) (Type, error) {
+func ToList(args ...common.Type) (common.Type, error) {
 	list := NewListInstance()
 	if len(args) == 0 {
 		return list, nil
@@ -170,7 +171,7 @@ func ToList(args ...Type) (Type, error) {
 	return list, nil
 }
 
-func ToDictionary(args ...Type) (Type, error) {
+func ToDictionary(args ...common.Type) (common.Type, error) {
 	dict := NewDictionaryInstance()
 	if len(args) == 0 {
 		return dict, nil

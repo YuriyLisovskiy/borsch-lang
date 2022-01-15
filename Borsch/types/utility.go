@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
@@ -87,7 +88,7 @@ func IsBuiltinType(typeName string) bool {
 	return GetTypeHash(typeName) <= FunctionTypeHash
 }
 
-func CheckResult(result Type, function *FunctionInstance) error {
+func CheckResult(result common.Type, function *FunctionInstance) error {
 	if len(function.ReturnTypes) == 1 {
 		return checkSingleResult(result, function.ReturnTypes[0], function.Name)
 	}
@@ -106,7 +107,7 @@ func CheckResult(result Type, function *FunctionInstance) error {
 	return nil
 }
 
-func checkSingleResult(result Type, returnType FunctionReturnType, funcName string) error {
+func checkSingleResult(result common.Type, returnType FunctionReturnType, funcName string) error {
 	if result.GetTypeHash() == NilTypeHash {
 		if returnType.TypeHash != NilTypeHash && !returnType.IsNullable {
 			return util.RuntimeError(
@@ -125,7 +126,7 @@ func checkSingleResult(result Type, returnType FunctionReturnType, funcName stri
 	return nil
 }
 
-func CheckFunctionArguments(function *FunctionInstance, args *[]Type, _ *map[string]Type) error {
+func CheckFunctionArguments(function *FunctionInstance, args *[]common.Type, _ *map[string]common.Type) error {
 	parametersLen := len(*args)
 	argsLen := len(function.Arguments)
 	if argsLen > 0 && function.Arguments[argsLen-1].IsVariadic {
@@ -256,15 +257,15 @@ func boolToFloat64(v bool) float64 {
 	return 0.0
 }
 
-func logicalAnd(l, r Type) (Type, error) {
+func logicalAnd(l, r common.Type) (common.Type, error) {
 	return NewBoolInstance(l.AsBool() && r.AsBool()), nil
 }
 
-func logicalOr(l, r Type) (Type, error) {
+func logicalOr(l, r common.Type) (common.Type, error) {
 	return NewBoolInstance(l.AsBool() || r.AsBool()), nil
 }
 
-func getLength(sequence Type) (int64, error) {
+func getLength(sequence common.Type) (int64, error) {
 	switch self := sequence.(type) {
 	case ListInstance:
 		return self.Length(), nil
@@ -275,7 +276,7 @@ func getLength(sequence Type) (int64, error) {
 	return 0, errors.New(fmt.Sprint("invalid type in length operator: ", sequence.GetTypeName()))
 }
 
-func mergeAttributes(a map[string]Type, b ...map[string]Type) map[string]Type {
+func mergeAttributes(a map[string]common.Type, b ...map[string]common.Type) map[string]common.Type {
 	for _, m := range b {
 		for key, val := range m {
 			a[key] = val
@@ -290,7 +291,7 @@ func newBinaryMethod(
 	selfTypeHash uint64,
 	returnTypeHash uint64,
 	doc string,
-	handler func(Type, Type) (Type, error),
+	handler func(common.Type, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		name,
@@ -308,7 +309,7 @@ func newBinaryMethod(
 				IsNullable: false,
 			},
 		},
-		func(args *[]Type, _ *map[string]Type) (Type, error) {
+		func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			return handler((*args)[0], (*args)[1])
 		},
 		[]FunctionReturnType{
@@ -328,7 +329,7 @@ func newUnaryMethod(
 	selfTypeHash uint64,
 	returnTypeHash uint64,
 	doc string,
-	handler func(Type) (Type, error),
+	handler func(common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		name,
@@ -340,7 +341,7 @@ func newUnaryMethod(
 				IsNullable: false,
 			},
 		},
-		func(args *[]Type, _ *map[string]Type) (Type, error) {
+		func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			return handler((*args)[0])
 		},
 		[]FunctionReturnType{
@@ -359,11 +360,15 @@ func makeComparisonOperator(
 	operator ops.Operator,
 	itemTypeHash uint64,
 	doc string,
-	comparator func(Type, Type) (int, error),
+	comparator func(common.Type, common.Type) (int, error),
 	checker func(res int) bool,
 ) *FunctionInstance {
 	return newBinaryMethod(
-		operator.Caption(), itemTypeHash, BoolTypeHash, doc, func(self Type, other Type) (Type, error) {
+		operator.Caption(),
+		itemTypeHash,
+		BoolTypeHash,
+		doc,
+		func(self common.Type, other common.Type) (common.Type, error) {
 			res, err := comparator(self, other)
 			if err != nil {
 				return nil, err
@@ -374,8 +379,11 @@ func makeComparisonOperator(
 	)
 }
 
-func makeComparisonOperators(itemTypeHash uint64, comparator func(Type, Type) (int, error)) map[string]Type {
-	return map[string]Type{
+func makeComparisonOperators(
+	itemTypeHash uint64,
+	comparator func(common.Type, common.Type) (int, error),
+) map[string]common.Type {
+	return map[string]common.Type{
 		ops.EqualsOp.Caption(): makeComparisonOperator(
 			// TODO: add doc
 			ops.EqualsOp, itemTypeHash, "", comparator, func(res int) bool {
@@ -415,35 +423,43 @@ func makeComparisonOperators(itemTypeHash uint64, comparator func(Type, Type) (i
 	}
 }
 
-func makeLogicalOperators(itemTypeHash uint64) map[string]Type {
-	return map[string]Type{
+func makeLogicalOperators(itemTypeHash uint64) map[string]common.Type {
+	return map[string]common.Type{
 		ops.NotOp.Caption(): newUnaryMethod(
 			// TODO: add doc
-			ops.NotOp.Caption(), itemTypeHash, BoolTypeHash, "", func(self Type) (Type, error) {
+			ops.NotOp.Caption(), itemTypeHash, BoolTypeHash, "", func(self common.Type) (common.Type, error) {
 				return NewBoolInstance(!self.AsBool()), nil
 			},
 		),
 		ops.AndOp.Caption(): newBinaryMethod(
 			// TODO: add doc
-			ops.AndOp.Caption(), itemTypeHash, BoolTypeHash, "", func(self Type, other Type) (Type, error) {
+			ops.AndOp.Caption(),
+			itemTypeHash,
+			BoolTypeHash,
+			"",
+			func(self common.Type, other common.Type) (common.Type, error) {
 				return logicalAnd(self, other)
 			},
 		),
 		ops.OrOp.Caption(): newBinaryMethod(
 			// TODO: add doc
-			ops.OrOp.Caption(), itemTypeHash, BoolTypeHash, "", func(self Type, other Type) (Type, error) {
+			ops.OrOp.Caption(),
+			itemTypeHash,
+			BoolTypeHash,
+			"",
+			func(self common.Type, other common.Type) (common.Type, error) {
 				return logicalOr(self, other)
 			},
 		),
 	}
 }
 
-func makeCommonOperators(itemTypeHash uint64) map[string]Type {
-	return map[string]Type{
+func makeCommonOperators(itemTypeHash uint64) map[string]common.Type {
+	return map[string]common.Type{
 		// TODO: add doc
 		ops.BoolOperatorName: newUnaryMethod(
 			ops.BoolOperatorName, itemTypeHash, BoolTypeHash, "",
-			func(self Type) (Type, error) {
+			func(self common.Type) (common.Type, error) {
 				return NewBoolInstance(self.AsBool()), nil
 			},
 		),
@@ -452,7 +468,7 @@ func makeCommonOperators(itemTypeHash uint64) map[string]Type {
 
 func newBuiltinConstructor(
 	itemTypeHash uint64,
-	handler func(args ...Type) (Type, error),
+	handler func(args ...common.Type) (common.Type, error),
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
@@ -471,7 +487,7 @@ func newBuiltinConstructor(
 				IsNullable: true,
 			},
 		},
-		func(args *[]Type, _ *map[string]Type) (Type, error) {
+		func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			self, err := handler((*args)[1:]...)
 			if err != nil {
 				return nil, err
@@ -494,7 +510,7 @@ func newBuiltinConstructor(
 
 func newLengthOperator(
 	itemTypeHash uint64,
-	handler func(Type) (int64, error),
+	handler func(common.Type) (int64, error),
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
@@ -507,7 +523,7 @@ func newLengthOperator(
 				IsNullable: false,
 			},
 		},
-		func(args *[]Type, _ *map[string]Type) (Type, error) {
+		func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			length, err := handler((*args)[0])
 			if err != nil {
 				return nil, err

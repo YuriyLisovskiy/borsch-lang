@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
 
@@ -11,22 +12,22 @@ type Class struct {
 	Object
 
 	typeHash         uint64
-	GetEmptyInstance func() (Type, error)
+	GetEmptyInstance func() (common.Type, error)
 }
 
 func NewClass(
 	name string,
 	package_ *PackageInstance,
-	attributes map[string]Type,
+	attributes map[string]common.Type,
 	doc string,
 ) *Class {
 	class := &Class{
 		Object:   *newClassObject(name, package_, attributes, doc),
 		typeHash: hashObject(name),
 	}
-	class.GetEmptyInstance = func() (Type, error) {
+	class.GetEmptyInstance = func() (common.Type, error) {
 		// TODO: set default attributes
-		return NewClassInstance(class, map[string]Type{}), nil
+		return NewClassInstance(class, map[string]common.Type{}), nil
 	}
 
 	return class
@@ -35,9 +36,9 @@ func NewClass(
 func NewBuiltinClass(
 	typeHash uint64,
 	package_ *PackageInstance,
-	attributes map[string]Type,
+	attributes map[string]common.Type,
 	doc string,
-	getEmptyInstance func() (Type, error),
+	getEmptyInstance func() (common.Type, error),
 ) *Class {
 	return &Class{
 		Object:           *newClassObject(GetTypeName(typeHash), package_, attributes, doc),
@@ -65,7 +66,7 @@ func (t Class) AsBool() bool {
 // SetAttribute TODO: якщо атрибут не існує, встановити.
 //  Якщо атрибут існує, перевірити його тип і, якщо типи співпадають
 //  встановити, інакше помилка.
-func (t Class) SetAttribute(name string, value Type) (Type, error) {
+func (t Class) SetAttribute(name string, value common.Type) (common.Type, error) {
 	err := t.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func (t Class) GetClass() *Class {
 	return TypeClass
 }
 
-func newClassObject(name string, package_ *PackageInstance, attributes map[string]Type, doc string) *Object {
+func newClassObject(name string, package_ *PackageInstance, attributes map[string]common.Type, doc string) *Object {
 	object := &Object{
 		typeName:    name,
 		Attributes:  nil,
@@ -87,7 +88,7 @@ func newClassObject(name string, package_ *PackageInstance, attributes map[strin
 
 	if constructor, ok := attributes[ops.ConstructorName]; ok {
 		switch handler := constructor.(type) {
-		case CallableType:
+		case common.CallableType:
 			object.callHandler = handler.Call
 		}
 	}
@@ -115,7 +116,7 @@ type ClassInstance struct {
 	Address string
 }
 
-func NewClassInstance(class *Class, attributes map[string]Type) *ClassInstance {
+func NewClassInstance(class *Class, attributes map[string]common.Type) *ClassInstance {
 	instance := &ClassInstance{
 		Object: Object{
 			typeName:    class.GetTypeName(),
@@ -132,10 +133,10 @@ func (i ClassInstance) String() string {
 	if attribute, err := i.GetAttribute("__рядок__"); err == nil {
 		switch __str__ := attribute.(type) {
 		case *FunctionInstance:
-			args := []Type{i}
-			kwargs := map[string]Type{__str__.Arguments[0].Name: i}
+			args := []common.Type{i}
+			kwargs := map[string]common.Type{__str__.Arguments[0].Name: i}
 			if err := CheckFunctionArguments(__str__, &args, &kwargs); err == nil {
-				result, err := __str__.Call(&args, &kwargs)
+				result, err := __str__.Call(nil, &args, &kwargs)
 				if err == nil {
 					return result.String()
 				} else {
@@ -163,10 +164,10 @@ func (i ClassInstance) AsBool() bool {
 	if attribute, err := i.GetAttribute(ops.BoolOperatorName); err == nil {
 		switch __bool__ := attribute.(type) {
 		case *FunctionInstance:
-			args := []Type{i}
-			kwargs := map[string]Type{__bool__.Arguments[0].Name: i}
+			args := []common.Type{i}
+			kwargs := map[string]common.Type{__bool__.Arguments[0].Name: i}
 			if err := CheckFunctionArguments(__bool__, &args, &kwargs); err == nil {
-				result, err := __bool__.Call(&args, &kwargs)
+				result, err := __bool__.Call(nil, &args, &kwargs)
 				if err == nil {
 					switch boolResult := result.(type) {
 					case BoolInstance:
@@ -185,7 +186,7 @@ func (i ClassInstance) AsBool() bool {
 	return false
 }
 
-func (i ClassInstance) SetAttribute(name string, value Type) (Type, error) {
+func (i ClassInstance) SetAttribute(name string, value common.Type) (common.Type, error) {
 	err := i.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
@@ -194,7 +195,7 @@ func (i ClassInstance) SetAttribute(name string, value Type) (Type, error) {
 	return i, nil
 }
 
-func (i ClassInstance) GetAttribute(name string) (Type, error) {
+func (i ClassInstance) GetAttribute(name string) (common.Type, error) {
 	if attribute, err := i.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}

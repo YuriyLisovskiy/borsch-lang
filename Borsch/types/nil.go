@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
@@ -38,11 +39,11 @@ func (t NilInstance) AsBool() bool {
 	return false
 }
 
-func (t NilInstance) GetAttribute(name string) (Type, error) {
+func (t NilInstance) GetAttribute(name string) (common.Type, error) {
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t NilInstance) SetAttribute(name string, _ Type) (Type, error) {
+func (t NilInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
@@ -50,7 +51,7 @@ func (NilInstance) GetClass() *Class {
 	return Nil
 }
 
-func compareNils(self Type, other Type) (int, error) {
+func compareNils(self common.Type, other common.Type) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 		return 0, nil
@@ -66,7 +67,7 @@ func compareNils(self Type, other Type) (int, error) {
 
 func newNilClass() *Class {
 	attributes := mergeAttributes(
-		map[string]Type{
+		map[string]common.Type{
 			// TODO: add doc
 			ops.ConstructorName: NewFunctionInstance(
 				ops.ConstructorName,
@@ -78,7 +79,7 @@ func newNilClass() *Class {
 						IsNullable: false,
 					},
 				},
-				func(args *[]Type, _ *map[string]Type) (Type, error) {
+				func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 					return (*args)[0], nil
 				},
 				[]FunctionReturnType{
@@ -101,7 +102,7 @@ func newNilClass() *Class {
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc
-		func() (Type, error) {
+		func() (common.Type, error) {
 			return NewNilInstance(), nil
 		},
 	)

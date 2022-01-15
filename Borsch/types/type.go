@@ -3,10 +3,11 @@ package types
 import (
 	"errors"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
 
-func getType(object Type) (Type, error) {
+func getType(object common.Type) (common.Type, error) {
 	if instance, ok := object.(Instance); ok {
 		return instance.GetClass(), nil
 	}
@@ -15,12 +16,12 @@ func getType(object Type) (Type, error) {
 }
 
 func newTypeClass() *Class {
-	getTypeFunc := func(args ...Type) (Type, error) {
+	getTypeFunc := func(args ...common.Type) (common.Type, error) {
 		return getType(args[0])
 	}
 
 	// TODO: add required operators and methods
-	attributes := map[string]Type{
+	attributes := map[string]common.Type{
 		// TODO: add doc
 		ops.ConstructorName: newBuiltinConstructor(StringTypeHash, getTypeFunc, ""),
 		ops.CallOperatorName: NewFunctionInstance(
@@ -39,7 +40,7 @@ func newTypeClass() *Class {
 					IsNullable: false,
 				},
 			},
-			func(args *[]Type, _ *map[string]Type) (Type, error) {
+			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				return getTypeFunc((*args)[1])
 			},
 			[]FunctionReturnType{
@@ -58,7 +59,7 @@ func newTypeClass() *Class {
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc
-		func() (Type, error) {
+		func() (common.Type, error) {
 			return nil, nil
 		},
 	)
