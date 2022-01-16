@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
@@ -96,10 +97,32 @@ func CheckResult(result common.Type, function *FunctionInstance) error {
 	switch value := result.(type) {
 	case ListInstance:
 		if int64(len(function.ReturnTypes)) != value.Length() {
-			// TODO: return "not enough return values"
+			var expectedTypes []string
+			for _, retType := range function.ReturnTypes {
+				expectedTypes = append(expectedTypes, retType.String())
+			}
+
+			var typesGot []string
+			for _, retType := range value.Values {
+				typesGot = append(typesGot, retType.GetTypeName())
+			}
+
+			return util.RuntimeError(
+				fmt.Sprintf(
+					"'%s' повертає значення з типами (%s), отримано (%s)",
+					function.Name,
+					strings.Join(expectedTypes, ", "),
+					strings.Join(typesGot, ", "),
+				),
+			)
 		}
 
 		// TODO: check values in list
+		for i, returnType := range function.ReturnTypes {
+			if err := checkSingleResult(value.Values[i], returnType, function.Name); err != nil {
+				return errors.New(fmt.Sprintf(err.Error(), fmt.Sprintf(" на позиції %d", i+1)))
+			}
+		}
 	default:
 		panic("unreachable")
 	}
@@ -111,14 +134,14 @@ func checkSingleResult(result common.Type, returnType FunctionReturnType, funcNa
 	if result.GetTypeHash() == NilTypeHash {
 		if returnType.TypeHash != NilTypeHash && !returnType.IsNullable {
 			return util.RuntimeError(
-				fmt.Sprintf("'%s()' повертає ненульове значення, отримано '%s'", funcName, result.String()),
+				fmt.Sprintf("'%s()' повертає ненульове значення%s, отримано '%s'", funcName, "%s", result.String()),
 			)
 		}
 	} else if returnType.TypeHash != AnyTypeHash && result.GetTypeHash() != returnType.TypeHash {
 		return util.RuntimeError(
 			fmt.Sprintf(
-				"'%s()' повертає значення типу '%s', отримано значення з типом '%s'",
-				funcName, returnType.String(), result.GetTypeName(),
+				"'%s()' повертає значення типу '%s'%s, отримано значення з типом '%s'",
+				funcName, returnType.String(), "%s", result.GetTypeName(),
 			),
 		)
 	}

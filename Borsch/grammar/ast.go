@@ -63,13 +63,18 @@ type FunctionDef struct {
 	Name       string       `"функція" @Ident`
 	Parameters []*Parameter `"(" (@@ ("," @@)* )? ")"`
 	// VariadicParameter *VariadicParameter `("," @@)? )? ")"`
-	ReturnTypes []*string     `"-" ">" (@Ident | ("(" (@Ident ("," @Ident)+ )? ")"))`
+	ReturnTypes []*ReturnType `"-"">" (@@ | ("(" (@@ ("," @@)+ )? ")"))`
 	Body        *FunctionBody `"{" @@ "}"`
 }
 
 type Parameter struct {
 	Name       string `@Ident ":"`
 	Type       string `@Ident`
+	IsNullable bool   `@"?"?`
+}
+
+type ReturnType struct {
+	Name       string `@Ident`
 	IsNullable bool   `@"?"?`
 }
 
@@ -95,9 +100,9 @@ func (b *Boolean) Capture(values []string) error {
 type Assignment struct {
 	Pos lexer.Position
 
-	LogicalAnd *LogicalAnd `@@`
-	Op         string      `( @"="`
-	Next       *LogicalAnd `  @@ )?`
+	LogicalAnd []*LogicalAnd `@@ ("," @@)?`
+	Op         string        `( @"="`
+	Next       []*LogicalAnd `  @@ ("," @@)? )?`
 }
 
 type LogicalAnd struct {
@@ -223,12 +228,12 @@ type RandomAccess struct {
 	Pos lexer.Position
 
 	Ident string        `@Ident`
-	Index []*Expression `("[" @@ "]")+`
+	Index []*LogicalAnd `("[" @@ "]")+`
 }
 
 type CallFunc struct {
 	Pos lexer.Position
 
 	Ident     string        `@Ident`
-	Arguments []*Expression `"(" (@@ ("," @@)*)? ")"`
+	Arguments []*LogicalAnd `"(" (@@ ("," @@)*)? ")"`
 }

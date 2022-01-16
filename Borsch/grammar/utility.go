@@ -134,12 +134,12 @@ func evalSingleGetByIndexOperation(variable common.Type, index common.Type) (com
 func evalSingleSetByIndexOperation(
 	ctx common.Context,
 	variable common.Type,
-	indices []*Expression,
+	indices []*LogicalAnd,
 	value common.Type,
 ) (common.Type, error) {
 	switch iterable := variable.(type) {
 	case common.SequentialType:
-		index, err := indices[0].Evaluate(ctx)
+		index, err := indices[0].Evaluate(ctx, nil)
 		if err != nil {
 			return nil, err
 		}

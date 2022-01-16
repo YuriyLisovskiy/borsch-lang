@@ -205,8 +205,8 @@ func (f *FunctionDef) Evaluate(ctx common.Context) (common.Type, error) {
 	for _, returnType := range f.ReturnTypes {
 		returnTypes = append(
 			returnTypes, types.FunctionReturnType{
-				TypeHash:   types.GetTypeHash(*returnType),
-				IsNullable: false, // TODO: add it in grammar as '?'
+				TypeHash:   types.GetTypeHash(returnType.Name),
+				IsNullable: returnType.IsNullable,
 			},
 		)
 	}
@@ -296,16 +296,114 @@ func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
 }
 
 func (a *Assignment) Evaluate(ctx common.Context) (common.Type, error) {
-	var value common.Type = nil
-	if a.Next != nil {
-		var err error
-		value, err = a.Next.Evaluate(ctx, nil)
-		if err != nil {
-			return nil, err
+	if len(a.Next) > 0 {
+		if len(a.Next) == 1 {
+			value, err := a.Next[0].Evaluate(ctx, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(a.LogicalAnd) == 1 {
+				return a.LogicalAnd[0].Evaluate(ctx, value)
+			}
+
+			// TODO: unpack list into vars
+			switch sequence := value.(type) {
+			case types.ListInstance:
+				if int64(len(a.LogicalAnd)) > sequence.Length() {
+					// TODO: return error: left vars count are greater than list count
+					return nil, nil
+				}
+
+				var i int
+				list := types.NewListInstance()
+				for i = 0; i < len(a.LogicalAnd)-1; i++ {
+					element, err := a.LogicalAnd[i].Evaluate(ctx, sequence.Values[i])
+					if err != nil {
+						return nil, err
+					}
+
+					list.Values = append(list.Values, element)
+				}
+
+				if int64(i) < sequence.Length()-1 {
+					lastList := types.NewListInstance()
+					for j := int64(i); j < sequence.Length(); j++ {
+						lastList.Values = append(lastList.Values, sequence.Values[j])
+					}
+
+					list.Values = append(list.Values, lastList)
+				} else {
+					element, err := a.LogicalAnd[i].Evaluate(ctx, sequence.Values[i])
+					if err != nil {
+						return nil, err
+					}
+
+					list.Values = append(list.Values, element)
+				}
+
+				return list, nil
+			default:
+				// TODO: return error: unable to unpack non-list instance
+				return nil, nil
+			}
 		}
+
+		if len(a.LogicalAnd) > len(a.Next) {
+			// TODO: return invalid unpack count
+			// TODO: check if not list, then error, unpack otherwise
+		}
+
+		return nil, nil
+	} else {
+		if len(a.LogicalAnd) == 1 {
+			return a.LogicalAnd[0].Evaluate(ctx, nil)
+		}
+
+		list := types.NewListInstance()
+		for i := range a.LogicalAnd {
+			element, err := a.LogicalAnd[i].Evaluate(ctx, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			list.Values = append(list.Values, element)
+		}
+
+		return list, nil
 	}
 
-	return a.LogicalAnd.Evaluate(ctx, value)
+	// list := types.NewListInstance()
+	// for i := range a.LogicalAnd {
+	// 	var value common.Type = nil
+	// 	if a.Next[i] != nil {
+	// 		var err error
+	// 		value, err = a.Next[i].Evaluate(ctx, nil)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	// 	}
+	//
+	// 	element, err := a.LogicalAnd[i].Evaluate(ctx, value)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	//
+	// 	list.Values = append(list.Values, element)
+	// }
+	//
+	// return list, nil
+
+	// var value common.Type = nil
+	// if a.Next != nil {
+	// 	var err error
+	// 	value, err = a.Next.Evaluate(ctx, nil)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+	//
+	// return a.LogicalAnd.Evaluate(ctx, value)
 }
 
 // Evaluate executes LogicalAnd operation.
@@ -489,7 +587,7 @@ func (a *RandomAccess) Evaluate(ctx common.Context, valueToSet common.Type) (com
 	}
 
 	for _, indexExpression := range a.Index {
-		index, err := indexExpression.Evaluate(ctx)
+		index, err := indexExpression.Evaluate(ctx, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -525,14 +623,18 @@ func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
 
 			args := []common.Type{instance}
 			kwargs := map[string]common.Type{constructor.Arguments[0].Name: instance}
+			gotVariadic := false
 			for i, expressionArgument := range a.Arguments {
-				arg, err := expressionArgument.Evaluate(ctx)
+				arg, err := expressionArgument.Evaluate(ctx, nil)
 				if err != nil {
 					return nil, err
 				}
 
 				args = append(args, arg)
-				kwargs[constructor.Arguments[i+1].Name] = arg
+				if !gotVariadic {
+					gotVariadic = constructor.Arguments[i+1].IsVariadic
+					kwargs[constructor.Arguments[i+1].Name] = arg
+				}
 			}
 
 			if err := types.CheckFunctionArguments(constructor, &args, &kwargs); err != nil {
@@ -540,6 +642,8 @@ func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
 			}
 
 			ctx.PushScope(kwargs)
+
+			// TODO: check if constructor returns nothing.
 			_, err = constructor.Call(nil, &args, &kwargs)
 			if err != nil {
 				return nil, err
@@ -553,14 +657,18 @@ func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
 	case *types.FunctionInstance:
 		var args []common.Type
 		kwargs := map[string]common.Type{}
+		gotVariadic := false
 		for i, expressionArgument := range a.Arguments {
-			arg, err := expressionArgument.Evaluate(ctx)
+			arg, err := expressionArgument.Evaluate(ctx, nil)
 			if err != nil {
 				return nil, err
 			}
 
 			args = append(args, arg)
-			kwargs[object.Arguments[i].Name] = arg
+			if !gotVariadic {
+				gotVariadic = object.Arguments[i].IsVariadic
+				kwargs[object.Arguments[i].Name] = arg
+			}
 		}
 
 		if err := types.CheckFunctionArguments(object, &args, &kwargs); err != nil {
@@ -570,6 +678,10 @@ func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
 		ctx.PushScope(kwargs)
 		res, err := object.Call(ParserInstance, &args, &kwargs)
 		if err != nil {
+			return nil, err
+		}
+
+		if err := types.CheckResult(res, object); err != nil {
 			return nil, err
 		}
 
@@ -585,14 +697,19 @@ func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
 		case *types.FunctionInstance:
 			args := []common.Type{variable}
 			kwargs := map[string]common.Type{callOperator.Arguments[0].Name: variable}
+			gotVariadic := false
 			for i, expressionArgument := range a.Arguments {
-				arg, err := expressionArgument.Evaluate(ctx)
+				arg, err := expressionArgument.Evaluate(ctx, nil)
 				if err != nil {
 					return nil, err
 				}
 
 				args = append(args, arg)
-				kwargs[callOperator.Arguments[i+1].Name] = arg
+				if !gotVariadic {
+					gotVariadic = callOperator.Arguments[i+1].IsVariadic
+					kwargs[callOperator.Arguments[i+1].Name] = arg
+				}
+
 			}
 
 			if err := types.CheckFunctionArguments(callOperator, &args, &kwargs); err != nil {
@@ -602,6 +719,10 @@ func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
 			ctx.PushScope(kwargs)
 			res, err := callOperator.Call(nil, &args, &kwargs)
 			if err != nil {
+				return nil, err
+			}
+
+			if err := types.CheckResult(res, callOperator); err != nil {
 				return nil, err
 			}
 
