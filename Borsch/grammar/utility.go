@@ -173,3 +173,163 @@ func evalSingleSetByIndexOperation(
 		)
 	}
 }
+
+func unpack(ctx common.Context, lhs []*Expression, rhs []*Expression) (common.Type, error) {
+	lhsLen := len(lhs)
+	rhsLen := len(rhs)
+	if lhsLen > rhsLen {
+		return unpackList(ctx, lhs, rhs[0])
+	}
+
+	// var sequence []common.Type
+	// if rhsLen == 1 {
+	// 	element, err := rhs[0].Evaluate(ctx, nil)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	//
+	// 	switch list := element.(type) {
+	// 	case types.ListInstance:
+	// 		if lhsLen == 1 {
+	// 			return lhs[0].Evaluate(ctx, list)
+	// 		}
+	//
+	// 		sequence = list.Values
+	// 	default:
+	// 		sequence = append(sequence, element)
+	// 	}
+	// } else {
+	// 	for _, expr := range rhs {
+	// 		element, err := expr.Evaluate(ctx, nil)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	//
+	// 		sequence = append(sequence, element)
+	// 	}
+	// }
+
+	sequence, result, err := getSequenceOrResult(ctx, lhs, rhs)
+	if err != nil {
+		return nil, err
+	}
+	
+	if result != nil {
+		return result, err
+	}
+
+	if lhsLen > len(sequence) {
+		// TODO: return unable to unpack
+		panic(fmt.Sprintf("unable to unpack %d elements to %d vars", len(sequence), lhsLen))
+	}
+
+	var i int
+	list := types.NewListInstance()
+	for i = 0; i < lhsLen-1; i++ {
+		element, err := lhs[i].Evaluate(ctx, sequence[i])
+		if err != nil {
+			return nil, err
+		}
+
+		list.Values = append(list.Values, element)
+	}
+
+	if i < len(sequence)-1 {
+		rest := types.NewListInstance()
+		rest.Values = sequence[i:]
+		list.Values = append(list.Values, rest)
+	} else {
+		element, err := lhs[i].Evaluate(ctx, sequence[i])
+		if err != nil {
+			return nil, err
+		}
+
+		list.Values = append(list.Values, element)
+	}
+
+	return list, nil
+}
+
+func getSequenceOrResult(ctx common.Context, lhs []*Expression, rhs []*Expression) ([]common.Type, common.Type, error) {
+	rhsLen := len(rhs)
+	var sequence []common.Type
+	if rhsLen == 1 {
+		element, err := rhs[0].Evaluate(ctx, nil)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		switch list := element.(type) {
+		case types.ListInstance:
+			if len(lhs) == 1 {
+				result, err := lhs[0].Evaluate(ctx, list)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				return nil, result, nil
+			}
+
+			sequence = list.Values
+		default:
+			sequence = append(sequence, element)
+		}
+	} else {
+		for _, expr := range rhs {
+			element, err := expr.Evaluate(ctx, nil)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			sequence = append(sequence, element)
+		}
+	}
+
+	return sequence, nil, nil
+}
+
+func unpackList(ctx common.Context, lhs []*Expression, rhs *Expression) (common.Type, error) {
+	element, err := rhs.Evaluate(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	switch list := element.(type) {
+	case types.ListInstance:
+		lhsLen := int64(len(lhs))
+		rhsLen := list.Length()
+		if lhsLen > rhsLen {
+			// TODO: return error
+			panic(fmt.Sprintf("unable to unpack %d elements of %s to %d vars", rhsLen, element.GetTypeName(), lhsLen))
+		}
+
+		var i int64
+		resultList := types.NewListInstance()
+		for i = 0; i < lhsLen-1; i++ {
+			item, err := lhs[i].Evaluate(ctx, list.Values[i])
+			if err != nil {
+				return nil, err
+			}
+
+			resultList.Values = append(resultList.Values, item)
+		}
+
+		if i < list.Length()-1 {
+			rest := types.NewListInstance()
+			rest.Values = list.Values[i:]
+			resultList.Values = append(resultList.Values, rest)
+		} else {
+			element, err := lhs[i].Evaluate(ctx, list.Values[i])
+			if err != nil {
+				return nil, err
+			}
+
+			resultList.Values = append(resultList.Values, element)
+		}
+
+		return resultList, nil
+	}
+
+	// TODO: return error
+	panic(fmt.Sprintf("unable to unpack %s", element.GetTypeName()))
+}

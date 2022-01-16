@@ -1,9 +1,6 @@
 package types
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
@@ -40,10 +37,18 @@ func (t NilInstance) AsBool() bool {
 }
 
 func (t NilInstance) GetAttribute(name string) (common.Type, error) {
-	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
+	if attribute, err := t.Object.GetAttribute(name); err == nil {
+		return attribute, nil
+	}
+
+	return t.GetClass().GetAttribute(name)
 }
 
 func (t NilInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
+	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
+	}
+
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
@@ -51,17 +56,13 @@ func (NilInstance) GetClass() *Class {
 	return Nil
 }
 
-func compareNils(self common.Type, other common.Type) (int, error) {
-	switch right := other.(type) {
+func compareNils(_ common.Type, other common.Type) (int, error) {
+	switch other.(type) {
 	case NilInstance:
 		return 0, nil
 	default:
-		return 0, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
-				"%s", self.GetTypeName(), right.GetTypeName(),
-			),
-		)
+		// -2 is something other than -1, 0 or 1 and means 'not equals'
+		return -2, nil
 	}
 }
 

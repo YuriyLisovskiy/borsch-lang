@@ -44,8 +44,8 @@ func (c *ContextImpl) SetVar(name string, value common.Type) error {
 	scopesLen := len(c.scopes)
 	for idx := 0; idx < scopesLen; idx++ {
 		if oldValue, ok := c.scopes[idx][name]; ok {
-			if oldValue.GetTypeHash() != value.GetTypeHash() {
-				if scopesLen == 1 {
+			if oldValue.GetTypeHash() != value.GetTypeHash() && oldValue.GetTypeHash() != types.NilTypeHash {
+				if idx == scopesLen-1 {
 					return util.RuntimeError(
 						fmt.Sprintf(
 							"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",

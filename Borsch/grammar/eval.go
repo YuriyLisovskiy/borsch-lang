@@ -15,7 +15,7 @@ type Scope map[string]common.Type
 func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 	ctx.PushScope(Scope{})
 	for _, stmt := range p.Stmts {
-		_, err := stmt.Evaluate(ctx, false)
+		_, _, err := stmt.Evaluate(ctx, false)
 		if err != nil {
 			return nil, errors.New(
 				fmt.Sprintf(
@@ -34,39 +34,27 @@ func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 	return ctx.GetPackage(), nil
 }
 
-func (s *WhileStmt) Evaluate(ctx common.Context) (common.Type, error) {
+func (s *WhileStmt) Evaluate(ctx common.Context) (common.Type, bool, error) {
 	// TODO:
 	panic("unreachable")
 }
 
-func (s *IfStmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, error) {
+func (s *IfStmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool, error) {
 	if s.Condition != nil {
-		condition, err := s.Condition.Evaluate(ctx)
+		condition, err := s.Condition.Evaluate(ctx, nil)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
-		var args []common.Type
-		kwargs := map[string]common.Type{}
-		conditionResult, err := callMethod(condition, ops.BoolOperatorName, &args, &kwargs)
-		if err != nil {
-			return nil, err
-		}
-
-		val, err := mustBool(conditionResult)
-		if err != nil {
-			return nil, err
-		}
-
-		if val.Value {
+		if condition.AsBool() {
 			ctx.PushScope(Scope{})
-			result, err := s.Body.Evaluate(ctx, inFunction)
+			result, forceReturn, err := s.Body.Evaluate(ctx, inFunction)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			ctx.PopScope()
-			return result, nil
+			return result, forceReturn, nil
 		}
 
 		if len(s.ElseIfStmts) != 0 {
@@ -75,117 +63,127 @@ func (s *IfStmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, err
 			var err error = nil
 			for _, stmt := range s.ElseIfStmts {
 				ctx.PushScope(Scope{})
-				gotResult, result, err = stmt.Evaluate(ctx, inFunction)
+				var forceReturn bool
+				gotResult, result, forceReturn, err = stmt.Evaluate(ctx, inFunction)
 				if err != nil {
-					return nil, err
+					return nil, false, err
 				}
 
 				ctx.PopScope()
+				if forceReturn {
+					return result, true, nil
+				}
+
 				if gotResult {
 					break
 				}
 			}
 
 			if gotResult {
-				return result, nil
+				return result, false, nil
 			}
 		}
 
 		if s.Else != nil {
 			ctx.PushScope(Scope{})
-			result, err := s.Else.Evaluate(ctx, inFunction)
+			result, forceReturn, err := s.Else.Evaluate(ctx, inFunction)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			ctx.PopScope()
-			return result, nil
+			return result, forceReturn, nil
 		}
 
-		return nil, nil
+		return nil, false, nil
 	}
 
-	return nil, errors.New("interpreter: condition is nil")
+	return nil, false, errors.New("interpreter: condition is nil")
 }
 
-func (s *ElseIfStmt) Evaluate(ctx common.Context, inFunction bool) (bool, common.Type, error) {
-	condition, err := s.Condition.Evaluate(ctx)
+func (s *ElseIfStmt) Evaluate(ctx common.Context, inFunction bool) (bool, common.Type, bool, error) {
+	condition, err := s.Condition.Evaluate(ctx, nil)
 	if err != nil {
-		return false, nil, err
+		return false, nil, false, err
 	}
 
-	boolCondition, err := mustBool(condition)
-	if err != nil {
-		return false, nil, err
-	}
-
-	if boolCondition.Value {
+	if condition.AsBool() {
 		ctx.PushScope(Scope{})
-		result, err := s.Body.Evaluate(ctx, inFunction)
+		result, forceReturn, err := s.Body.Evaluate(ctx, inFunction)
 		if err != nil {
-			return false, nil, err
+			return false, nil, false, err
 		}
 
 		ctx.PopScope()
-		return true, result, nil
+		return true, result, forceReturn, nil
 	}
 
-	return false, nil, nil
+	return false, nil, false, nil
 }
 
-func (b *BlockStmts) Evaluate(ctx common.Context, inFunction bool) (common.Type, error) {
+// Evaluate executes block of statements.
+// Returns (result value, force stop flag, error)
+func (b *BlockStmts) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool, error) {
 	for _, stmt := range b.Stmts {
-		result, err := stmt.Evaluate(ctx, inFunction)
+		result, forceReturn, err := stmt.Evaluate(ctx, inFunction)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
-		if stmt.ReturnStmt != nil {
-			return result, nil
+		if forceReturn || stmt.ReturnStmt != nil {
+			return result, true, nil
 		}
 	}
 
-	return nil, nil
+	return types.NewNilInstance(), false, nil
 }
 
-func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, error) {
+// Evaluate executes statement.
+// Returns (result value, force stop flag, error)
+func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool, error) {
 	if s.IfStmt != nil {
 		return s.IfStmt.Evaluate(ctx, inFunction)
 	} else if s.WhileStmt != nil {
 		return s.WhileStmt.Evaluate(ctx)
 	} else if s.Block != nil {
 		ctx.PushScope(Scope{})
-		result, err := s.Block.Evaluate(ctx, inFunction)
+		result, forceReturn, err := s.Block.Evaluate(ctx, inFunction)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		ctx.PopScope()
-		return result, nil
+		return result, forceReturn, nil
 	} else if s.FunctionDef != nil {
 		function, err := s.FunctionDef.Evaluate(ctx)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
-		return function, ctx.SetVar(s.FunctionDef.Name, function)
+		return function, false, ctx.SetVar(s.FunctionDef.Name, function)
 	} else if s.ReturnStmt != nil {
 		if !inFunction {
-			return nil, errors.New("'повернути' за межами функції")
+			return nil, false, errors.New("'повернути' за межами функції")
 		}
 
-		return s.ReturnStmt.Evaluate(ctx)
+		result, err := s.ReturnStmt.Evaluate(ctx)
+		return result, false, err
 	} else if s.Expression != nil {
-		return s.Expression.Evaluate(ctx)
+		result, err := s.Expression.Evaluate(ctx, nil)
+		return result, false, err
+	} else if s.Assignment != nil {
+		result, err := s.Assignment.Evaluate(ctx)
+		return result, false, err
 	} else if s.Empty {
-		return nil, nil
+		return nil, false, nil
 	}
 
 	panic("unreachable")
 }
 
 func (b *FunctionBody) Evaluate(ctx common.Context) (common.Type, error) {
-	return b.Stmts.Evaluate(ctx, true)
+	result, _, err := b.Stmts.Evaluate(ctx, true)
+	return result, err
 }
 
 func (f *FunctionDef) Evaluate(ctx common.Context) (common.Type, error) {
@@ -202,13 +200,22 @@ func (f *FunctionDef) Evaluate(ctx common.Context) (common.Type, error) {
 	}
 
 	var returnTypes []types.FunctionReturnType
-	for _, returnType := range f.ReturnTypes {
+	if len(f.ReturnTypes) == 0 {
 		returnTypes = append(
 			returnTypes, types.FunctionReturnType{
-				TypeHash:   types.GetTypeHash(returnType.Name),
-				IsNullable: returnType.IsNullable,
+				TypeHash:   types.NilTypeHash,
+				IsNullable: false,
 			},
 		)
+	} else {
+		for _, returnType := range f.ReturnTypes {
+			returnTypes = append(
+				returnTypes, types.FunctionReturnType{
+					TypeHash:   types.GetTypeHash(returnType.Name),
+					IsNullable: returnType.IsNullable,
+				},
+			)
+		}
 	}
 
 	return types.NewFunctionInstance(
@@ -235,11 +242,11 @@ func (s *ReturnStmt) Evaluate(ctx common.Context) (common.Type, error) {
 	resultCount := len(s.Expressions)
 	switch {
 	case resultCount == 1:
-		return s.Expressions[0].Evaluate(ctx)
+		return s.Expressions[0].Evaluate(ctx, nil)
 	case resultCount > 1:
 		result := types.NewListInstance()
 		for _, expression := range s.Expressions {
-			value, err := expression.Evaluate(ctx)
+			value, err := expression.Evaluate(ctx, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -253,9 +260,9 @@ func (s *ReturnStmt) Evaluate(ctx common.Context) (common.Type, error) {
 	panic("unreachable")
 }
 
-func (e *Expression) Evaluate(ctx common.Context) (common.Type, error) {
-	if e.Assignment != nil {
-		return e.Assignment.Evaluate(ctx)
+func (e *Expression) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+	if e.LogicalAnd != nil {
+		return e.LogicalAnd.Evaluate(ctx, valueToSet)
 	}
 
 	panic("unreachable")
@@ -296,82 +303,84 @@ func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
 }
 
 func (a *Assignment) Evaluate(ctx common.Context) (common.Type, error) {
-	if len(a.Next) > 0 {
-		if len(a.Next) == 1 {
-			value, err := a.Next[0].Evaluate(ctx, nil)
-			if err != nil {
-				return nil, err
-			}
+	return unpack(ctx, a.LogicalAnd, a.Next)
 
-			if len(a.LogicalAnd) == 1 {
-				return a.LogicalAnd[0].Evaluate(ctx, value)
-			}
-
-			// TODO: unpack list into vars
-			switch sequence := value.(type) {
-			case types.ListInstance:
-				if int64(len(a.LogicalAnd)) > sequence.Length() {
-					// TODO: return error: left vars count are greater than list count
-					return nil, nil
-				}
-
-				var i int
-				list := types.NewListInstance()
-				for i = 0; i < len(a.LogicalAnd)-1; i++ {
-					element, err := a.LogicalAnd[i].Evaluate(ctx, sequence.Values[i])
-					if err != nil {
-						return nil, err
-					}
-
-					list.Values = append(list.Values, element)
-				}
-
-				if int64(i) < sequence.Length()-1 {
-					lastList := types.NewListInstance()
-					for j := int64(i); j < sequence.Length(); j++ {
-						lastList.Values = append(lastList.Values, sequence.Values[j])
-					}
-
-					list.Values = append(list.Values, lastList)
-				} else {
-					element, err := a.LogicalAnd[i].Evaluate(ctx, sequence.Values[i])
-					if err != nil {
-						return nil, err
-					}
-
-					list.Values = append(list.Values, element)
-				}
-
-				return list, nil
-			default:
-				// TODO: return error: unable to unpack non-list instance
-				return nil, nil
-			}
-		}
-
-		if len(a.LogicalAnd) > len(a.Next) {
-			// TODO: return invalid unpack count
-			// TODO: check if not list, then error, unpack otherwise
-		}
-
-		return nil, nil
-	} else {
-		if len(a.LogicalAnd) == 1 {
-			return a.LogicalAnd[0].Evaluate(ctx, nil)
-		}
-
-		list := types.NewListInstance()
-		for i := range a.LogicalAnd {
-			element, err := a.LogicalAnd[i].Evaluate(ctx, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			list.Values = append(list.Values, element)
-		}
-
-		return list, nil
-	}
+	// if len(a.Next) > 0 {
+	// 	if len(a.Next) == 1 {
+	// 		value, err := a.Next[0].Evaluate(ctx, nil)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	//
+	// 		if len(a.LogicalAnd) == 1 {
+	// 			return a.LogicalAnd[0].Evaluate(ctx, value)
+	// 		}
+	//
+	// 		// TODO: unpack list into vars
+	// 		switch sequence := value.(type) {
+	// 		case types.ListInstance:
+	// 			if int64(len(a.LogicalAnd)) > sequence.Length() {
+	// 				// TODO: return error: left vars count are greater than list count
+	// 				return nil, nil
+	// 			}
+	//
+	// 			var i int
+	// 			list := types.NewListInstance()
+	// 			for i = 0; i < len(a.LogicalAnd)-1; i++ {
+	// 				element, err := a.LogicalAnd[i].Evaluate(ctx, sequence.Values[i])
+	// 				if err != nil {
+	// 					return nil, err
+	// 				}
+	//
+	// 				list.Values = append(list.Values, element)
+	// 			}
+	//
+	// 			if int64(i) < sequence.Length()-1 {
+	// 				lastList := types.NewListInstance()
+	// 				for j := int64(i); j < sequence.Length(); j++ {
+	// 					lastList.Values = append(lastList.Values, sequence.Values[j])
+	// 				}
+	//
+	// 				list.Values = append(list.Values, lastList)
+	// 			} else {
+	// 				element, err := a.LogicalAnd[i].Evaluate(ctx, sequence.Values[i])
+	// 				if err != nil {
+	// 					return nil, err
+	// 				}
+	//
+	// 				list.Values = append(list.Values, element)
+	// 			}
+	//
+	// 			return list, nil
+	// 		default:
+	// 			// TODO: return error: unable to unpack non-list instance
+	// 			return nil, nil
+	// 		}
+	// 	}
+	//
+	// 	if len(a.LogicalAnd) > len(a.Next) {
+	// 		// TODO: return invalid unpack count
+	// 		// TODO: check if not list, then error, unpack otherwise
+	// 	}
+	//
+	// 	return nil, nil
+	// } else {
+	// 	if len(a.LogicalAnd) == 1 {
+	// 		return a.LogicalAnd[0].Evaluate(ctx, nil)
+	// 	}
+	//
+	// 	list := types.NewListInstance()
+	// 	for i := range a.LogicalAnd {
+	// 		element, err := a.LogicalAnd[i].Evaluate(ctx, nil)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	//
+	// 		list.Values = append(list.Values, element)
+	// 	}
+	//
+	// 	return list, nil
+	// }
 
 	// list := types.NewListInstance()
 	// for i := range a.LogicalAnd {
@@ -532,6 +541,15 @@ func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.T
 	}
 
 	if a.Ident != nil {
+		if *a.Ident == "нуль" {
+			if valueToSet != nil {
+				// TODO: change to normal description
+				return nil, errors.New("unable to set to subexpression evaluation")
+			}
+			
+			return types.NewNilInstance(), nil
+		}
+
 		if valueToSet != nil {
 			err := ctx.SetVar(*a.Ident, valueToSet)
 			return valueToSet, err
@@ -546,7 +564,7 @@ func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.T
 			return nil, errors.New("unable to set to subexpression evaluation")
 		}
 
-		return a.SubExpression.Evaluate(ctx)
+		return a.SubExpression.Evaluate(ctx, valueToSet)
 	}
 
 	if a.CallFunc != nil {

@@ -124,7 +124,20 @@ func CheckResult(result common.Type, function *FunctionInstance) error {
 			}
 		}
 	default:
-		panic("unreachable")
+		// panic("unreachable")
+		var expectedTypes []string
+		for _, retType := range function.ReturnTypes {
+			expectedTypes = append(expectedTypes, retType.String())
+		}
+
+		return util.RuntimeError(
+			fmt.Sprintf(
+				"'%s()' повертає значення з типами '(%s)', отримано '%s'",
+				function.Name,
+				strings.Join(expectedTypes, ", "),
+				value.GetTypeName(),
+			),
+		)
 	}
 
 	return nil
@@ -329,7 +342,7 @@ func newBinaryMethod(
 				TypeHash:   AnyTypeHash,
 				Name:       "інший",
 				IsVariadic: false,
-				IsNullable: false,
+				IsNullable: true,
 			},
 		},
 		func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
