@@ -7,7 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
 
-func getType(object common.Type) (common.Type, error) {
+func GetTypeOfInstance(object common.Type) (common.Type, error) {
 	if instance, ok := object.(Instance); ok {
 		return instance.GetClass(), nil
 	}
@@ -17,13 +17,12 @@ func getType(object common.Type) (common.Type, error) {
 
 func newTypeClass() *Class {
 	getTypeFunc := func(args ...common.Type) (common.Type, error) {
-		return getType(args[0])
+		return GetTypeOfInstance(args[0])
 	}
 
 	// TODO: add required operators and methods
 	attributes := map[string]common.Type{
 		// TODO: add doc
-		ops.ConstructorName: newBuiltinConstructor(StringTypeHash, getTypeFunc, ""),
 		ops.CallOperatorName: NewFunctionInstance(
 			ops.CallOperatorName,
 			[]FunctionArgument{
@@ -60,7 +59,7 @@ func newTypeClass() *Class {
 		attributes,
 		"", // TODO: add doc
 		func() (common.Type, error) {
-			return nil, nil
+			panic("unreachable")
 		},
 	)
 }

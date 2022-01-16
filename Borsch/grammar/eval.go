@@ -168,9 +168,9 @@ func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool,
 
 		result, err := s.ReturnStmt.Evaluate(ctx)
 		return result, false, err
-	} else if s.Expression != nil {
-		result, err := s.Expression.Evaluate(ctx, nil)
-		return result, false, err
+		// } else if s.Expression != nil {
+		//	result, err := s.Expression.Evaluate(ctx, nil)
+		//	return result, false, err
 	} else if s.Assignment != nil {
 		result, err := s.Assignment.Evaluate(ctx)
 		return result, false, err
@@ -303,116 +303,11 @@ func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
 }
 
 func (a *Assignment) Evaluate(ctx common.Context) (common.Type, error) {
-	return unpack(ctx, a.LogicalAnd, a.Next)
+	if len(a.Next) == 0 {
+		return a.Expression[0].Evaluate(ctx, nil)
+	}
 
-	// if len(a.Next) > 0 {
-	// 	if len(a.Next) == 1 {
-	// 		value, err := a.Next[0].Evaluate(ctx, nil)
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	//
-	// 		if len(a.LogicalAnd) == 1 {
-	// 			return a.LogicalAnd[0].Evaluate(ctx, value)
-	// 		}
-	//
-	// 		// TODO: unpack list into vars
-	// 		switch sequence := value.(type) {
-	// 		case types.ListInstance:
-	// 			if int64(len(a.LogicalAnd)) > sequence.Length() {
-	// 				// TODO: return error: left vars count are greater than list count
-	// 				return nil, nil
-	// 			}
-	//
-	// 			var i int
-	// 			list := types.NewListInstance()
-	// 			for i = 0; i < len(a.LogicalAnd)-1; i++ {
-	// 				element, err := a.LogicalAnd[i].Evaluate(ctx, sequence.Values[i])
-	// 				if err != nil {
-	// 					return nil, err
-	// 				}
-	//
-	// 				list.Values = append(list.Values, element)
-	// 			}
-	//
-	// 			if int64(i) < sequence.Length()-1 {
-	// 				lastList := types.NewListInstance()
-	// 				for j := int64(i); j < sequence.Length(); j++ {
-	// 					lastList.Values = append(lastList.Values, sequence.Values[j])
-	// 				}
-	//
-	// 				list.Values = append(list.Values, lastList)
-	// 			} else {
-	// 				element, err := a.LogicalAnd[i].Evaluate(ctx, sequence.Values[i])
-	// 				if err != nil {
-	// 					return nil, err
-	// 				}
-	//
-	// 				list.Values = append(list.Values, element)
-	// 			}
-	//
-	// 			return list, nil
-	// 		default:
-	// 			// TODO: return error: unable to unpack non-list instance
-	// 			return nil, nil
-	// 		}
-	// 	}
-	//
-	// 	if len(a.LogicalAnd) > len(a.Next) {
-	// 		// TODO: return invalid unpack count
-	// 		// TODO: check if not list, then error, unpack otherwise
-	// 	}
-	//
-	// 	return nil, nil
-	// } else {
-	// 	if len(a.LogicalAnd) == 1 {
-	// 		return a.LogicalAnd[0].Evaluate(ctx, nil)
-	// 	}
-	//
-	// 	list := types.NewListInstance()
-	// 	for i := range a.LogicalAnd {
-	// 		element, err := a.LogicalAnd[i].Evaluate(ctx, nil)
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	//
-	// 		list.Values = append(list.Values, element)
-	// 	}
-	//
-	// 	return list, nil
-	// }
-
-	// list := types.NewListInstance()
-	// for i := range a.LogicalAnd {
-	// 	var value common.Type = nil
-	// 	if a.Next[i] != nil {
-	// 		var err error
-	// 		value, err = a.Next[i].Evaluate(ctx, nil)
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	// 	}
-	//
-	// 	element, err := a.LogicalAnd[i].Evaluate(ctx, value)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	//
-	// 	list.Values = append(list.Values, element)
-	// }
-	//
-	// return list, nil
-
-	// var value common.Type = nil
-	// if a.Next != nil {
-	// 	var err error
-	// 	value, err = a.Next.Evaluate(ctx, nil)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// }
-	//
-	// return a.LogicalAnd.Evaluate(ctx, value)
+	return unpack(ctx, a.Expression, a.Next)
 }
 
 // Evaluate executes LogicalAnd operation.
@@ -540,24 +435,6 @@ func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.T
 		return a.RandomAccess.Evaluate(ctx, valueToSet)
 	}
 
-	if a.Ident != nil {
-		if *a.Ident == "нуль" {
-			if valueToSet != nil {
-				// TODO: change to normal description
-				return nil, errors.New("unable to set to subexpression evaluation")
-			}
-			
-			return types.NewNilInstance(), nil
-		}
-
-		if valueToSet != nil {
-			err := ctx.SetVar(*a.Ident, valueToSet)
-			return valueToSet, err
-		}
-
-		return ctx.GetVar(*a.Ident)
-	}
-
 	if a.SubExpression != nil {
 		if valueToSet != nil {
 			// TODO: change to normal description
@@ -567,26 +444,111 @@ func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.T
 		return a.SubExpression.Evaluate(ctx, valueToSet)
 	}
 
-	if a.CallFunc != nil {
-		if valueToSet != nil {
-			// TODO: change to normal description
-			return nil, errors.New("unable to set to function call")
-		}
-
-		result, err := a.CallFunc.Evaluate(ctx)
-		if err != nil {
-			return nil, errors.New(
-				fmt.Sprintf(
-					"  Файл \"%s\", рядок %d, позиція %d\n    %s\n%s",
-					a.Pos.Filename, a.CallFunc.Pos.Line, a.CallFunc.Pos.Column, "TODO", err.Error(),
-				),
-			)
-		}
-
-		return result, nil
+	if a.AttributeAccess != nil {
+		return a.AttributeAccess.Evaluate(ctx, valueToSet, nil)
 	}
 
 	panic("unreachable")
+}
+
+func (a *AttributeAccess) Evaluate(ctx common.Context, valueToSet, prevValue common.Type) (common.Type, error) {
+	if valueToSet != nil {
+		// set
+		var currentValue common.Type
+		var err error = nil
+		if a.Ident != nil {
+			if *a.Ident == "нуль" {
+				return nil, util.RuntimeError("неможливо встановити значення об'єкту 'нуль'")
+			}
+
+			if a.AttributeAccess != nil {
+				currentValue, err = getCurrentValue(ctx, prevValue, *a.Ident)
+			} else {
+				currentValue = valueToSet
+			}
+		} else if a.CallFunc != nil {
+			if a.AttributeAccess == nil {
+				return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
+			}
+
+			function, err := getCurrentValue(ctx, prevValue, a.CallFunc.Ident)
+			if err != nil {
+				return nil, err
+			}
+
+			currentValue, err = a.CallFunc.Evaluate(ctx, function)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if a.AttributeAccess != nil {
+			currentValue, err = a.AttributeAccess.Evaluate(ctx, valueToSet, currentValue)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if prevValue != nil {
+			err = nil
+			if a.Ident != nil {
+				_, err = prevValue.SetAttribute(*a.Ident, currentValue)
+			} else if a.CallFunc != nil {
+				// ignore
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
+			return prevValue, nil
+		}
+
+		if a.Ident != nil {
+			return currentValue, ctx.SetVar(*a.Ident, currentValue)
+		}
+
+		return currentValue, nil
+	} else {
+		// get
+		var currentValue common.Type
+		var err error = nil
+		if a.Ident != nil {
+			if *a.Ident == "нуль" {
+				if prevValue == nil {
+					return types.NewNilInstance(), nil
+				} else {
+					return nil, util.RuntimeError("'нуль' не є атрибутом")
+				}
+			}
+
+			currentValue, err = getCurrentValue(ctx, prevValue, *a.Ident)
+			if err != nil {
+				return nil, err
+			}
+		} else if a.CallFunc != nil {
+			variable, err := getCurrentValue(ctx, prevValue, a.CallFunc.Ident)
+			if err != nil {
+				return nil, err
+			}
+
+			currentValue, err = a.CallFunc.Evaluate(ctx, variable)
+			if err != nil {
+				return nil, errors.New(
+					fmt.Sprintf(
+						"  Файл \"%s\", рядок %d, позиція %d\n    %s\n%s",
+						a.Pos.Filename, a.CallFunc.Pos.Line, a.CallFunc.Pos.Column, "TODO", err.Error(),
+					),
+				)
+			}
+		}
+
+		if a.AttributeAccess != nil {
+			return a.AttributeAccess.Evaluate(ctx, valueToSet, currentValue)
+		}
+
+		return currentValue, err
+	}
 }
 
 func (a *RandomAccess) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
@@ -619,12 +581,7 @@ func (a *RandomAccess) Evaluate(ctx common.Context, valueToSet common.Type) (com
 	return variable, nil
 }
 
-func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
-	variable, err := ctx.GetVar(a.Ident)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *CallFunc) Evaluate(ctx common.Context, variable common.Type) (common.Type, error) {
 	switch object := variable.(type) {
 	case *types.Class:
 		callable, err := object.GetAttribute(ops.ConstructorName)
@@ -661,6 +618,7 @@ func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
 
 			ctx.PushScope(kwargs)
 
+			// TODO: check if constructor returns nothing.
 			// TODO: check if constructor returns nothing.
 			_, err = constructor.Call(nil, &args, &kwargs)
 			if err != nil {
@@ -751,5 +709,13 @@ func (a *CallFunc) Evaluate(ctx common.Context) (common.Type, error) {
 		}
 	default:
 		return nil, util.ObjectIsNotCallable(a.Ident, object.GetTypeName())
+	}
+}
+
+func getCurrentValue(ctx common.Context, prevValue common.Type, identifier string) (common.Type, error) {
+	if prevValue != nil {
+		return prevValue.GetAttribute(identifier)
+	} else {
+		return ctx.GetVar(identifier)
 	}
 }

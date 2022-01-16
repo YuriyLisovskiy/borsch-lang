@@ -400,6 +400,28 @@ func init() {
 			types.BuiltinPackage,
 			"", // TODO: add doc
 		),
-		"тип": types.TypeClass,
+		"тип": types.NewFunctionInstance(
+			"тип",
+			[]types.FunctionArgument{
+				{
+					TypeHash:   types.AnyTypeHash,
+					Name:       "значення",
+					IsVariadic: false,
+					IsNullable: false,
+				},
+			},
+			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				return types.GetTypeOfInstance((*args)[0])
+			},
+			[]types.FunctionReturnType{
+				{
+					TypeHash:   types.AnyTypeHash,
+					IsNullable: false,
+				},
+			},
+			false,
+			types.BuiltinPackage,
+			"", // TODO: add doc
+		),
 	}
 }

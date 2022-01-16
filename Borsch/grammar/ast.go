@@ -49,7 +49,6 @@ type Stmt struct {
 	Block       *BlockStmts  `| "{" @@ "}"`
 	FunctionDef *FunctionDef `| @@`
 	ReturnStmt  *ReturnStmt  `| @@`
-	Expression  *Expression  `| (@@ ";")`
 	Assignment  *Assignment  `| (@@ ";")`
 	Empty       bool         `| @";"`
 }
@@ -85,12 +84,6 @@ type VariadicParameter struct {
 	IsNullable bool   `@"?"?`
 }
 
-// type LogicalAnd struct {
-// 	Pos lexer.Position
-//
-// 	LogicalAnd *Assignment `@@`
-// }
-
 type Boolean bool
 
 func (b *Boolean) Capture(values []string) error {
@@ -101,11 +94,9 @@ func (b *Boolean) Capture(values []string) error {
 type Assignment struct {
 	Pos lexer.Position
 
-	LogicalAnd []*Expression `@@ ("," @@)?`
-	// Op         string        `( @"="`
-	// Next       []*Expression `  @@ ("," @@)? )?`
-	Op   string        `@"="`
-	Next []*Expression `@@ ("," @@)?`
+	Expression []*Expression ` @@ [("," @@)* "="`
+	Next       []*Expression ` @@ ("," @@)*]`
+	// Op         string        `[@"="`
 }
 
 type Expression struct {
@@ -214,11 +205,10 @@ type Exponent struct {
 type Primary struct {
 	Pos lexer.Position
 
-	Constant      *Constant     `  @@`
-	RandomAccess  *RandomAccess `| @@`
-	CallFunc      *CallFunc     `| @@`
-	Ident         *string       `| @Ident`
-	SubExpression *Expression   `| "(" @@ ")"`
+	Constant        *Constant        `  @@`
+	RandomAccess    *RandomAccess    `| @@`
+	AttributeAccess *AttributeAccess `| @@`
+	SubExpression   *Expression      `| "(" @@ ")"`
 }
 
 type Constant struct {
@@ -238,6 +228,14 @@ type RandomAccess struct {
 
 	Ident string        `@Ident`
 	Index []*LogicalAnd `("[" @@ "]")+`
+}
+
+type AttributeAccess struct {
+	Pos lexer.Position
+
+	CallFunc        *CallFunc        `( @@`
+	Ident           *string          `| @Ident)`
+	AttributeAccess *AttributeAccess `("." @@)?`
 }
 
 type CallFunc struct {
