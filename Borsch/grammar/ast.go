@@ -60,25 +60,34 @@ type FunctionBody struct {
 }
 
 type FunctionDef struct {
-	Name       string       `"функція" @Ident`
-	Parameters []*Parameter `"(" (@@ ("," @@)* )? ")"`
-	// VariadicParameter *VariadicParameter `("," @@)? )? ")"`
-	ReturnTypes []*ReturnType `["-"">" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body        *FunctionBody `"{" @@ "}"`
+	Pos lexer.Position
+
+	Name string `"функція" @Ident`
+	// Parameters []*Parameter `"(" (@@ ("," @@)* )? ")"`
+	Parameters        []*Parameter       `"(" (@@ ("," @@)* )?`
+	VariadicParameter *VariadicParameter `("," @@)? ")"`
+	ReturnTypes       []*ReturnType      `["-"">" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
+	Body              *FunctionBody      `"{" @@ "}"`
 }
 
 type Parameter struct {
+	Pos lexer.Position
+
 	Name       string `@Ident ":"`
 	Type       string `@Ident`
 	IsNullable bool   `@"?"?`
 }
 
 type ReturnType struct {
+	Pos lexer.Position
+
 	Name       string `@Ident`
 	IsNullable bool   `@"?"?`
 }
 
 type VariadicParameter struct {
+	Pos lexer.Position
+	
 	Name       string `@Ident ":" "."".""."`
 	Type       string `@Ident`
 	IsNullable bool   `@"?"?`
@@ -94,9 +103,9 @@ func (b *Boolean) Capture(values []string) error {
 type Assignment struct {
 	Pos lexer.Position
 
-	Expression []*Expression ` @@ [("," @@)* "="`
+	Expression []*Expression ` @@ ("," @@)*`
+	Op         string        `[@"="`
 	Next       []*Expression ` @@ ("," @@)*]`
-	// Op         string        `[@"="`
 }
 
 type Expression struct {

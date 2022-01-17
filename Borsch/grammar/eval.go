@@ -8,6 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/alecthomas/participle/v2/lexer"
 )
 
 type Scope map[string]common.Type
@@ -17,10 +18,11 @@ func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 	for _, stmt := range p.Stmts {
 		_, _, err := stmt.Evaluate(ctx, false)
 		if err != nil {
+			pos := stmt.getPos()
 			return nil, errors.New(
 				fmt.Sprintf(
 					"  Файл \"%s\", рядок %d, позиція %d,\n    %s\n%s",
-					p.Pos.Filename, stmt.Pos.Line, stmt.Pos.Column, "TODO", err.Error(),
+					pos.Filename, pos.Line, pos.Column, stmt.String(), err.Error(),
 				),
 			)
 		}
@@ -181,6 +183,46 @@ func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool,
 	panic("unreachable")
 }
 
+func (s *Stmt) getPos() lexer.Position {
+	if s.IfStmt != nil {
+		return s.IfStmt.Pos
+	} else if s.WhileStmt != nil {
+		return s.WhileStmt.Pos
+	} else if s.Block != nil {
+		return s.Block.Pos
+	} else if s.FunctionDef != nil {
+		return s.FunctionDef.Pos
+	} else if s.ReturnStmt != nil {
+		return s.ReturnStmt.Pos
+	} else if s.Assignment != nil {
+		return s.Assignment.Pos
+	} else if s.Empty {
+		return s.Pos
+	}
+
+	panic("unreachable")
+}
+
+func (s *Stmt) String() string {
+	if s.IfStmt != nil {
+		return "s.IfStmt."
+	} else if s.WhileStmt != nil {
+		return "s.WhileStmt."
+	} else if s.Block != nil {
+		return "s.Block."
+	} else if s.FunctionDef != nil {
+		return "s.FunctionDef."
+	} else if s.ReturnStmt != nil {
+		return "повернути ..."
+	} else if s.Assignment != nil {
+		return "s.Assignment."
+	} else if s.Empty {
+		return ";"
+	}
+
+	panic("unreachable")
+}
+
 func (b *FunctionBody) Evaluate(ctx common.Context) (common.Type, error) {
 	result, _, err := b.Stmts.Evaluate(ctx, true)
 	return result, err
@@ -222,14 +264,8 @@ func (f *FunctionDef) Evaluate(ctx common.Context) (common.Type, error) {
 		f.Name,
 		arguments,
 		func(_ interface{}, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
-			ctx.PushScope(*kwargs)
-			result, err := f.Body.Evaluate(ctx)
-			if err != nil {
-				return nil, err
-			}
-
-			ctx.PopScope()
-			return result, nil
+			// TODO: use context from first arg!
+			return f.Body.Evaluate(ctx)
 		},
 		returnTypes,
 		false,
@@ -537,7 +573,7 @@ func (a *AttributeAccess) Evaluate(ctx common.Context, valueToSet, prevValue com
 				return nil, errors.New(
 					fmt.Sprintf(
 						"  Файл \"%s\", рядок %d, позиція %d\n    %s\n%s",
-						a.Pos.Filename, a.CallFunc.Pos.Line, a.CallFunc.Pos.Column, "TODO", err.Error(),
+						a.CallFunc.Pos.Filename, a.CallFunc.Pos.Line, a.CallFunc.Pos.Column, "TODO", err.Error(),
 					),
 				)
 			}
@@ -582,50 +618,57 @@ func (a *RandomAccess) Evaluate(ctx common.Context, valueToSet common.Type) (com
 }
 
 func (a *CallFunc) Evaluate(ctx common.Context, variable common.Type) (common.Type, error) {
-	switch object := variable.(type) {
+	switch function := variable.(type) {
 	case *types.Class:
-		callable, err := object.GetAttribute(ops.ConstructorName)
+		callable, err := function.GetAttribute(ops.ConstructorName)
 		if err != nil {
 			return nil, err
 		}
 
-		switch constructor := callable.(type) {
+		switch __constructor__ := callable.(type) {
 		case *types.FunctionInstance:
-			instance, err := object.GetEmptyInstance()
+			instance, err := function.GetEmptyInstance()
 			if err != nil {
 				return nil, err
 			}
 
 			args := []common.Type{instance}
-			kwargs := map[string]common.Type{constructor.Arguments[0].Name: instance}
-			gotVariadic := false
-			for i, expressionArgument := range a.Arguments {
-				arg, err := expressionArgument.Evaluate(ctx, nil)
-				if err != nil {
-					return nil, err
-				}
-
-				args = append(args, arg)
-				if !gotVariadic {
-					gotVariadic = constructor.Arguments[i+1].IsVariadic
-					kwargs[constructor.Arguments[i+1].Name] = arg
-				}
-			}
-
-			if err := types.CheckFunctionArguments(constructor, &args, &kwargs); err != nil {
-				return nil, err
-			}
-
-			ctx.PushScope(kwargs)
+			kwargs := map[string]common.Type{__constructor__.Arguments[0].Name: instance}
 
 			// TODO: check if constructor returns nothing.
-			// TODO: check if constructor returns nothing.
-			_, err = constructor.Call(nil, &args, &kwargs)
+			_, err = a.evalFunction(ctx, __constructor__, &args, &kwargs, 1)
 			if err != nil {
 				return nil, err
 			}
 
-			ctx.PopScope()
+			// gotVariadic := false
+			// for i, expressionArgument := range a.Arguments {
+			// 	arg, err := expressionArgument.Evaluate(ctx, nil)
+			// 	if err != nil {
+			// 		return nil, err
+			// 	}
+			//
+			// 	args = append(args, arg)
+			// 	if !gotVariadic {
+			// 		gotVariadic = constructor.Arguments[i+1].IsVariadic
+			// 		kwargs[constructor.Arguments[i+1].Name] = arg
+			// 	}
+			// }
+			//
+			// if err := types.CheckFunctionArguments(constructor, &args, &kwargs); err != nil {
+			// 	return nil, err
+			// }
+			//
+			// ctx.PushScope(kwargs)
+			//
+			// // TODO: check if constructor returns nothing.
+			// // TODO: check if constructor returns nothing.
+			// _, err = constructor.Call(nil, &args, &kwargs)
+			// if err != nil {
+			// 	return nil, err
+			// }
+			//
+			// ctx.PopScope()
 			return args[0], nil
 		default:
 			return nil, util.ObjectIsNotCallable(a.Ident, callable.GetTypeName())
@@ -633,83 +676,135 @@ func (a *CallFunc) Evaluate(ctx common.Context, variable common.Type) (common.Ty
 	case *types.FunctionInstance:
 		var args []common.Type
 		kwargs := map[string]common.Type{}
-		gotVariadic := false
-		for i, expressionArgument := range a.Arguments {
-			arg, err := expressionArgument.Evaluate(ctx, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, arg)
-			if !gotVariadic {
-				gotVariadic = object.Arguments[i].IsVariadic
-				kwargs[object.Arguments[i].Name] = arg
-			}
-		}
-
-		if err := types.CheckFunctionArguments(object, &args, &kwargs); err != nil {
-			return nil, err
-		}
-
-		ctx.PushScope(kwargs)
-		res, err := object.Call(ParserInstance, &args, &kwargs)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := types.CheckResult(res, object); err != nil {
-			return nil, err
-		}
-
-		ctx.PopScope()
-		return res, nil
+		return a.evalFunction(ctx, function, &args, &kwargs, 0)
+		// gotVariadic := false
+		// for i, expressionArgument := range a.Arguments {
+		// 	arg, err := expressionArgument.Evaluate(ctx, nil)
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		//
+		// 	args = append(args, arg)
+		// 	if !gotVariadic {
+		// 		gotVariadic = object.Arguments[i].IsVariadic
+		// 		kwargs[object.Arguments[i].Name] = arg
+		// 	}
+		// }
+		//
+		// if err := types.CheckFunctionArguments(object, &args, &kwargs); err != nil {
+		// 	return nil, err
+		// }
+		//
+		// ctx.PushScope(kwargs)
+		// res, err := object.Call(ParserInstance, &args, &kwargs)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		//
+		// if err := types.CheckResult(res, object); err != nil {
+		// 	return nil, err
+		// }
+		//
+		// ctx.PopScope()
+		// return res, nil
 	case types.Instance:
-		callable, err := object.GetClass().GetAttribute(ops.CallOperatorName)
+		operator, err := function.GetClass().GetAttribute(ops.CallOperatorName)
 		if err != nil {
 			return nil, err
 		}
 
-		switch callOperator := callable.(type) {
+		switch __call__ := operator.(type) {
 		case *types.FunctionInstance:
 			args := []common.Type{variable}
-			kwargs := map[string]common.Type{callOperator.Arguments[0].Name: variable}
-			gotVariadic := false
-			for i, expressionArgument := range a.Arguments {
-				arg, err := expressionArgument.Evaluate(ctx, nil)
-				if err != nil {
-					return nil, err
-				}
-
-				args = append(args, arg)
-				if !gotVariadic {
-					gotVariadic = callOperator.Arguments[i+1].IsVariadic
-					kwargs[callOperator.Arguments[i+1].Name] = arg
-				}
-
-			}
-
-			if err := types.CheckFunctionArguments(callOperator, &args, &kwargs); err != nil {
-				return nil, err
-			}
-
-			ctx.PushScope(kwargs)
-			res, err := callOperator.Call(nil, &args, &kwargs)
-			if err != nil {
-				return nil, err
-			}
-
-			if err := types.CheckResult(res, callOperator); err != nil {
-				return nil, err
-			}
-
-			ctx.PushScope(kwargs)
-			return res, nil
+			kwargs := map[string]common.Type{__call__.Arguments[0].Name: variable}
+			return a.evalFunction(ctx, __call__, &args, &kwargs, 1)
+			// gotVariadic := false
+			// for i, expressionArgument := range a.Arguments {
+			// 	arg, err := expressionArgument.Evaluate(ctx, nil)
+			// 	if err != nil {
+			// 		return nil, err
+			// 	}
+			//
+			// 	args = append(args, arg)
+			// 	if !gotVariadic {
+			// 		gotVariadic = callOperator.Arguments[i+1].IsVariadic
+			// 		kwargs[callOperator.Arguments[i+1].Name] = arg
+			// 	}
+			//
+			// }
+			//
+			// if err := types.CheckFunctionArguments(callOperator, &args, &kwargs); err != nil {
+			// 	return nil, err
+			// }
+			//
+			// ctx.PushScope(kwargs)
+			// res, err := callOperator.Call(nil, &args, &kwargs)
+			// if err != nil {
+			// 	return nil, err
+			// }
+			//
+			// if err := types.CheckResult(res, callOperator); err != nil {
+			// 	return nil, err
+			// }
+			//
+			// ctx.PushScope(kwargs)
+			// return res, nil
 		default:
-			return nil, util.ObjectIsNotCallable(a.Ident, callOperator.GetTypeName())
+			return nil, util.ObjectIsNotCallable(a.Ident, operator.GetTypeName())
 		}
 	default:
-		return nil, util.ObjectIsNotCallable(a.Ident, object.GetTypeName())
+		return nil, util.ObjectIsNotCallable(a.Ident, function.GetTypeName())
 	}
+}
+
+func (a *CallFunc) evalFunction(
+	ctx common.Context,
+	function *types.FunctionInstance,
+	args *[]common.Type,
+	kwargs *map[string]common.Type,
+	argsShift int,
+) (common.Type, error) {
+	variadicArgs := types.NewListInstance()
+	variadicArgsIndex := -1
+	for i, expressionArgument := range a.Arguments {
+		arg, err := expressionArgument.Evaluate(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		*args = append(*args, arg)
+		if variadicArgsIndex == -1 {
+			if function.Arguments[i+argsShift].IsVariadic {
+				variadicArgsIndex = i + argsShift
+				variadicArgs.Values = append(variadicArgs.Values, arg)
+			} else {
+				(*kwargs)[function.Arguments[i+argsShift].Name] = arg
+			}
+		} else {
+			variadicArgs.Values = append(variadicArgs.Values, arg)
+		}
+	}
+
+	if variadicArgsIndex != -1 {
+		(*kwargs)[function.Arguments[variadicArgsIndex].Name] = variadicArgs
+	}
+
+	if err := types.CheckFunctionArguments(function, args, kwargs); err != nil {
+		return nil, err
+	}
+
+	ctx.PushScope(*kwargs)
+	res, err := function.Call(ParserInstance, args, kwargs)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := types.CheckResult(res, function); err != nil {
+		return nil, err
+	}
+
+	ctx.PopScope()
+	return res, nil
 }
 
 func getCurrentValue(ctx common.Context, prevValue common.Type, identifier string) (common.Type, error) {

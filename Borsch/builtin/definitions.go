@@ -3,6 +3,7 @@ package builtin
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
@@ -289,7 +290,12 @@ func init() {
 				},
 			},
 			func(ctx interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-				pack, err := ImportPackage(BuiltinScope, (*args)[0].(types.StringInstance).Value, ctx.(common.Parser))
+				packagePath := (*args)[0].(types.StringInstance).Value
+				if strings.HasPrefix(packagePath, "!/") {
+					packagePath = path.Join(os.Getenv(common.BORSCH_LIB), packagePath[2:])
+				}
+
+				pack, err := ImportPackage(BuiltinScope, packagePath, ctx.(common.Parser))
 				if err != nil {
 					return nil, err
 				}
@@ -424,4 +430,6 @@ func init() {
 			"", // TODO: add doc
 		),
 	}
+
+	types.BuiltinPackage.Attributes = BuiltinScope
 }

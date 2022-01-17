@@ -37,6 +37,10 @@ func (t NilInstance) AsBool() bool {
 }
 
 func (t NilInstance) GetAttribute(name string) (common.Type, error) {
+	if name == ops.AttributesName {
+		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
+	}
+	
 	if attribute, err := t.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}
@@ -45,6 +49,10 @@ func (t NilInstance) GetAttribute(name string) (common.Type, error) {
 }
 
 func (t NilInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
+	if name == ops.AttributesName {
+		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
+	}
+
 	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}

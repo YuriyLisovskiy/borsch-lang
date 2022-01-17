@@ -29,12 +29,7 @@ func NewPackageInstance(isBuiltin bool, name, parent string, attributes map[stri
 }
 
 func (t PackageInstance) String() string {
-	name := t.Name
-	if t.IsBuiltin {
-		name = "АТБ"
-	}
-
-	return fmt.Sprintf("<пакет '%s'>", name)
+	return fmt.Sprintf("<пакет '%s'>", t.Name)
 }
 
 func (t PackageInstance) Representation() string {

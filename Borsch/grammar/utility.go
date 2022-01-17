@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
@@ -48,27 +47,6 @@ func callMethod(object common.Type, funcName string, args *[]common.Type, kwargs
 		return res, nil
 	default:
 		return nil, util.ObjectIsNotCallable(funcName, attribute.GetTypeName())
-	}
-}
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func mustBool(result common.Type) (types.BoolInstance, error) {
-	switch value := result.(type) {
-	case types.BoolInstance:
-		return value, nil
-	default:
-		var args []common.Type
-		boolResult, err := callMethod(value, ops.BoolOperatorName, &args, nil)
-		if err != nil {
-			return types.BoolInstance{}, err
-		}
-
-		return boolResult.(types.BoolInstance), nil
 	}
 }
 
@@ -181,39 +159,11 @@ func unpack(ctx common.Context, lhs []*Expression, rhs []*Expression) (common.Ty
 		return unpackList(ctx, lhs, rhs[0])
 	}
 
-	// var sequence []common.Type
-	// if rhsLen == 1 {
-	// 	element, err := rhs[0].Evaluate(ctx, nil)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	//
-	// 	switch list := element.(type) {
-	// 	case types.ListInstance:
-	// 		if lhsLen == 1 {
-	// 			return lhs[0].Evaluate(ctx, list)
-	// 		}
-	//
-	// 		sequence = list.Values
-	// 	default:
-	// 		sequence = append(sequence, element)
-	// 	}
-	// } else {
-	// 	for _, expr := range rhs {
-	// 		element, err := expr.Evaluate(ctx, nil)
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	//
-	// 		sequence = append(sequence, element)
-	// 	}
-	// }
-
 	sequence, result, err := getSequenceOrResult(ctx, lhs, rhs)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if result != nil {
 		return result, err
 	}

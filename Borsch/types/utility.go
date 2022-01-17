@@ -301,6 +301,18 @@ func logicalOr(l, r common.Type) (common.Type, error) {
 	return NewBoolInstance(l.AsBool() || r.AsBool()), nil
 }
 
+func getAttributes(attributes map[string]common.Type) (DictionaryInstance, error) {
+	dict := NewDictionaryInstance()
+	for key, val := range attributes {
+		err := dict.SetElement(NewStringInstance(key), val)
+		if err != nil {
+			return DictionaryInstance{}, err
+		}
+	}
+
+	return dict, nil
+}
+
 func getLength(sequence common.Type) (int64, error) {
 	switch self := sequence.(type) {
 	case ListInstance:

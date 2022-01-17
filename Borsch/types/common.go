@@ -33,4 +33,4 @@ var (
 	TypeClass  = newTypeClass()
 )
 
-var BuiltinPackage = NewPackageInstance(true, "", "", map[string]common.Type{})
+var BuiltinPackage = NewPackageInstance(true, "вбудований", "", map[string]common.Type{})

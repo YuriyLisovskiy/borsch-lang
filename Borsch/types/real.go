@@ -54,6 +54,10 @@ func (t RealInstance) AsBool() bool {
 }
 
 func (t RealInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
+	if name == ops.AttributesName {
+		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
+	}
+	
 	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
@@ -62,6 +66,10 @@ func (t RealInstance) SetAttribute(name string, _ common.Type) (common.Type, err
 }
 
 func (t RealInstance) GetAttribute(name string) (common.Type, error) {
+	if name == ops.AttributesName {
+		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
+	}
+
 	if attribute, err := t.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}

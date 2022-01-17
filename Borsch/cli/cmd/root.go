@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/grammar"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +18,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use: "borsch",
 	Long: `Борщ — це мова програмування, яка дозволяє писати код українською.
-Вихідний код доступний на GitHub — https://github.com/YuriyLisovskiy/borsch-lang`,
+Вихідний код (буде) доступний на GitHub — https://github.com/YuriyLisovskiy/borsch-lang`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
 			fileInfo, err := os.Stat(args[0])
@@ -30,11 +31,14 @@ var rootCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(stdRoot) == 0 {
-			stdRoot = os.Getenv("BORSCH_STD")
+			stdRoot = os.Getenv(common.BORSCH_LIB)
 		}
 
 		if len(stdRoot) == 0 {
-			fmt.Print("Увага: змінна середовища BORSCH_STD необхідна для використання стандартної бібліотеки\n\n")
+			fmt.Printf(
+				"Увага: змінна середовища '%s' необхідна для використання стандартної бібліотеки\n\n",
+				common.BORSCH_LIB,
+			)
 		}
 
 		if len(args) > 0 {
@@ -44,40 +48,11 @@ var rootCmd = &cobra.Command{
 				return
 			}
 
-			package_, err := builtin.ImportPackage(builtin.BuiltinScope, filePath, grammar.ParserInstance)
+			_, err = builtin.ImportPackage(builtin.BuiltinScope, filePath, grammar.ParserInstance)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
-
-			fmt.Println(package_.String())
-
-			// packageCode, err := util.ReadFile(filePath)
-			// if err != nil {
-			// 	fmt.Println(err.Error())
-			// } else {
-			// parser, err := grammar.NewParser()
-			// if err != nil {
-			// 	fmt.Println(err.Error())
-			// 	return
-			// }
-			//
-			// ast, err := parser.Parse(filePath, string(packageCode))
-			// if err != nil {
-			// 	fmt.Println(err.Error())
-			// 	return
-			// }
-			//
-			// context := grammar.NewContext(filePath, nil)
-			// context.PushScope(builtin.BuiltinScope)
-			// package_, err := ast.Evaluate(context)
-			// if err != nil {
-			// 	fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
-			// 	return
-			// }
-			//
-			// fmt.Println(package_.String())
-			// }
 		} else {
 			// interpret := interpreter.NewInterpreter(stdRoot, builtin.RootPackageName, "")
 			// fmt.Printf("%s %s (%s, %s)\n", build.LanguageName, build.Version, build.Time, strings.Title(runtime.GOOS))
