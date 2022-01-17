@@ -117,7 +117,7 @@ func NewPackageClass() *Class {
 			// 		},
 			// 	},
 			// 	func(ctx interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			// 		p, err := ImportPackage(baseScope, (*args)[0].(StringInstance).Value, ctx.(common.Parser))
+			// 		p, err := ImportPackage(baseScope, (*args)[0].(StringInstance).Value, ctx.(common.FunctionContext).Parser)
 			// 		if err != nil {
 			// 			return nil, err
 			// 		}

@@ -295,7 +295,7 @@ func init() {
 					packagePath = path.Join(os.Getenv(common.BORSCH_LIB), packagePath[2:])
 				}
 
-				pack, err := ImportPackage(BuiltinScope, packagePath, ctx.(common.Parser))
+				pack, err := ImportPackage(BuiltinScope, packagePath, ctx.(common.FunctionContext).Parser)
 				if err != nil {
 					return nil, err
 				}

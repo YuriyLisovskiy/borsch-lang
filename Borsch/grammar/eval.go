@@ -263,9 +263,9 @@ func (f *FunctionDef) Evaluate(ctx common.Context) (common.Type, error) {
 	return types.NewFunctionInstance(
 		f.Name,
 		arguments,
-		func(_ interface{}, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
-			// TODO: use context from first arg!
-			return f.Body.Evaluate(ctx)
+		func(context interface{}, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
+			funcContext := context.(common.FunctionContext)
+			return f.Body.Evaluate(funcContext.Context)
 		},
 		returnTypes,
 		false,
@@ -794,7 +794,11 @@ func (a *CallFunc) evalFunction(
 	}
 
 	ctx.PushScope(*kwargs)
-	res, err := function.Call(ParserInstance, args, kwargs)
+	funcContext := common.FunctionContext{
+		Context: ctx,
+		Parser:  ParserInstance,
+	}
+	res, err := function.Call(funcContext, args, kwargs)
 	if err != nil {
 		return nil, err
 	}
