@@ -233,6 +233,8 @@ type Constant struct {
 }
 
 type DictionaryEntry struct {
+	Pos lexer.Position
+
 	Key   *Expression `@@`
 	Value *Expression `":" @@`
 }
