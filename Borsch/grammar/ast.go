@@ -224,12 +224,17 @@ type Primary struct {
 type Constant struct {
 	Pos lexer.Position
 
-	Integer *int64        `  @Int`
-	Real    *float64      `| @Float`
-	Bool    *Boolean      `| @("істина" | "хиба")`
-	String  *string       `| @String`
-	List    []*Expression `| "[" (@@ ("," @@)* )? "]"`
-	// Dictionary    map[*Constant]*Constant    `| "{" (@@ ":" @@ ("," @@ ":" @@)* )? "}"`
+	Integer    *int64             `  @Int`
+	Real       *float64           `| @Float`
+	Bool       *Boolean           `| @("істина" | "хиба")`
+	String     *string            `| @String`
+	List       []*Expression      `| "[" (@@ ("," @@)* )? "]"`
+	Dictionary []*DictionaryEntry `| "{" (@@ ("," @@)* )? "}"`
+}
+
+type DictionaryEntry struct {
+	Key   *Expression `@@`
+	Value *Expression `":" @@`
 }
 
 type RandomAccess struct {

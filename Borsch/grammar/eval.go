@@ -291,40 +291,6 @@ func (e *Expression) Evaluate(ctx common.Context, valueToSet common.Type) (commo
 	panic("unreachable")
 }
 
-func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
-	if c.Integer != nil {
-		return types.NewIntegerInstance(*c.Integer), nil
-	}
-
-	if c.Real != nil {
-		return types.NewRealInstance(*c.Real), nil
-	}
-
-	if c.Bool != nil {
-		return types.NewBoolInstance(bool(*c.Bool)), nil
-	}
-
-	if c.String != nil {
-		return types.NewStringInstance(*c.String), nil
-	}
-
-	if c.List != nil {
-		list := types.NewListInstance()
-		for _, expr := range c.List {
-			value, err := expr.Evaluate(ctx, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			list.Values = append(list.Values, value)
-		}
-
-		return list, nil
-	}
-
-	panic("unreachable")
-}
-
 func (a *Assignment) Evaluate(ctx common.Context) (common.Type, error) {
 	if len(a.Next) == 0 {
 		return a.Expression[0].Evaluate(ctx, nil)
@@ -476,6 +442,70 @@ func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.T
 	}
 
 	panic("unreachable")
+}
+
+func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
+	if c.Integer != nil {
+		return types.NewIntegerInstance(*c.Integer), nil
+	}
+
+	if c.Real != nil {
+		return types.NewRealInstance(*c.Real), nil
+	}
+
+	if c.Bool != nil {
+		return types.NewBoolInstance(bool(*c.Bool)), nil
+	}
+
+	if c.String != nil {
+		return types.NewStringInstance(*c.String), nil
+	}
+
+	if c.List != nil {
+		list := types.NewListInstance()
+		for _, expr := range c.List {
+			value, err := expr.Evaluate(ctx, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			list.Values = append(list.Values, value)
+		}
+
+		return list, nil
+	}
+
+	if c.Dictionary != nil {
+		dict := types.NewDictionaryInstance()
+		for _, entry := range c.Dictionary {
+			key, value, err := entry.Evaluate(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			if err := dict.SetElement(key, value); err != nil {
+				return nil, err
+			}
+		}
+
+		return dict, nil
+	}
+
+	panic("unreachable")
+}
+
+func (d *DictionaryEntry) Evaluate(ctx common.Context) (common.Type, common.Type, error) {
+	key, err := d.Key.Evaluate(ctx, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	value, err := d.Value.Evaluate(ctx, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return key, value, nil
 }
 
 func (a *AttributeAccess) Evaluate(ctx common.Context, valueToSet, prevValue common.Type) (common.Type, error) {
