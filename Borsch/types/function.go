@@ -98,17 +98,23 @@ func NewFunctionInstance(
 
 func (t FunctionInstance) String() string {
 	template := ""
-	if t.package_ != nil {
-		template = "функція '%s'"
-		if t.package_.IsBuiltin {
-			template = "вбудована " + template
-		}
+	if t.Name == "" {
+		template = "функція <лямбда>"
 	} else {
-		template = "метод '%s'"
+		if t.package_ != nil {
+			template = "функція '%s'"
+			if t.package_.IsBuiltin {
+				template = "вбудована " + template
+			}
+		} else {
+			template = "метод '%s'"
+		}
+
+		template = fmt.Sprintf(template, t.Name)
 	}
 
 	template += " з адресою %s"
-	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.Name, t.address)
+	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.address)
 }
 
 func (t FunctionInstance) Representation() string {

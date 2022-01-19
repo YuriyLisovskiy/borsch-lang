@@ -283,3 +283,30 @@ func unpackList(ctx common.Context, lhs []*Expression, rhs *Expression) (common.
 	// TODO: return error
 	panic(fmt.Sprintf("unable to unpack %s", element.GetTypeName()))
 }
+
+func evalParameters(ctx common.Context, parameters []*Parameter) []types.FunctionArgument {
+	var arguments []types.FunctionArgument
+	for _, parameter := range parameters {
+		arguments = append(arguments, parameter.Evaluate(ctx))
+	}
+
+	return arguments
+}
+
+func evalReturnTypes(ctx common.Context, returnTypes []*ReturnType) []types.FunctionReturnType {
+	var result []types.FunctionReturnType
+	if len(returnTypes) == 0 {
+		result = append(
+			result, types.FunctionReturnType{
+				TypeHash:   types.NilTypeHash,
+				IsNullable: false,
+			},
+		)
+	} else {
+		for _, returnType := range returnTypes {
+			result = append(result, returnType.Evaluate(ctx))
+		}
+	}
+
+	return result
+}

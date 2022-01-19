@@ -229,37 +229,8 @@ func (b *FunctionBody) Evaluate(ctx common.Context) (common.Type, error) {
 }
 
 func (f *FunctionDef) Evaluate(ctx common.Context) (common.Type, error) {
-	var arguments []types.FunctionArgument
-	for _, parameter := range f.Parameters {
-		arguments = append(
-			arguments, types.FunctionArgument{
-				TypeHash:   types.GetTypeHash(parameter.Type), // TODO: get type hash with package name
-				Name:       parameter.Name,
-				IsVariadic: false,
-				IsNullable: parameter.IsNullable,
-			},
-		)
-	}
-
-	var returnTypes []types.FunctionReturnType
-	if len(f.ReturnTypes) == 0 {
-		returnTypes = append(
-			returnTypes, types.FunctionReturnType{
-				TypeHash:   types.NilTypeHash,
-				IsNullable: false,
-			},
-		)
-	} else {
-		for _, returnType := range f.ReturnTypes {
-			returnTypes = append(
-				returnTypes, types.FunctionReturnType{
-					TypeHash:   types.GetTypeHash(returnType.Name),
-					IsNullable: returnType.IsNullable,
-				},
-			)
-		}
-	}
-
+	arguments := evalParameters(ctx, f.Parameters)
+	returnTypes := evalReturnTypes(ctx, f.ReturnTypes)
 	return types.NewFunctionInstance(
 		f.Name,
 		arguments,
@@ -272,6 +243,22 @@ func (f *FunctionDef) Evaluate(ctx common.Context) (common.Type, error) {
 		ctx.GetPackage().(*types.PackageInstance),
 		"", // TODO: add doc
 	), nil
+}
+
+func (p *Parameter) Evaluate(_ common.Context) types.FunctionArgument {
+	return types.FunctionArgument{
+		TypeHash:   types.GetTypeHash(p.Type), // TODO: get type hash with package name
+		Name:       p.Name,
+		IsVariadic: false,
+		IsNullable: p.IsNullable,
+	}
+}
+
+func (t *ReturnType) Evaluate(ctx common.Context) types.FunctionReturnType {
+	return types.FunctionReturnType{
+		TypeHash:   types.GetTypeHash(t.Name), // TODO: get type hash with package name
+		IsNullable: t.IsNullable,
+	}
 }
 
 func (s *ReturnStmt) Evaluate(ctx common.Context) (common.Type, error) {
@@ -324,7 +311,7 @@ func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
 	if c.List != nil {
 		list := types.NewListInstance()
 		for _, expr := range c.List {
-			value, err := expr.Evaluate(ctx)
+			value, err := expr.Evaluate(ctx, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -458,6 +445,15 @@ func (a *Exponent) Evaluate(ctx common.Context, valueToSet common.Type) (common.
 }
 
 func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+	if a.SubExpression != nil {
+		if valueToSet != nil {
+			// TODO: change to normal description
+			return nil, errors.New("unable to set to subexpression evaluation")
+		}
+
+		return a.SubExpression.Evaluate(ctx, valueToSet)
+	}
+
 	if a.Constant != nil {
 		if valueToSet != nil {
 			// TODO: change to normal description
@@ -471,17 +467,12 @@ func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.T
 		return a.RandomAccess.Evaluate(ctx, valueToSet)
 	}
 
-	if a.SubExpression != nil {
-		if valueToSet != nil {
-			// TODO: change to normal description
-			return nil, errors.New("unable to set to subexpression evaluation")
-		}
-
-		return a.SubExpression.Evaluate(ctx, valueToSet)
-	}
-
 	if a.AttributeAccess != nil {
 		return a.AttributeAccess.Evaluate(ctx, valueToSet, nil)
+	}
+
+	if a.LambdaDef != nil {
+		return a.LambdaDef.Evaluate(ctx)
 	}
 
 	panic("unreachable")
@@ -615,6 +606,23 @@ func (a *RandomAccess) Evaluate(ctx common.Context, valueToSet common.Type) (com
 	}
 
 	return variable, nil
+}
+
+func (l *LambdaDef) Evaluate(ctx common.Context) (common.Type, error) {
+	arguments := evalParameters(ctx, l.Parameters)
+	returnTypes := evalReturnTypes(ctx, l.ReturnTypes)
+	return types.NewFunctionInstance(
+		"",
+		arguments,
+		func(context interface{}, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
+			funcContext := context.(common.FunctionContext)
+			return l.Body.Evaluate(funcContext.Context)
+		},
+		returnTypes,
+		false,
+		ctx.GetPackage().(*types.PackageInstance),
+		"", // TODO: add doc
+	), nil
 }
 
 func (a *CallFunc) Evaluate(ctx common.Context, variable common.Type) (common.Type, error) {

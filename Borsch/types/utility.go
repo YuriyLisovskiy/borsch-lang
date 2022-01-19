@@ -91,7 +91,12 @@ func IsBuiltinType(typeName string) bool {
 
 func CheckResult(result common.Type, function *FunctionInstance) error {
 	if len(function.ReturnTypes) == 1 {
-		return checkSingleResult(result, function.ReturnTypes[0], function.Name)
+		err := checkSingleResult(result, function.ReturnTypes[0], function.Name)
+		if err != nil {
+			return errors.New(fmt.Sprintf(err.Error(), ""))
+		}
+
+		return nil
 	}
 
 	switch value := result.(type) {
@@ -124,7 +129,6 @@ func CheckResult(result common.Type, function *FunctionInstance) error {
 			}
 		}
 	default:
-		// panic("unreachable")
 		var expectedTypes []string
 		for _, retType := range function.ReturnTypes {
 			expectedTypes = append(expectedTypes, retType.String())
@@ -143,18 +147,31 @@ func CheckResult(result common.Type, function *FunctionInstance) error {
 	return nil
 }
 
+func makeFuncSignature(funcName string) string {
+	if funcName == "" {
+		return "лямбда-вираз"
+	}
+
+	return fmt.Sprintf("'%s()", funcName)
+}
+
 func checkSingleResult(result common.Type, returnType FunctionReturnType, funcName string) error {
 	if result.GetTypeHash() == NilTypeHash {
 		if returnType.TypeHash != NilTypeHash && !returnType.IsNullable {
 			return util.RuntimeError(
-				fmt.Sprintf("'%s()' повертає ненульове значення%s, отримано '%s'", funcName, "%s", result.String()),
+				fmt.Sprintf(
+					"%s повертає ненульове значення%s, отримано '%s'",
+					makeFuncSignature(funcName),
+					"%s",
+					result.String(),
+				),
 			)
 		}
 	} else if returnType.TypeHash != AnyTypeHash && result.GetTypeHash() != returnType.TypeHash {
 		return util.RuntimeError(
 			fmt.Sprintf(
-				"'%s()' повертає значення типу '%s'%s, отримано значення з типом '%s'",
-				funcName, returnType.String(), "%s", result.GetTypeName(),
+				"%s повертає значення типу '%s'%s, отримано значення з типом '%s'",
+				makeFuncSignature(funcName), returnType.String(), "%s", result.GetTypeName(),
 			),
 		)
 	}

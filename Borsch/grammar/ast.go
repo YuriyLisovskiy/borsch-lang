@@ -62,12 +62,12 @@ type FunctionBody struct {
 type FunctionDef struct {
 	Pos lexer.Position
 
-	Name string `"функція" @Ident`
-	// Parameters []*Parameter `"(" (@@ ("," @@)* )? ")"`
-	Parameters        []*Parameter       `"(" (@@ ("," @@)* )?`
-	VariadicParameter *VariadicParameter `("," @@)? ")"`
-	ReturnTypes       []*ReturnType      `["-"">" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body              *FunctionBody      `"{" @@ "}"`
+	Name       string       `"функція" @Ident`
+	Parameters []*Parameter `"(" (@@ ("," @@)* )? ")"`
+	// Parameters        []*Parameter       `"(" (@@ ("," @@)* )?`
+	// VariadicParameter *VariadicParameter `("," @@)? ")"`
+	ReturnTypes []*ReturnType `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
+	Body        *FunctionBody `"{" @@ "}"`
 }
 
 type Parameter struct {
@@ -87,7 +87,7 @@ type ReturnType struct {
 
 type VariadicParameter struct {
 	Pos lexer.Position
-	
+
 	Name       string `@Ident ":" "."".""."`
 	Type       string `@Ident`
 	IsNullable bool   `@"?"?`
@@ -217,19 +217,19 @@ type Primary struct {
 	Constant        *Constant        `  @@`
 	RandomAccess    *RandomAccess    `| @@`
 	AttributeAccess *AttributeAccess `| @@`
+	LambdaDef       *LambdaDef       `| @@`
 	SubExpression   *Expression      `| "(" @@ ")"`
 }
 
 type Constant struct {
 	Pos lexer.Position
 
-	Integer *int64      `  @Int`
-	Real    *float64    `| @Float`
-	Bool    *Boolean    `| @("істина" | "хиба")`
-	String  *string     `| @String`
-	List    []*Constant `| "[" (@@ ("," @@)* )? "]"`
+	Integer *int64        `  @Int`
+	Real    *float64      `| @Float`
+	Bool    *Boolean      `| @("істина" | "хиба")`
+	String  *string       `| @String`
+	List    []*Expression `| "[" (@@ ("," @@)* )? "]"`
 	// Dictionary    map[*Constant]*Constant    `| "{" (@@ ":" @@ ("," @@ ":" @@)* )? "}"`
-	// FunctionDef AnonymousFunctionDef `| @@`
 }
 
 type RandomAccess struct {
@@ -237,6 +237,16 @@ type RandomAccess struct {
 
 	Ident string        `@Ident`
 	Index []*LogicalAnd `("[" @@ "]")+`
+}
+
+type LambdaDef struct {
+	Pos lexer.Position
+
+	Parameters []*Parameter `"(" (@@ ("," @@)* )? ")"`
+	// Parameters        []*Parameter       `"(" (@@ ("," @@)* )?`
+	// VariadicParameter *VariadicParameter `("," @@)? ")"`
+	ReturnTypes []*ReturnType `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
+	Body        *FunctionBody `"="">" "{" @@ "}"`
 }
 
 type AttributeAccess struct {
