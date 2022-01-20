@@ -14,6 +14,10 @@ type ContextImpl struct {
 	package_ *types.PackageInstance
 }
 
+func (c *ContextImpl) GetParser() common.Parser {
+	return ParserInstance
+}
+
 func (c *ContextImpl) PushScope(scope map[string]common.Type) {
 	c.scopes = append(c.scopes, scope)
 }

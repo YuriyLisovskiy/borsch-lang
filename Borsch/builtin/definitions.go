@@ -13,8 +13,6 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-const RootPackageName = "__кореневий__"
-
 var BuiltinScope map[string]common.Type
 
 func init() {
@@ -31,8 +29,8 @@ func init() {
 					IsNullable: true,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-				Print(*args...)
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				Print(ctx, *args...)
 				return types.NewNilInstance(), nil
 			},
 			[]types.FunctionReturnType{
@@ -55,8 +53,8 @@ func init() {
 					IsNullable: true,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-				Print(append(*args, types.StringInstance{Value: "\n"})...)
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				Print(ctx, append(*args, types.StringInstance{Value: "\n"})...)
 				return types.NewNilInstance(), nil
 			},
 			[]types.FunctionReturnType{
@@ -79,8 +77,8 @@ func init() {
 					IsNullable: false,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-				return Input(*args...)
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				return Input(ctx, *args...)
 			},
 			[]types.FunctionReturnType{
 				{
@@ -104,10 +102,10 @@ func init() {
 					IsNullable: true,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				var strArgs []string
 				for _, arg := range *args {
-					strArgs = append(strArgs, arg.String())
+					strArgs = append(strArgs, arg.String(ctx))
 				}
 
 				return types.NewNilInstance(), util.RuntimeError(strings.Join(strArgs, " "))
@@ -132,8 +130,8 @@ func init() {
 					IsNullable: false,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-				return types.StringInstance{Value: os.Getenv((*args)[0].String())}, nil
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				return types.StringInstance{Value: os.Getenv((*args)[0].String(ctx))}, nil
 			},
 			[]types.FunctionReturnType{
 				{
@@ -167,20 +165,20 @@ func init() {
 					IsNullable: false,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				message := ""
 				if len(*args) > 2 {
 					messageArgs := (*args)[2:]
 					sz := len(messageArgs)
 					for c := 0; c < sz; c++ {
-						message += messageArgs[c].String()
+						message += messageArgs[c].String(ctx)
 						if c < sz-1 {
 							message += " "
 						}
 					}
 				}
 
-				return types.NewNilInstance(), Assert((*args)[0], (*args)[1], message)
+				return types.NewNilInstance(), Assert(ctx, (*args)[0], (*args)[1], message)
 			},
 			[]types.FunctionReturnType{
 				{
@@ -195,7 +193,7 @@ func init() {
 		"авторське_право": types.NewFunctionInstance(
 			"авторське_право",
 			[]types.FunctionArgument{},
-			func(interface{}, *[]common.Type, *map[string]common.Type) (common.Type, error) {
+			func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error) {
 				fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
 				return types.NewNilInstance(), nil
 			},
@@ -212,7 +210,7 @@ func init() {
 		"ліцензія": types.NewFunctionInstance(
 			"ліцензія",
 			[]types.FunctionArgument{},
-			func(interface{}, *[]common.Type, *map[string]common.Type) (common.Type, error) {
+			func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error) {
 				fmt.Println(build.License)
 				return types.NewNilInstance(), nil
 			},
@@ -236,8 +234,8 @@ func init() {
 					IsNullable: false,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-				return types.NewNilInstance(), Help((*args)[0].String())
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				return types.NewNilInstance(), Help((*args)[0].String(ctx))
 			},
 			[]types.FunctionReturnType{
 				{
@@ -261,7 +259,7 @@ func init() {
 					IsNullable: false,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				os.Exit(int((*args)[0].(types.IntegerInstance).Value))
 				return types.NewNilInstance(), nil
 			},
@@ -289,13 +287,13 @@ func init() {
 					IsNullable: false,
 				},
 			},
-			func(ctx interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				packagePath := (*args)[0].(types.StringInstance).Value
 				if strings.HasPrefix(packagePath, "!/") {
 					packagePath = path.Join(os.Getenv(common.BORSCH_LIB), packagePath[2:])
 				}
 
-				pack, err := ImportPackage(BuiltinScope, packagePath, ctx.(common.FunctionContext).Parser)
+				pack, err := ImportPackage(BuiltinScope, packagePath, ctx.GetParser())
 				if err != nil {
 					return nil, err
 				}
@@ -329,9 +327,10 @@ func init() {
 					IsNullable: false,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				sequence := (*args)[0]
 				return runOperator(
+					ctx,
 					ops.LengthOperatorName,
 					sequence,
 					types.GetTypeName(types.IntegerTypeHash),
@@ -364,7 +363,7 @@ func init() {
 					IsNullable: true,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				list := (*args)[0].(types.ListInstance)
 				values := (*args)[1:]
 				for _, value := range values {
@@ -393,7 +392,7 @@ func init() {
 					IsNullable: false,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				return DeepCopy((*args)[0])
 			},
 			[]types.FunctionReturnType{
@@ -416,7 +415,7 @@ func init() {
 					IsNullable: false,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				return types.GetTypeOfInstance((*args)[0])
 			},
 			[]types.FunctionReturnType{

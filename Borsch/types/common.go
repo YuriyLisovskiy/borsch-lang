@@ -16,8 +16,8 @@ const (
 	TypeClassTypeHash
 )
 
-type Instance interface {
-	GetClass() *Class
+type ObjectInstance interface {
+	GetPrototype() *Class
 }
 
 var (

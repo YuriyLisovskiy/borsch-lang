@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
@@ -15,15 +14,6 @@ import (
 type RealInstance struct {
 	Object
 	Value float64
-}
-
-func NewRealInstanceFromString(value string) (RealInstance, error) {
-	number, err := strconv.ParseFloat(strings.TrimSuffix(value, "f"), 64)
-	if err != nil {
-		return RealInstance{}, util.RuntimeError(err.Error())
-	}
-
-	return NewRealInstance(number), nil
 }
 
 func NewRealInstance(value float64) RealInstance {
@@ -37,19 +27,19 @@ func NewRealInstance(value float64) RealInstance {
 	}
 }
 
-func (t RealInstance) String() string {
+func (t RealInstance) String(common.Context) string {
 	return strconv.FormatFloat(t.Value, 'f', -1, 64)
 }
 
-func (t RealInstance) Representation() string {
-	return t.String()
+func (t RealInstance) Representation(ctx common.Context) string {
+	return t.String(ctx)
 }
 
 func (t RealInstance) GetTypeHash() uint64 {
-	return t.GetClass().GetTypeHash()
+	return t.GetPrototype().GetTypeHash()
 }
 
-func (t RealInstance) AsBool() bool {
+func (t RealInstance) AsBool(common.Context) bool {
 	return t.Value != 0.0
 }
 
@@ -57,8 +47,8 @@ func (t RealInstance) SetAttribute(name string, _ common.Type) (common.Type, err
 	if name == ops.AttributesName {
 		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 	}
-	
-	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+
+	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
 
@@ -74,10 +64,10 @@ func (t RealInstance) GetAttribute(name string) (common.Type, error) {
 		return attribute, nil
 	}
 
-	return t.GetClass().GetAttribute(name)
+	return t.GetPrototype().GetAttribute(name)
 }
 
-func (RealInstance) GetClass() *Class {
+func (RealInstance) GetPrototype() *Class {
 	return Real
 }
 
@@ -102,7 +92,7 @@ func (t RealInstance) Div(other common.Type) (common.Type, error) {
 	return nil, errors.New("ділення на нуль")
 }
 
-func compareReals(self, other common.Type) (int, error) {
+func compareReals(_ common.Context, self, other common.Type) (int, error) {
 	left, ok := self.(RealInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareReals")
@@ -161,7 +151,11 @@ func newRealBinaryOperator(
 	handler func(RealInstance, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
-		name, RealTypeHash, AnyTypeHash, doc, func(left common.Type, right common.Type) (common.Type, error) {
+		name,
+		RealTypeHash,
+		AnyTypeHash,
+		doc,
+		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -177,7 +171,7 @@ func newRealUnaryOperator(
 	handler func(RealInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, RealTypeHash, AnyTypeHash, doc, func(left common.Type) (common.Type, error) {
+		name, RealTypeHash, AnyTypeHash, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
 				return handler(leftInstance)
 			}

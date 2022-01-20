@@ -10,7 +10,13 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func callMethod(object common.Type, funcName string, args *[]common.Type, kwargs *map[string]common.Type) (
+func callMethod(
+	ctx common.Context,
+	object common.Type,
+	funcName string,
+	args *[]common.Type,
+	kwargs *map[string]common.Type,
+) (
 	common.Type,
 	error,
 ) {
@@ -22,7 +28,7 @@ func callMethod(object common.Type, funcName string, args *[]common.Type, kwargs
 	switch function := attribute.(type) {
 	case *types.FunctionInstance:
 		if len(function.Arguments) == 0 {
-			return nil, errors.New(fmt.Sprintf("%s is not a method", function.Representation()))
+			return nil, errors.New(fmt.Sprintf("%s is not a method", function.Representation(ctx)))
 		}
 
 		*args = append([]common.Type{object}, *args...)
@@ -35,11 +41,11 @@ func callMethod(object common.Type, funcName string, args *[]common.Type, kwargs
 			(*kwargs)[function.Arguments[i].Name] = (*args)[i]
 		}
 
-		if err := types.CheckFunctionArguments(function, args, kwargs); err != nil {
+		if err := types.CheckFunctionArguments(ctx, function, args, kwargs); err != nil {
 			return nil, err
 		}
 
-		res, err := function.Call(nil, args, kwargs)
+		res, err := function.Call(ctx, args, kwargs)
 		if err != nil {
 			return nil, util.RuntimeError(fmt.Sprintf(err.Error(), funcName))
 		}
@@ -68,23 +74,24 @@ func evalBinaryOperator(
 			return nil, err
 		}
 
-		return callMethod(left, operatorName, &[]common.Type{right}, nil)
+		return callMethod(ctx, left, operatorName, &[]common.Type{right}, nil)
 	}
 
 	return left, nil
 }
 
-func evalUnaryOperator(ctx common.Context, operatorName string, operator common.OperatorEvaluatable) (
-	common.Type,
-	error,
-) {
+func evalUnaryOperator(
+	ctx common.Context,
+	operatorName string,
+	operator common.OperatorEvaluatable,
+) (common.Type, error) {
 	if operator != nil {
 		value, err := operator.Evaluate(ctx, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		return callMethod(value, operatorName, &[]common.Type{}, nil)
+		return callMethod(ctx, value, operatorName, &[]common.Type{}, nil)
 	}
 
 	panic("unreachable")
@@ -200,7 +207,11 @@ func unpack(ctx common.Context, lhs []*Expression, rhs []*Expression) (common.Ty
 	return list, nil
 }
 
-func getSequenceOrResult(ctx common.Context, lhs []*Expression, rhs []*Expression) ([]common.Type, common.Type, error) {
+func getSequenceOrResult(ctx common.Context, lhs []*Expression, rhs []*Expression) (
+	[]common.Type,
+	common.Type,
+	error,
+) {
 	rhsLen := len(rhs)
 	var sequence []common.Type
 	if rhsLen == 1 {

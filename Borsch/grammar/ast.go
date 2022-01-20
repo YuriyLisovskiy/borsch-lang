@@ -48,6 +48,7 @@ type Stmt struct {
 	WhileStmt   *WhileStmt   `| @@`
 	Block       *BlockStmts  `| "{" @@ "}"`
 	FunctionDef *FunctionDef `| @@`
+	ClassDef    *ClassDef    `| @@`
 	ReturnStmt  *ReturnStmt  `| @@`
 	Assignment  *Assignment  `| (@@ ";")`
 	Empty       bool         `| @";"`
@@ -91,6 +92,21 @@ type VariadicParameter struct {
 	Name       string `@Ident ":" "."".""."`
 	Type       string `@Ident`
 	IsNullable bool   `@"?"?`
+}
+
+type ClassDef struct {
+	Pos lexer.Position
+
+	Name    string         `"клас" @Ident`
+	Members []*ClassMember `"{" @@* "}"`
+}
+
+type ClassMember struct {
+	Pos lexer.Position
+
+	Variable *Assignment  ` (@@ ";")`
+	Method   *FunctionDef `| @@`
+	Class    *ClassDef    `| @@`
 }
 
 type Boolean bool

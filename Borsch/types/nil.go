@@ -20,19 +20,19 @@ func NewNilInstance() NilInstance {
 	}
 }
 
-func (t NilInstance) String() string {
+func (t NilInstance) String(common.Context) string {
 	return "нуль"
 }
 
-func (t NilInstance) Representation() string {
-	return t.String()
+func (t NilInstance) Representation(ctx common.Context) string {
+	return t.String(ctx)
 }
 
 func (t NilInstance) GetTypeHash() uint64 {
-	return t.GetClass().GetTypeHash()
+	return t.GetPrototype().GetTypeHash()
 }
 
-func (t NilInstance) AsBool() bool {
+func (t NilInstance) AsBool(common.Context) bool {
 	return false
 }
 
@@ -40,12 +40,12 @@ func (t NilInstance) GetAttribute(name string) (common.Type, error) {
 	if name == ops.AttributesName {
 		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 	}
-	
+
 	if attribute, err := t.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}
 
-	return t.GetClass().GetAttribute(name)
+	return t.GetPrototype().GetAttribute(name)
 }
 
 func (t NilInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
@@ -53,18 +53,18 @@ func (t NilInstance) SetAttribute(name string, _ common.Type) (common.Type, erro
 		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 	}
 
-	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
 
 	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (NilInstance) GetClass() *Class {
+func (NilInstance) GetPrototype() *Class {
 	return Nil
 }
 
-func compareNils(_ common.Type, other common.Type) (int, error) {
+func compareNils(_ common.Context, _ common.Type, other common.Type) (int, error) {
 	switch other.(type) {
 	case NilInstance:
 		return 0, nil
@@ -88,7 +88,7 @@ func newNilClass() *Class {
 						IsNullable: false,
 					},
 				},
-				func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 					return (*args)[0], nil
 				},
 				[]FunctionReturnType{

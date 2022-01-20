@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func Assert(expected, actual common.Type, errorTemplate string) error {
+func Assert(ctx common.Context, expected common.Type, actual common.Type, errorTemplate string) error {
 	leftV := expected
 	rightV := actual
 	if leftV.GetTypeHash() != rightV.GetTypeHash() {
@@ -31,28 +31,28 @@ func Assert(expected, actual common.Type, errorTemplate string) error {
 	case types.RealInstance:
 		right := rightV.(types.RealInstance)
 		if left.Value != right.Value {
-			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(), right.String()))
+			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(ctx), right.String(ctx)))
 		}
 
 		return nil
 	case types.IntegerInstance:
 		right := rightV.(types.IntegerInstance)
 		if left.Value != right.Value {
-			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(), right.String()))
+			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(ctx), right.String(ctx)))
 		}
 
 		return nil
 	case types.StringInstance:
 		right := rightV.(types.StringInstance)
 		if left.Value != right.Value {
-			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(), right.String()))
+			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(ctx), right.String(ctx)))
 		}
 
 		return nil
 	case types.BoolInstance:
 		right := rightV.(types.BoolInstance)
 		if left.Value != right.Value {
-			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(), right.String()))
+			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(ctx), right.String(ctx)))
 		}
 
 		return nil

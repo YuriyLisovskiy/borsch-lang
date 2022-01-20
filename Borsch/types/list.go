@@ -26,24 +26,24 @@ func NewListInstance() ListInstance {
 	}
 }
 
-func (t ListInstance) String() string {
-	return t.Representation()
+func (t ListInstance) String(ctx common.Context) string {
+	return t.Representation(ctx)
 }
 
-func (t ListInstance) Representation() string {
+func (t ListInstance) Representation(ctx common.Context) string {
 	var strValues []string
-	for _, v := range t.Values {
-		strValues = append(strValues, v.Representation())
+	for _, value := range t.Values {
+		strValues = append(strValues, value.Representation(ctx))
 	}
 
 	return "[" + strings.Join(strValues, ", ") + "]"
 }
 
 func (t ListInstance) GetTypeHash() uint64 {
-	return t.GetClass().GetTypeHash()
+	return t.GetPrototype().GetTypeHash()
 }
 
-func (t ListInstance) AsBool() bool {
+func (t ListInstance) AsBool(common.Context) bool {
 	return t.Length() != 0
 }
 
@@ -52,7 +52,7 @@ func (t ListInstance) SetAttribute(name string, _ common.Type) (common.Type, err
 		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 	}
 
-	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
 
@@ -63,15 +63,15 @@ func (t ListInstance) GetAttribute(name string) (common.Type, error) {
 	if name == ops.AttributesName {
 		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 	}
-	
+
 	if attribute, err := t.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}
 
-	return t.GetClass().GetAttribute(name)
+	return t.GetPrototype().GetAttribute(name)
 }
 
-func (ListInstance) GetClass() *Class {
+func (ListInstance) GetPrototype() *Class {
 	return List
 }
 
@@ -118,7 +118,7 @@ func (t ListInstance) Slice(from, to int64) (common.Type, error) {
 	return listInstance, nil
 }
 
-func compareLists(self common.Type, other common.Type) (int, error) {
+func compareLists(_ common.Context, self common.Type, other common.Type) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case ListInstance:
@@ -147,7 +147,11 @@ func newListBinaryOperator(
 	handler func(ListInstance, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
-		name, ListTypeHash, AnyTypeHash, doc, func(left common.Type, right common.Type) (common.Type, error) {
+		name,
+		ListTypeHash,
+		AnyTypeHash,
+		doc,
+		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(ListInstance); ok {
 				return handler(leftInstance, right)
 			}

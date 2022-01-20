@@ -47,19 +47,19 @@ func NewBuiltinClass(
 	}
 }
 
-func (t Class) String() string {
+func (t Class) String(common.Context) string {
 	return fmt.Sprintf("<клас '%s'>", t.GetTypeName())
 }
 
-func (t Class) Representation() string {
-	return t.String()
+func (t Class) Representation(ctx common.Context) string {
+	return t.String(ctx)
 }
 
 func (t Class) GetTypeHash() uint64 {
 	return t.typeHash
 }
 
-func (t Class) AsBool() bool {
+func (t Class) AsBool(common.Context) bool {
 	return true
 }
 
@@ -75,7 +75,7 @@ func (t Class) SetAttribute(name string, value common.Type) (common.Type, error)
 	return t, nil
 }
 
-func (t Class) GetClass() *Class {
+func (t Class) GetPrototype() *Class {
 	return TypeClass
 }
 
@@ -129,16 +129,16 @@ func NewClassInstance(class *Class, attributes map[string]common.Type) *ClassIns
 	return instance
 }
 
-func (i ClassInstance) String() string {
+func (i ClassInstance) String(ctx common.Context) string {
 	if attribute, err := i.GetAttribute("__рядок__"); err == nil {
 		switch __str__ := attribute.(type) {
 		case *FunctionInstance:
 			args := []common.Type{i}
 			kwargs := map[string]common.Type{__str__.Arguments[0].Name: i}
-			if err := CheckFunctionArguments(__str__, &args, &kwargs); err == nil {
-				result, err := __str__.Call(nil, &args, &kwargs)
+			if err := CheckFunctionArguments(ctx, __str__, &args, &kwargs); err == nil {
+				result, err := __str__.Call(ctx, &args, &kwargs)
 				if err == nil {
-					return result.String()
+					return result.String(ctx)
 				} else {
 					// TODO: return error
 				}
@@ -152,26 +152,26 @@ func (i ClassInstance) String() string {
 }
 
 // Representation TODO: поміняти __рядок__ на __представлення__
-func (i ClassInstance) Representation() string {
-	return i.String()
+func (i ClassInstance) Representation(ctx common.Context) string {
+	return i.String(ctx)
 }
 
 func (i ClassInstance) GetTypeHash() uint64 {
 	return i.class.GetTypeHash()
 }
 
-func (i ClassInstance) AsBool() bool {
+func (i ClassInstance) AsBool(ctx common.Context) bool {
 	if attribute, err := i.GetAttribute(ops.BoolOperatorName); err == nil {
 		switch __bool__ := attribute.(type) {
 		case *FunctionInstance:
 			args := []common.Type{i}
 			kwargs := map[string]common.Type{__bool__.Arguments[0].Name: i}
-			if err := CheckFunctionArguments(__bool__, &args, &kwargs); err == nil {
-				result, err := __bool__.Call(nil, &args, &kwargs)
+			if err := CheckFunctionArguments(ctx, __bool__, &args, &kwargs); err == nil {
+				result, err := __bool__.Call(ctx, &args, &kwargs)
 				if err == nil {
 					switch boolResult := result.(type) {
 					case BoolInstance:
-						return boolResult.AsBool()
+						return boolResult.AsBool(ctx)
 					}
 				} else {
 					// TODO: return error
@@ -200,10 +200,10 @@ func (i ClassInstance) GetAttribute(name string) (common.Type, error) {
 		return attribute, nil
 	}
 
-	return i.GetClass().GetAttribute(name)
+	return i.GetPrototype().GetAttribute(name)
 }
 
-func (i ClassInstance) GetClass() *Class {
+func (i ClassInstance) GetPrototype() *Class {
 	return i.class
 }
 

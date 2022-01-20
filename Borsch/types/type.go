@@ -8,8 +8,8 @@ import (
 )
 
 func GetTypeOfInstance(object common.Type) (common.Type, error) {
-	if instance, ok := object.(Instance); ok {
-		return instance.GetClass(), nil
+	if instance, ok := object.(ObjectInstance); ok {
+		return instance.GetPrototype(), nil
 	}
 
 	return nil, errors.New("unknown object")
@@ -39,7 +39,7 @@ func newTypeClass() *Class {
 					IsNullable: false,
 				},
 			},
-			func(_ interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 				return getTypeFunc((*args)[1])
 			},
 			[]FunctionReturnType{

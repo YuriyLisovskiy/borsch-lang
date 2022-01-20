@@ -37,19 +37,19 @@ func NewIntegerInstance(value int64) IntegerInstance {
 	}
 }
 
-func (t IntegerInstance) String() string {
+func (t IntegerInstance) String(common.Context) string {
 	return fmt.Sprintf("%d", t.Value)
 }
 
-func (t IntegerInstance) Representation() string {
-	return t.String()
+func (t IntegerInstance) Representation(ctx common.Context) string {
+	return t.String(ctx)
 }
 
 func (t IntegerInstance) GetTypeHash() uint64 {
-	return t.GetClass().GetTypeHash()
+	return t.GetPrototype().GetTypeHash()
 }
 
-func (t IntegerInstance) AsBool() bool {
+func (t IntegerInstance) AsBool(common.Context) bool {
 	return t.Value != 0
 }
 
@@ -57,8 +57,8 @@ func (t IntegerInstance) SetAttribute(name string, _ common.Type) (common.Type, 
 	if name == ops.AttributesName {
 		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 	}
-	
-	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+
+	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
 
@@ -74,14 +74,14 @@ func (t IntegerInstance) GetAttribute(name string) (common.Type, error) {
 		return attribute, nil
 	}
 
-	return t.GetClass().GetAttribute(name)
+	return t.GetPrototype().GetAttribute(name)
 }
 
-func (IntegerInstance) GetClass() *Class {
+func (IntegerInstance) GetPrototype() *Class {
 	return Integer
 }
 
-func compareIntegers(self common.Type, other common.Type) (int, error) {
+func compareIntegers(_ common.Context, self common.Type, other common.Type) (int, error) {
 	left, ok := self.(IntegerInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareIntegers")
@@ -140,7 +140,11 @@ func newIntegerBinaryOperator(
 	handler func(IntegerInstance, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
-		name, IntegerTypeHash, AnyTypeHash, doc, func(left common.Type, right common.Type) (common.Type, error) {
+		name,
+		IntegerTypeHash,
+		AnyTypeHash,
+		doc,
+		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -156,7 +160,7 @@ func newIntegerUnaryOperator(
 	handler func(IntegerInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, IntegerTypeHash, AnyTypeHash, doc, func(left common.Type) (common.Type, error) {
+		name, IntegerTypeHash, AnyTypeHash, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
 				return handler(leftInstance)
 			}

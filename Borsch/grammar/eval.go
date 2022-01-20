@@ -41,14 +41,18 @@ func (s *WhileStmt) Evaluate(ctx common.Context) (common.Type, bool, error) {
 	panic("unreachable")
 }
 
-func (s *IfStmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool, error) {
+func (s *IfStmt) Evaluate(ctx common.Context, inFunction bool) (
+	common.Type,
+	bool,
+	error,
+) {
 	if s.Condition != nil {
 		condition, err := s.Condition.Evaluate(ctx, nil)
 		if err != nil {
 			return nil, false, err
 		}
 
-		if condition.AsBool() {
+		if condition.AsBool(ctx) {
 			ctx.PushScope(Scope{})
 			result, forceReturn, err := s.Body.Evaluate(ctx, inFunction)
 			if err != nil {
@@ -103,13 +107,18 @@ func (s *IfStmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, boo
 	return nil, false, errors.New("interpreter: condition is nil")
 }
 
-func (s *ElseIfStmt) Evaluate(ctx common.Context, inFunction bool) (bool, common.Type, bool, error) {
+func (s *ElseIfStmt) Evaluate(ctx common.Context, inFunction bool) (
+	bool,
+	common.Type,
+	bool,
+	error,
+) {
 	condition, err := s.Condition.Evaluate(ctx, nil)
 	if err != nil {
 		return false, nil, false, err
 	}
 
-	if condition.AsBool() {
+	if condition.AsBool(ctx) {
 		ctx.PushScope(Scope{})
 		result, forceReturn, err := s.Body.Evaluate(ctx, inFunction)
 		if err != nil {
@@ -142,7 +151,11 @@ func (b *BlockStmts) Evaluate(ctx common.Context, inFunction bool) (common.Type,
 
 // Evaluate executes statement.
 // Returns (result value, force stop flag, error)
-func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool, error) {
+func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (
+	common.Type,
+	bool,
+	error,
+) {
 	if s.IfStmt != nil {
 		return s.IfStmt.Evaluate(ctx, inFunction)
 	} else if s.WhileStmt != nil {
@@ -157,12 +170,19 @@ func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool,
 		ctx.PopScope()
 		return result, forceReturn, nil
 	} else if s.FunctionDef != nil {
-		function, err := s.FunctionDef.Evaluate(ctx)
+		function, err := s.FunctionDef.Evaluate(ctx, ctx.GetPackage().(*types.PackageInstance))
 		if err != nil {
 			return nil, false, err
 		}
 
-		return function, false, ctx.SetVar(s.FunctionDef.Name, function)
+		return function, false, err
+	} else if s.ClassDef != nil {
+		class, err := s.ClassDef.Evaluate(ctx, ctx.GetPackage().(*types.PackageInstance))
+		if err != nil {
+			return nil, false, err
+		}
+
+		return class, false, err
 	} else if s.ReturnStmt != nil {
 		if !inFunction {
 			return nil, false, errors.New("'повернути' за межами функції")
@@ -228,21 +248,21 @@ func (b *FunctionBody) Evaluate(ctx common.Context) (common.Type, error) {
 	return result, err
 }
 
-func (f *FunctionDef) Evaluate(ctx common.Context) (common.Type, error) {
+func (f *FunctionDef) Evaluate(ctx common.Context, parentPackage *types.PackageInstance) (common.Type, error) {
 	arguments := evalParameters(ctx, f.Parameters)
 	returnTypes := evalReturnTypes(ctx, f.ReturnTypes)
-	return types.NewFunctionInstance(
+	function := types.NewFunctionInstance(
 		f.Name,
 		arguments,
-		func(context interface{}, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
-			funcContext := context.(common.FunctionContext)
-			return f.Body.Evaluate(funcContext.Context)
+		func(ctx common.Context, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
+			return f.Body.Evaluate(ctx)
 		},
 		returnTypes,
-		false,
-		ctx.GetPackage().(*types.PackageInstance),
+		parentPackage == nil,
+		parentPackage,
 		"", // TODO: add doc
-	), nil
+	)
+	return function, ctx.SetVar(f.Name, function)
 }
 
 func (p *Parameter) Evaluate(_ common.Context) types.FunctionArgument {
@@ -254,7 +274,7 @@ func (p *Parameter) Evaluate(_ common.Context) types.FunctionArgument {
 	}
 }
 
-func (t *ReturnType) Evaluate(ctx common.Context) types.FunctionReturnType {
+func (t *ReturnType) Evaluate(_ common.Context) types.FunctionReturnType {
 	return types.FunctionReturnType{
 		TypeHash:   types.GetTypeHash(t.Name), // TODO: get type hash with package name
 		IsNullable: t.IsNullable,
@@ -291,6 +311,37 @@ func (e *Expression) Evaluate(ctx common.Context, valueToSet common.Type) (commo
 	panic("unreachable")
 }
 
+func (c *ClassDef) Evaluate(ctx common.Context, parentPackage *types.PackageInstance) (common.Type, error) {
+	classContext := ContextImpl{}
+	classContext.PushScope(map[string]common.Type{})
+	for _, member := range c.Members {
+		_, err := member.Evaluate(&classContext)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// TODO: add doc
+	class := types.NewClass(c.Name, parentPackage, classContext.scopes[0], "")
+	return class, ctx.SetVar(c.Name, class)
+}
+
+func (m *ClassMember) Evaluate(ctx common.Context) (common.Type, error) {
+	if m.Variable != nil {
+		return m.Variable.Evaluate(ctx)
+	}
+
+	if m.Method != nil {
+		return m.Method.Evaluate(ctx, nil)
+	}
+
+	if m.Class != nil {
+		return m.Class.Evaluate(ctx, nil)
+	}
+
+	panic("unreachable")
+}
+
 func (a *Assignment) Evaluate(ctx common.Context) (common.Type, error) {
 	if len(a.Next) == 0 {
 		return a.Expression[0].Evaluate(ctx, nil)
@@ -321,7 +372,7 @@ func (a *LogicalNot) Evaluate(ctx common.Context, valueToSet common.Type) (commo
 			return nil, err
 		}
 
-		return callMethod(value, ops.NotOp.Caption(), &[]common.Type{}, nil)
+		return callMethod(ctx, value, ops.NotOp.Caption(), &[]common.Type{}, nil)
 	}
 
 	panic("unreachable")
@@ -393,7 +444,10 @@ func (a *MultiplicationOrMod) Evaluate(ctx common.Context, valueToSet common.Typ
 	}
 }
 
-func (a *Unary) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+func (a *Unary) Evaluate(ctx common.Context, valueToSet common.Type) (
+	common.Type,
+	error,
+) {
 	switch a.Op {
 	case "+":
 		return evalUnaryOperator(ctx, ops.UnaryPlus.Caption(), a.Next)
@@ -533,7 +587,7 @@ func (a *AttributeAccess) Evaluate(ctx common.Context, valueToSet, prevValue com
 				return nil, err
 			}
 
-			currentValue, err = a.CallFunc.Evaluate(ctx, function)
+			currentValue, err = a.CallFunc.Evaluate(ctx, function, prevValue)
 			if err != nil {
 				return nil, err
 			}
@@ -589,7 +643,7 @@ func (a *AttributeAccess) Evaluate(ctx common.Context, valueToSet, prevValue com
 				return nil, err
 			}
 
-			currentValue, err = a.CallFunc.Evaluate(ctx, variable)
+			currentValue, err = a.CallFunc.Evaluate(ctx, variable, prevValue)
 			if err != nil {
 				return nil, errors.New(
 					fmt.Sprintf(
@@ -644,9 +698,8 @@ func (l *LambdaDef) Evaluate(ctx common.Context) (common.Type, error) {
 	return types.NewFunctionInstance(
 		"",
 		arguments,
-		func(context interface{}, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
-			funcContext := context.(common.FunctionContext)
-			return l.Body.Evaluate(funcContext.Context)
+		func(ctx common.Context, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
+			return l.Body.Evaluate(ctx)
 		},
 		returnTypes,
 		false,
@@ -655,7 +708,10 @@ func (l *LambdaDef) Evaluate(ctx common.Context) (common.Type, error) {
 	), nil
 }
 
-func (a *CallFunc) Evaluate(ctx common.Context, variable common.Type) (common.Type, error) {
+func (a *CallFunc) Evaluate(ctx common.Context, variable common.Type, selfInstance common.Type) (
+	common.Type,
+	error,
+) {
 	switch function := variable.(type) {
 	case *types.Class:
 		callable, err := function.GetAttribute(ops.ConstructorName)
@@ -679,34 +735,6 @@ func (a *CallFunc) Evaluate(ctx common.Context, variable common.Type) (common.Ty
 				return nil, err
 			}
 
-			// gotVariadic := false
-			// for i, expressionArgument := range a.Arguments {
-			// 	arg, err := expressionArgument.Evaluate(ctx, nil)
-			// 	if err != nil {
-			// 		return nil, err
-			// 	}
-			//
-			// 	args = append(args, arg)
-			// 	if !gotVariadic {
-			// 		gotVariadic = constructor.Arguments[i+1].IsVariadic
-			// 		kwargs[constructor.Arguments[i+1].Name] = arg
-			// 	}
-			// }
-			//
-			// if err := types.CheckFunctionArguments(constructor, &args, &kwargs); err != nil {
-			// 	return nil, err
-			// }
-			//
-			// ctx.PushScope(kwargs)
-			//
-			// // TODO: check if constructor returns nothing.
-			// // TODO: check if constructor returns nothing.
-			// _, err = constructor.Call(nil, &args, &kwargs)
-			// if err != nil {
-			// 	return nil, err
-			// }
-			//
-			// ctx.PopScope()
 			return args[0], nil
 		default:
 			return nil, util.ObjectIsNotCallable(a.Ident, callable.GetTypeName())
@@ -714,39 +742,21 @@ func (a *CallFunc) Evaluate(ctx common.Context, variable common.Type) (common.Ty
 	case *types.FunctionInstance:
 		var args []common.Type
 		kwargs := map[string]common.Type{}
-		return a.evalFunction(ctx, function, &args, &kwargs, 0)
-		// gotVariadic := false
-		// for i, expressionArgument := range a.Arguments {
-		// 	arg, err := expressionArgument.Evaluate(ctx, nil)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		//
-		// 	args = append(args, arg)
-		// 	if !gotVariadic {
-		// 		gotVariadic = object.Arguments[i].IsVariadic
-		// 		kwargs[object.Arguments[i].Name] = arg
-		// 	}
-		// }
-		//
-		// if err := types.CheckFunctionArguments(object, &args, &kwargs); err != nil {
-		// 	return nil, err
-		// }
-		//
-		// ctx.PushScope(kwargs)
-		// res, err := object.Call(ParserInstance, &args, &kwargs)
-		// if err != nil {
-		// 	return nil, err
-		// }
-		//
-		// if err := types.CheckResult(res, object); err != nil {
-		// 	return nil, err
-		// }
-		//
-		// ctx.PopScope()
-		// return res, nil
-	case types.Instance:
-		operator, err := function.GetClass().GetAttribute(ops.CallOperatorName)
+		argsShift := 0
+		if selfInstance != nil {
+			switch selfInstance.(type) {
+			case *types.Class, *types.PackageInstance:
+				// ignore
+			case types.ObjectInstance:
+				argsShift++
+				args = append(args, selfInstance)
+				kwargs[function.Arguments[0].Name] = selfInstance
+			}
+		}
+
+		return a.evalFunction(ctx, function, &args, &kwargs, argsShift)
+	case types.ObjectInstance:
+		operator, err := function.GetPrototype().GetAttribute(ops.CallOperatorName)
 		if err != nil {
 			return nil, err
 		}
@@ -756,37 +766,6 @@ func (a *CallFunc) Evaluate(ctx common.Context, variable common.Type) (common.Ty
 			args := []common.Type{variable}
 			kwargs := map[string]common.Type{__call__.Arguments[0].Name: variable}
 			return a.evalFunction(ctx, __call__, &args, &kwargs, 1)
-			// gotVariadic := false
-			// for i, expressionArgument := range a.Arguments {
-			// 	arg, err := expressionArgument.Evaluate(ctx, nil)
-			// 	if err != nil {
-			// 		return nil, err
-			// 	}
-			//
-			// 	args = append(args, arg)
-			// 	if !gotVariadic {
-			// 		gotVariadic = callOperator.Arguments[i+1].IsVariadic
-			// 		kwargs[callOperator.Arguments[i+1].Name] = arg
-			// 	}
-			//
-			// }
-			//
-			// if err := types.CheckFunctionArguments(callOperator, &args, &kwargs); err != nil {
-			// 	return nil, err
-			// }
-			//
-			// ctx.PushScope(kwargs)
-			// res, err := callOperator.Call(nil, &args, &kwargs)
-			// if err != nil {
-			// 	return nil, err
-			// }
-			//
-			// if err := types.CheckResult(res, callOperator); err != nil {
-			// 	return nil, err
-			// }
-			//
-			// ctx.PushScope(kwargs)
-			// return res, nil
 		default:
 			return nil, util.ObjectIsNotCallable(a.Ident, operator.GetTypeName())
 		}
@@ -812,6 +791,11 @@ func (a *CallFunc) evalFunction(
 
 		*args = append(*args, arg)
 		if variadicArgsIndex == -1 {
+			if i+argsShift >= len(function.Arguments) {
+				// TODO: return ukr error!
+				return nil, util.RuntimeError("too many arguments")
+			}
+
 			if function.Arguments[i+argsShift].IsVariadic {
 				variadicArgsIndex = i + argsShift
 				variadicArgs.Values = append(variadicArgs.Values, arg)
@@ -827,21 +811,17 @@ func (a *CallFunc) evalFunction(
 		(*kwargs)[function.Arguments[variadicArgsIndex].Name] = variadicArgs
 	}
 
-	if err := types.CheckFunctionArguments(function, args, kwargs); err != nil {
+	if err := types.CheckFunctionArguments(ctx, function, args, kwargs); err != nil {
 		return nil, err
 	}
 
 	ctx.PushScope(*kwargs)
-	funcContext := common.FunctionContext{
-		Context: ctx,
-		Parser:  ParserInstance,
-	}
-	res, err := function.Call(funcContext, args, kwargs)
+	res, err := function.Call(ctx, args, kwargs)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := types.CheckResult(res, function); err != nil {
+	if err := types.CheckResult(ctx, res, function); err != nil {
 		return nil, err
 	}
 

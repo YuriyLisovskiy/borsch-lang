@@ -28,19 +28,19 @@ func NewPackageInstance(isBuiltin bool, name, parent string, attributes map[stri
 	}
 }
 
-func (t PackageInstance) String() string {
+func (t PackageInstance) String(common.Context) string {
 	return fmt.Sprintf("<пакет '%s'>", t.Name)
 }
 
-func (t PackageInstance) Representation() string {
-	return t.String()
+func (t PackageInstance) Representation(ctx common.Context) string {
+	return t.String(ctx)
 }
 
 func (t PackageInstance) GetTypeHash() uint64 {
-	return t.GetClass().GetTypeHash()
+	return t.GetPrototype().GetTypeHash()
 }
 
-func (t PackageInstance) AsBool() bool {
+func (t PackageInstance) AsBool(common.Context) bool {
 	return true
 }
 
@@ -49,12 +49,12 @@ func (t PackageInstance) GetAttribute(name string) (common.Type, error) {
 		return attribute, nil
 	}
 
-	return t.GetClass().GetAttribute(name)
+	return t.GetPrototype().GetAttribute(name)
 }
 
 func (t PackageInstance) SetAttribute(name string, value common.Type) (common.Type, error) {
 	if t.IsBuiltin {
-		if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+		if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
 			return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 		}
 
@@ -69,11 +69,11 @@ func (t PackageInstance) SetAttribute(name string, value common.Type) (common.Ty
 	return t, nil
 }
 
-func (PackageInstance) GetClass() *Class {
+func (PackageInstance) GetPrototype() *Class {
 	return Package
 }
 
-func comparePackages(self common.Type, other common.Type) (int, error) {
+func comparePackages(_ common.Context, self common.Type, other common.Type) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case *PackageInstance, PackageInstance:
@@ -117,7 +117,7 @@ func NewPackageClass() *Class {
 			// 		},
 			// 	},
 			// 	func(ctx interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			// 		p, err := ImportPackage(baseScope, (*args)[0].(StringInstance).Value, ctx.(common.FunctionContext).Parser)
+			// 		p, err := ImportPackage(baseScope, (*args)[0].(StringInstance).Value, ctx.(common.CallContext).Parser)
 			// 		if err != nil {
 			// 			return nil, err
 			// 		}

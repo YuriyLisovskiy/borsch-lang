@@ -64,7 +64,7 @@ type FunctionInstance struct {
 func NewFunctionInstance(
 	name string,
 	arguments []FunctionArgument,
-	handler func(interface{}, *[]common.Type, *map[string]common.Type) (common.Type, error),
+	handler func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error),
 	returnTypes []FunctionReturnType,
 	isMethod bool,
 	package_ *PackageInstance,
@@ -96,7 +96,7 @@ func NewFunctionInstance(
 	return function
 }
 
-func (t FunctionInstance) String() string {
+func (t FunctionInstance) String(common.Context) string {
 	template := ""
 	if t.Name == "" {
 		template = "функція <лямбда>"
@@ -117,15 +117,15 @@ func (t FunctionInstance) String() string {
 	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.address)
 }
 
-func (t FunctionInstance) Representation() string {
-	return t.String()
+func (t FunctionInstance) Representation(ctx common.Context) string {
+	return t.String(ctx)
 }
 
 func (t FunctionInstance) GetTypeHash() uint64 {
-	return t.GetClass().GetTypeHash()
+	return t.GetPrototype().GetTypeHash()
 }
 
-func (t FunctionInstance) AsBool() bool {
+func (t FunctionInstance) AsBool(common.Context) bool {
 	return true
 }
 
@@ -143,10 +143,10 @@ func (t FunctionInstance) GetAttribute(name string) (common.Type, error) {
 		return attribute, nil
 	}
 
-	return t.GetClass().GetAttribute(name)
+	return t.GetPrototype().GetAttribute(name)
 }
 
-func (t FunctionInstance) GetClass() *Class {
+func (t FunctionInstance) GetPrototype() *Class {
 	return Function
 }
 
@@ -169,16 +169,19 @@ func newFunctionClass() *Class {
 						IsNullable: true,
 					},
 				},
-				func(_ interface{}, args *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
+				func(ctx common.Context, args *[]common.Type, kwargs *map[string]common.Type) (
+					common.Type,
+					error,
+				) {
 					function := (*args)[0].(*FunctionInstance)
 					slicedArgs := (*args)[1:]
 					slicedKwargs := *kwargs
 					delete(slicedKwargs, "я")
-					if err := CheckFunctionArguments(function, &slicedArgs, &slicedKwargs); err != nil {
+					if err := CheckFunctionArguments(ctx, function, &slicedArgs, &slicedKwargs); err != nil {
 						return nil, err
 					}
 
-					return function.Call(nil, &slicedArgs, &slicedKwargs)
+					return function.Call(ctx, &slicedArgs, &slicedKwargs)
 				},
 				[]FunctionReturnType{
 					{

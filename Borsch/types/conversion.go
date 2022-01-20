@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func ToInteger(args ...common.Type) (common.Type, error) {
+func ToInteger(_ common.Context, args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewIntegerInstance(0), nil
 	}
@@ -52,7 +52,7 @@ func ToInteger(args ...common.Type) (common.Type, error) {
 	}
 }
 
-func ToReal(args ...common.Type) (common.Type, error) {
+func ToReal(_ common.Context, args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewRealInstance(0.0), nil
 	}
@@ -96,7 +96,7 @@ func ToReal(args ...common.Type) (common.Type, error) {
 	}
 }
 
-func ToString(args ...common.Type) (common.Type, error) {
+func ToString(ctx common.Context, args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewStringInstance(""), nil
 	}
@@ -109,7 +109,7 @@ func ToString(args ...common.Type) (common.Type, error) {
 		)
 	}
 
-	return NewStringInstance(args[0].String()), nil
+	return NewStringInstance(args[0].String(ctx)), nil
 
 	// TODO: remove
 	// switch vt := args[0].(type) {
@@ -125,7 +125,7 @@ func ToString(args ...common.Type) (common.Type, error) {
 	// }
 }
 
-func ToBool(args ...common.Type) (common.Type, error) {
+func ToBool(_ common.Context, args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewBoolInstance(false), nil
 	}
@@ -158,7 +158,7 @@ func ToBool(args ...common.Type) (common.Type, error) {
 	}
 }
 
-func ToList(args ...common.Type) (common.Type, error) {
+func ToList(_ common.Context, args ...common.Type) (common.Type, error) {
 	list := NewListInstance()
 	if len(args) == 0 {
 		return list, nil
@@ -171,7 +171,7 @@ func ToList(args ...common.Type) (common.Type, error) {
 	return list, nil
 }
 
-func ToDictionary(args ...common.Type) (common.Type, error) {
+func ToDictionary(_ common.Context, args ...common.Type) (common.Type, error) {
 	dict := NewDictionaryInstance()
 	if len(args) == 0 {
 		return dict, nil

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strconv"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
@@ -14,22 +13,6 @@ import (
 type BoolInstance struct {
 	Object
 	Value bool
-}
-
-func NewBoolInstanceFromString(value string) (BoolInstance, error) {
-	switch value {
-	case "істина":
-		value = "t"
-	case "хиба":
-		value = "f"
-	}
-
-	boolean, err := strconv.ParseBool(value)
-	if err != nil {
-		return BoolInstance{}, util.RuntimeError(err.Error())
-	}
-
-	return NewBoolInstance(boolean), nil
 }
 
 func NewBoolInstance(value bool) BoolInstance {
@@ -43,7 +26,7 @@ func NewBoolInstance(value bool) BoolInstance {
 	}
 }
 
-func (t BoolInstance) String() string {
+func (t BoolInstance) String(common.Context) string {
 	if t.Value {
 		return "істина"
 	}
@@ -51,24 +34,24 @@ func (t BoolInstance) String() string {
 	return "хиба"
 }
 
-func (t BoolInstance) Representation() string {
-	return t.String()
+func (t BoolInstance) Representation(ctx common.Context) string {
+	return t.String(ctx)
+}
+
+func (t BoolInstance) AsBool(common.Context) bool {
+	return t.Value
 }
 
 func (t BoolInstance) GetTypeHash() uint64 {
-	return t.GetClass().GetTypeHash()
-}
-
-func (t BoolInstance) AsBool() bool {
-	return t.Value
+	return t.GetPrototype().GetTypeHash()
 }
 
 func (t BoolInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
 	if name == ops.AttributesName {
 		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
 	}
-	
-	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+
+	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
 
@@ -84,14 +67,14 @@ func (t BoolInstance) GetAttribute(name string) (common.Type, error) {
 		return attribute, nil
 	}
 
-	return t.GetClass().GetAttribute(name)
+	return t.GetPrototype().GetAttribute(name)
 }
 
-func (BoolInstance) GetClass() *Class {
+func (BoolInstance) GetPrototype() *Class {
 	return Bool
 }
 
-func compareBooleans(self common.Type, other common.Type) (int, error) {
+func compareBooleans(ctx common.Context, self common.Type, other common.Type) (int, error) {
 	left, ok := self.(BoolInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareBooleans")
@@ -104,7 +87,7 @@ func compareBooleans(self common.Type, other common.Type) (int, error) {
 			return 0, nil
 		}
 	case IntegerInstance, RealInstance:
-		if left.Value == right.AsBool() {
+		if left.Value == right.AsBool(ctx) {
 			return 0, nil
 		}
 	default:
@@ -126,7 +109,11 @@ func newBoolBinaryOperator(
 	handler func(BoolInstance, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
-		name, BoolTypeHash, AnyTypeHash, doc, func(left common.Type, right common.Type) (common.Type, error) {
+		name,
+		BoolTypeHash,
+		AnyTypeHash,
+		doc,
+		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(BoolInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -142,7 +129,7 @@ func newBoolUnaryOperator(
 	handler func(BoolInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, BoolTypeHash, AnyTypeHash, doc, func(left common.Type) (common.Type, error) {
+		name, BoolTypeHash, AnyTypeHash, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(BoolInstance); ok {
 				return handler(leftInstance)
 			}

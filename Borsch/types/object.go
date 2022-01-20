@@ -11,7 +11,7 @@ import (
 type Object struct {
 	typeName    string
 	Attributes  map[string]common.Type
-	callHandler func(interface{}, *[]common.Type, *map[string]common.Type) (common.Type, error)
+	callHandler func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error)
 }
 
 func (o Object) makeAttributes() (DictionaryInstance, error) {
@@ -58,7 +58,7 @@ func (o Object) SetAttribute(name string, value common.Type) error {
 			),
 		)
 	}
-	
+
 	if o.Attributes == nil {
 		return util.AttributeNotFoundError(o.GetTypeName(), name)
 	}
@@ -86,7 +86,10 @@ func (o Object) HasAttribute(name string) bool {
 	return ok
 }
 
-func (o *Object) Call(ctx interface{}, args *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
+func (o *Object) Call(ctx common.Context, args *[]common.Type, kwargs *map[string]common.Type) (
+	common.Type,
+	error,
+) {
 	if o.callHandler != nil {
 		return o.callHandler(ctx, args, kwargs)
 	}

@@ -6,6 +6,7 @@ type Parser interface {
 }
 
 type Context interface {
+	GetParser() Parser
 	PushScope(scope map[string]Type)
 	PopScope() map[string]Type
 	GetVar(name string) (Type, error)
@@ -23,22 +24,22 @@ type OperatorEvaluatable interface {
 }
 
 type Type interface {
-	String() string
-	Representation() string
+	String(Context) string
+	Representation(Context) string
+	AsBool(Context) bool
 	GetTypeHash() uint64
 	GetTypeName() string
-	AsBool() bool
 	GetAttribute(string) (Type, error)
 	SetAttribute(string, Type) (Type, error)
 }
 
 type SequentialType interface {
-	Length() int64
+	Length(Context) int64
 	GetElement(int64) (Type, error)
 	SetElement(int64, Type) (Type, error)
 	Slice(int64, int64) (Type, error)
 }
 
 type CallableType interface {
-	Call(interface{}, *[]Type, *map[string]Type) (Type, error)
+	Call(Context, *[]Type, *map[string]Type) (Type, error)
 }

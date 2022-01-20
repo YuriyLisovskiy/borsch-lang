@@ -27,24 +27,24 @@ func NewStringInstance(value string) StringInstance {
 	}
 }
 
-func (t StringInstance) String() string {
+func (t StringInstance) String(common.Context) string {
 	return t.Value
 }
 
-func (t StringInstance) Representation() string {
-	return "\"" + t.String() + "\""
+func (t StringInstance) Representation(ctx common.Context) string {
+	return "\"" + t.String(ctx) + "\""
 }
 
 func (t StringInstance) GetTypeHash() uint64 {
-	return t.GetClass().GetTypeHash()
+	return t.GetPrototype().GetTypeHash()
 }
 
-func (t StringInstance) AsBool() bool {
+func (t StringInstance) AsBool(common.Context) bool {
 	return t.Length() != 0
 }
 
 func (t StringInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
-	if t.Object.HasAttribute(name) || t.GetClass().HasAttribute(name) {
+	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
 		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
 	}
 
@@ -56,10 +56,10 @@ func (t StringInstance) GetAttribute(name string) (common.Type, error) {
 		return attribute, nil
 	}
 
-	return t.GetClass().GetAttribute(name)
+	return t.GetPrototype().GetAttribute(name)
 }
 
-func (StringInstance) GetClass() *Class {
+func (StringInstance) GetPrototype() *Class {
 	return String
 }
 
@@ -117,7 +117,7 @@ func (t StringInstance) Slice(from, to int64) (common.Type, error) {
 	return NewStringInstance(t.Value[fromIdx:toIdx]), nil
 }
 
-func compareStrings(self, other common.Type) (int, error) {
+func compareStrings(_ common.Context, self, other common.Type) (int, error) {
 	left, ok := self.(StringInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareStrings")
@@ -154,7 +154,11 @@ func newStringBinaryOperator(
 	handler func(StringInstance, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
-		name, StringTypeHash, AnyTypeHash, doc, func(left common.Type, right common.Type) (common.Type, error) {
+		name,
+		StringTypeHash,
+		AnyTypeHash,
+		doc,
+		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(StringInstance); ok {
 				return handler(leftInstance, right)
 			}
