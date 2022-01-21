@@ -11,6 +11,7 @@ type Context interface {
 	PopScope() map[string]Type
 	GetVar(name string) (Type, error)
 	SetVar(name string, value Type) error
+	GetClass(name string) (Type, error)
 	BuildPackage() error
 	GetPackage() Type
 }
@@ -27,7 +28,6 @@ type Type interface {
 	String(Context) string
 	Representation(Context) string
 	AsBool(Context) bool
-	GetTypeHash() uint64
 	GetTypeName() string
 	GetAttribute(string) (Type, error)
 	SetAttribute(string, Type) (Type, error)

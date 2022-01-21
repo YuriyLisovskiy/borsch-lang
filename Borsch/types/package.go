@@ -142,9 +142,9 @@ func NewPackageClass() *Class {
 			// 	"", // TODO: add doc
 			// ),
 		},
-		makeLogicalOperators(PackageTypeHash),
-		makeComparisonOperators(PackageTypeHash, comparePackages),
-		makeCommonOperators(PackageTypeHash),
+		makeLogicalOperators(Package),
+		makeComparisonOperators(Package, comparePackages),
+		makeCommonOperators(Package),
 	)
 	return NewBuiltinClass(
 		PackageTypeHash,

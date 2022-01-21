@@ -24,8 +24,7 @@ func runOperator(
 	ctx common.Context,
 	name string,
 	object common.Type,
-	expectedTypeName string,
-	expectedTypeHash uint64,
+	expectedType *types.Class,
 ) (common.Type, error) {
 	attribute, err := object.GetAttribute(name)
 	if err != nil {
@@ -49,11 +48,11 @@ func runOperator(
 			return nil, err
 		}
 
-		if result.GetTypeHash() != expectedTypeHash {
+		if result.(types.ObjectInstance).GetPrototype() != expectedType {
 			return nil, util.RuntimeError(
 				fmt.Sprintf(
 					"'%s' має повертати значення з типом '%s', отримано '%s'",
-					name, expectedTypeName, result.GetTypeName(),
+					name, expectedType.GetTypeName(), result.GetTypeName(),
 				),
 			)
 		}

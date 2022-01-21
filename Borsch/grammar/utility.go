@@ -295,29 +295,39 @@ func unpackList(ctx common.Context, lhs []*Expression, rhs *Expression) (common.
 	panic(fmt.Sprintf("unable to unpack %s", element.GetTypeName()))
 }
 
-func evalParameters(ctx common.Context, parameters []*Parameter) []types.FunctionArgument {
+func evalParameters(ctx common.Context, parameters []*Parameter) ([]types.FunctionArgument, error) {
 	var arguments []types.FunctionArgument
 	for _, parameter := range parameters {
-		arguments = append(arguments, parameter.Evaluate(ctx))
+		arg, err := parameter.Evaluate(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		arguments = append(arguments, *arg)
 	}
 
-	return arguments
+	return arguments, nil
 }
 
-func evalReturnTypes(ctx common.Context, returnTypes []*ReturnType) []types.FunctionReturnType {
+func evalReturnTypes(ctx common.Context, returnTypes []*ReturnType) ([]types.FunctionReturnType, error) {
 	var result []types.FunctionReturnType
 	if len(returnTypes) == 0 {
 		result = append(
 			result, types.FunctionReturnType{
-				TypeHash:   types.NilTypeHash,
+				Type:       types.Nil,
 				IsNullable: false,
 			},
 		)
 	} else {
 		for _, returnType := range returnTypes {
-			result = append(result, returnType.Evaluate(ctx))
+			r, err := returnType.Evaluate(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			result = append(result, *r)
 		}
 	}
 
-	return result
+	return result, nil
 }

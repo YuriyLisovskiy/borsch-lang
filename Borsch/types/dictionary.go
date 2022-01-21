@@ -165,21 +165,21 @@ func newDictionaryClass() *Class {
 	attributes := mergeAttributes(
 		map[string]common.Type{
 			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(DictionaryTypeHash, ToDictionary, ""),
+			ops.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
 
 			// TODO: add doc
-			ops.LengthOperatorName: newLengthOperator(ListTypeHash, getLength, ""),
+			ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
 			"вилучити": NewFunctionInstance(
 				"вилучити",
 				[]FunctionArgument{
 					{
-						TypeHash:   DictionaryTypeHash,
+						Type:       Dictionary,
 						Name:       "я",
 						IsVariadic: false,
 						IsNullable: false,
 					},
 					{
-						TypeHash:   AnyTypeHash,
+						Type:       nil,
 						Name:       "ключ",
 						IsVariadic: false,
 						IsNullable: true,
@@ -196,7 +196,7 @@ func newDictionaryClass() *Class {
 				},
 				[]FunctionReturnType{
 					{
-						TypeHash:   AnyTypeHash,
+						Type:       Any,
 						IsNullable: false,
 					},
 				},
@@ -205,9 +205,9 @@ func newDictionaryClass() *Class {
 				"", // TODO: add doc
 			),
 		},
-		makeLogicalOperators(DictionaryTypeHash),
-		makeComparisonOperators(DictionaryTypeHash, compareDictionaries),
-		makeCommonOperators(DictionaryTypeHash),
+		makeLogicalOperators(Dictionary),
+		makeComparisonOperators(Dictionary, compareDictionaries),
+		makeCommonOperators(Dictionary),
 	)
 	return NewBuiltinClass(
 		DictionaryTypeHash,

@@ -23,7 +23,7 @@ func init() {
 			"друк",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					Name:       "а",
 					IsVariadic: true,
 					IsNullable: true,
@@ -35,7 +35,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.NilTypeHash,
+					Type:       types.Nil,
 					IsNullable: true,
 				},
 			},
@@ -47,7 +47,7 @@ func init() {
 			"друкр",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					Name:       "а",
 					IsVariadic: true,
 					IsNullable: true,
@@ -59,7 +59,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.NilTypeHash,
+					Type:       types.Nil,
 					IsNullable: true,
 				},
 			},
@@ -71,7 +71,7 @@ func init() {
 			"ввід",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.StringTypeHash,
+					Type:       types.String,
 					Name:       "повідомлення",
 					IsVariadic: true,
 					IsNullable: false,
@@ -82,7 +82,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.StringTypeHash,
+					Type:       types.String,
 					IsNullable: false,
 				},
 			},
@@ -96,7 +96,7 @@ func init() {
 			"паніка",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					Name:       "повідомлення",
 					IsVariadic: false,
 					IsNullable: true,
@@ -112,7 +112,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.NilTypeHash,
+					Type:       types.Nil,
 					IsNullable: true,
 				},
 			},
@@ -124,7 +124,7 @@ func init() {
 			"середовище",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.StringTypeHash,
+					Type:       types.String,
 					Name:       "ключ",
 					IsVariadic: false,
 					IsNullable: false,
@@ -135,7 +135,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.StringTypeHash,
+					Type:       types.String,
 					IsNullable: false,
 				},
 			},
@@ -147,19 +147,19 @@ func init() {
 			"підтвердити",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					Name:       "очікуване",
 					IsVariadic: false,
 					IsNullable: true,
 				},
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					Name:       "фактичне",
 					IsVariadic: false,
 					IsNullable: true,
 				},
 				{
-					TypeHash:   types.StringTypeHash,
+					Type:       types.String,
 					Name:       "повідомлення_про_помилку",
 					IsVariadic: true,
 					IsNullable: false,
@@ -182,7 +182,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.NilTypeHash,
+					Type:       types.Nil,
 					IsNullable: true,
 				},
 			},
@@ -199,7 +199,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.NilTypeHash,
+					Type:       types.Nil,
 					IsNullable: true,
 				},
 			},
@@ -216,7 +216,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.NilTypeHash,
+					Type:       types.Nil,
 					IsNullable: true,
 				},
 			},
@@ -228,7 +228,7 @@ func init() {
 			"допомога",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.StringTypeHash,
+					Type:       types.String,
 					Name:       "слово",
 					IsVariadic: false,
 					IsNullable: false,
@@ -239,7 +239,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.NilTypeHash,
+					Type:       types.Nil,
 					IsNullable: true,
 				},
 			},
@@ -253,7 +253,7 @@ func init() {
 			"вихід",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.IntegerTypeHash,
+					Type:       types.Integer,
 					Name:       "код",
 					IsVariadic: false,
 					IsNullable: false,
@@ -265,7 +265,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.NilTypeHash,
+					Type:       types.Nil,
 					IsNullable: true,
 				},
 			},
@@ -281,7 +281,7 @@ func init() {
 			"пакет",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.StringTypeHash,
+					Type:       types.String,
 					Name:       "шлях",
 					IsVariadic: false,
 					IsNullable: false,
@@ -302,7 +302,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.PackageTypeHash,
+					Type:       types.Package,
 					IsNullable: false,
 				},
 			},
@@ -321,7 +321,7 @@ func init() {
 			"довжина",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					Name:       "послідовність",
 					IsVariadic: false,
 					IsNullable: false,
@@ -333,13 +333,12 @@ func init() {
 					ctx,
 					ops.LengthOperatorName,
 					sequence,
-					types.GetTypeName(types.IntegerTypeHash),
-					types.IntegerTypeHash,
+					types.Integer,
 				)
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.IntegerTypeHash,
+					Type:       types.Integer,
 					IsNullable: false,
 				},
 			},
@@ -351,13 +350,13 @@ func init() {
 			"додати",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.ListTypeHash,
+					Type:       types.List,
 					Name:       "вхідний_список",
 					IsVariadic: false,
 					IsNullable: false,
 				},
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					Name:       "елементи",
 					IsVariadic: true,
 					IsNullable: true,
@@ -374,7 +373,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.ListTypeHash,
+					Type:       types.List,
 					IsNullable: false,
 				},
 			},
@@ -386,7 +385,7 @@ func init() {
 			"копіювати",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					Name:       "значення",
 					IsVariadic: false,
 					IsNullable: false,
@@ -397,7 +396,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					IsNullable: false,
 				},
 			},
@@ -409,7 +408,7 @@ func init() {
 			"тип",
 			[]types.FunctionArgument{
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					Name:       "значення",
 					IsVariadic: false,
 					IsNullable: false,
@@ -420,7 +419,7 @@ func init() {
 			},
 			[]types.FunctionReturnType{
 				{
-					TypeHash:   types.AnyTypeHash,
+					Type:       types.Any,
 					IsNullable: false,
 				},
 			},

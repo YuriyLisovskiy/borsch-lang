@@ -8,7 +8,8 @@ import (
 )
 
 type FunctionArgument struct {
-	TypeHash   uint64
+	// nil means any type
+	Type       *Class
 	Name       string
 	IsVariadic bool
 	IsNullable bool
@@ -20,16 +21,17 @@ func (fa *FunctionArgument) String() string {
 		res += "..."
 	}
 
-	res += GetTypeName(fa.TypeHash)
-	if fa.IsNullable {
-		res += "?"
-	}
-
-	return res
+	return res + fa.GetTypeName()
 }
 
-func (fa FunctionArgument) TypeName() string {
-	res := GetTypeName(fa.TypeHash)
+func (fa FunctionArgument) GetTypeName() string {
+	res := ""
+	if fa.Type != Nil {
+		res = fa.Type.GetTypeName()
+	} else {
+		res = common.AnyTypeName
+	}
+
 	if fa.IsNullable {
 		res += "?"
 	}
@@ -38,17 +40,25 @@ func (fa FunctionArgument) TypeName() string {
 }
 
 type FunctionReturnType struct {
-	TypeHash   uint64
+	Type       *Class
 	IsNullable bool
 }
 
 func (r *FunctionReturnType) String() string {
-	res := GetTypeName(r.TypeHash)
+	res := r.GetTypeName()
 	if r.IsNullable {
 		res += "?"
 	}
 
 	return res
+}
+
+func (r *FunctionReturnType) GetTypeName() string {
+	if r.Type != Nil {
+		return r.Type.GetTypeName()
+	}
+
+	return common.AnyTypeName
 }
 
 type FunctionInstance struct {
@@ -157,13 +167,13 @@ func newFunctionClass() *Class {
 				ops.CallOperatorName,
 				[]FunctionArgument{
 					{
-						TypeHash:   FunctionTypeHash,
+						Type:       Function,
 						Name:       "я",
 						IsVariadic: false,
 						IsNullable: false,
 					},
 					{
-						TypeHash:   AnyTypeHash,
+						Type:       nil,
 						Name:       "значення",
 						IsVariadic: true,
 						IsNullable: true,
@@ -185,7 +195,7 @@ func newFunctionClass() *Class {
 				},
 				[]FunctionReturnType{
 					{
-						TypeHash:   AnyTypeHash,
+						Type:       Any,
 						IsNullable: true,
 					},
 				},
@@ -194,8 +204,8 @@ func newFunctionClass() *Class {
 				"", // TODO: add doc
 			),
 		},
-		makeLogicalOperators(FunctionTypeHash),
-		makeCommonOperators(FunctionTypeHash),
+		makeLogicalOperators(Function),
+		makeCommonOperators(Function),
 	)
 	return NewBuiltinClass(
 		FunctionTypeHash,

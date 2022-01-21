@@ -10,12 +10,14 @@ import (
 
 func Assert(ctx common.Context, expected common.Type, actual common.Type, errorTemplate string) error {
 	leftV := expected
+	leftVClass := expected.(types.ObjectInstance).GetPrototype()
 	rightV := actual
-	if leftV.GetTypeHash() != rightV.GetTypeHash() {
+	rightVClass := actual.(types.ObjectInstance).GetPrototype()
+	if leftVClass != rightVClass {
 		return util.RuntimeError(
 			fmt.Sprintf(
 				"неможливо застосувати оператор умови рівності до значень типів '%s' та '%s'",
-				leftV.GetTypeName(), rightV.GetTypeName(),
+				leftVClass.GetTypeName(), rightVClass.GetTypeName(),
 			),
 		)
 	}

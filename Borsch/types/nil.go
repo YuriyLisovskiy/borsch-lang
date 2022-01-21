@@ -82,7 +82,7 @@ func newNilClass() *Class {
 				ops.ConstructorName,
 				[]FunctionArgument{
 					{
-						TypeHash:   NilTypeHash,
+						Type:       Nil,
 						Name:       "я",
 						IsVariadic: false,
 						IsNullable: false,
@@ -93,7 +93,7 @@ func newNilClass() *Class {
 				},
 				[]FunctionReturnType{
 					{
-						TypeHash:   NilTypeHash,
+						Type:       Nil,
 						IsNullable: false,
 					},
 				},
@@ -102,9 +102,9 @@ func newNilClass() *Class {
 				"",
 			),
 		},
-		makeLogicalOperators(NilTypeHash),
-		makeComparisonOperators(NilTypeHash, compareNils),
-		makeCommonOperators(NilTypeHash),
+		makeLogicalOperators(Nil),
+		makeComparisonOperators(Nil, compareNils),
+		makeCommonOperators(Nil),
 	)
 	return NewBuiltinClass(
 		NilTypeHash,

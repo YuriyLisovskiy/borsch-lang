@@ -64,7 +64,7 @@ func (o Object) SetAttribute(name string, value common.Type) error {
 	}
 
 	if val, ok := o.Attributes[name]; ok {
-		if val.GetTypeHash() == value.GetTypeHash() {
+		if val.(ObjectInstance).GetPrototype() == value.(ObjectInstance).GetPrototype() {
 			o.Attributes[name] = value
 			return nil
 		}

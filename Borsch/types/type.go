@@ -27,13 +27,13 @@ func newTypeClass() *Class {
 			ops.CallOperatorName,
 			[]FunctionArgument{
 				{
-					TypeHash:   TypeClassTypeHash,
+					Type:       TypeClass,
 					Name:       "я",
 					IsVariadic: false,
 					IsNullable: false,
 				},
 				{
-					TypeHash:   AnyTypeHash,
+					Type:       Any,
 					Name:       "обєкт",
 					IsVariadic: false,
 					IsNullable: false,
@@ -44,7 +44,7 @@ func newTypeClass() *Class {
 			},
 			[]FunctionReturnType{
 				{
-					TypeHash:   AnyTypeHash,
+					Type:       Any,
 					IsNullable: true,
 				},
 			},

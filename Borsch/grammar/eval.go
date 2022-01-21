@@ -170,7 +170,7 @@ func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (
 		ctx.PopScope()
 		return result, forceReturn, nil
 	} else if s.FunctionDef != nil {
-		function, err := s.FunctionDef.Evaluate(ctx, ctx.GetPackage().(*types.PackageInstance))
+		function, err := s.FunctionDef.Evaluate(ctx, ctx.GetPackage().(*types.PackageInstance), nil)
 		if err != nil {
 			return nil, false, err
 		}
@@ -212,6 +212,8 @@ func (s *Stmt) getPos() lexer.Position {
 		return s.Block.Pos
 	} else if s.FunctionDef != nil {
 		return s.FunctionDef.Pos
+	} else if s.ClassDef != nil {
+		return s.ClassDef.Pos
 	} else if s.ReturnStmt != nil {
 		return s.ReturnStmt.Pos
 	} else if s.Assignment != nil {
@@ -232,6 +234,8 @@ func (s *Stmt) String() string {
 		return "s.Block."
 	} else if s.FunctionDef != nil {
 		return "s.FunctionDef."
+	} else if s.ClassDef != nil {
+		return "s.ClassDef."
 	} else if s.ReturnStmt != nil {
 		return "повернути ..."
 	} else if s.Assignment != nil {
@@ -248,9 +252,27 @@ func (b *FunctionBody) Evaluate(ctx common.Context) (common.Type, error) {
 	return result, err
 }
 
-func (f *FunctionDef) Evaluate(ctx common.Context, parentPackage *types.PackageInstance) (common.Type, error) {
-	arguments := evalParameters(ctx, f.Parameters)
-	returnTypes := evalReturnTypes(ctx, f.ReturnTypes)
+func (f *FunctionDef) Evaluate(
+	ctx common.Context,
+	parentPackage *types.PackageInstance,
+	check func([]types.FunctionArgument, []types.FunctionReturnType) error,
+) (common.Type, error) {
+	arguments, err := evalParameters(ctx, f.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	returnTypes, err := evalReturnTypes(ctx, f.ReturnTypes)
+	if err != nil {
+		return nil, err
+	}
+
+	if check != nil {
+		if err := check(arguments, returnTypes); err != nil {
+			return nil, err
+		}
+	}
+
 	function := types.NewFunctionInstance(
 		f.Name,
 		arguments,
@@ -265,20 +287,30 @@ func (f *FunctionDef) Evaluate(ctx common.Context, parentPackage *types.PackageI
 	return function, ctx.SetVar(f.Name, function)
 }
 
-func (p *Parameter) Evaluate(_ common.Context) types.FunctionArgument {
-	return types.FunctionArgument{
-		TypeHash:   types.GetTypeHash(p.Type), // TODO: get type hash with package name
+func (p *Parameter) Evaluate(ctx common.Context) (*types.FunctionArgument, error) {
+	class, err := ctx.GetClass(p.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.FunctionArgument{
+		Type:       class.(*types.Class),
 		Name:       p.Name,
 		IsVariadic: false,
 		IsNullable: p.IsNullable,
-	}
+	}, nil
 }
 
-func (t *ReturnType) Evaluate(_ common.Context) types.FunctionReturnType {
-	return types.FunctionReturnType{
-		TypeHash:   types.GetTypeHash(t.Name), // TODO: get type hash with package name
-		IsNullable: t.IsNullable,
+func (t *ReturnType) Evaluate(ctx common.Context) (*types.FunctionReturnType, error) {
+	class, err := ctx.GetClass(t.Name)
+	if err != nil {
+		return nil, err
 	}
+
+	return &types.FunctionReturnType{
+		Type:       class.(*types.Class),
+		IsNullable: t.IsNullable,
+	}, nil
 }
 
 func (s *ReturnStmt) Evaluate(ctx common.Context) (common.Type, error) {
@@ -306,37 +338,6 @@ func (s *ReturnStmt) Evaluate(ctx common.Context) (common.Type, error) {
 func (e *Expression) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	if e.LogicalAnd != nil {
 		return e.LogicalAnd.Evaluate(ctx, valueToSet)
-	}
-
-	panic("unreachable")
-}
-
-func (c *ClassDef) Evaluate(ctx common.Context, parentPackage *types.PackageInstance) (common.Type, error) {
-	classContext := ContextImpl{}
-	classContext.PushScope(map[string]common.Type{})
-	for _, member := range c.Members {
-		_, err := member.Evaluate(&classContext)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// TODO: add doc
-	class := types.NewClass(c.Name, parentPackage, classContext.scopes[0], "")
-	return class, ctx.SetVar(c.Name, class)
-}
-
-func (m *ClassMember) Evaluate(ctx common.Context) (common.Type, error) {
-	if m.Variable != nil {
-		return m.Variable.Evaluate(ctx)
-	}
-
-	if m.Method != nil {
-		return m.Method.Evaluate(ctx, nil)
-	}
-
-	if m.Class != nil {
-		return m.Class.Evaluate(ctx, nil)
 	}
 
 	panic("unreachable")
@@ -693,8 +694,16 @@ func (a *RandomAccess) Evaluate(ctx common.Context, valueToSet common.Type) (com
 }
 
 func (l *LambdaDef) Evaluate(ctx common.Context) (common.Type, error) {
-	arguments := evalParameters(ctx, l.Parameters)
-	returnTypes := evalReturnTypes(ctx, l.ReturnTypes)
+	arguments, err := evalParameters(ctx, l.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	returnTypes, err := evalReturnTypes(ctx, l.ReturnTypes)
+	if err != nil {
+		return nil, err
+	}
+
 	return types.NewFunctionInstance(
 		"",
 		arguments,

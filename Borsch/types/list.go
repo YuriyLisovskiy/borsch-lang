@@ -148,8 +148,8 @@ func newListBinaryOperator(
 ) *FunctionInstance {
 	return newBinaryMethod(
 		name,
-		ListTypeHash,
-		AnyTypeHash,
+		List,
+		Any,
 		doc,
 		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(ListInstance); ok {
@@ -165,10 +165,10 @@ func newListClass() *Class {
 	attributes := mergeAttributes(
 		map[string]common.Type{
 			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(ListTypeHash, ToList, ""),
+			ops.ConstructorName: newBuiltinConstructor(List, ToList, ""),
 
 			// TODO: add doc
-			ops.LengthOperatorName: newLengthOperator(ListTypeHash, getLength, ""),
+			ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
 
 			ops.MulOp.Caption(): newListBinaryOperator(
 				// TODO: add doc
@@ -202,9 +202,9 @@ func newListClass() *Class {
 				},
 			),
 		},
-		makeLogicalOperators(ListTypeHash),
-		makeComparisonOperators(ListTypeHash, compareLists),
-		makeCommonOperators(ListTypeHash),
+		makeLogicalOperators(List),
+		makeComparisonOperators(List, compareLists),
+		makeCommonOperators(List),
 	)
 	return NewBuiltinClass(
 		ListTypeHash,

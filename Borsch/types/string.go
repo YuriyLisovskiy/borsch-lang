@@ -155,8 +155,8 @@ func newStringBinaryOperator(
 ) *FunctionInstance {
 	return newBinaryMethod(
 		name,
-		StringTypeHash,
-		AnyTypeHash,
+		String,
+		Any,
 		doc,
 		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(StringInstance); ok {
@@ -172,7 +172,7 @@ func newStringClass() *Class {
 	attributes := mergeAttributes(
 		map[string]common.Type{
 			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(StringTypeHash, ToString, ""),
+			ops.ConstructorName: newBuiltinConstructor(String, ToString, ""),
 			ops.MulOp.Caption(): newStringBinaryOperator(
 				// TODO: add doc
 				ops.MulOp.Caption(), "", func(self StringInstance, other common.Type) (common.Type, error) {
@@ -201,9 +201,9 @@ func newStringClass() *Class {
 				},
 			),
 		},
-		makeLogicalOperators(StringTypeHash),
-		makeComparisonOperators(StringTypeHash, compareStrings),
-		makeCommonOperators(StringTypeHash),
+		makeLogicalOperators(String),
+		makeComparisonOperators(String, compareStrings),
+		makeCommonOperators(String),
 	)
 	return NewBuiltinClass(
 		StringTypeHash,

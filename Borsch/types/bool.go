@@ -110,8 +110,8 @@ func newBoolBinaryOperator(
 ) *FunctionInstance {
 	return newBinaryMethod(
 		name,
-		BoolTypeHash,
-		AnyTypeHash,
+		Bool,
+		Any,
 		doc,
 		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(BoolInstance); ok {
@@ -129,7 +129,7 @@ func newBoolUnaryOperator(
 	handler func(BoolInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, BoolTypeHash, AnyTypeHash, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
+		name, Bool, Any, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(BoolInstance); ok {
 				return handler(leftInstance)
 			}
@@ -143,7 +143,7 @@ func newBoolClass() *Class {
 	attributes := mergeAttributes(
 		map[string]common.Type{
 			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(BoolTypeHash, ToBool, ""),
+			ops.ConstructorName: newBuiltinConstructor(Bool, ToBool, ""),
 			ops.PowOp.Caption(): newBoolBinaryOperator(
 				// TODO: add doc
 				ops.PowOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
@@ -337,9 +337,9 @@ func newBoolClass() *Class {
 				},
 			),
 		},
-		makeLogicalOperators(BoolTypeHash),
-		makeComparisonOperators(BoolTypeHash, compareBooleans),
-		makeCommonOperators(BoolTypeHash),
+		makeLogicalOperators(Bool),
+		makeComparisonOperators(Bool, compareBooleans),
+		makeCommonOperators(Bool),
 	)
 	return NewBuiltinClass(
 		BoolTypeHash,

@@ -152,8 +152,8 @@ func newRealBinaryOperator(
 ) *FunctionInstance {
 	return newBinaryMethod(
 		name,
-		RealTypeHash,
-		AnyTypeHash,
+		Real,
+		Any,
 		doc,
 		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
@@ -171,7 +171,7 @@ func newRealUnaryOperator(
 	handler func(RealInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, RealTypeHash, AnyTypeHash, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
+		name, Real, Any, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
 				return handler(leftInstance)
 			}
@@ -185,7 +185,7 @@ func newRealClass() *Class {
 	attributes := mergeAttributes(
 		map[string]common.Type{
 			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(RealTypeHash, ToReal, ""),
+			ops.ConstructorName: newBuiltinConstructor(Real, ToReal, ""),
 			ops.PowOp.Caption(): newRealBinaryOperator(
 				// TODO: add doc
 				ops.PowOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
@@ -282,9 +282,9 @@ func newRealClass() *Class {
 				},
 			),
 		},
-		makeLogicalOperators(RealTypeHash),
-		makeComparisonOperators(RealTypeHash, compareReals),
-		makeCommonOperators(RealTypeHash),
+		makeLogicalOperators(Real),
+		makeComparisonOperators(Real, compareReals),
+		makeCommonOperators(Real),
 	)
 	return NewBuiltinClass(
 		RealTypeHash,

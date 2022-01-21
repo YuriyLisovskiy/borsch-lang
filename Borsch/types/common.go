@@ -21,16 +21,30 @@ type ObjectInstance interface {
 }
 
 var (
-	Bool       = newBoolClass()
-	Dictionary = newDictionaryClass()
-	Function   = newFunctionClass()
-	Integer    = newIntegerClass()
-	List       = newListClass()
-	Nil        = newNilClass()
-	Package    = NewPackageClass()
-	Real       = newRealClass()
-	String     = newStringClass()
-	TypeClass  = newTypeClass()
+	Bool       *Class = nil
+	Dictionary *Class = nil
+	Function   *Class = nil
+	Integer    *Class = nil
+	List       *Class = nil
+	Nil        *Class = nil
+	Package    *Class = nil
+	Real       *Class = nil
+	String     *Class = nil
+	TypeClass  *Class = nil
+	Any        *Class = nil
 )
 
 var BuiltinPackage = NewPackageInstance(true, "вбудований", "", map[string]common.Type{})
+
+func init() {
+	Bool = newBoolClass()
+	Dictionary = newDictionaryClass()
+	Function = newFunctionClass()
+	Integer = newIntegerClass()
+	List = newListClass()
+	Nil = newNilClass()
+	Package = NewPackageClass()
+	Real = newRealClass()
+	String = newStringClass()
+	TypeClass = newTypeClass()
+}

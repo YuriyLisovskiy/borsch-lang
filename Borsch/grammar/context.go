@@ -10,8 +10,9 @@ import (
 )
 
 type ContextImpl struct {
-	scopes   []map[string]common.Type
-	package_ *types.PackageInstance
+	scopes       []map[string]common.Type
+	package_     *types.PackageInstance
+	classContext common.Context
 }
 
 func (c *ContextImpl) GetParser() common.Parser {
@@ -48,7 +49,8 @@ func (c *ContextImpl) SetVar(name string, value common.Type) error {
 	scopesLen := len(c.scopes)
 	for idx := 0; idx < scopesLen; idx++ {
 		if oldValue, ok := c.scopes[idx][name]; ok {
-			if oldValue.GetTypeHash() != value.GetTypeHash() && oldValue.GetTypeHash() != types.NilTypeHash {
+			oldValuePrototype := oldValue.(types.ObjectInstance).GetPrototype()
+			if oldValuePrototype != value.(types.ObjectInstance).GetPrototype() && oldValuePrototype != types.Nil {
 				if idx == scopesLen-1 {
 					return util.RuntimeError(
 						fmt.Sprintf(
@@ -75,6 +77,17 @@ func (c *ContextImpl) SetVar(name string, value common.Type) error {
 
 	c.scopes[scopesLen-1][name] = value
 	return nil
+}
+
+func (c *ContextImpl) GetClass(name string) (common.Type, error) {
+	variable, err := c.classContext.GetVar(name)
+	if err == nil {
+		if _, ok := variable.(*types.Class); ok {
+			return variable, nil
+		}
+	}
+
+	return nil, util.RuntimeError(fmt.Sprintf("невідомий тип '%s'", name))
 }
 
 // GetPackage returns pointer to current evaluating package

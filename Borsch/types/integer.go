@@ -141,8 +141,8 @@ func newIntegerBinaryOperator(
 ) *FunctionInstance {
 	return newBinaryMethod(
 		name,
-		IntegerTypeHash,
-		AnyTypeHash,
+		Integer,
+		Any,
 		doc,
 		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
@@ -160,7 +160,7 @@ func newIntegerUnaryOperator(
 	handler func(IntegerInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, IntegerTypeHash, AnyTypeHash, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
+		name, Integer, Any, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
 				return handler(leftInstance)
 			}
@@ -174,7 +174,7 @@ func newIntegerClass() *Class {
 	attributes := mergeAttributes(
 		map[string]common.Type{
 			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(IntegerTypeHash, ToInteger, ""),
+			ops.ConstructorName: newBuiltinConstructor(Integer, ToInteger, ""),
 			ops.PowOp.Caption(): newIntegerBinaryOperator(
 				// TODO: add doc
 				ops.PowOp.Caption(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
@@ -382,9 +382,9 @@ func newIntegerClass() *Class {
 				},
 			),
 		},
-		makeLogicalOperators(IntegerTypeHash),
-		makeComparisonOperators(IntegerTypeHash, compareIntegers),
-		makeCommonOperators(IntegerTypeHash),
+		makeLogicalOperators(Integer),
+		makeComparisonOperators(Integer, compareIntegers),
+		makeCommonOperators(Integer),
 	)
 	return NewBuiltinClass(
 		IntegerTypeHash,

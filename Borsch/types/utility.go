@@ -161,8 +161,8 @@ func checkSingleResult(
 	returnType FunctionReturnType,
 	funcName string,
 ) error {
-	if result.GetTypeHash() == NilTypeHash {
-		if returnType.TypeHash != NilTypeHash && !returnType.IsNullable {
+	if result.(ObjectInstance).GetPrototype() == Nil {
+		if returnType.Type != Nil && !returnType.IsNullable {
 			return util.RuntimeError(
 				fmt.Sprintf(
 					"%s повертає ненульове значення%s, отримано '%s'",
@@ -172,7 +172,7 @@ func checkSingleResult(
 				),
 			)
 		}
-	} else if returnType.TypeHash != AnyTypeHash && result.GetTypeHash() != returnType.TypeHash {
+	} else if returnType.Type != Any && result.(ObjectInstance).GetPrototype() != returnType.Type {
 		return util.RuntimeError(
 			fmt.Sprintf(
 				"%s повертає значення типу '%s'%s, отримано значення з типом '%s'",
@@ -254,8 +254,9 @@ func CheckFunctionArguments(
 	var c int
 	for c = 0; c < argsLen; c++ {
 		arg := (*args)[c]
-		if arg.GetTypeHash() == NilTypeHash {
-			if function.Arguments[c].TypeHash != NilTypeHash && !function.Arguments[c].IsNullable {
+		argPrototype := arg.(ObjectInstance).GetPrototype()
+		if argPrototype == Nil {
+			if function.Arguments[c].Type != Nil && !function.Arguments[c].IsNullable {
 				return util.RuntimeError(
 					fmt.Sprintf(
 						"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
@@ -263,11 +264,11 @@ func CheckFunctionArguments(
 					),
 				)
 			}
-		} else if function.Arguments[c].TypeHash != AnyTypeHash && arg.GetTypeHash() != function.Arguments[c].TypeHash {
+		} else if function.Arguments[c].Type != Any && argPrototype != function.Arguments[c].Type {
 			return util.RuntimeError(
 				fmt.Sprintf(
 					"аргумент '%s' очікує параметр з типом '%s', отримано '%s'",
-					function.Arguments[c].Name, function.Arguments[c].TypeName(), arg.GetTypeName(),
+					function.Arguments[c].Name, function.Arguments[c].GetTypeName(), arg.GetTypeName(),
 				),
 			)
 		}
@@ -279,8 +280,9 @@ func CheckFunctionArguments(
 				parametersLen = len(*args)
 				for k := c; k < parametersLen; k++ {
 					arg := (*args)[k]
-					if arg.GetTypeHash() == NilTypeHash {
-						if lastArgument.TypeHash != NilTypeHash && !lastArgument.IsNullable {
+					argPrototype := arg.(ObjectInstance).GetPrototype()
+					if argPrototype == Nil {
+						if lastArgument.Type != Nil && !lastArgument.IsNullable {
 							return util.RuntimeError(
 								fmt.Sprintf(
 									"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
@@ -288,11 +290,13 @@ func CheckFunctionArguments(
 								),
 							)
 						}
-					} else if lastArgument.TypeHash != AnyTypeHash && arg.GetTypeHash() != lastArgument.TypeHash {
+					} else if lastArgument.Type != nil && argPrototype != lastArgument.Type {
 						return util.RuntimeError(
 							fmt.Sprintf(
 								"аргумент '%s' очікує список параметрів з типом '%s', отримано '%s'",
-								lastArgument.Name, lastArgument.TypeName(), arg.GetTypeName(),
+								lastArgument.Name,
+								lastArgument.GetTypeName(),
+								argPrototype.GetTypeName(),
 							),
 						)
 					}
@@ -355,8 +359,8 @@ func mergeAttributes(a map[string]common.Type, b ...map[string]common.Type) map[
 
 func newBinaryMethod(
 	name string,
-	selfTypeHash uint64,
-	returnTypeHash uint64,
+	selfType *Class,
+	returnType *Class,
 	doc string,
 	handler func(common.Context, common.Type, common.Type) (common.Type, error),
 ) *FunctionInstance {
@@ -364,13 +368,13 @@ func newBinaryMethod(
 		name,
 		[]FunctionArgument{
 			{
-				TypeHash:   selfTypeHash,
+				Type:       selfType,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 			{
-				TypeHash:   AnyTypeHash,
+				Type:       Any,
 				Name:       "інший",
 				IsVariadic: false,
 				IsNullable: true,
@@ -381,7 +385,7 @@ func newBinaryMethod(
 		},
 		[]FunctionReturnType{
 			{
-				TypeHash:   returnTypeHash,
+				Type:       returnType,
 				IsNullable: false,
 			},
 		},
@@ -393,8 +397,8 @@ func newBinaryMethod(
 
 func newUnaryMethod(
 	name string,
-	selfTypeHash uint64,
-	returnTypeHash uint64,
+	selfType *Class,
+	returnType *Class,
 	doc string,
 	handler func(common.Context, common.Type) (common.Type, error),
 ) *FunctionInstance {
@@ -402,7 +406,7 @@ func newUnaryMethod(
 		name,
 		[]FunctionArgument{
 			{
-				TypeHash:   selfTypeHash,
+				Type:       selfType,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
@@ -413,7 +417,7 @@ func newUnaryMethod(
 		},
 		[]FunctionReturnType{
 			{
-				TypeHash:   returnTypeHash,
+				Type:       returnType,
 				IsNullable: false,
 			},
 		},
@@ -425,15 +429,15 @@ func newUnaryMethod(
 
 func makeComparisonOperator(
 	operator ops.Operator,
-	itemTypeHash uint64,
+	itemType *Class,
 	doc string,
 	comparator func(common.Context, common.Type, common.Type) (int, error),
 	checker func(res int) bool,
 ) *FunctionInstance {
 	return newBinaryMethod(
 		operator.Caption(),
-		itemTypeHash,
-		BoolTypeHash,
+		itemType,
+		Bool,
 		doc,
 		func(ctx common.Context, self common.Type, other common.Type) (common.Type, error) {
 			res, err := comparator(ctx, self, other)
@@ -447,56 +451,56 @@ func makeComparisonOperator(
 }
 
 func makeComparisonOperators(
-	itemTypeHash uint64,
+	itemType *Class,
 	comparator func(common.Context, common.Type, common.Type) (int, error),
 ) map[string]common.Type {
 	return map[string]common.Type{
 		ops.EqualsOp.Caption(): makeComparisonOperator(
 			// TODO: add doc
-			ops.EqualsOp, itemTypeHash, "", comparator, func(res int) bool {
+			ops.EqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0
 			},
 		),
 		ops.NotEqualsOp.Caption(): makeComparisonOperator(
 			// TODO: add doc
-			ops.NotEqualsOp, itemTypeHash, "", comparator, func(res int) bool {
+			ops.NotEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res != 0
 			},
 		),
 		ops.GreaterOp.Caption(): makeComparisonOperator(
 			// TODO: add doc
-			ops.GreaterOp, itemTypeHash, "", comparator, func(res int) bool {
+			ops.GreaterOp, itemType, "", comparator, func(res int) bool {
 				return res == 1
 			},
 		),
 		ops.GreaterOrEqualsOp.Caption(): makeComparisonOperator(
 			// TODO: add doc
-			ops.GreaterOrEqualsOp, itemTypeHash, "", comparator, func(res int) bool {
+			ops.GreaterOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == 1
 			},
 		),
 		ops.LessOp.Caption(): makeComparisonOperator(
 			// TODO: add doc
-			ops.LessOp, itemTypeHash, "", comparator, func(res int) bool {
+			ops.LessOp, itemType, "", comparator, func(res int) bool {
 				return res == -1
 			},
 		),
 		ops.LessOrEqualsOp.Caption(): makeComparisonOperator(
 			// TODO: add doc
-			ops.LessOrEqualsOp, itemTypeHash, "", comparator, func(res int) bool {
+			ops.LessOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == -1
 			},
 		),
 	}
 }
 
-func makeLogicalOperators(itemTypeHash uint64) map[string]common.Type {
+func makeLogicalOperators(itemType *Class) map[string]common.Type {
 	return map[string]common.Type{
 		ops.NotOp.Caption(): newUnaryMethod(
 			// TODO: add doc
 			ops.NotOp.Caption(),
-			itemTypeHash,
-			BoolTypeHash,
+			itemType,
+			Bool,
 			"",
 			func(ctx common.Context, self common.Type) (common.Type, error) {
 				return NewBoolInstance(!self.AsBool(ctx)), nil
@@ -505,8 +509,8 @@ func makeLogicalOperators(itemTypeHash uint64) map[string]common.Type {
 		ops.AndOp.Caption(): newBinaryMethod(
 			// TODO: add doc
 			ops.AndOp.Caption(),
-			itemTypeHash,
-			BoolTypeHash,
+			itemType,
+			Bool,
 			"",
 			func(ctx common.Context, self common.Type, other common.Type) (common.Type, error) {
 				return NewBoolInstance(self.AsBool(ctx) && other.AsBool(ctx)), nil
@@ -515,8 +519,8 @@ func makeLogicalOperators(itemTypeHash uint64) map[string]common.Type {
 		ops.OrOp.Caption(): newBinaryMethod(
 			// TODO: add doc
 			ops.OrOp.Caption(),
-			itemTypeHash,
-			BoolTypeHash,
+			itemType,
+			Bool,
 			"",
 			func(ctx common.Context, self common.Type, other common.Type) (common.Type, error) {
 				return NewBoolInstance(self.AsBool(ctx) || other.AsBool(ctx)), nil
@@ -525,11 +529,11 @@ func makeLogicalOperators(itemTypeHash uint64) map[string]common.Type {
 	}
 }
 
-func makeCommonOperators(itemTypeHash uint64) map[string]common.Type {
+func makeCommonOperators(itemType *Class) map[string]common.Type {
 	return map[string]common.Type{
 		// TODO: add doc
 		ops.BoolOperatorName: newUnaryMethod(
-			ops.BoolOperatorName, itemTypeHash, BoolTypeHash, "",
+			ops.BoolOperatorName, itemType, Bool, "",
 			func(ctx common.Context, self common.Type) (common.Type, error) {
 				return NewBoolInstance(self.AsBool(ctx)), nil
 			},
@@ -538,7 +542,7 @@ func makeCommonOperators(itemTypeHash uint64) map[string]common.Type {
 }
 
 func newBuiltinConstructor(
-	itemTypeHash uint64,
+	itemType *Class,
 	handler func(common.Context, ...common.Type) (common.Type, error),
 	doc string,
 ) *FunctionInstance {
@@ -546,13 +550,13 @@ func newBuiltinConstructor(
 		ops.ConstructorName,
 		[]FunctionArgument{
 			{
-				TypeHash:   itemTypeHash,
+				Type:       itemType,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 			{
-				TypeHash:   AnyTypeHash,
+				Type:       Any,
 				Name:       "значення",
 				IsVariadic: true,
 				IsNullable: true,
@@ -569,7 +573,7 @@ func newBuiltinConstructor(
 		},
 		[]FunctionReturnType{
 			{
-				TypeHash:   NilTypeHash,
+				Type:       Nil,
 				IsNullable: false,
 			},
 		},
@@ -580,7 +584,7 @@ func newBuiltinConstructor(
 }
 
 func newLengthOperator(
-	itemTypeHash uint64,
+	itemType *Class,
 	handler func(common.Type) (int64, error),
 	doc string,
 ) *FunctionInstance {
@@ -588,7 +592,7 @@ func newLengthOperator(
 		ops.LengthOperatorName,
 		[]FunctionArgument{
 			{
-				TypeHash:   itemTypeHash,
+				Type:       itemType,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
@@ -604,7 +608,7 @@ func newLengthOperator(
 		},
 		[]FunctionReturnType{
 			{
-				TypeHash:   IntegerTypeHash,
+				Type:       Integer,
 				IsNullable: false,
 			},
 		},
