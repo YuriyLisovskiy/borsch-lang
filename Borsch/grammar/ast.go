@@ -231,9 +231,8 @@ type Primary struct {
 	Pos lexer.Position
 
 	Constant        *Constant        `  @@`
-	RandomAccess    *RandomAccess    `| @@`
-	AttributeAccess *AttributeAccess `| @@`
 	LambdaDef       *LambdaDef       `| @@`
+	AttributeAccess *AttributeAccess `| @@`
 	SubExpression   *Expression      `| "(" @@ ")"`
 }
 
@@ -255,13 +254,6 @@ type DictionaryEntry struct {
 	Value *Expression `":" @@`
 }
 
-type RandomAccess struct {
-	Pos lexer.Position
-
-	Ident string        `@Ident`
-	Index []*LogicalAnd `("[" @@ "]")+`
-}
-
 type LambdaDef struct {
 	Pos lexer.Position
 
@@ -275,14 +267,36 @@ type LambdaDef struct {
 type AttributeAccess struct {
 	Pos lexer.Position
 
-	CallFunc        *CallFunc        `( @@`
-	Ident           *string          `| @Ident)`
-	AttributeAccess *AttributeAccess `("." @@)?`
+	Slicing         *SlicingOrSubscription `@@`
+	AttributeAccess *AttributeAccess       `("." @@)?`
+}
+
+// type Subscription struct {
+// 	Pos lexer.Position
+//
+// 	Slicing *Slicing      `@@`
+// 	Indices []*Expression `("[" @@ "]")*`
+// }
+
+type SlicingOrSubscription struct {
+	Pos lexer.Position
+
+	CallFunc *CallFunc `( @@`
+	Ident    *string   `| @Ident)`
+	Ranges   []*Range  `@@*`
+}
+
+type Range struct {
+	Pos lexer.Position
+
+	LeftBound  *Expression `"[" @@`
+	IsSlicing  bool        `[ @":"`
+	RightBound *Expression ` @@] "]"`
 }
 
 type CallFunc struct {
 	Pos lexer.Position
 
 	Ident     string        `@Ident`
-	Arguments []*LogicalAnd `"(" (@@ ("," @@)*)? ")"`
+	Arguments []*Expression `"(" (@@ ("," @@)*)? ")"`
 }

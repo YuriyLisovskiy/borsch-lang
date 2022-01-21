@@ -484,10 +484,6 @@ func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.T
 		return a.Constant.Evaluate(ctx)
 	}
 
-	if a.RandomAccess != nil {
-		return a.RandomAccess.Evaluate(ctx, valueToSet)
-	}
-
 	if a.AttributeAccess != nil {
 		return a.AttributeAccess.Evaluate(ctx, valueToSet, nil)
 	}
@@ -564,129 +560,194 @@ func (d *DictionaryEntry) Evaluate(ctx common.Context) (common.Type, common.Type
 }
 
 func (a *AttributeAccess) Evaluate(ctx common.Context, valueToSet, prevValue common.Type) (common.Type, error) {
+	if a.Slicing == nil {
+		panic("unreachable")
+	}
+
 	if valueToSet != nil {
 		// set
 		var currentValue common.Type
-		var err error = nil
-		if a.Ident != nil {
-			if *a.Ident == "нуль" {
-				return nil, util.RuntimeError("неможливо встановити значення об'єкту 'нуль'")
-			}
-
-			if a.AttributeAccess != nil {
-				currentValue, err = getCurrentValue(ctx, prevValue, *a.Ident)
-			} else {
-				currentValue = valueToSet
-			}
-		} else if a.CallFunc != nil {
-			if a.AttributeAccess == nil {
-				return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
-			}
-
-			function, err := getCurrentValue(ctx, prevValue, a.CallFunc.Ident)
-			if err != nil {
-				return nil, err
-			}
-
-			currentValue, err = a.CallFunc.Evaluate(ctx, function, prevValue)
-			if err != nil {
-				return nil, err
-			}
-		}
-
+		var err error
 		if a.AttributeAccess != nil {
+			currentValue, err = a.Slicing.Evaluate(ctx, nil, prevValue)
+			if err != nil {
+				return nil, err
+			}
+
 			currentValue, err = a.AttributeAccess.Evaluate(ctx, valueToSet, currentValue)
-			if err != nil {
-				return nil, err
-			}
+		} else {
+			currentValue, err = a.Slicing.Evaluate(ctx, valueToSet, prevValue)
 		}
 
-		if prevValue != nil {
-			err = nil
-			if a.Ident != nil {
-				_, err = prevValue.SetAttribute(*a.Ident, currentValue)
-			} else if a.CallFunc != nil {
-				// ignore
-			}
-
-			if err != nil {
-				return nil, err
-			}
-
-			return prevValue, nil
-		}
-
-		if a.Ident != nil {
-			return currentValue, ctx.SetVar(*a.Ident, currentValue)
+		if err != nil {
+			return nil, err
 		}
 
 		return currentValue, nil
-	} else {
-		// get
-		var currentValue common.Type
-		var err error = nil
-		if a.Ident != nil {
-			if *a.Ident == "нуль" {
-				if prevValue == nil {
-					return types.NewNilInstance(), nil
-				} else {
-					return nil, util.RuntimeError("'нуль' не є атрибутом")
-				}
-			}
-
-			currentValue, err = getCurrentValue(ctx, prevValue, *a.Ident)
-			if err != nil {
-				return nil, err
-			}
-		} else if a.CallFunc != nil {
-			variable, err := getCurrentValue(ctx, prevValue, a.CallFunc.Ident)
-			if err != nil {
-				return nil, err
-			}
-
-			currentValue, err = a.CallFunc.Evaluate(ctx, variable, prevValue)
-			if err != nil {
-				return nil, errors.New(
-					fmt.Sprintf(
-						"  Файл \"%s\", рядок %d, позиція %d\n    %s\n%s",
-						a.CallFunc.Pos.Filename, a.CallFunc.Pos.Line, a.CallFunc.Pos.Column, "TODO", err.Error(),
-					),
-				)
-			}
-		}
-
-		if a.AttributeAccess != nil {
-			return a.AttributeAccess.Evaluate(ctx, valueToSet, currentValue)
-		}
-
-		return currentValue, err
 	}
-}
 
-func (a *RandomAccess) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	variable, err := ctx.GetVar(a.Ident)
+	// get
+	currentValue, err := a.Slicing.Evaluate(ctx, valueToSet, prevValue)
 	if err != nil {
 		return nil, err
 	}
 
-	if valueToSet != nil {
-		variable, err = evalSingleSetByIndexOperation(ctx, variable, a.Index, valueToSet)
-		if err != nil {
-			return nil, err
-		}
-
-		return variable, ctx.SetVar(a.Ident, variable)
+	if a.AttributeAccess != nil {
+		return a.AttributeAccess.Evaluate(ctx, valueToSet, currentValue)
 	}
 
-	for _, indexExpression := range a.Index {
-		index, err := indexExpression.Evaluate(ctx, nil)
+	return currentValue, err
+}
+
+// func (a *Subscription) Evaluate(ctx common.Context, valueToSet common.Type, prevValue common.Type) (
+// 	common.Type,
+// 	error,
+// ) {
+// 	if a.Slicing == nil {
+// 		panic("unreachable")
+// 	}
+//
+// 	if valueToSet != nil {
+// 		// set
+// 		var variable common.Type
+// 		var err error
+// 		if len(a.Indices) != 0 {
+// 			variable, err = a.Slicing.Evaluate(ctx, nil, prevValue)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+//
+// 			variable, err = evalSingleSetByIndexOperation(ctx, variable, a.Indices, valueToSet)
+// 		} else {
+// 			variable, err = a.Slicing.Evaluate(ctx, valueToSet, prevValue)
+// 		}
+//
+// 		if err != nil {
+// 			return nil, err
+// 		}
+//
+// 		return variable, nil
+// 	}
+//
+// 	// get
+// 	variable, err := a.Slicing.Evaluate(ctx, valueToSet, prevValue)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	for _, expression := range a.Indices {
+// 		index, err := expression.Evaluate(ctx, nil)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+//
+// 		variable, err = evalSingleGetByIndexOperation(ctx, variable, index)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 	}
+//
+// 	return variable, nil
+// }
+
+func (s *SlicingOrSubscription) Evaluate(
+	ctx common.Context,
+	valueToSet common.Type,
+	prevValue common.Type,
+) (common.Type, error) {
+	if valueToSet != nil {
+		// set
+		var variable common.Type
+		var err error = nil
+		rangesLen := len(s.Ranges)
+		if rangesLen != 0 && s.Ranges[rangesLen-1].RightBound != nil {
+			return nil, util.RuntimeError("неможливо присвоїти значення у зріз")
+		}
+
+		if s.CallFunc != nil {
+			return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
+		} else if s.Ident != nil {
+			if *s.Ident == "нуль" {
+				return nil, util.RuntimeError("неможливо встановити значення об'єкту 'нуль'")
+			}
+
+			if prevValue != nil {
+				variable, err = prevValue.SetAttribute(*s.Ident, valueToSet)
+			} else {
+				variable = valueToSet
+				err = ctx.SetVar(*s.Ident, valueToSet)
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
+		} else {
+			panic("unreachable")
+		}
+
+		variable, err = evalSingleSetByIndexOperation(ctx, variable, s.Ranges, valueToSet)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// get
+	var variable common.Type
+	var err error = nil
+	if s.CallFunc != nil {
+		variable, err = getCurrentValue(ctx, prevValue, s.CallFunc.Ident)
 		if err != nil {
 			return nil, err
 		}
 
-		variable, err = evalSingleGetByIndexOperation(variable, index)
+		variable, err = s.CallFunc.Evaluate(ctx, variable, prevValue)
+		if err != nil {
+			return nil, errors.New(
+				fmt.Sprintf(
+					"  Файл \"%s\", рядок %d, позиція %d\n    %s\n%s",
+					s.CallFunc.Pos.Filename, s.CallFunc.Pos.Line, s.CallFunc.Pos.Column, "TODO", err.Error(),
+				),
+			)
+		}
+	} else if s.Ident != nil {
+		if *s.Ident == "нуль" {
+			if prevValue == nil {
+				return types.NewNilInstance(), nil
+			} else {
+				return nil, util.RuntimeError("'нуль' не є атрибутом")
+			}
+		}
+
+		variable, err = getCurrentValue(ctx, prevValue, *s.Ident)
 		if err != nil {
 			return nil, err
+		}
+	} else {
+		panic("unreachable")
+	}
+
+	for _, range_ := range s.Ranges {
+		leftBound, err := range_.LeftBound.Evaluate(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		if range_.RightBound != nil {
+			rightBound, err := range_.RightBound.Evaluate(ctx, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			variable, err = evalSlicingOperation(ctx, variable, leftBound, rightBound)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			variable, err = evalSingleGetByIndexOperation(ctx, variable, leftBound)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -841,7 +902,7 @@ func (a *CallFunc) evalFunction(
 func getCurrentValue(ctx common.Context, prevValue common.Type, identifier string) (common.Type, error) {
 	if prevValue != nil {
 		return prevValue.GetAttribute(identifier)
-	} else {
-		return ctx.GetVar(identifier)
 	}
+
+	return ctx.GetVar(identifier)
 }

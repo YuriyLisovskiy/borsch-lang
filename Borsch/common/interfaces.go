@@ -35,9 +35,9 @@ type Type interface {
 
 type SequentialType interface {
 	Length(Context) int64
-	GetElement(int64) (Type, error)
-	SetElement(int64, Type) (Type, error)
-	Slice(int64, int64) (Type, error)
+	GetElement(Context, int64) (Type, error)
+	SetElement(Context, int64, Type) (Type, error)
+	Slice(Context, int64, int64) (Type, error)
 }
 
 type CallableType interface {

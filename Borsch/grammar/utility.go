@@ -97,12 +97,12 @@ func evalUnaryOperator(
 	panic("unreachable")
 }
 
-func evalSingleGetByIndexOperation(variable common.Type, index common.Type) (common.Type, error) {
+func evalSingleGetByIndexOperation(ctx common.Context, variable common.Type, index common.Type) (common.Type, error) {
 	switch iterable := variable.(type) {
 	case common.SequentialType:
 		switch integerIndex := index.(type) {
 		case types.IntegerInstance:
-			return iterable.GetElement(integerIndex.Value)
+			return iterable.GetElement(ctx, integerIndex.Value)
 		default:
 			return nil, util.RuntimeError("індекси мають бути цілого типу")
 		}
@@ -116,46 +116,112 @@ func evalSingleGetByIndexOperation(variable common.Type, index common.Type) (com
 	}
 }
 
+// TODO: rename evalSingleSetByIndexOperation to slicing
 func evalSingleSetByIndexOperation(
 	ctx common.Context,
 	variable common.Type,
-	indices []*LogicalAnd,
-	value common.Type,
+	ranges_ []*Range,
+	valueToSet common.Type,
 ) (common.Type, error) {
 	switch iterable := variable.(type) {
 	case common.SequentialType:
-		index, err := indices[0].Evaluate(ctx, nil)
+		errMsg := ""
+		if ranges_[0].IsSlicing {
+			errMsg = "ліва межа має бути цілого типу"
+		} else {
+			errMsg = "індекс має бути цілого типу"
+		}
+
+		leftIdx, err := mustIntIndex(ctx, ranges_[0].LeftBound, errMsg)
 		if err != nil {
 			return nil, err
 		}
 
-		switch integerIndex := index.(type) {
-		case types.IntegerInstance:
-			if len(indices) == 1 {
-				return iterable.SetElement(integerIndex.Value, value)
-			}
-
-			element, err := iterable.GetElement(integerIndex.Value)
+		var element common.Type
+		if ranges_[0].RightBound != nil {
+			rightIdx, err := mustIntIndex(ctx, ranges_[0].RightBound, "права межа має бути цілого типу")
 			if err != nil {
 				return nil, err
 			}
 
-			element, err = evalSingleSetByIndexOperation(ctx, element, indices[1:], value)
+			element, err = iterable.Slice(ctx, leftIdx, rightIdx)
 			if err != nil {
 				return nil, err
 			}
 
-			return iterable.SetElement(integerIndex.Value, element)
-		default:
-			return nil, util.RuntimeError("індекси мають бути цілого типу")
+			if len(ranges_) == 1 {
+				// valueToSet is ignored
+				return element, nil
+			}
+		} else {
+			if len(ranges_) == 1 {
+				return iterable.SetElement(ctx, leftIdx, valueToSet)
+			}
+
+			element, err = iterable.GetElement(ctx, leftIdx)
+			if err != nil {
+				return nil, err
+			}
 		}
+
+		return evalSingleSetByIndexOperation(ctx, element, ranges_[1:], valueToSet)
+	default:
+		operatorDescription := ""
+		if ranges_[0].IsSlicing {
+			operatorDescription = "зрізу"
+		} else {
+			operatorDescription = "довільного доступу"
+		}
+
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"неможливо застосувати оператор %s до об'єкта з типом '%s'",
+				operatorDescription, variable.GetTypeName(),
+			),
+		)
+	}
+}
+
+func evalSlicingOperation(
+	ctx common.Context,
+	variable common.Type,
+	leftBound *Expression,
+	rightBound *Expression,
+) (common.Type, error) {
+	switch iterable := variable.(type) {
+	case common.SequentialType:
+		leftIdx, err := mustIntIndex(ctx, leftBound, "ліва межа має бути цілого типу")
+		if err != nil {
+			return nil, err
+		}
+
+		rightIdx, err := mustIntIndex(ctx, rightBound, "права межа має бути цілого типу")
+		if err != nil {
+			return nil, err
+		}
+
+		return iterable.Slice(ctx, leftIdx, rightIdx)
 	default:
 		return nil, util.RuntimeError(
 			fmt.Sprintf(
-				"неможливо застосувати оператор довільного доступу до об'єкта з типом '%s'",
+				"неможливо застосувати оператор зрізу до об'єкта з типом '%s'",
 				variable.GetTypeName(),
 			),
 		)
+	}
+}
+
+func mustIntIndex(ctx common.Context, expression *Expression, errMessage string) (int64, error) {
+	value, err := expression.Evaluate(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	switch integer := value.(type) {
+	case types.IntegerInstance:
+		return integer.Value, nil
+	default:
+		return 0, util.RuntimeError(errMessage)
 	}
 }
 
@@ -258,7 +324,7 @@ func unpackList(ctx common.Context, lhs []*Expression, rhs *Expression) (common.
 	switch list := element.(type) {
 	case types.ListInstance:
 		lhsLen := int64(len(lhs))
-		rhsLen := list.Length()
+		rhsLen := list.Length(ctx)
 		if lhsLen > rhsLen {
 			// TODO: return error
 			panic(fmt.Sprintf("unable to unpack %d elements of %s to %d vars", rhsLen, element.GetTypeName(), lhsLen))
@@ -275,7 +341,7 @@ func unpackList(ctx common.Context, lhs []*Expression, rhs *Expression) (common.
 			resultList.Values = append(resultList.Values, item)
 		}
 
-		if i < list.Length()-1 {
+		if i < list.Length(ctx)-1 {
 			rest := types.NewListInstance()
 			rest.Values = list.Values[i:]
 			resultList.Values = append(resultList.Values, rest)

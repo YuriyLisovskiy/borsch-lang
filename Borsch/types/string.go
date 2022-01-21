@@ -39,8 +39,8 @@ func (t StringInstance) GetTypeHash() uint64 {
 	return t.GetPrototype().GetTypeHash()
 }
 
-func (t StringInstance) AsBool(common.Context) bool {
-	return t.Length() != 0
+func (t StringInstance) AsBool(ctx common.Context) bool {
+	return t.Length(ctx) != 0
 }
 
 func (t StringInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
@@ -63,12 +63,12 @@ func (StringInstance) GetPrototype() *Class {
 	return String
 }
 
-func (t StringInstance) Length() int64 {
+func (t StringInstance) Length(_ common.Context) int64 {
 	return int64(utf8.RuneCountInString(t.Value))
 }
 
-func (t StringInstance) GetElement(index int64) (common.Type, error) {
-	idx, err := getIndex(index, t.Length())
+func (t StringInstance) GetElement(ctx common.Context, index int64) (common.Type, error) {
+	idx, err := getIndex(index, t.Length(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -76,10 +76,10 @@ func (t StringInstance) GetElement(index int64) (common.Type, error) {
 	return NewStringInstance(string([]rune(t.Value)[idx])), nil
 }
 
-func (t StringInstance) SetElement(index int64, value common.Type) (common.Type, error) {
+func (t StringInstance) SetElement(ctx common.Context, index int64, value common.Type) (common.Type, error) {
 	switch v := value.(type) {
 	case StringInstance:
-		idx, err := getIndex(index, t.Length())
+		idx, err := getIndex(index, t.Length(ctx))
 		if err != nil {
 			return nil, err
 		}
@@ -99,13 +99,13 @@ func (t StringInstance) SetElement(index int64, value common.Type) (common.Type,
 	return t, nil
 }
 
-func (t StringInstance) Slice(from, to int64) (common.Type, error) {
-	fromIdx, err := getIndex(from, t.Length())
+func (t StringInstance) Slice(ctx common.Context, from, to int64) (common.Type, error) {
+	fromIdx, err := getIndex(from, t.Length(ctx))
 	if err != nil {
 		return nil, err
 	}
 
-	toIdx, err := getIndex(to, t.Length())
+	toIdx, err := getIndex(to, t.Length(ctx))
 	if err != nil {
 		return nil, err
 	}

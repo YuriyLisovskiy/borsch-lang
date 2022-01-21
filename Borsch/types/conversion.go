@@ -171,7 +171,7 @@ func ToList(_ common.Context, args ...common.Type) (common.Type, error) {
 	return list, nil
 }
 
-func ToDictionary(_ common.Context, args ...common.Type) (common.Type, error) {
+func ToDictionary(ctx common.Context, args ...common.Type) (common.Type, error) {
 	dict := NewDictionaryInstance()
 	if len(args) == 0 {
 		return dict, nil
@@ -189,7 +189,7 @@ func ToDictionary(_ common.Context, args ...common.Type) (common.Type, error) {
 	case ListInstance:
 		switch values := args[1].(type) {
 		case ListInstance:
-			if keys.Length() != values.Length() {
+			if keys.Length(ctx) != values.Length(ctx) {
 				return nil, util.RuntimeError(
 					fmt.Sprintf(
 						"довжина списку ключів має співпадати з довжиною списку значень",
@@ -197,7 +197,7 @@ func ToDictionary(_ common.Context, args ...common.Type) (common.Type, error) {
 				)
 			}
 
-			length := keys.Length()
+			length := keys.Length(ctx)
 			for i := int64(0); i < length; i++ {
 				err := dict.SetElement(keys.Values[i], values.Values[i])
 				if err != nil {

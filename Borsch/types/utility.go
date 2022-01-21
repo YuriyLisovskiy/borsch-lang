@@ -101,7 +101,7 @@ func CheckResult(ctx common.Context, result common.Type, function *FunctionInsta
 
 	switch value := result.(type) {
 	case ListInstance:
-		if int64(len(function.ReturnTypes)) != value.Length() {
+		if int64(len(function.ReturnTypes)) != value.Length(ctx) {
 			var expectedTypes []string
 			for _, retType := range function.ReturnTypes {
 				expectedTypes = append(expectedTypes, retType.String())
@@ -336,10 +336,10 @@ func getAttributes(attributes map[string]common.Type) (DictionaryInstance, error
 	return dict, nil
 }
 
-func getLength(sequence common.Type) (int64, error) {
+func getLength(ctx common.Context, sequence common.Type) (int64, error) {
 	switch self := sequence.(type) {
 	case ListInstance:
-		return self.Length(), nil
+		return self.Length(ctx), nil
 	case DictionaryInstance:
 		return self.Length(), nil
 	}
@@ -585,7 +585,7 @@ func newBuiltinConstructor(
 
 func newLengthOperator(
 	itemType *Class,
-	handler func(common.Type) (int64, error),
+	handler func(common.Context, common.Type) (int64, error),
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
@@ -598,8 +598,8 @@ func newLengthOperator(
 				IsNullable: false,
 			},
 		},
-		func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			length, err := handler((*args)[0])
+		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			length, err := handler(ctx, (*args)[0])
 			if err != nil {
 				return nil, err
 			}

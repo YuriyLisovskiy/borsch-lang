@@ -43,8 +43,8 @@ func (t ListInstance) GetTypeHash() uint64 {
 	return t.GetPrototype().GetTypeHash()
 }
 
-func (t ListInstance) AsBool(common.Context) bool {
-	return t.Length() != 0
+func (t ListInstance) AsBool(ctx common.Context) bool {
+	return t.Length(ctx) != 0
 }
 
 func (t ListInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
@@ -75,12 +75,12 @@ func (ListInstance) GetPrototype() *Class {
 	return List
 }
 
-func (t ListInstance) Length() int64 {
+func (t ListInstance) Length(_ common.Context) int64 {
 	return int64(len(t.Values))
 }
 
-func (t ListInstance) GetElement(index int64) (common.Type, error) {
-	idx, err := getIndex(index, t.Length())
+func (t ListInstance) GetElement(ctx common.Context, index int64) (common.Type, error) {
+	idx, err := getIndex(index, t.Length(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +88,8 @@ func (t ListInstance) GetElement(index int64) (common.Type, error) {
 	return t.Values[idx], nil
 }
 
-func (t ListInstance) SetElement(index int64, value common.Type) (common.Type, error) {
-	idx, err := getIndex(index, t.Length())
+func (t ListInstance) SetElement(ctx common.Context, index int64, value common.Type) (common.Type, error) {
+	idx, err := getIndex(index, t.Length(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -98,13 +98,13 @@ func (t ListInstance) SetElement(index int64, value common.Type) (common.Type, e
 	return t, nil
 }
 
-func (t ListInstance) Slice(from, to int64) (common.Type, error) {
-	fromIdx, err := getIndex(from, t.Length())
+func (t ListInstance) Slice(ctx common.Context, from, to int64) (common.Type, error) {
+	fromIdx, err := getIndex(from, t.Length(ctx))
 	if err != nil {
 		return nil, err
 	}
 
-	toIdx, err := getIndex(to, t.Length())
+	toIdx, err := getIndex(to, t.Length(ctx))
 	if err != nil {
 		return nil, err
 	}
