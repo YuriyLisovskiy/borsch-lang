@@ -48,7 +48,7 @@ var rootCmd = &cobra.Command{
 				return
 			}
 
-			_, err = builtin.ImportPackage(builtin.BuiltinScope, filePath, grammar.ParserInstance)
+			_, err = builtin.ImportPackage(builtin.BuiltinScope, filePath, grammar.ParserInstance, nil)
 			if err != nil {
 				fmt.Println(err.Error())
 				return

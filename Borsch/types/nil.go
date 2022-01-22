@@ -13,7 +13,7 @@ type NilInstance struct {
 func NewNilInstance() NilInstance {
 	return NilInstance{
 		Object: Object{
-			typeName:    GetTypeName(NilTypeHash),
+			typeName:    common.NilTypeName,
 			Attributes:  nil,
 			callHandler: nil,
 		},
@@ -28,12 +28,12 @@ func (t NilInstance) Representation(ctx common.Context) string {
 	return t.String(ctx)
 }
 
-func (t NilInstance) GetTypeHash() uint64 {
-	return t.GetPrototype().GetTypeHash()
-}
-
 func (t NilInstance) AsBool(common.Context) bool {
 	return false
+}
+
+func (t NilInstance) GetTypeName() string {
+	return t.GetPrototype().GetTypeName()
 }
 
 func (t NilInstance) GetAttribute(name string) (common.Type, error) {
@@ -107,7 +107,7 @@ func newNilClass() *Class {
 		makeCommonOperators(Nil),
 	)
 	return NewBuiltinClass(
-		NilTypeHash,
+		common.NilTypeName,
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc

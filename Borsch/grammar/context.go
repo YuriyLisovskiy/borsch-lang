@@ -35,6 +35,13 @@ func (c *ContextImpl) PopScope() map[string]common.Type {
 }
 
 func (c *ContextImpl) GetVar(name string) (common.Type, error) {
+	switch name {
+	case "нуль":
+		return types.NewNilInstance(), nil
+	case "нульовий":
+		return types.Nil, nil
+	}
+
 	lastScopeIdx := len(c.scopes) - 1
 	for idx := lastScopeIdx; idx >= 0; idx-- {
 		if val, ok := c.scopes[idx][name]; ok {
@@ -46,6 +53,11 @@ func (c *ContextImpl) GetVar(name string) (common.Type, error) {
 }
 
 func (c *ContextImpl) SetVar(name string, value common.Type) error {
+	switch name {
+	case "нуль", "нульовий":
+		return util.RuntimeError(fmt.Sprintf("неможливо записати значення у '%s'", name))
+	}
+
 	scopesLen := len(c.scopes)
 	for idx := 0; idx < scopesLen; idx++ {
 		if oldValue, ok := c.scopes[idx][name]; ok {
@@ -80,7 +92,14 @@ func (c *ContextImpl) SetVar(name string, value common.Type) error {
 }
 
 func (c *ContextImpl) GetClass(name string) (common.Type, error) {
-	variable, err := c.classContext.GetVar(name)
+	var variable common.Type
+	var err error
+	if c.classContext != nil {
+		variable, err = c.classContext.GetVar(name)
+	} else {
+		variable, err = c.GetVar(name)
+	}
+
 	if err == nil {
 		if _, ok := variable.(*types.Class); ok {
 			return variable, nil

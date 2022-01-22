@@ -26,7 +26,7 @@ func NewDictionaryInstance() DictionaryInstance {
 	return DictionaryInstance{
 		Map: map[uint64]DictionaryEntry{},
 		Object: Object{
-			typeName:    GetTypeName(DictionaryTypeHash),
+			typeName:    common.DictionaryTypeName,
 			Attributes:  nil,
 			callHandler: nil,
 		},
@@ -60,12 +60,12 @@ func (t DictionaryInstance) Representation(ctx common.Context) string {
 	return "{" + strings.Join(strValues, ", ") + "}"
 }
 
-func (t DictionaryInstance) GetTypeHash() uint64 {
-	return t.GetPrototype().GetTypeHash()
-}
-
 func (t DictionaryInstance) AsBool(common.Context) bool {
 	return t.Length() != 0
+}
+
+func (t DictionaryInstance) GetTypeName() string {
+	return t.GetPrototype().GetTypeName()
 }
 
 func (t DictionaryInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
@@ -210,7 +210,7 @@ func newDictionaryClass() *Class {
 		makeCommonOperators(Dictionary),
 	)
 	return NewBuiltinClass(
-		DictionaryTypeHash,
+		common.DictionaryTypeName,
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc

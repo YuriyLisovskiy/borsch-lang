@@ -19,7 +19,7 @@ func NewBoolInstance(value bool) BoolInstance {
 	return BoolInstance{
 		Value: value,
 		Object: Object{
-			typeName:    GetTypeName(BoolTypeHash),
+			typeName:    common.BoolTypeName,
 			Attributes:  nil,
 			callHandler: nil,
 		},
@@ -40,10 +40,6 @@ func (t BoolInstance) Representation(ctx common.Context) string {
 
 func (t BoolInstance) AsBool(common.Context) bool {
 	return t.Value
-}
-
-func (t BoolInstance) GetTypeHash() uint64 {
-	return t.GetPrototype().GetTypeHash()
 }
 
 func (t BoolInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
@@ -342,7 +338,7 @@ func newBoolClass() *Class {
 		makeCommonOperators(Bool),
 	)
 	return NewBuiltinClass(
-		BoolTypeHash,
+		common.BoolTypeName,
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc

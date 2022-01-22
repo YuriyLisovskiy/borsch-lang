@@ -3,7 +3,6 @@ package builtin
 import (
 	"fmt"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
@@ -288,12 +287,12 @@ func init() {
 				},
 			},
 			func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-				packagePath := (*args)[0].(types.StringInstance).Value
-				if strings.HasPrefix(packagePath, "!/") {
-					packagePath = path.Join(os.Getenv(common.BORSCH_LIB), packagePath[2:])
-				}
-
-				pack, err := ImportPackage(BuiltinScope, packagePath, ctx.GetParser())
+				pack, err := ImportPackage(
+					BuiltinScope,
+					(*args)[0].(types.StringInstance).Value,
+					ctx.GetParser(),
+					ctx.GetPackage().(*types.PackageInstance),
+				)
 				if err != nil {
 					return nil, err
 				}
@@ -314,7 +313,8 @@ func init() {
 		"словник": types.Dictionary,
 		"список":  types.List,
 		// "функція": types.Function,
-		"цілий": types.Integer,
+		"цілий":     types.Integer,
+		"довільний": types.Any,
 
 		// Utilities
 		"довжина": types.NewFunctionInstance(

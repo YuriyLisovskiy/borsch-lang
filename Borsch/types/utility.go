@@ -3,19 +3,12 @@ package types
 import (
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
-
-func hashObject(s string) uint64 {
-	h := fnv.New64()
-	_, _ = h.Write([]byte(s))
-	return h.Sum64()
-}
 
 func getIndex(index, length int64) (int64, error) {
 	if index >= 0 && index < length {
@@ -25,68 +18,6 @@ func getIndex(index, length int64) (int64, error) {
 	}
 
 	return 0, errors.New("індекс за межами послідовності")
-}
-
-func GetTypeName(typeValue uint64) string {
-	switch typeValue {
-	case AnyTypeHash:
-		return "довільний"
-	case NilTypeHash:
-		return "нульовий"
-	case RealTypeHash:
-		return "дійсний"
-	case IntegerTypeHash:
-		return "цілий"
-	case StringTypeHash:
-		return "рядок"
-	case BoolTypeHash:
-		return "логічний"
-	case ListTypeHash:
-		return "список"
-	case DictionaryTypeHash:
-		return "словник"
-	case PackageTypeHash:
-		return "пакет"
-	case FunctionTypeHash:
-		return "функція"
-	case TypeClassTypeHash:
-		return "тип"
-	default:
-		return "невідомий"
-	}
-}
-
-func GetTypeHash(typeName string) uint64 {
-	switch typeName {
-	case "довільний":
-		return AnyTypeHash
-	case "нульовий":
-		return NilTypeHash
-	case "дійсний":
-		return RealTypeHash
-	case "цілий":
-		return IntegerTypeHash
-	case "рядок":
-		return StringTypeHash
-	case "логічний":
-		return BoolTypeHash
-	case "список":
-		return ListTypeHash
-	case "словник":
-		return DictionaryTypeHash
-	case "пакет":
-		return PackageTypeHash
-	case "функція":
-		return FunctionTypeHash
-	case "тип":
-		return TypeClassTypeHash
-	default:
-		return hashObject(typeName)
-	}
-}
-
-func IsBuiltinType(typeName string) bool {
-	return GetTypeHash(typeName) <= FunctionTypeHash
 }
 
 func CheckResult(ctx common.Context, result common.Type, function *FunctionInstance) error {
@@ -427,7 +358,7 @@ func newUnaryMethod(
 	)
 }
 
-func makeComparisonOperator(
+func newComparisonOperator(
 	operator ops.Operator,
 	itemType *Class,
 	doc string,
@@ -455,37 +386,37 @@ func makeComparisonOperators(
 	comparator func(common.Context, common.Type, common.Type) (int, error),
 ) map[string]common.Type {
 	return map[string]common.Type{
-		ops.EqualsOp.Caption(): makeComparisonOperator(
+		ops.EqualsOp.Caption(): newComparisonOperator(
 			// TODO: add doc
 			ops.EqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0
 			},
 		),
-		ops.NotEqualsOp.Caption(): makeComparisonOperator(
+		ops.NotEqualsOp.Caption(): newComparisonOperator(
 			// TODO: add doc
 			ops.NotEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res != 0
 			},
 		),
-		ops.GreaterOp.Caption(): makeComparisonOperator(
+		ops.GreaterOp.Caption(): newComparisonOperator(
 			// TODO: add doc
 			ops.GreaterOp, itemType, "", comparator, func(res int) bool {
 				return res == 1
 			},
 		),
-		ops.GreaterOrEqualsOp.Caption(): makeComparisonOperator(
+		ops.GreaterOrEqualsOp.Caption(): newComparisonOperator(
 			// TODO: add doc
 			ops.GreaterOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == 1
 			},
 		),
-		ops.LessOp.Caption(): makeComparisonOperator(
+		ops.LessOp.Caption(): newComparisonOperator(
 			// TODO: add doc
 			ops.LessOp, itemType, "", comparator, func(res int) bool {
 				return res == -1
 			},
 		),
-		ops.LessOrEqualsOp.Caption(): makeComparisonOperator(
+		ops.LessOrEqualsOp.Caption(): newComparisonOperator(
 			// TODO: add doc
 			ops.LessOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == -1

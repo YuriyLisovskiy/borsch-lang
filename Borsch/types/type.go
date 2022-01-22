@@ -1,8 +1,6 @@
 package types
 
 import (
-	"errors"
-
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
@@ -12,7 +10,7 @@ func GetTypeOfInstance(object common.Type) (common.Type, error) {
 		return instance.GetPrototype(), nil
 	}
 
-	return nil, errors.New("unknown object")
+	panic("unreachable")
 }
 
 func newTypeClass() *Class {
@@ -54,7 +52,7 @@ func newTypeClass() *Class {
 		),
 	}
 	return NewBuiltinClass(
-		TypeClassTypeHash,
+		common.TypeTypeName,
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc

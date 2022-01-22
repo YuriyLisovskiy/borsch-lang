@@ -7,11 +7,9 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
 
-// Class TODO: Improve
 type Class struct {
 	Object
 
-	typeHash         uint64
 	GetEmptyInstance func() (common.Type, error)
 }
 
@@ -22,8 +20,7 @@ func NewClass(
 	doc string,
 ) *Class {
 	class := &Class{
-		Object:   *newClassObject(name, package_, attributes, doc),
-		typeHash: hashObject(name),
+		Object: *newClassObject(name, package_, attributes, doc),
 	}
 	class.GetEmptyInstance = func() (common.Type, error) {
 		// TODO: set default attributes
@@ -34,54 +31,53 @@ func NewClass(
 }
 
 func NewBuiltinClass(
-	typeHash uint64,
+	typeName string,
 	package_ *PackageInstance,
 	attributes map[string]common.Type,
 	doc string,
 	getEmptyInstance func() (common.Type, error),
 ) *Class {
 	return &Class{
-		Object:           *newClassObject(GetTypeName(typeHash), package_, attributes, doc),
-		typeHash:         typeHash,
+		Object:           *newClassObject(typeName, package_, attributes, doc),
 		GetEmptyInstance: getEmptyInstance,
 	}
 }
 
-func (t Class) String(common.Context) string {
-	return fmt.Sprintf("<клас '%s'>", t.GetTypeName())
+func (c Class) String(common.Context) string {
+	return fmt.Sprintf("<клас '%s'>", c.GetTypeName())
 }
 
-func (t Class) Representation(ctx common.Context) string {
-	return t.String(ctx)
+func (c Class) Representation(ctx common.Context) string {
+	return c.String(ctx)
 }
 
-func (t Class) GetTypeHash() uint64 {
-	return t.typeHash
-}
-
-func (t Class) AsBool(common.Context) bool {
+func (c Class) AsBool(common.Context) bool {
 	return true
+}
+
+func (c Class) GetTypeName() string {
+	return c.typeName
 }
 
 // SetAttribute TODO: якщо атрибут не існує, встановити.
 //  Якщо атрибут існує, перевірити його тип і, якщо типи співпадають
 //  встановити, інакше помилка.
-func (t Class) SetAttribute(name string, value common.Type) (common.Type, error) {
-	err := t.Object.SetAttribute(name, value)
+func (c Class) SetAttribute(name string, value common.Type) (common.Type, error) {
+	err := c.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
 	}
 
-	return t, nil
+	return c, nil
 }
 
-func (t Class) GetPrototype() *Class {
+func (c Class) GetPrototype() *Class {
 	return TypeClass
 }
 
-func newClassObject(name string, package_ *PackageInstance, attributes map[string]common.Type, doc string) *Object {
+func newClassObject(typeName string, package_ *PackageInstance, attributes map[string]common.Type, doc string) *Object {
 	object := &Object{
-		typeName:    name,
+		typeName:    typeName,
 		Attributes:  nil,
 		callHandler: nil,
 	}
@@ -154,10 +150,6 @@ func (i ClassInstance) String(ctx common.Context) string {
 // Representation TODO: поміняти __рядок__ на __представлення__
 func (i ClassInstance) Representation(ctx common.Context) string {
 	return i.String(ctx)
-}
-
-func (i ClassInstance) GetTypeHash() uint64 {
-	return i.class.GetTypeHash()
 }
 
 func (i ClassInstance) AsBool(ctx common.Context) bool {

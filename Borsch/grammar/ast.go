@@ -63,12 +63,16 @@ type FunctionBody struct {
 type FunctionDef struct {
 	Pos lexer.Position
 
-	Name       string       `"функція" @Ident`
+	Name          string         `"функція" @Ident`
+	ParametersSet *ParametersSet `@@`
+	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
+	Body          *FunctionBody  `"{" @@ "}"`
+}
+
+type ParametersSet struct {
+	Pos lexer.Position
+
 	Parameters []*Parameter `"(" (@@ ("," @@)* )? ")"`
-	// Parameters        []*Parameter       `"(" (@@ ("," @@)* )?`
-	// VariadicParameter *VariadicParameter `("," @@)? ")"`
-	ReturnTypes []*ReturnType `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body        *FunctionBody `"{" @@ "}"`
 }
 
 type Parameter struct {
@@ -83,14 +87,6 @@ type ReturnType struct {
 	Pos lexer.Position
 
 	Name       string `@Ident`
-	IsNullable bool   `@"?"?`
-}
-
-type VariadicParameter struct {
-	Pos lexer.Position
-
-	Name       string `@Ident ":" "."".""."`
-	Type       string `@Ident`
 	IsNullable bool   `@"?"?`
 }
 
@@ -226,7 +222,6 @@ type Exponent struct {
 	Next    *Exponent `  @@ ]`
 }
 
-// TODO: add list slicing
 type Primary struct {
 	Pos lexer.Position
 
@@ -239,12 +234,14 @@ type Primary struct {
 type Constant struct {
 	Pos lexer.Position
 
-	Integer    *int64             `  @Int`
-	Real       *float64           `| @Float`
-	Bool       *Boolean           `| @("істина" | "хиба")`
-	String     *string            `| @String`
-	List       []*Expression      `| "[" (@@ ("," @@)* )? "]"`
-	Dictionary []*DictionaryEntry `| "{" (@@ ("," @@)* )? "}"`
+	Integer         *int64             `  @Int`
+	Real            *float64           `| @Float`
+	Bool            *Boolean           `| @("істина" | "хиба")`
+	String          *string            `| @String`
+	List            []*Expression      `| "[" @@ ("," @@)* "]"`
+	EmptyList       bool               `| @("[""]")`
+	Dictionary      []*DictionaryEntry `| "{" @@ ("," @@)* "}"`
+	EmptyDictionary bool               `| @("{""}")`
 }
 
 type DictionaryEntry struct {
@@ -257,11 +254,9 @@ type DictionaryEntry struct {
 type LambdaDef struct {
 	Pos lexer.Position
 
-	Parameters []*Parameter `"(" (@@ ("," @@)* )? ")"`
-	// Parameters        []*Parameter       `"(" (@@ ("," @@)* )?`
-	// VariadicParameter *VariadicParameter `("," @@)? ")"`
-	ReturnTypes []*ReturnType `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body        *FunctionBody `"="">" "{" @@ "}"`
+	ParametersSet *ParametersSet `@@`
+	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
+	Body          *FunctionBody  `"="">" "{" @@ "}"`
 }
 
 type AttributeAccess struct {
@@ -271,19 +266,12 @@ type AttributeAccess struct {
 	AttributeAccess *AttributeAccess       `("." @@)?`
 }
 
-// type Subscription struct {
-// 	Pos lexer.Position
-//
-// 	Slicing *Slicing      `@@`
-// 	Indices []*Expression `("[" @@ "]")*`
-// }
-
 type SlicingOrSubscription struct {
 	Pos lexer.Position
 
-	CallFunc *CallFunc `( @@`
-	Ident    *string   `| @Ident)`
-	Ranges   []*Range  `@@*`
+	Call   *Call    `( @@`
+	Ident  *string  `| @Ident)`
+	Ranges []*Range `@@*`
 }
 
 type Range struct {
@@ -294,7 +282,7 @@ type Range struct {
 	RightBound *Expression ` @@] "]"`
 }
 
-type CallFunc struct {
+type Call struct {
 	Pos lexer.Position
 
 	Ident     string        `@Ident`

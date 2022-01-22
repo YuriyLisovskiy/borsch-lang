@@ -20,7 +20,7 @@ func NewStringInstance(value string) StringInstance {
 	return StringInstance{
 		Value: value,
 		Object: Object{
-			typeName:    GetTypeName(StringTypeHash),
+			typeName:    common.StringTypeName,
 			Attributes:  nil,
 			callHandler: nil,
 		},
@@ -35,12 +35,12 @@ func (t StringInstance) Representation(ctx common.Context) string {
 	return "\"" + t.String(ctx) + "\""
 }
 
-func (t StringInstance) GetTypeHash() uint64 {
-	return t.GetPrototype().GetTypeHash()
-}
-
 func (t StringInstance) AsBool(ctx common.Context) bool {
 	return t.Length(ctx) != 0
+}
+
+func (t StringInstance) GetTypeName() string {
+	return t.GetPrototype().GetTypeName()
 }
 
 func (t StringInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
@@ -206,7 +206,7 @@ func newStringClass() *Class {
 		makeCommonOperators(String),
 	)
 	return NewBuiltinClass(
-		StringTypeHash,
+		common.StringTypeName,
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc

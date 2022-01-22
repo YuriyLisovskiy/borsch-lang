@@ -64,11 +64,12 @@ func (p *ParserImpl) Parse(filename string, code string) (common.Evaluatable, er
 }
 
 func (p *ParserImpl) NewContext(packageFilename string, parentPackage common.Type) common.Context {
-	parentPackageName := ""
-	if parentPackage != nil {
-		parentPackageName = parentPackage.(*types.PackageInstance).Name
-	}
 	return &ContextImpl{
-		package_: types.NewPackageInstance(false, packageFilename, parentPackageName, map[string]common.Type{}),
+		package_: types.NewPackageInstance(
+			false,
+			packageFilename,
+			parentPackage.(*types.PackageInstance),
+			map[string]common.Type{},
+		),
 	}
 }

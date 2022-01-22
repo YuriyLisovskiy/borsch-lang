@@ -2,20 +2,6 @@ package types
 
 import "github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 
-const (
-	AnyTypeHash uint64 = iota + 1
-	NilTypeHash
-	RealTypeHash
-	IntegerTypeHash
-	StringTypeHash
-	BoolTypeHash
-	ListTypeHash
-	DictionaryTypeHash
-	PackageTypeHash
-	FunctionTypeHash
-	TypeClassTypeHash
-)
-
 type ObjectInstance interface {
 	GetPrototype() *Class
 }
@@ -34,7 +20,7 @@ var (
 	Any        *Class = nil
 )
 
-var BuiltinPackage = NewPackageInstance(true, "вбудований", "", map[string]common.Type{})
+var BuiltinPackage *PackageInstance
 
 func init() {
 	Bool = newBoolClass()
@@ -47,4 +33,6 @@ func init() {
 	Real = newRealClass()
 	String = newStringClass()
 	TypeClass = newTypeClass()
+
+	BuiltinPackage = NewPackageInstance(true, "вбудований", nil, map[string]common.Type{})
 }

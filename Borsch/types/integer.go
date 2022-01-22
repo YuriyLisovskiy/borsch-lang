@@ -29,7 +29,7 @@ func NewIntegerInstanceFromString(value string) (IntegerInstance, error) {
 func NewIntegerInstance(value int64) IntegerInstance {
 	return IntegerInstance{
 		Object: Object{
-			typeName:    GetTypeName(IntegerTypeHash),
+			typeName:    common.IntegerTypeName,
 			Attributes:  nil,
 			callHandler: nil,
 		},
@@ -45,12 +45,12 @@ func (t IntegerInstance) Representation(ctx common.Context) string {
 	return t.String(ctx)
 }
 
-func (t IntegerInstance) GetTypeHash() uint64 {
-	return t.GetPrototype().GetTypeHash()
-}
-
 func (t IntegerInstance) AsBool(common.Context) bool {
 	return t.Value != 0
+}
+
+func (t IntegerInstance) GetTypeName() string {
+	return t.GetPrototype().GetTypeName()
 }
 
 func (t IntegerInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
@@ -387,7 +387,7 @@ func newIntegerClass() *Class {
 		makeCommonOperators(Integer),
 	)
 	return NewBuiltinClass(
-		IntegerTypeHash,
+		common.IntegerTypeName,
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc

@@ -16,10 +16,7 @@ func callMethod(
 	funcName string,
 	args *[]common.Type,
 	kwargs *map[string]common.Type,
-) (
-	common.Type,
-	error,
-) {
+) (common.Type, error) {
 	attribute, err := object.GetAttribute(funcName)
 	if err != nil {
 		return nil, util.RuntimeError(err.Error())
@@ -97,27 +94,8 @@ func evalUnaryOperator(
 	panic("unreachable")
 }
 
-func evalSingleGetByIndexOperation(ctx common.Context, variable common.Type, index common.Type) (common.Type, error) {
-	switch iterable := variable.(type) {
-	case common.SequentialType:
-		switch integerIndex := index.(type) {
-		case types.IntegerInstance:
-			return iterable.GetElement(ctx, integerIndex.Value)
-		default:
-			return nil, util.RuntimeError("індекси мають бути цілого типу")
-		}
-	default:
-		return nil, util.RuntimeError(
-			fmt.Sprintf(
-				"неможливо застосувати оператор довільного доступу до об'єкта з типом '%s'",
-				variable.GetTypeName(),
-			),
-		)
-	}
-}
-
-// TODO: rename evalSingleSetByIndexOperation to slicing
-func evalSingleSetByIndexOperation(
+// evalSlicingOperation: "ranges_" len should be greater than 0
+func evalSlicingOperation(
 	ctx common.Context,
 	variable common.Type,
 	ranges_ []*Range,
@@ -150,12 +128,16 @@ func evalSingleSetByIndexOperation(
 			}
 
 			if len(ranges_) == 1 {
-				// valueToSet is ignored
+				// valueToSet is ignored, return error maybe.
 				return element, nil
 			}
 		} else {
 			if len(ranges_) == 1 {
-				return iterable.SetElement(ctx, leftIdx, valueToSet)
+				if valueToSet != nil {
+					return iterable.SetElement(ctx, leftIdx, valueToSet)
+				}
+
+				return iterable.GetElement(ctx, leftIdx)
 			}
 
 			element, err = iterable.GetElement(ctx, leftIdx)
@@ -164,7 +146,7 @@ func evalSingleSetByIndexOperation(
 			}
 		}
 
-		return evalSingleSetByIndexOperation(ctx, element, ranges_[1:], valueToSet)
+		return evalSlicingOperation(ctx, element, ranges_[1:], valueToSet)
 	default:
 		operatorDescription := ""
 		if ranges_[0].IsSlicing {
@@ -177,35 +159,6 @@ func evalSingleSetByIndexOperation(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до об'єкта з типом '%s'",
 				operatorDescription, variable.GetTypeName(),
-			),
-		)
-	}
-}
-
-func evalSlicingOperation(
-	ctx common.Context,
-	variable common.Type,
-	leftBound *Expression,
-	rightBound *Expression,
-) (common.Type, error) {
-	switch iterable := variable.(type) {
-	case common.SequentialType:
-		leftIdx, err := mustIntIndex(ctx, leftBound, "ліва межа має бути цілого типу")
-		if err != nil {
-			return nil, err
-		}
-
-		rightIdx, err := mustIntIndex(ctx, rightBound, "права межа має бути цілого типу")
-		if err != nil {
-			return nil, err
-		}
-
-		return iterable.Slice(ctx, leftIdx, rightIdx)
-	default:
-		return nil, util.RuntimeError(
-			fmt.Sprintf(
-				"неможливо застосувати оператор зрізу до об'єкта з типом '%s'",
-				variable.GetTypeName(),
 			),
 		)
 	}
@@ -361,20 +314,6 @@ func unpackList(ctx common.Context, lhs []*Expression, rhs *Expression) (common.
 	panic(fmt.Sprintf("unable to unpack %s", element.GetTypeName()))
 }
 
-func evalParameters(ctx common.Context, parameters []*Parameter) ([]types.FunctionArgument, error) {
-	var arguments []types.FunctionArgument
-	for _, parameter := range parameters {
-		arg, err := parameter.Evaluate(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		arguments = append(arguments, *arg)
-	}
-
-	return arguments, nil
-}
-
 func evalReturnTypes(ctx common.Context, returnTypes []*ReturnType) ([]types.FunctionReturnType, error) {
 	var result []types.FunctionReturnType
 	if len(returnTypes) == 0 {
@@ -396,4 +335,40 @@ func evalReturnTypes(ctx common.Context, returnTypes []*ReturnType) ([]types.Fun
 	}
 
 	return result, nil
+}
+
+func getCurrentValue(ctx common.Context, prevValue common.Type, ident string) (common.Type, error) {
+	if prevValue != nil {
+		if err := checkForNilAttribute(ident); err != nil {
+			return nil, err
+		}
+
+		return prevValue.GetAttribute(ident)
+	}
+
+	return ctx.GetVar(ident)
+}
+
+func setCurrentValue(ctx common.Context, prevValue common.Type, ident string, valueToSet common.Type) (
+	common.Type,
+	error,
+) {
+	if prevValue != nil {
+		if err := checkForNilAttribute(ident); err != nil {
+			return nil, err
+		}
+
+		return prevValue.SetAttribute(ident, valueToSet)
+	}
+
+	return valueToSet, ctx.SetVar(ident, valueToSet)
+}
+
+func checkForNilAttribute(ident string) error {
+	switch ident {
+	case "нуль", "нульовий":
+		return util.RuntimeError(fmt.Sprintf("'%s' не є атрибутом", ident))
+	}
+
+	return nil
 }

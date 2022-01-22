@@ -12,16 +12,21 @@ type PackageInstance struct {
 	Object
 	IsBuiltin bool
 	Name      string
-	Parent    string
+	Parent    *PackageInstance
 }
 
-func NewPackageInstance(isBuiltin bool, name, parent string, attributes map[string]common.Type) *PackageInstance {
+func NewPackageInstance(
+	isBuiltin bool,
+	name string,
+	parent *PackageInstance,
+	attributes map[string]common.Type,
+) *PackageInstance {
 	return &PackageInstance{
 		IsBuiltin: isBuiltin,
 		Name:      name,
 		Parent:    parent,
 		Object: Object{
-			typeName:    GetTypeName(PackageTypeHash),
+			typeName:    common.PackageTypeName,
 			Attributes:  attributes,
 			callHandler: nil,
 		},
@@ -36,12 +41,12 @@ func (t PackageInstance) Representation(ctx common.Context) string {
 	return t.String(ctx)
 }
 
-func (t PackageInstance) GetTypeHash() uint64 {
-	return t.GetPrototype().GetTypeHash()
-}
-
 func (t PackageInstance) AsBool(common.Context) bool {
 	return true
+}
+
+func (t PackageInstance) GetTypeName() string {
+	return t.GetPrototype().GetTypeName()
 }
 
 func (t PackageInstance) GetAttribute(name string) (common.Type, error) {
@@ -147,7 +152,7 @@ func NewPackageClass() *Class {
 		makeCommonOperators(Package),
 	)
 	return NewBuiltinClass(
-		PackageTypeHash,
+		common.PackageTypeName,
 		BuiltinPackage,
 		attributes,
 		"",  // TODO: add doc

@@ -19,7 +19,7 @@ func NewListInstance() ListInstance {
 	return ListInstance{
 		Values: []common.Type{},
 		Object: Object{
-			typeName:    GetTypeName(ListTypeHash),
+			typeName:    common.ListTypeName,
 			Attributes:  nil,
 			callHandler: nil,
 		},
@@ -39,12 +39,12 @@ func (t ListInstance) Representation(ctx common.Context) string {
 	return "[" + strings.Join(strValues, ", ") + "]"
 }
 
-func (t ListInstance) GetTypeHash() uint64 {
-	return t.GetPrototype().GetTypeHash()
-}
-
 func (t ListInstance) AsBool(ctx common.Context) bool {
 	return t.Length(ctx) != 0
+}
+
+func (t ListInstance) GetTypeName() string {
+	return t.GetPrototype().GetTypeName()
 }
 
 func (t ListInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
@@ -207,7 +207,7 @@ func newListClass() *Class {
 		makeCommonOperators(List),
 	)
 	return NewBuiltinClass(
-		ListTypeHash,
+		common.ListTypeName,
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc

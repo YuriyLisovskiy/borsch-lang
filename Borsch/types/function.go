@@ -91,7 +91,7 @@ func NewFunctionInstance(
 
 	function := &FunctionInstance{
 		Object: Object{
-			typeName:    GetTypeName(FunctionTypeHash),
+			typeName:    common.FunctionTypeName,
 			Attributes:  attributes,
 			callHandler: handler,
 		},
@@ -131,12 +131,12 @@ func (t FunctionInstance) Representation(ctx common.Context) string {
 	return t.String(ctx)
 }
 
-func (t FunctionInstance) GetTypeHash() uint64 {
-	return t.GetPrototype().GetTypeHash()
-}
-
 func (t FunctionInstance) AsBool(common.Context) bool {
 	return true
+}
+
+func (t FunctionInstance) GetTypeName() string {
+	return t.GetPrototype().GetTypeName()
 }
 
 func (t FunctionInstance) SetAttribute(name string, value common.Type) (common.Type, error) {
@@ -208,7 +208,7 @@ func newFunctionClass() *Class {
 		makeCommonOperators(Function),
 	)
 	return NewBuiltinClass(
-		FunctionTypeHash,
+		common.FunctionTypeName,
 		BuiltinPackage,
 		attributes,
 		"",  // TODO: add doc

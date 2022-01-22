@@ -20,7 +20,7 @@ func NewRealInstance(value float64) RealInstance {
 	return RealInstance{
 		Value: value,
 		Object: Object{
-			typeName:    GetTypeName(RealTypeHash),
+			typeName:    common.RealTypeName,
 			Attributes:  nil,
 			callHandler: nil,
 		},
@@ -35,12 +35,12 @@ func (t RealInstance) Representation(ctx common.Context) string {
 	return t.String(ctx)
 }
 
-func (t RealInstance) GetTypeHash() uint64 {
-	return t.GetPrototype().GetTypeHash()
-}
-
 func (t RealInstance) AsBool(common.Context) bool {
 	return t.Value != 0.0
+}
+
+func (t RealInstance) GetTypeName() string {
+	return t.GetPrototype().GetTypeName()
 }
 
 func (t RealInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
@@ -287,7 +287,7 @@ func newRealClass() *Class {
 		makeCommonOperators(Real),
 	)
 	return NewBuiltinClass(
-		RealTypeHash,
+		common.RealTypeName,
 		BuiltinPackage,
 		attributes,
 		"", // TODO: add doc
