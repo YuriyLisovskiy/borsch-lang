@@ -3,16 +3,18 @@ package builtin
 import (
 	"bufio"
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
 	"os"
 	"strings"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func Print(args ...types.ValueType) {
+func Print(ctx common.Context, args ...common.Type) {
 	var strArgs []string
 	for _, arg := range args {
-		strArgs = append(strArgs, arg.String())
+		strArgs = append(strArgs, arg.String(ctx))
 	}
 
 	fmt.Print(
@@ -26,13 +28,13 @@ func Print(args ...types.ValueType) {
 	)
 }
 
-func Input(args ...types.ValueType) (types.ValueType, error) {
-	Print(args...)
+func Input(ctx common.Context, args ...common.Type) (common.Type, error) {
+	Print(ctx, args...)
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		return nil, util.InternalError(err.Error())
 	}
 
-	return types.StringType{Value: strings.TrimSuffix(input, "\n")}, nil
+	return types.StringInstance{Value: strings.TrimSuffix(input, "\n")}, nil
 }

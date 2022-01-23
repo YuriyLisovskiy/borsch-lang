@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/YuriyLisovskiy/borsch/Borsch/cli/build"
-	"github.com/YuriyLisovskiy/borsch/Borsch/interpreter"
-	"github.com/YuriyLisovskiy/borsch/Borsch/util"
-	"github.com/spf13/cobra"
 	"os"
-	"runtime"
-	"strings"
+	"path/filepath"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/grammar"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use: "borsch",
 	Long: `Борщ — це мова програмування, яка дозволяє писати код українською.
-Вихідний код доступний на GitHub — https://github.com/YuriyLisovskiy/borsch-lang`,
+Вихідний код (буде) доступний на GitHub — https://github.com/YuriyLisovskiy/borsch-lang`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
 			fileInfo, err := os.Stat(args[0])
@@ -31,40 +31,43 @@ var rootCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(stdRoot) == 0 {
-			stdRoot = os.Getenv("BORSCH_STD")
+			stdRoot = os.Getenv(common.BORSCH_LIB)
 		}
 
 		if len(stdRoot) == 0 {
-			fmt.Print("Увага: змінна середовища BORSCH_STD необхідна для використання стандартної бібліотеки\n\n")
+			fmt.Printf(
+				"Увага: змінна середовища '%s' необхідна для використання стандартної бібліотеки\n\n",
+				common.BORSCH_LIB,
+			)
 		}
 
 		if len(args) > 0 {
-			filePath := args[0]
-			interpret := interpreter.NewInterpreter(stdRoot, filePath, "")
-			content, err := util.ReadFile(filePath)
+			filePath, err := filepath.Abs(args[0])
 			if err != nil {
 				fmt.Println(err.Error())
-			} else {
-				_, err = interpret.ExecuteFile(filePath, "", content, false)
-				if err != nil {
-					fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
-				}
+				return
+			}
+
+			_, err = builtin.ImportPackage(builtin.BuiltinScope, filePath, grammar.ParserInstance, nil)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
 			}
 		} else {
-			interpret := interpreter.NewInterpreter(stdRoot, "<стдввід>", "")
-			fmt.Printf("%s %s (%s, %s)\n", build.LanguageName, build.Version, build.Time, strings.Title(runtime.GOOS))
-			fmt.Println(
-				"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.\n"+
-				"Натисніть CONTROL+D або CONTROL+C для виходу.",
-			)
-			runInteractiveConsole(interpret)
+			// interpret := interpreter.NewInterpreter(stdRoot, builtin.RootPackageName, "")
+			// fmt.Printf("%s %s (%s, %s)\n", build.LanguageName, build.Version, build.Time, strings.Title(runtime.GOOS))
+			// fmt.Println(
+			// 	"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.\n" +
+			// 		"Натисніть CONTROL+D або CONTROL+C для виходу.",
+			// )
+			// runInteractiveConsole(interpret)
 		}
 	},
 }
 
 func init() {
 	rootCmd.Flags().StringVarP(
-		&stdRoot, "lib", "l", "", "шлях до директорії зі стандартною бібліотекою мови",
+		&stdRoot, "lib", "l", "", "шлях до каталогу зі стандартною бібліотекою мови",
 	)
 }
 

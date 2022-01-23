@@ -17,3 +17,6 @@
 # Directories
 bin/
 .idea/
+
+# macOS files
+.DS_Store
