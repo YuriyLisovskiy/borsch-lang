@@ -36,9 +36,34 @@ func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 	return ctx.GetPackage(), nil
 }
 
-func (s *WhileStmt) Evaluate(ctx common.Context) (common.Type, bool, error) {
-	// TODO:
-	panic("unreachable")
+func (s *WhileStmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool, error) {
+	if s.Condition == nil || s.Body == nil {
+		panic("unreachable")
+	}
+
+	for {
+		condition, err := s.Condition.Evaluate(ctx, nil)
+		if err != nil {
+			return nil, false, err
+		}
+
+		if !condition.AsBool(ctx) {
+			break
+		}
+
+		ctx.PushScope(Scope{})
+		result, forceReturn, err := s.Body.Evaluate(ctx, inFunction)
+		if err != nil {
+			return nil, false, err
+		}
+
+		ctx.PopScope()
+		if forceReturn {
+			return result, forceReturn, nil
+		}
+	}
+
+	return nil, false, nil
 }
 
 // Evaluate executes block of statements.
@@ -68,7 +93,7 @@ func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (
 	if s.IfStmt != nil {
 		return s.IfStmt.Evaluate(ctx, inFunction)
 	} else if s.WhileStmt != nil {
-		return s.WhileStmt.Evaluate(ctx)
+		return s.WhileStmt.Evaluate(ctx, inFunction)
 	} else if s.Block != nil {
 		ctx.PushScope(Scope{})
 		result, forceReturn, err := s.Block.Evaluate(ctx, inFunction)

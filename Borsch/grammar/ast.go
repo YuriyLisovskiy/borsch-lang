@@ -18,7 +18,7 @@ type WhileStmt struct {
 	Pos lexer.Position
 
 	Condition *Expression `"поки" "(" @@ ")"`
-	Body      *Stmt       `@@`
+	Body      *BlockStmts `"{" @@ "}"`
 }
 
 type IfStmt struct {
