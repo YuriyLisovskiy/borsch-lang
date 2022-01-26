@@ -7,7 +7,7 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/grammar"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +48,7 @@ var rootCmd = &cobra.Command{
 				return
 			}
 
-			_, err = builtin.ImportPackage(builtin.BuiltinScope, filePath, grammar.ParserInstance, nil)
+			_, err = builtin.ImportPackage(builtin.BuiltinScope, filePath, interpreter.ParserInstance, nil)
 			if err != nil {
 				fmt.Println(err.Error())
 				return

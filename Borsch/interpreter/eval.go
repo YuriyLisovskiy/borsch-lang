@@ -1,4 +1,4 @@
-package grammar
+package interpreter
 
 import (
 	"errors"
@@ -8,7 +8,6 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
-	"github.com/alecthomas/participle/v2/lexer"
 )
 
 type Scope map[string]common.Type
@@ -18,7 +17,7 @@ func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 	for _, stmt := range p.Stmts {
 		_, _, err := stmt.Evaluate(ctx, false)
 		if err != nil {
-			pos := stmt.getPos()
+			pos := stmt.Pos
 			return nil, errors.New(
 				fmt.Sprintf(
 					"  Файл \"%s\", рядок %d, позиція %d,\n    %s\n%s",
@@ -94,6 +93,8 @@ func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (
 		return s.IfStmt.Evaluate(ctx, inFunction)
 	} else if s.WhileStmt != nil {
 		return s.WhileStmt.Evaluate(ctx, inFunction)
+	} else if s.LoopStmt != nil {
+		return s.LoopStmt.Evaluate(ctx, inFunction)
 	} else if s.Block != nil {
 		ctx.PushScope(Scope{})
 		result, forceReturn, err := s.Block.Evaluate(ctx, inFunction)
@@ -134,33 +135,13 @@ func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (
 	panic("unreachable")
 }
 
-func (s *Stmt) getPos() lexer.Position {
-	if s.IfStmt != nil {
-		return s.IfStmt.Pos
-	} else if s.WhileStmt != nil {
-		return s.WhileStmt.Pos
-	} else if s.Block != nil {
-		return s.Block.Pos
-	} else if s.FunctionDef != nil {
-		return s.FunctionDef.Pos
-	} else if s.ClassDef != nil {
-		return s.ClassDef.Pos
-	} else if s.ReturnStmt != nil {
-		return s.ReturnStmt.Pos
-	} else if s.Assignment != nil {
-		return s.Assignment.Pos
-	} else if s.Empty {
-		return s.Pos
-	}
-
-	panic("unreachable")
-}
-
 func (s *Stmt) String() string {
 	if s.IfStmt != nil {
 		return "s.IfStmt."
 	} else if s.WhileStmt != nil {
 		return "s.WhileStmt."
+	} else if s.LoopStmt != nil {
+		return "s.LoopStmt."
 	} else if s.Block != nil {
 		return "s.Block."
 	} else if s.FunctionDef != nil {

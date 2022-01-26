@@ -1,4 +1,4 @@
-package grammar
+package interpreter
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"

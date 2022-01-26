@@ -1,4 +1,4 @@
-package grammar
+package interpreter
 
 import (
 	"errors"
@@ -110,14 +110,22 @@ func evalSlicingOperation(
 			errMsg = "індекс має бути цілого типу"
 		}
 
-		leftIdx, err := mustIntIndex(ctx, ranges_[0].LeftBound, errMsg)
+		leftIdx, err := mustInt(
+			ctx, ranges_[0].LeftBound, func(t common.Type) string {
+				return fmt.Sprintf("%s, отримано %s", errMsg, t.GetTypeName())
+			},
+		)
 		if err != nil {
 			return nil, err
 		}
 
 		var element common.Type
 		if ranges_[0].RightBound != nil {
-			rightIdx, err := mustIntIndex(ctx, ranges_[0].RightBound, "права межа має бути цілого типу")
+			rightIdx, err := mustInt(
+				ctx, ranges_[0].RightBound, func(t common.Type) string {
+					return fmt.Sprintf("права межа має бути цілого типу, отримано %s", t.GetTypeName())
+				},
+			)
 			if err != nil {
 				return nil, err
 			}
@@ -164,7 +172,7 @@ func evalSlicingOperation(
 	}
 }
 
-func mustIntIndex(ctx common.Context, expression *Expression, errMessage string) (int64, error) {
+func mustInt(ctx common.Context, expression *Expression, errFunc func(common.Type) string) (int64, error) {
 	value, err := expression.Evaluate(ctx, nil)
 	if err != nil {
 		return 0, err
@@ -174,7 +182,7 @@ func mustIntIndex(ctx common.Context, expression *Expression, errMessage string)
 	case types.IntegerInstance:
 		return integer.Value, nil
 	default:
-		return 0, util.RuntimeError(errMessage)
+		return 0, util.RuntimeError(errFunc(value))
 	}
 }
 

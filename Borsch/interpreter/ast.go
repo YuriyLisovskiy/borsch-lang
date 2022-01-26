@@ -1,4 +1,4 @@
-package grammar
+package interpreter
 
 import "github.com/alecthomas/participle/v2/lexer"
 
@@ -19,6 +19,29 @@ type WhileStmt struct {
 
 	Condition *Expression `"поки" "(" @@ ")"`
 	Body      *BlockStmts `"{" @@ "}"`
+}
+
+type LoopStmt struct {
+	Pos lexer.Position
+
+	Keyword        string          `"цикл"`
+	RangeBasedLoop *RangeBasedLoop `"(" @@ ")"`
+	Body           *BlockStmts     `"{" @@ "}"`
+}
+
+// RangeBasedLoop is a loop with two bounds to
+// iterate over.
+//
+//   цикл (і : 1..7)
+//   {
+//   }
+type RangeBasedLoop struct {
+	Pos lexer.Position
+
+	Variable   string      `@Ident ":"`
+	LeftBound  *Expression `@@`
+	SS         string      `@("."".")`
+	RightBound *Expression `@@`
 }
 
 type IfStmt struct {
@@ -46,6 +69,7 @@ type Stmt struct {
 
 	IfStmt      *IfStmt      `  @@`
 	WhileStmt   *WhileStmt   `| @@`
+	LoopStmt    *LoopStmt    `| @@`
 	Block       *BlockStmts  `| "{" @@ "}"`
 	FunctionDef *FunctionDef `| @@`
 	ClassDef    *ClassDef    `| @@`
@@ -103,13 +127,6 @@ type ClassMember struct {
 	Variable *Assignment  ` (@@ ";")`
 	Method   *FunctionDef `| @@`
 	Class    *ClassDef    `| @@`
-}
-
-type Boolean bool
-
-func (b *Boolean) Capture(values []string) error {
-	*b = values[0] == "істина"
-	return nil
 }
 
 type Assignment struct {
@@ -242,6 +259,13 @@ type Constant struct {
 	EmptyList       bool               `| @("[""]")`
 	Dictionary      []*DictionaryEntry `| "{" @@ ("," @@)* "}"`
 	EmptyDictionary bool               `| @("{""}")`
+}
+
+type Boolean bool
+
+func (b *Boolean) Capture(values []string) error {
+	*b = values[0] == "істина"
+	return nil
 }
 
 type DictionaryEntry struct {
