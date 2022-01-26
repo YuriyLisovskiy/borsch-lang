@@ -7,41 +7,45 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 )
 
-func (l *LoopStmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool, error) {
+func (l *LoopStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResult {
 	if l.RangeBasedLoop == nil || l.Body == nil {
 		panic("unreachable")
 	}
 
-	return l.RangeBasedLoop.Evaluate(ctx, l.Body, inFunction)
+	return l.RangeBasedLoop.Evaluate(ctx, l.Body, inFunction, inLoop)
 }
 
-func (s *RangeBasedLoop) Evaluate(ctx common.Context, body *BlockStmts, inFunction bool) (common.Type, bool, error) {
+func (s *RangeBasedLoop) Evaluate(ctx common.Context, body *BlockStmts, inFunction, inLoop bool) StmtResult {
 	leftBound, err := getBound(ctx, s.LeftBound, "ліва")
 	if err != nil {
-		return nil, false, err
+		return StmtResult{Err: err}
 	}
 
 	rightBound, err := getBound(ctx, s.RightBound, "права")
 	if err != nil {
-		return nil, false, err
+		return StmtResult{Err: err}
 	}
 
 	for leftBound < rightBound {
 		ctx.PushScope(Scope{s.Variable: types.NewIntegerInstance(leftBound)})
-		result, forceReturn, err := body.Evaluate(ctx, inFunction)
-		if err != nil {
-			return nil, false, err
+		result := body.Evaluate(ctx, inFunction, true)
+		if result.Err != nil {
+			return result
 		}
 
 		ctx.PopScope()
-		if forceReturn {
-			return result, forceReturn, nil
+		switch result.State {
+		case StmtForceReturn:
+			return result
+		case StmtBreak:
+			result.State = StmtNone
+			return result
 		}
 
 		leftBound += 1
 	}
 
-	return nil, false, nil
+	return StmtResult{}
 }
 
 func getBound(ctx common.Context, bound *Expression, boundName string) (int64, error) {

@@ -15,13 +15,13 @@ type Scope map[string]common.Type
 func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 	ctx.PushScope(Scope{})
 	for _, stmt := range p.Stmts {
-		_, _, err := stmt.Evaluate(ctx, false)
-		if err != nil {
+		state := stmt.Evaluate(ctx, false, false)
+		if state.Err != nil {
 			pos := stmt.Pos
 			return nil, errors.New(
 				fmt.Sprintf(
 					"  Файл \"%s\", рядок %d, позиція %d,\n    %s\n%s",
-					pos.Filename, pos.Line, pos.Column, stmt.String(), err.Error(),
+					pos.Filename, pos.Line, pos.Column, stmt.String(), state.Err.Error(),
 				),
 			)
 		}
@@ -35,128 +35,25 @@ func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 	return ctx.GetPackage(), nil
 }
 
-func (s *WhileStmt) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool, error) {
-	if s.Condition == nil || s.Body == nil {
-		panic("unreachable")
-	}
-
-	for {
-		condition, err := s.Condition.Evaluate(ctx, nil)
-		if err != nil {
-			return nil, false, err
-		}
-
-		if !condition.AsBool(ctx) {
-			break
-		}
-
-		ctx.PushScope(Scope{})
-		result, forceReturn, err := s.Body.Evaluate(ctx, inFunction)
-		if err != nil {
-			return nil, false, err
-		}
-
-		ctx.PopScope()
-		if forceReturn {
-			return result, forceReturn, nil
-		}
-	}
-
-	return nil, false, nil
-}
-
 // Evaluate executes block of statements.
 // Returns (result value, force stop flag, error)
-func (b *BlockStmts) Evaluate(ctx common.Context, inFunction bool) (common.Type, bool, error) {
+func (b *BlockStmts) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResult {
 	for _, stmt := range b.Stmts {
-		result, forceReturn, err := stmt.Evaluate(ctx, inFunction)
-		if err != nil {
-			return nil, false, err
+		result := stmt.Evaluate(ctx, inFunction, inLoop)
+		if result.Err != nil {
+			return result
 		}
 
-		if forceReturn || stmt.ReturnStmt != nil {
-			return result, true, nil
+		switch result.State {
+		case StmtForceReturn, StmtBreak:
+			return result
 		}
+		// if result.State == StmtForceReturn || stmt.ReturnStmt != nil {
+		// 	return result
+		// }
 	}
 
-	return types.NewNilInstance(), false, nil
-}
-
-// Evaluate executes statement.
-// Returns (result value, force stop flag, error)
-func (s *Stmt) Evaluate(ctx common.Context, inFunction bool) (
-	common.Type,
-	bool,
-	error,
-) {
-	if s.IfStmt != nil {
-		return s.IfStmt.Evaluate(ctx, inFunction)
-	} else if s.WhileStmt != nil {
-		return s.WhileStmt.Evaluate(ctx, inFunction)
-	} else if s.LoopStmt != nil {
-		return s.LoopStmt.Evaluate(ctx, inFunction)
-	} else if s.Block != nil {
-		ctx.PushScope(Scope{})
-		result, forceReturn, err := s.Block.Evaluate(ctx, inFunction)
-		if err != nil {
-			return nil, false, err
-		}
-
-		ctx.PopScope()
-		return result, forceReturn, nil
-	} else if s.FunctionDef != nil {
-		function, err := s.FunctionDef.Evaluate(ctx, ctx.GetPackage().(*types.PackageInstance), nil)
-		if err != nil {
-			return nil, false, err
-		}
-
-		return function, false, err
-	} else if s.ClassDef != nil {
-		class, err := s.ClassDef.Evaluate(ctx, ctx.GetPackage().(*types.PackageInstance))
-		if err != nil {
-			return nil, false, err
-		}
-
-		return class, false, err
-	} else if s.ReturnStmt != nil {
-		if !inFunction {
-			return nil, false, errors.New("'повернути' за межами функції")
-		}
-
-		result, err := s.ReturnStmt.Evaluate(ctx)
-		return result, false, err
-	} else if s.Assignment != nil {
-		result, err := s.Assignment.Evaluate(ctx)
-		return result, false, err
-	} else if s.Empty {
-		return nil, false, nil
-	}
-
-	panic("unreachable")
-}
-
-func (s *Stmt) String() string {
-	if s.IfStmt != nil {
-		return "s.IfStmt."
-	} else if s.WhileStmt != nil {
-		return "s.WhileStmt."
-	} else if s.LoopStmt != nil {
-		return "s.LoopStmt."
-	} else if s.Block != nil {
-		return "s.Block."
-	} else if s.FunctionDef != nil {
-		return "s.FunctionDef."
-	} else if s.ClassDef != nil {
-		return "s.ClassDef."
-	} else if s.ReturnStmt != nil {
-		return "повернути ..."
-	} else if s.Assignment != nil {
-		return "s.Assignment."
-	} else if s.Empty {
-		return ";"
-	}
-
-	panic("unreachable")
+	return StmtResult{Value: types.NewNilInstance()}
 }
 
 func (e *Expression) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {

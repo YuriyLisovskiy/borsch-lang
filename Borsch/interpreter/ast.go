@@ -14,13 +14,6 @@ type ReturnStmt struct {
 	Expressions []*Expression `"повернути" (@@ ("," @@)*)? ";"`
 }
 
-type WhileStmt struct {
-	Pos lexer.Position
-
-	Condition *Expression `"поки" "(" @@ ")"`
-	Body      *BlockStmts `"{" @@ "}"`
-}
-
 type LoopStmt struct {
 	Pos lexer.Position
 
@@ -68,12 +61,12 @@ type Stmt struct {
 	Pos lexer.Position
 
 	IfStmt      *IfStmt      `  @@`
-	WhileStmt   *WhileStmt   `| @@`
 	LoopStmt    *LoopStmt    `| @@`
 	Block       *BlockStmts  `| "{" @@ "}"`
 	FunctionDef *FunctionDef `| @@`
 	ClassDef    *ClassDef    `| @@`
 	ReturnStmt  *ReturnStmt  `| @@`
+	BreakStmt   bool         `| @"перервати"`
 	Assignment  *Assignment  `| (@@ ";")`
 	Empty       bool         `| @";"`
 }

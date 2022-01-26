@@ -1,48 +1,42 @@
 package interpreter
 
 import (
-	"errors"
-
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (s *IfStmt) Evaluate(ctx common.Context, inFunction bool) (
-	common.Type,
-	bool,
-	error,
-) {
+func (s *IfStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResult {
 	if s.Condition != nil {
 		condition, err := s.Condition.Evaluate(ctx, nil)
 		if err != nil {
-			return nil, false, err
+			return StmtResult{Err: err}
 		}
 
 		if condition.AsBool(ctx) {
 			ctx.PushScope(Scope{})
-			result, forceReturn, err := s.Body.Evaluate(ctx, inFunction)
+			result := s.Body.Evaluate(ctx, inFunction, inLoop)
 			if err != nil {
-				return nil, false, err
+				return result
 			}
 
 			ctx.PopScope()
-			return result, forceReturn, nil
+			return result
 		}
 
 		if len(s.ElseIfStmts) != 0 {
 			gotResult := false
-			var result common.Type = nil
+			var result StmtResult
 			var err error = nil
 			for _, stmt := range s.ElseIfStmts {
 				ctx.PushScope(Scope{})
-				var forceReturn bool
-				gotResult, result, forceReturn, err = stmt.Evaluate(ctx, inFunction)
+				gotResult, result = stmt.Evaluate(ctx, inFunction, inLoop)
 				if err != nil {
-					return nil, false, err
+					return result
 				}
 
 				ctx.PopScope()
-				if forceReturn {
-					return result, true, nil
+				switch result.State {
+				case StmtForceReturn, StmtBreak:
+					return result
 				}
 
 				if gotResult {
@@ -51,48 +45,43 @@ func (s *IfStmt) Evaluate(ctx common.Context, inFunction bool) (
 			}
 
 			if gotResult {
-				return result, false, nil
+				return result
 			}
 		}
 
 		if s.Else != nil {
 			ctx.PushScope(Scope{})
-			result, forceReturn, err := s.Else.Evaluate(ctx, inFunction)
-			if err != nil {
-				return nil, false, err
+			result := s.Else.Evaluate(ctx, inFunction, inLoop)
+			if result.Err != nil {
+				return result
 			}
 
 			ctx.PopScope()
-			return result, forceReturn, nil
+			return result
 		}
 
-		return nil, false, nil
+		return StmtResult{}
 	}
 
-	return nil, false, errors.New("interpreter: condition is nil")
+	panic("unreachable")
 }
 
-func (s *ElseIfStmt) Evaluate(ctx common.Context, inFunction bool) (
-	bool,
-	common.Type,
-	bool,
-	error,
-) {
+func (s *ElseIfStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) (bool, StmtResult) {
 	condition, err := s.Condition.Evaluate(ctx, nil)
 	if err != nil {
-		return false, nil, false, err
+		return false, StmtResult{Err: err}
 	}
 
 	if condition.AsBool(ctx) {
 		ctx.PushScope(Scope{})
-		result, forceReturn, err := s.Body.Evaluate(ctx, inFunction)
-		if err != nil {
-			return false, nil, false, err
+		result := s.Body.Evaluate(ctx, inFunction, inLoop)
+		if result.Err != nil {
+			return false, result
 		}
 
 		ctx.PopScope()
-		return true, result, forceReturn, nil
+		return true, result
 	}
 
-	return false, nil, false, nil
+	return false, StmtResult{}
 }

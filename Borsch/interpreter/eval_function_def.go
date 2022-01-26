@@ -70,8 +70,8 @@ func (p *Parameter) Evaluate(ctx common.Context) (*types.FunctionArgument, error
 }
 
 func (b *FunctionBody) Evaluate(ctx common.Context) (common.Type, error) {
-	result, _, err := b.Stmts.Evaluate(ctx, true)
-	return result, err
+	result := b.Stmts.Evaluate(ctx, true, false)
+	return result.Value, result.Err
 }
 
 func (t *ReturnType) Evaluate(ctx common.Context) (*types.FunctionReturnType, error) {
