@@ -22,11 +22,13 @@ func Assert(ctx common.Context, expected common.Type, actual common.Type, errorT
 		)
 	}
 
-	errMsg := "не вдалося підтвердити, що %s дорівнює %s"
+	errMsg := ""
 	if errorTemplate != "" {
 		errMsg = errorTemplate
+	} else {
+		errMsg = "не вдалося підтвердити, що %s дорівнює %s"
 	}
-
+	
 	switch left := leftV.(type) {
 	case types.NilInstance:
 		return nil

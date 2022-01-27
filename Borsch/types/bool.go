@@ -140,9 +140,9 @@ func newBoolClass() *Class {
 		map[string]common.Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(Bool, ToBool, ""),
-			ops.PowOp.Caption(): newBoolBinaryOperator(
+			ops.PowOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.PowOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.PowOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case RealInstance:
 						return NewRealInstance(math.Pow(boolToFloat64(self.Value), o.Value)), nil
@@ -162,27 +162,27 @@ func newBoolClass() *Class {
 					}
 				},
 			),
-			ops.UnaryPlus.Caption(): newBoolUnaryOperator(
+			ops.UnaryPlus.Name(): newBoolUnaryOperator(
 				// TODO: add doc
-				ops.UnaryPlus.Caption(), "", func(self BoolInstance) (common.Type, error) {
+				ops.UnaryPlus.Name(), "", func(self BoolInstance) (common.Type, error) {
 					return NewIntegerInstance(boolToInt64(self.Value)), nil
 				},
 			),
-			ops.UnaryMinus.Caption(): newBoolUnaryOperator(
+			ops.UnaryMinus.Name(): newBoolUnaryOperator(
 				// TODO: add doc
-				ops.UnaryMinus.Caption(), "", func(self BoolInstance) (common.Type, error) {
+				ops.UnaryMinus.Name(), "", func(self BoolInstance) (common.Type, error) {
 					return NewIntegerInstance(-boolToInt64(self.Value)), nil
 				},
 			),
-			ops.UnaryBitwiseNotOp.Caption(): newBoolUnaryOperator(
+			ops.UnaryBitwiseNotOp.Name(): newBoolUnaryOperator(
 				// TODO: add doc
-				ops.UnaryBitwiseNotOp.Caption(), "", func(self BoolInstance) (common.Type, error) {
+				ops.UnaryBitwiseNotOp.Name(), "", func(self BoolInstance) (common.Type, error) {
 					return NewIntegerInstance(^boolToInt64(self.Value)), nil
 				},
 			),
-			ops.MulOp.Caption(): newBoolBinaryOperator(
+			ops.MulOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.MulOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.MulOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewIntegerInstance(boolToInt64(self.Value) * boolToInt64(o.Value)), nil
@@ -195,9 +195,9 @@ func newBoolClass() *Class {
 					}
 				},
 			),
-			ops.DivOp.Caption(): newBoolBinaryOperator(
+			ops.DivOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.DivOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.DivOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						if o.Value {
@@ -218,9 +218,9 @@ func newBoolClass() *Class {
 					return nil, errors.New("ділення на нуль")
 				},
 			),
-			ops.ModuloOp.Caption(): newBoolBinaryOperator(
+			ops.ModuloOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.ModuloOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.ModuloOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						if o.Value {
@@ -237,9 +237,9 @@ func newBoolClass() *Class {
 					return nil, errors.New("ділення за модулем на нуль")
 				},
 			),
-			ops.AddOp.Caption(): newBoolBinaryOperator(
+			ops.AddOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.AddOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.AddOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewIntegerInstance(boolToInt64(self.Value) + boolToInt64(o.Value)), nil
@@ -252,9 +252,9 @@ func newBoolClass() *Class {
 					}
 				},
 			),
-			ops.SubOp.Caption(): newBoolBinaryOperator(
+			ops.SubOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.SubOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.SubOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewIntegerInstance(boolToInt64(self.Value) - boolToInt64(o.Value)), nil
@@ -267,9 +267,9 @@ func newBoolClass() *Class {
 					}
 				},
 			),
-			ops.BitwiseLeftShiftOp.Caption(): newBoolBinaryOperator(
+			ops.BitwiseLeftShiftOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseLeftShiftOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.BitwiseLeftShiftOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewIntegerInstance(boolToInt64(self.Value) << boolToInt64(o.Value)), nil
@@ -280,9 +280,9 @@ func newBoolClass() *Class {
 					}
 				},
 			),
-			ops.BitwiseRightShiftOp.Caption(): newBoolBinaryOperator(
+			ops.BitwiseRightShiftOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseRightShiftOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.BitwiseRightShiftOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewIntegerInstance(boolToInt64(self.Value) >> boolToInt64(o.Value)), nil
@@ -293,9 +293,9 @@ func newBoolClass() *Class {
 					}
 				},
 			),
-			ops.BitwiseAndOp.Caption(): newBoolBinaryOperator(
+			ops.BitwiseAndOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseAndOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.BitwiseAndOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewIntegerInstance(boolToInt64(self.Value) & boolToInt64(o.Value)), nil
@@ -306,9 +306,9 @@ func newBoolClass() *Class {
 					}
 				},
 			),
-			ops.BitwiseXorOp.Caption(): newBoolBinaryOperator(
+			ops.BitwiseXorOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseXorOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.BitwiseXorOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewIntegerInstance(boolToInt64(self.Value) ^ boolToInt64(o.Value)), nil
@@ -319,9 +319,9 @@ func newBoolClass() *Class {
 					}
 				},
 			),
-			ops.BitwiseOrOp.Caption(): newBoolBinaryOperator(
+			ops.BitwiseOrOp.Name(): newBoolBinaryOperator(
 				// TODO: add doc
-				ops.BitwiseOrOp.Caption(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
+				ops.BitwiseOrOp.Name(), "", func(self BoolInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewIntegerInstance(boolToInt64(self.Value) | boolToInt64(o.Value)), nil

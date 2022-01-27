@@ -23,7 +23,7 @@ func DeepCopy(object common.Type) (common.Type, error) {
 	}
 }
 
-func runOperator(
+func runUnaryOperator(
 	ctx common.Context,
 	name string,
 	object common.Type,

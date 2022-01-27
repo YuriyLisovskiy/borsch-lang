@@ -170,9 +170,9 @@ func newListClass() *Class {
 			// TODO: add doc
 			ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
 
-			ops.MulOp.Caption(): newListBinaryOperator(
+			ops.MulOp.Name(): newListBinaryOperator(
 				// TODO: add doc
-				ops.MulOp.Caption(), "", func(self ListInstance, other common.Type) (common.Type, error) {
+				ops.MulOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case IntegerInstance:
 						count := int(o.Value)
@@ -189,9 +189,9 @@ func newListClass() *Class {
 					}
 				},
 			),
-			ops.AddOp.Caption(): newListBinaryOperator(
+			ops.AddOp.Name(): newListBinaryOperator(
 				// TODO: add doc
-				ops.AddOp.Caption(), "", func(self ListInstance, other common.Type) (common.Type, error) {
+				ops.AddOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case ListInstance:
 						self.Values = append(self.Values, o.Values...)

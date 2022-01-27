@@ -89,24 +89,28 @@ var opTypeCaptions = map[Operator]string{
 	LessOrEqualsOp:      "__оператор_менше_або_дорівнює__",  // <=
 }
 
-func (op Operator) Description() string {
+func (op Operator) Sign() string {
 	if op >= 0 && int(op) < len(opTypeNames) {
 		return opTypeNames[op]
 	}
 
-	panic(fmt.Sprintf(
-		"Unable to retrieve description for operator '%d', please add it to 'opTypeNames' map first",
-		op,
-	))
+	panic(
+		fmt.Sprintf(
+			"Unable to retrieve description for operator '%d', please add it to 'opTypeNames' map first",
+			op,
+		),
+	)
 }
 
-func (op Operator) Caption() string {
+func (op Operator) Name() string {
 	if op >= 0 && int(op) < len(opTypeCaptions) {
 		return opTypeCaptions[op]
 	}
 
-	panic(fmt.Sprintf(
-		"Unable to retrieve caption for operator '%d', please add it to 'opTypeCaptions' map first",
-		op,
-	))
+	panic(
+		fmt.Sprintf(
+			"Unable to retrieve caption for operator '%d', please add it to 'opTypeCaptions' map first",
+			op,
+		),
+	)
 }

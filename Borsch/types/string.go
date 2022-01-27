@@ -173,9 +173,9 @@ func newStringClass() *Class {
 		map[string]common.Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(String, ToString, ""),
-			ops.MulOp.Caption(): newStringBinaryOperator(
+			ops.MulOp.Name(): newStringBinaryOperator(
 				// TODO: add doc
-				ops.MulOp.Caption(), "", func(self StringInstance, other common.Type) (common.Type, error) {
+				ops.MulOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case IntegerInstance:
 						count := int(o.Value)
@@ -189,9 +189,9 @@ func newStringClass() *Class {
 					}
 				},
 			),
-			ops.AddOp.Caption(): newStringBinaryOperator(
+			ops.AddOp.Name(): newStringBinaryOperator(
 				// TODO: add doc
-				ops.AddOp.Caption(), "", func(self StringInstance, other common.Type) (common.Type, error) {
+				ops.AddOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case StringInstance:
 						return NewStringInstance(self.Value + o.Value), nil

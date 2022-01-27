@@ -76,11 +76,11 @@ func (a *Assignment) Evaluate(ctx common.Context) (common.Type, error) {
 // If `valueToSet` is nil, return variable or value from context,
 // set a new value or return an error otherwise.
 func (a *LogicalAnd) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.AndOp.Caption(), a.LogicalOr, a.Next)
+	return evalBinaryOperator(ctx, valueToSet, ops.AndOp.Name(), a.LogicalOr, a.Next)
 }
 
 func (a *LogicalOr) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.OrOp.Caption(), a.LogicalNot, a.Next)
+	return evalBinaryOperator(ctx, valueToSet, ops.OrOp.Name(), a.LogicalNot, a.Next)
 }
 
 func (a *LogicalNot) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
@@ -94,7 +94,7 @@ func (a *LogicalNot) Evaluate(ctx common.Context, valueToSet common.Type) (commo
 			return nil, err
 		}
 
-		return callMethod(ctx, value, ops.NotOp.Caption(), &[]common.Type{}, nil)
+		return callMethod(ctx, value, ops.NotOp.Name(), &[]common.Type{}, nil)
 	}
 
 	panic("unreachable")
@@ -103,40 +103,40 @@ func (a *LogicalNot) Evaluate(ctx common.Context, valueToSet common.Type) (commo
 func (a *Comparison) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case ">=":
-		return evalBinaryOperator(ctx, valueToSet, ops.GreaterOrEqualsOp.Caption(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.GreaterOrEqualsOp.Name(), a.BitwiseOr, a.Next)
 	case ">":
-		return evalBinaryOperator(ctx, valueToSet, ops.GreaterOp.Caption(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.GreaterOp.Name(), a.BitwiseOr, a.Next)
 	case "<=":
-		return evalBinaryOperator(ctx, valueToSet, ops.LessOrEqualsOp.Caption(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.LessOrEqualsOp.Name(), a.BitwiseOr, a.Next)
 	case "<":
-		return evalBinaryOperator(ctx, valueToSet, ops.LessOp.Caption(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.LessOp.Name(), a.BitwiseOr, a.Next)
 	case "==":
-		return evalBinaryOperator(ctx, valueToSet, ops.EqualsOp.Caption(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.EqualsOp.Name(), a.BitwiseOr, a.Next)
 	case "!=":
-		return evalBinaryOperator(ctx, valueToSet, ops.NotEqualsOp.Caption(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.NotEqualsOp.Name(), a.BitwiseOr, a.Next)
 	default:
 		return a.BitwiseOr.Evaluate(ctx, valueToSet)
 	}
 }
 
 func (a *BitwiseOr) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseOrOp.Caption(), a.BitwiseXor, a.Next)
+	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseOrOp.Name(), a.BitwiseXor, a.Next)
 }
 
 func (a *BitwiseXor) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseXorOp.Caption(), a.BitwiseAnd, a.Next)
+	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseXorOp.Name(), a.BitwiseAnd, a.Next)
 }
 
 func (a *BitwiseAnd) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseAndOp.Caption(), a.BitwiseShift, a.Next)
+	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseAndOp.Name(), a.BitwiseShift, a.Next)
 }
 
 func (a *BitwiseShift) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "<<":
-		return evalBinaryOperator(ctx, valueToSet, ops.BitwiseLeftShiftOp.Caption(), a.Addition, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.BitwiseLeftShiftOp.Name(), a.Addition, a.Next)
 	case ">>":
-		return evalBinaryOperator(ctx, valueToSet, ops.BitwiseRightShiftOp.Caption(), a.Addition, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.BitwiseRightShiftOp.Name(), a.Addition, a.Next)
 	default:
 		return a.Addition.Evaluate(ctx, valueToSet)
 	}
@@ -145,9 +145,9 @@ func (a *BitwiseShift) Evaluate(ctx common.Context, valueToSet common.Type) (com
 func (a *Addition) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "+":
-		return evalBinaryOperator(ctx, valueToSet, ops.AddOp.Caption(), a.MultiplicationOrMod, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.AddOp.Name(), a.MultiplicationOrMod, a.Next)
 	case "-":
-		return evalBinaryOperator(ctx, valueToSet, ops.SubOp.Caption(), a.MultiplicationOrMod, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.SubOp.Name(), a.MultiplicationOrMod, a.Next)
 	default:
 		return a.MultiplicationOrMod.Evaluate(ctx, valueToSet)
 	}
@@ -156,11 +156,11 @@ func (a *Addition) Evaluate(ctx common.Context, valueToSet common.Type) (common.
 func (a *MultiplicationOrMod) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "/":
-		return evalBinaryOperator(ctx, valueToSet, ops.DivOp.Caption(), a.Unary, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.DivOp.Name(), a.Unary, a.Next)
 	case "*":
-		return evalBinaryOperator(ctx, valueToSet, ops.MulOp.Caption(), a.Unary, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.MulOp.Name(), a.Unary, a.Next)
 	case "%":
-		return evalBinaryOperator(ctx, valueToSet, ops.ModuloOp.Caption(), a.Unary, a.Next)
+		return evalBinaryOperator(ctx, valueToSet, ops.ModuloOp.Name(), a.Unary, a.Next)
 	default:
 		return a.Unary.Evaluate(ctx, valueToSet)
 	}
@@ -169,18 +169,18 @@ func (a *MultiplicationOrMod) Evaluate(ctx common.Context, valueToSet common.Typ
 func (a *Unary) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "+":
-		return evalUnaryOperator(ctx, ops.UnaryPlus.Caption(), a.Next)
+		return evalUnaryOperator(ctx, ops.UnaryPlus.Name(), a.Next)
 	case "-":
-		return evalUnaryOperator(ctx, ops.UnaryMinus.Caption(), a.Next)
+		return evalUnaryOperator(ctx, ops.UnaryMinus.Name(), a.Next)
 	case "~":
-		return evalUnaryOperator(ctx, ops.UnaryBitwiseNotOp.Caption(), a.Next)
+		return evalUnaryOperator(ctx, ops.UnaryBitwiseNotOp.Name(), a.Next)
 	default:
 		return a.Exponent.Evaluate(ctx, valueToSet)
 	}
 }
 
 func (a *Exponent) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.PowOp.Caption(), a.Primary, a.Next)
+	return evalBinaryOperator(ctx, valueToSet, ops.PowOp.Name(), a.Primary, a.Next)
 }
 
 func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {

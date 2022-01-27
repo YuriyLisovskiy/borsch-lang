@@ -366,7 +366,7 @@ func newComparisonOperator(
 	checker func(res int) bool,
 ) *FunctionInstance {
 	return newBinaryMethod(
-		operator.Caption(),
+		operator.Name(),
 		itemType,
 		Bool,
 		doc,
@@ -386,37 +386,37 @@ func makeComparisonOperators(
 	comparator func(common.Context, common.Type, common.Type) (int, error),
 ) map[string]common.Type {
 	return map[string]common.Type{
-		ops.EqualsOp.Caption(): newComparisonOperator(
+		ops.EqualsOp.Name(): newComparisonOperator(
 			// TODO: add doc
 			ops.EqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0
 			},
 		),
-		ops.NotEqualsOp.Caption(): newComparisonOperator(
+		ops.NotEqualsOp.Name(): newComparisonOperator(
 			// TODO: add doc
 			ops.NotEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res != 0
 			},
 		),
-		ops.GreaterOp.Caption(): newComparisonOperator(
+		ops.GreaterOp.Name(): newComparisonOperator(
 			// TODO: add doc
 			ops.GreaterOp, itemType, "", comparator, func(res int) bool {
 				return res == 1
 			},
 		),
-		ops.GreaterOrEqualsOp.Caption(): newComparisonOperator(
+		ops.GreaterOrEqualsOp.Name(): newComparisonOperator(
 			// TODO: add doc
 			ops.GreaterOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == 1
 			},
 		),
-		ops.LessOp.Caption(): newComparisonOperator(
+		ops.LessOp.Name(): newComparisonOperator(
 			// TODO: add doc
 			ops.LessOp, itemType, "", comparator, func(res int) bool {
 				return res == -1
 			},
 		),
-		ops.LessOrEqualsOp.Caption(): newComparisonOperator(
+		ops.LessOrEqualsOp.Name(): newComparisonOperator(
 			// TODO: add doc
 			ops.LessOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == -1
@@ -427,9 +427,9 @@ func makeComparisonOperators(
 
 func makeLogicalOperators(itemType *Class) map[string]common.Type {
 	return map[string]common.Type{
-		ops.NotOp.Caption(): newUnaryMethod(
+		ops.NotOp.Name(): newUnaryMethod(
 			// TODO: add doc
-			ops.NotOp.Caption(),
+			ops.NotOp.Name(),
 			itemType,
 			Bool,
 			"",
@@ -437,9 +437,9 @@ func makeLogicalOperators(itemType *Class) map[string]common.Type {
 				return NewBoolInstance(!self.AsBool(ctx)), nil
 			},
 		),
-		ops.AndOp.Caption(): newBinaryMethod(
+		ops.AndOp.Name(): newBinaryMethod(
 			// TODO: add doc
-			ops.AndOp.Caption(),
+			ops.AndOp.Name(),
 			itemType,
 			Bool,
 			"",
@@ -447,9 +447,9 @@ func makeLogicalOperators(itemType *Class) map[string]common.Type {
 				return NewBoolInstance(self.AsBool(ctx) && other.AsBool(ctx)), nil
 			},
 		),
-		ops.OrOp.Caption(): newBinaryMethod(
+		ops.OrOp.Name(): newBinaryMethod(
 			// TODO: add doc
-			ops.OrOp.Caption(),
+			ops.OrOp.Name(),
 			itemType,
 			Bool,
 			"",

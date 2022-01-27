@@ -186,9 +186,9 @@ func newRealClass() *Class {
 		map[string]common.Type{
 			// TODO: add doc
 			ops.ConstructorName: newBuiltinConstructor(Real, ToReal, ""),
-			ops.PowOp.Caption(): newRealBinaryOperator(
+			ops.PowOp.Name(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.PowOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+				ops.PowOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case RealInstance:
 						return NewRealInstance(math.Pow(self.Value, o.Value)), nil
@@ -201,21 +201,21 @@ func newRealClass() *Class {
 					}
 				},
 			),
-			ops.UnaryPlus.Caption(): newRealUnaryOperator(
+			ops.UnaryPlus.Name(): newRealUnaryOperator(
 				// TODO: add doc
-				ops.UnaryPlus.Caption(), "", func(self RealInstance) (common.Type, error) {
+				ops.UnaryPlus.Name(), "", func(self RealInstance) (common.Type, error) {
 					return self, nil
 				},
 			),
-			ops.UnaryMinus.Caption(): newRealUnaryOperator(
+			ops.UnaryMinus.Name(): newRealUnaryOperator(
 				// TODO: add doc
-				ops.UnaryMinus.Caption(), "", func(self RealInstance) (common.Type, error) {
+				ops.UnaryMinus.Name(), "", func(self RealInstance) (common.Type, error) {
 					return NewRealInstance(-self.Value), nil
 				},
 			),
-			ops.MulOp.Caption(): newRealBinaryOperator(
+			ops.MulOp.Name(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.MulOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+				ops.MulOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewRealInstance(self.Value * boolToFloat64(o.Value)), nil
@@ -228,9 +228,9 @@ func newRealClass() *Class {
 					}
 				},
 			),
-			ops.DivOp.Caption(): newRealBinaryOperator(
+			ops.DivOp.Name(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.DivOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+				ops.DivOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						if o.Value {
@@ -251,9 +251,9 @@ func newRealClass() *Class {
 					return nil, errors.New("ділення на нуль")
 				},
 			),
-			ops.AddOp.Caption(): newRealBinaryOperator(
+			ops.AddOp.Name(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.AddOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+				ops.AddOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewRealInstance(self.Value + boolToFloat64(o.Value)), nil
@@ -266,9 +266,9 @@ func newRealClass() *Class {
 					}
 				},
 			),
-			ops.SubOp.Caption(): newRealBinaryOperator(
+			ops.SubOp.Name(): newRealBinaryOperator(
 				// TODO: add doc
-				ops.SubOp.Caption(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+				ops.SubOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
 					switch o := other.(type) {
 					case BoolInstance:
 						return NewRealInstance(self.Value - boolToFloat64(o.Value)), nil
