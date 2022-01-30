@@ -102,59 +102,62 @@ func comparePackages(_ common.Context, self common.Type, other common.Type) (int
 }
 
 func NewPackageClass() *Class {
-	attributes := mergeAttributes(
-		map[string]common.Type{
-			// TODO: add doc
-			// ops.ConstructorName: NewFunctionInstance(
-			// 	ops.ConstructorName,
-			// 	[]FunctionArgument{
-			// 		{
-			// 			TypeHash:   PackageTypeHash,
-			// 			Name:       "я",
-			// 			IsVariadic: false,
-			// 			IsNullable: false,
-			// 		},
-			// 		{
-			// 			TypeHash:   StringTypeHash,
-			// 			Name:       "шлях",
-			// 			IsVariadic: false,
-			// 			IsNullable: false,
-			// 		},
-			// 	},
-			// 	func(ctx interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			// 		p, err := ImportPackage(baseScope, (*args)[0].(StringInstance).Value, ctx.(common.CallContext).Parser)
-			// 		if err != nil {
-			// 			return nil, err
-			// 		}
-			//
-			// 		return p, nil
-			// 		self, err := handler((*args)[1:]...)
-			// 		if err != nil {
-			// 			return nil, err
-			// 		}
-			//
-			// 		(*args)[0] = self
-			// 		return NewNilInstance(), nil
-			// 	},
-			// 	[]FunctionReturnType{
-			// 		{
-			// 			TypeHash:   NilTypeHash,
-			// 			IsNullable: false,
-			// 		},
-			// 	},
-			// 	true,
-			// 	nil,
-			// 	"", // TODO: add doc
-			// ),
-		},
-		makeLogicalOperators(Package),
-		makeComparisonOperators(Package, comparePackages),
-		makeCommonOperators(Package),
-	)
+	initAttributes := func() map[string]common.Type {
+		return mergeAttributes(
+			map[string]common.Type{
+				// TODO: add doc
+				// ops.ConstructorName: NewFunctionInstance(
+				// 	ops.ConstructorName,
+				// 	[]FunctionArgument{
+				// 		{
+				// 			TypeHash:   PackageTypeHash,
+				// 			Name:       "я",
+				// 			IsVariadic: false,
+				// 			IsNullable: false,
+				// 		},
+				// 		{
+				// 			TypeHash:   StringTypeHash,
+				// 			Name:       "шлях",
+				// 			IsVariadic: false,
+				// 			IsNullable: false,
+				// 		},
+				// 	},
+				// 	func(ctx interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				// 		p, err := ImportPackage(baseScope, (*args)[0].(StringInstance).Value, ctx.(common.CallContext).Parser)
+				// 		if err != nil {
+				// 			return nil, err
+				// 		}
+				//
+				// 		return p, nil
+				// 		self, err := handler((*args)[1:]...)
+				// 		if err != nil {
+				// 			return nil, err
+				// 		}
+				//
+				// 		(*args)[0] = self
+				// 		return NewNilInstance(), nil
+				// 	},
+				// 	[]FunctionReturnType{
+				// 		{
+				// 			TypeHash:   NilTypeHash,
+				// 			IsNullable: false,
+				// 		},
+				// 	},
+				// 	true,
+				// 	nil,
+				// 	"", // TODO: add doc
+				// ),
+			},
+			makeLogicalOperators(Package),
+			makeComparisonOperators(Package, comparePackages),
+			makeCommonOperators(Package),
+		)
+	}
+
 	return NewBuiltinClass(
 		common.PackageTypeName,
 		BuiltinPackage,
-		attributes,
+		initAttributes,
 		"",  // TODO: add doc
 		nil, // CAUTION: segfault may be thrown when using without nil check!
 	)

@@ -6,6 +6,8 @@ type ObjectInstance interface {
 	GetPrototype() *Class
 }
 
+type AttributesInitializer func() map[string]common.Type
+
 var (
 	Bool       *Class = nil
 	Dictionary *Class = nil
@@ -22,7 +24,9 @@ var (
 
 var BuiltinPackage *PackageInstance
 
-func init() {
+func Init() {
+	BuiltinPackage = NewPackageInstance(true, "вбудований", nil, map[string]common.Type{})
+
 	Bool = newBoolClass()
 	Dictionary = newDictionaryClass()
 	Function = newFunctionClass()
@@ -34,5 +38,14 @@ func init() {
 	String = newStringClass()
 	TypeClass = newTypeClass()
 
-	BuiltinPackage = NewPackageInstance(true, "вбудований", nil, map[string]common.Type{})
+	Bool.InitAttributes()
+	Dictionary.InitAttributes()
+	Function.InitAttributes()
+	Integer.InitAttributes()
+	List.InitAttributes()
+	Nil.InitAttributes()
+	Package.InitAttributes()
+	Real.InitAttributes()
+	String.InitAttributes()
+	TypeClass.InitAttributes()
 }

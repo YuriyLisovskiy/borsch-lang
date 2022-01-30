@@ -14,6 +14,7 @@ type Context interface {
 	GetClass(name string) (Type, error)
 	BuildPackage() error
 	GetPackage() Type
+	GetChild() Context
 }
 
 type Evaluatable interface {

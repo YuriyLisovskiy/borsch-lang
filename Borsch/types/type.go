@@ -19,42 +19,45 @@ func newTypeClass() *Class {
 	}
 
 	// TODO: add required operators and methods
-	attributes := map[string]common.Type{
-		// TODO: add doc
-		ops.CallOperatorName: NewFunctionInstance(
-			ops.CallOperatorName,
-			[]FunctionArgument{
-				{
-					Type:       TypeClass,
-					Name:       "я",
-					IsVariadic: false,
-					IsNullable: false,
+	initAttributes := func() map[string]common.Type {
+		return map[string]common.Type{
+			// TODO: add doc
+			ops.CallOperatorName: NewFunctionInstance(
+				ops.CallOperatorName,
+				[]FunctionArgument{
+					{
+						Type:       TypeClass,
+						Name:       "я",
+						IsVariadic: false,
+						IsNullable: false,
+					},
+					{
+						Type:       Any,
+						Name:       "обєкт",
+						IsVariadic: false,
+						IsNullable: false,
+					},
 				},
-				{
-					Type:       Any,
-					Name:       "обєкт",
-					IsVariadic: false,
-					IsNullable: false,
+				func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+					return getTypeFunc((*args)[1])
 				},
-			},
-			func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-				return getTypeFunc((*args)[1])
-			},
-			[]FunctionReturnType{
-				{
-					Type:       Any,
-					IsNullable: true,
+				[]FunctionReturnType{
+					{
+						Type:       Any,
+						IsNullable: true,
+					},
 				},
-			},
-			true,
-			nil,
-			"", // TODO: add doc
-		),
+				true,
+				nil,
+				"", // TODO: add doc
+			),
+		}
 	}
+
 	return NewBuiltinClass(
 		common.TypeTypeName,
 		BuiltinPackage,
-		attributes,
+		initAttributes,
 		"", // TODO: add doc
 		func() (common.Type, error) {
 			panic("unreachable")

@@ -349,7 +349,12 @@ func (s *SlicingOrSubscription) Evaluate(
 				return nil, err
 			}
 		} else if s.Ident != nil {
-			variable, err = setCurrentValue(ctx, prevValue, *s.Ident, valueToSet)
+			if len(s.Ranges) != 0 {
+				variable, err = getCurrentValue(ctx, prevValue, *s.Ident)
+			} else {
+				variable, err = setCurrentValue(ctx, prevValue, *s.Ident, valueToSet)
+			}
+
 			if err != nil {
 				return nil, err
 			}

@@ -75,41 +75,44 @@ func compareNils(_ common.Context, _ common.Type, other common.Type) (int, error
 }
 
 func newNilClass() *Class {
-	attributes := mergeAttributes(
-		map[string]common.Type{
-			// TODO: add doc
-			ops.ConstructorName: NewFunctionInstance(
-				ops.ConstructorName,
-				[]FunctionArgument{
-					{
-						Type:       Nil,
-						Name:       "я",
-						IsVariadic: false,
-						IsNullable: false,
+	initAttributes := func() map[string]common.Type {
+		return mergeAttributes(
+			map[string]common.Type{
+				// TODO: add doc
+				ops.ConstructorName: NewFunctionInstance(
+					ops.ConstructorName,
+					[]FunctionArgument{
+						{
+							Type:       Nil,
+							Name:       "я",
+							IsVariadic: false,
+							IsNullable: false,
+						},
 					},
-				},
-				func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-					return (*args)[0], nil
-				},
-				[]FunctionReturnType{
-					{
-						Type:       Nil,
-						IsNullable: false,
+					func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+						return (*args)[0], nil
 					},
-				},
-				true,
-				nil,
-				"",
-			),
-		},
-		makeLogicalOperators(Nil),
-		makeComparisonOperators(Nil, compareNils),
-		makeCommonOperators(Nil),
-	)
+					[]FunctionReturnType{
+						{
+							Type:       Nil,
+							IsNullable: false,
+						},
+					},
+					true,
+					nil,
+					"",
+				),
+			},
+			makeLogicalOperators(Nil),
+			makeComparisonOperators(Nil, compareNils),
+			makeCommonOperators(Nil),
+		)
+	}
+
 	return NewBuiltinClass(
 		common.NilTypeName,
 		BuiltinPackage,
-		attributes,
+		initAttributes,
 		"", // TODO: add doc
 		func() (common.Type, error) {
 			return NewNilInstance(), nil

@@ -182,114 +182,117 @@ func newRealUnaryOperator(
 }
 
 func newRealClass() *Class {
-	attributes := mergeAttributes(
-		map[string]common.Type{
-			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(Real, ToReal, ""),
-			ops.PowOp.Name(): newRealBinaryOperator(
+	initAttributes := func() map[string]common.Type {
+		return mergeAttributes(
+			map[string]common.Type{
 				// TODO: add doc
-				ops.PowOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
-					switch o := other.(type) {
-					case RealInstance:
-						return NewRealInstance(math.Pow(self.Value, o.Value)), nil
-					case IntegerInstance:
-						return NewRealInstance(math.Pow(self.Value, float64(o.Value))), nil
-					case BoolInstance:
-						return NewRealInstance(math.Pow(self.Value, boolToFloat64(o.Value))), nil
-					default:
-						return nil, nil
-					}
-				},
-			),
-			ops.UnaryPlus.Name(): newRealUnaryOperator(
-				// TODO: add doc
-				ops.UnaryPlus.Name(), "", func(self RealInstance) (common.Type, error) {
-					return self, nil
-				},
-			),
-			ops.UnaryMinus.Name(): newRealUnaryOperator(
-				// TODO: add doc
-				ops.UnaryMinus.Name(), "", func(self RealInstance) (common.Type, error) {
-					return NewRealInstance(-self.Value), nil
-				},
-			),
-			ops.MulOp.Name(): newRealBinaryOperator(
-				// TODO: add doc
-				ops.MulOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
-					switch o := other.(type) {
-					case BoolInstance:
-						return NewRealInstance(self.Value * boolToFloat64(o.Value)), nil
-					case IntegerInstance:
-						return NewRealInstance(self.Value * float64(o.Value)), nil
-					case RealInstance:
-						return NewRealInstance(self.Value * o.Value), nil
-					default:
-						return nil, nil
-					}
-				},
-			),
-			ops.DivOp.Name(): newRealBinaryOperator(
-				// TODO: add doc
-				ops.DivOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
-					switch o := other.(type) {
-					case BoolInstance:
-						if o.Value {
-							return NewRealInstance(self.Value), nil
+				ops.ConstructorName: newBuiltinConstructor(Real, ToReal, ""),
+				ops.PowOp.Name(): newRealBinaryOperator(
+					// TODO: add doc
+					ops.PowOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+						switch o := other.(type) {
+						case RealInstance:
+							return NewRealInstance(math.Pow(self.Value, o.Value)), nil
+						case IntegerInstance:
+							return NewRealInstance(math.Pow(self.Value, float64(o.Value))), nil
+						case BoolInstance:
+							return NewRealInstance(math.Pow(self.Value, boolToFloat64(o.Value))), nil
+						default:
+							return nil, nil
 						}
-					case IntegerInstance:
-						if o.Value != 0 {
-							return NewRealInstance(self.Value / float64(o.Value)), nil
+					},
+				),
+				ops.UnaryPlus.Name(): newRealUnaryOperator(
+					// TODO: add doc
+					ops.UnaryPlus.Name(), "", func(self RealInstance) (common.Type, error) {
+						return self, nil
+					},
+				),
+				ops.UnaryMinus.Name(): newRealUnaryOperator(
+					// TODO: add doc
+					ops.UnaryMinus.Name(), "", func(self RealInstance) (common.Type, error) {
+						return NewRealInstance(-self.Value), nil
+					},
+				),
+				ops.MulOp.Name(): newRealBinaryOperator(
+					// TODO: add doc
+					ops.MulOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+						switch o := other.(type) {
+						case BoolInstance:
+							return NewRealInstance(self.Value * boolToFloat64(o.Value)), nil
+						case IntegerInstance:
+							return NewRealInstance(self.Value * float64(o.Value)), nil
+						case RealInstance:
+							return NewRealInstance(self.Value * o.Value), nil
+						default:
+							return nil, nil
 						}
-					case RealInstance:
-						if o.Value != 0.0 {
-							return NewRealInstance(self.Value / o.Value), nil
+					},
+				),
+				ops.DivOp.Name(): newRealBinaryOperator(
+					// TODO: add doc
+					ops.DivOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+						switch o := other.(type) {
+						case BoolInstance:
+							if o.Value {
+								return NewRealInstance(self.Value), nil
+							}
+						case IntegerInstance:
+							if o.Value != 0 {
+								return NewRealInstance(self.Value / float64(o.Value)), nil
+							}
+						case RealInstance:
+							if o.Value != 0.0 {
+								return NewRealInstance(self.Value / o.Value), nil
+							}
+						default:
+							return nil, nil
 						}
-					default:
-						return nil, nil
-					}
 
-					return nil, errors.New("ділення на нуль")
-				},
-			),
-			ops.AddOp.Name(): newRealBinaryOperator(
-				// TODO: add doc
-				ops.AddOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
-					switch o := other.(type) {
-					case BoolInstance:
-						return NewRealInstance(self.Value + boolToFloat64(o.Value)), nil
-					case IntegerInstance:
-						return NewRealInstance(self.Value + float64(o.Value)), nil
-					case RealInstance:
-						return NewRealInstance(self.Value + o.Value), nil
-					default:
-						return nil, nil
-					}
-				},
-			),
-			ops.SubOp.Name(): newRealBinaryOperator(
-				// TODO: add doc
-				ops.SubOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
-					switch o := other.(type) {
-					case BoolInstance:
-						return NewRealInstance(self.Value - boolToFloat64(o.Value)), nil
-					case IntegerInstance:
-						return NewRealInstance(self.Value - float64(o.Value)), nil
-					case RealInstance:
-						return NewRealInstance(self.Value - o.Value), nil
-					default:
-						return nil, nil
-					}
-				},
-			),
-		},
-		makeLogicalOperators(Real),
-		makeComparisonOperators(Real, compareReals),
-		makeCommonOperators(Real),
-	)
+						return nil, errors.New("ділення на нуль")
+					},
+				),
+				ops.AddOp.Name(): newRealBinaryOperator(
+					// TODO: add doc
+					ops.AddOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+						switch o := other.(type) {
+						case BoolInstance:
+							return NewRealInstance(self.Value + boolToFloat64(o.Value)), nil
+						case IntegerInstance:
+							return NewRealInstance(self.Value + float64(o.Value)), nil
+						case RealInstance:
+							return NewRealInstance(self.Value + o.Value), nil
+						default:
+							return nil, nil
+						}
+					},
+				),
+				ops.SubOp.Name(): newRealBinaryOperator(
+					// TODO: add doc
+					ops.SubOp.Name(), "", func(self RealInstance, other common.Type) (common.Type, error) {
+						switch o := other.(type) {
+						case BoolInstance:
+							return NewRealInstance(self.Value - boolToFloat64(o.Value)), nil
+						case IntegerInstance:
+							return NewRealInstance(self.Value - float64(o.Value)), nil
+						case RealInstance:
+							return NewRealInstance(self.Value - o.Value), nil
+						default:
+							return nil, nil
+						}
+					},
+				),
+			},
+			makeLogicalOperators(Real),
+			makeComparisonOperators(Real, compareReals),
+			makeCommonOperators(Real),
+		)
+	}
+
 	return NewBuiltinClass(
 		common.RealTypeName,
 		BuiltinPackage,
-		attributes,
+		initAttributes,
 		"", // TODO: add doc
 		func() (common.Type, error) {
 			return NewRealInstance(0), nil

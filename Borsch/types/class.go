@@ -10,17 +10,18 @@ import (
 type Class struct {
 	Object
 
+	attrInitializer  AttributesInitializer
 	GetEmptyInstance func() (common.Type, error)
 }
 
 func NewClass(
 	name string,
 	package_ *PackageInstance,
-	attributes map[string]common.Type,
+	initAttributes func() map[string]common.Type,
 	doc string,
 ) *Class {
 	class := &Class{
-		Object: *newClassObject(name, package_, attributes, doc),
+		Object: *newClassObject(name, package_, initAttributes, doc),
 	}
 	class.GetEmptyInstance = func() (common.Type, error) {
 		// TODO: set default attributes
@@ -33,12 +34,12 @@ func NewClass(
 func NewBuiltinClass(
 	typeName string,
 	package_ *PackageInstance,
-	attributes map[string]common.Type,
+	initAttributes func() map[string]common.Type,
 	doc string,
 	getEmptyInstance func() (common.Type, error),
 ) *Class {
 	return &Class{
-		Object:           *newClassObject(typeName, package_, attributes, doc),
+		Object:           *newClassObject(typeName, package_, initAttributes, doc),
 		GetEmptyInstance: getEmptyInstance,
 	}
 }
@@ -75,34 +76,50 @@ func (c Class) GetPrototype() *Class {
 	return TypeClass
 }
 
-func newClassObject(typeName string, package_ *PackageInstance, attributes map[string]common.Type, doc string) *Object {
+func (c *Class) InitAttributes() {
+	if c.Object.initAttributes != nil {
+		c.Attributes = c.Object.initAttributes()
+		c.Object.initAttributes = nil
+	}
+}
+
+func newClassObject(
+	typeName string,
+	package_ *PackageInstance,
+	attrInitializer AttributesInitializer,
+	doc string,
+) *Object {
 	object := &Object{
 		typeName:    typeName,
 		Attributes:  nil,
 		callHandler: nil,
 	}
 
-	if constructor, ok := attributes[ops.ConstructorName]; ok {
-		switch handler := constructor.(type) {
-		case common.CallableType:
-			object.callHandler = handler.Call
+	object.initAttributes = func() map[string]common.Type {
+		attributes := attrInitializer()
+		if constructor, ok := attributes[ops.ConstructorName]; ok {
+			switch handler := constructor.(type) {
+			case common.CallableType:
+				object.callHandler = handler.Call
+			}
 		}
+
+		if _, ok := attributes[ops.DocAttributeName]; !ok {
+			if len(doc) > 0 {
+				attributes[ops.DocAttributeName] = NewStringInstance(doc)
+			} else {
+				attributes[ops.DocAttributeName] = NewNilInstance()
+			}
+		}
+
+		attributes[ops.PackageAttributeName] = package_
+		return attributes
 	}
 
 	if object.callHandler == nil {
 		// TODO: set handler which returns class instance!
 	}
 
-	if _, ok := attributes[ops.DocAttributeName]; !ok {
-		if len(doc) > 0 {
-			attributes[ops.DocAttributeName] = NewStringInstance(doc)
-		} else {
-			attributes[ops.DocAttributeName] = NewNilInstance()
-		}
-	}
-
-	attributes[ops.PackageAttributeName] = package_
-	object.Attributes = attributes
 	return object
 }
 

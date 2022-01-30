@@ -30,7 +30,8 @@ var (
 	TypeFunction      *types.FunctionInstance
 )
 
-func init() {
+func initRuntime() {
+	types.Init()
 	PrintFunction = types.NewFunctionInstance(
 		"друк",
 		[]types.FunctionArgument{

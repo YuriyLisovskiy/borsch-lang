@@ -10,9 +10,10 @@ import (
 )
 
 type ContextImpl struct {
-	scopes       []map[string]common.Type
-	package_     *types.PackageInstance
-	classContext common.Context
+	scopes        []map[string]common.Type
+	package_      *types.PackageInstance
+	classContext  common.Context
+	parentContext common.Context
 }
 
 func (c *ContextImpl) GetParser() common.Parser {
@@ -47,6 +48,10 @@ func (c *ContextImpl) GetVar(name string) (common.Type, error) {
 		if val, ok := c.scopes[idx][name]; ok {
 			return val, nil
 		}
+	}
+
+	if c.parentContext != nil {
+		return c.parentContext.GetVar(name)
 	}
 
 	return nil, util.RuntimeError(fmt.Sprintf("ідентифікатор '%s' не визначений", name))
@@ -106,6 +111,10 @@ func (c *ContextImpl) GetClass(name string) (common.Type, error) {
 		}
 	}
 
+	if c.parentContext != nil {
+		return c.parentContext.GetClass(name)
+	}
+
 	return nil, util.RuntimeError(fmt.Sprintf("невідомий тип '%s'", name))
 }
 
@@ -126,4 +135,20 @@ func (c *ContextImpl) BuildPackage() error {
 
 	c.package_.Attributes = c.scopes[len(c.scopes)-1]
 	return nil
+}
+
+func (c *ContextImpl) GetChild() common.Context {
+	pkgFileName := ""
+	if c.package_ != nil {
+		pkgFileName = c.package_.Name
+	}
+	return &ContextImpl{
+		package_: types.NewPackageInstance(
+			false,
+			pkgFileName,
+			c.package_,
+			map[string]common.Type{},
+		),
+		parentContext: c,
+	}
 }

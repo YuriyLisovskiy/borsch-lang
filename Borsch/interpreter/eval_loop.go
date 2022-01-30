@@ -8,26 +8,30 @@ import (
 )
 
 func (l *LoopStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResult {
-	if l.RangeBasedLoop == nil || l.Body == nil {
+	if l.Body == nil {
 		panic("unreachable")
 	}
 
-	return l.RangeBasedLoop.Evaluate(ctx, l.Body, inFunction, inLoop)
+	if l.RangeBasedLoop != nil {
+		return l.RangeBasedLoop.Evaluate(ctx, l.Body, inFunction, inLoop)
+	}
+
+	return l.ConditionalLoop.Evaluate(ctx, l.Body, inFunction, inLoop)
 }
 
-func (s *RangeBasedLoop) Evaluate(ctx common.Context, body *BlockStmts, inFunction, inLoop bool) StmtResult {
-	leftBound, err := getBound(ctx, s.LeftBound, "ліва")
+func (l *RangeBasedLoop) Evaluate(ctx common.Context, body *BlockStmts, inFunction, inLoop bool) StmtResult {
+	leftBound, err := getBound(ctx, l.LeftBound, "ліва")
 	if err != nil {
 		return StmtResult{Err: err}
 	}
 
-	rightBound, err := getBound(ctx, s.RightBound, "права")
+	rightBound, err := getBound(ctx, l.RightBound, "права")
 	if err != nil {
 		return StmtResult{Err: err}
 	}
 
 	for leftBound < rightBound {
-		ctx.PushScope(Scope{s.Variable: types.NewIntegerInstance(leftBound)})
+		ctx.PushScope(Scope{l.Variable: types.NewIntegerInstance(leftBound)})
 		result := body.Evaluate(ctx, inFunction, true)
 		if result.Err != nil {
 			return result
@@ -43,6 +47,36 @@ func (s *RangeBasedLoop) Evaluate(ctx common.Context, body *BlockStmts, inFuncti
 		}
 
 		leftBound += 1
+	}
+
+	return StmtResult{}
+}
+
+func (l *ConditionalLoop) Evaluate(ctx common.Context, body *BlockStmts, inFunction, inLoop bool) StmtResult {
+	for {
+		condition, err := l.Condition.Evaluate(ctx, nil)
+		if err != nil {
+			return StmtResult{Err: err}
+		}
+
+		if !condition.AsBool(ctx) {
+			break
+		}
+
+		ctx.PushScope(Scope{})
+		result := body.Evaluate(ctx, inFunction, true)
+		if result.Err != nil {
+			return result
+		}
+
+		ctx.PopScope()
+		switch result.State {
+		case StmtForceReturn:
+			return result
+		case StmtBreak:
+			result.State = StmtNone
+			return result
+		}
 	}
 
 	return StmtResult{}

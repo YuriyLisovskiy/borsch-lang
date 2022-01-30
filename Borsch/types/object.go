@@ -9,9 +9,10 @@ import (
 )
 
 type Object struct {
-	typeName    string
-	Attributes  map[string]common.Type
-	callHandler func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error)
+	typeName       string
+	Attributes     map[string]common.Type
+	callHandler    func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error)
+	initAttributes AttributesInitializer
 }
 
 func (o Object) makeAttributes() (DictionaryInstance, error) {

@@ -162,57 +162,60 @@ func compareDictionaries(_ common.Context, self common.Type, other common.Type) 
 }
 
 func newDictionaryClass() *Class {
-	attributes := mergeAttributes(
-		map[string]common.Type{
-			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
+	initAttributes := func() map[string]common.Type {
+		return mergeAttributes(
+			map[string]common.Type{
+				// TODO: add doc
+				ops.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
 
-			// TODO: add doc
-			ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
-			"вилучити": NewFunctionInstance(
-				"вилучити",
-				[]FunctionArgument{
-					{
-						Type:       Dictionary,
-						Name:       "я",
-						IsVariadic: false,
-						IsNullable: false,
+				// TODO: add doc
+				ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
+				"вилучити": NewFunctionInstance(
+					"вилучити",
+					[]FunctionArgument{
+						{
+							Type:       Dictionary,
+							Name:       "я",
+							IsVariadic: false,
+							IsNullable: false,
+						},
+						{
+							Type:       nil,
+							Name:       "ключ",
+							IsVariadic: false,
+							IsNullable: true,
+						},
 					},
-					{
-						Type:       nil,
-						Name:       "ключ",
-						IsVariadic: false,
-						IsNullable: true,
-					},
-				},
-				func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-					dict := (*args)[0].(DictionaryInstance)
-					value, err := dict.RemoveElement(ctx, (*args)[1])
-					if err != nil {
-						return nil, util.RuntimeError(err.Error())
-					}
+					func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+						dict := (*args)[0].(DictionaryInstance)
+						value, err := dict.RemoveElement(ctx, (*args)[1])
+						if err != nil {
+							return nil, util.RuntimeError(err.Error())
+						}
 
-					return value, nil
-				},
-				[]FunctionReturnType{
-					{
-						Type:       Any,
-						IsNullable: false,
+						return value, nil
 					},
-				},
-				true,
-				nil,
-				"", // TODO: add doc
-			),
-		},
-		makeLogicalOperators(Dictionary),
-		makeComparisonOperators(Dictionary, compareDictionaries),
-		makeCommonOperators(Dictionary),
-	)
+					[]FunctionReturnType{
+						{
+							Type:       Any,
+							IsNullable: false,
+						},
+					},
+					true,
+					nil,
+					"", // TODO: add doc
+				),
+			},
+			makeLogicalOperators(Dictionary),
+			makeComparisonOperators(Dictionary, compareDictionaries),
+			makeCommonOperators(Dictionary),
+		)
+	}
+	
 	return NewBuiltinClass(
 		common.DictionaryTypeName,
 		BuiltinPackage,
-		attributes,
+		initAttributes,
 		"", // TODO: add doc
 		func() (common.Type, error) {
 			return NewDictionaryInstance(), nil

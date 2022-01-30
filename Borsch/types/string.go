@@ -68,7 +68,7 @@ func (t StringInstance) Length(_ common.Context) int64 {
 }
 
 func (t StringInstance) GetElement(ctx common.Context, index int64) (common.Type, error) {
-	idx, err := getIndex(index, t.Length(ctx))
+	idx, err := getIndex(index, t.Length(ctx)-1)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (t StringInstance) GetElement(ctx common.Context, index int64) (common.Type
 func (t StringInstance) SetElement(ctx common.Context, index int64, value common.Type) (common.Type, error) {
 	switch v := value.(type) {
 	case StringInstance:
-		idx, err := getIndex(index, t.Length(ctx))
+		idx, err := getIndex(index, t.Length(ctx)-1)
 		if err != nil {
 			return nil, err
 		}
@@ -169,46 +169,49 @@ func newStringBinaryOperator(
 }
 
 func newStringClass() *Class {
-	attributes := mergeAttributes(
-		map[string]common.Type{
-			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(String, ToString, ""),
-			ops.MulOp.Name(): newStringBinaryOperator(
+	initAttributes := func() map[string]common.Type {
+		return mergeAttributes(
+			map[string]common.Type{
 				// TODO: add doc
-				ops.MulOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
-					switch o := other.(type) {
-					case IntegerInstance:
-						count := int(o.Value)
-						if count < 0 {
-							return NewStringInstance(""), nil
-						}
+				ops.ConstructorName: newBuiltinConstructor(String, ToString, ""),
+				ops.MulOp.Name(): newStringBinaryOperator(
+					// TODO: add doc
+					ops.MulOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
+						switch o := other.(type) {
+						case IntegerInstance:
+							count := int(o.Value)
+							if count < 0 {
+								return NewStringInstance(""), nil
+							}
 
-						return NewStringInstance(strings.Repeat(self.Value, count)), nil
-					default:
-						return nil, nil
-					}
-				},
-			),
-			ops.AddOp.Name(): newStringBinaryOperator(
-				// TODO: add doc
-				ops.AddOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
-					switch o := other.(type) {
-					case StringInstance:
-						return NewStringInstance(self.Value + o.Value), nil
-					default:
-						return nil, nil
-					}
-				},
-			),
-		},
-		makeLogicalOperators(String),
-		makeComparisonOperators(String, compareStrings),
-		makeCommonOperators(String),
-	)
+							return NewStringInstance(strings.Repeat(self.Value, count)), nil
+						default:
+							return nil, nil
+						}
+					},
+				),
+				ops.AddOp.Name(): newStringBinaryOperator(
+					// TODO: add doc
+					ops.AddOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
+						switch o := other.(type) {
+						case StringInstance:
+							return NewStringInstance(self.Value + o.Value), nil
+						default:
+							return nil, nil
+						}
+					},
+				),
+			},
+			makeLogicalOperators(String),
+			makeComparisonOperators(String, compareStrings),
+			makeCommonOperators(String),
+		)
+	}
+
 	return NewBuiltinClass(
 		common.StringTypeName,
 		BuiltinPackage,
-		attributes,
+		initAttributes,
 		"", // TODO: add doc
 		func() (common.Type, error) {
 			return NewStringInstance(""), nil

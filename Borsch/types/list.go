@@ -80,7 +80,7 @@ func (t ListInstance) Length(_ common.Context) int64 {
 }
 
 func (t ListInstance) GetElement(ctx common.Context, index int64) (common.Type, error) {
-	idx, err := getIndex(index, t.Length(ctx))
+	idx, err := getIndex(index, t.Length(ctx)-1)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (t ListInstance) GetElement(ctx common.Context, index int64) (common.Type, 
 }
 
 func (t ListInstance) SetElement(ctx common.Context, index int64, value common.Type) (common.Type, error) {
-	idx, err := getIndex(index, t.Length(ctx))
+	idx, err := getIndex(index, t.Length(ctx)-1)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (t ListInstance) Slice(ctx common.Context, from, to int64) (common.Type, er
 	}
 
 	listInstance := NewListInstance()
-	listInstance.Values = t.Values[fromIdx : toIdx+1]
+	listInstance.Values = t.Values[fromIdx:toIdx]
 	return listInstance, nil
 }
 
@@ -162,54 +162,57 @@ func newListBinaryOperator(
 }
 
 func newListClass() *Class {
-	attributes := mergeAttributes(
-		map[string]common.Type{
-			// TODO: add doc
-			ops.ConstructorName: newBuiltinConstructor(List, ToList, ""),
-
-			// TODO: add doc
-			ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
-
-			ops.MulOp.Name(): newListBinaryOperator(
+	initAttributes := func() map[string]common.Type {
+		return mergeAttributes(
+			map[string]common.Type{
 				// TODO: add doc
-				ops.MulOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
-					switch o := other.(type) {
-					case IntegerInstance:
-						count := int(o.Value)
-						list := NewListInstance()
-						if count > 0 {
-							for c := 0; c < count; c++ {
-								list.Values = append(list.Values, self.Values...)
+				ops.ConstructorName: newBuiltinConstructor(List, ToList, ""),
+
+				// TODO: add doc
+				ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
+
+				ops.MulOp.Name(): newListBinaryOperator(
+					// TODO: add doc
+					ops.MulOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
+						switch o := other.(type) {
+						case IntegerInstance:
+							count := int(o.Value)
+							list := NewListInstance()
+							if count > 0 {
+								for c := 0; c < count; c++ {
+									list.Values = append(list.Values, self.Values...)
+								}
 							}
-						}
 
-						return list, nil
-					default:
-						return nil, nil
-					}
-				},
-			),
-			ops.AddOp.Name(): newListBinaryOperator(
-				// TODO: add doc
-				ops.AddOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
-					switch o := other.(type) {
-					case ListInstance:
-						self.Values = append(self.Values, o.Values...)
-						return self, nil
-					default:
-						return nil, nil
-					}
-				},
-			),
-		},
-		makeLogicalOperators(List),
-		makeComparisonOperators(List, compareLists),
-		makeCommonOperators(List),
-	)
+							return list, nil
+						default:
+							return nil, nil
+						}
+					},
+				),
+				ops.AddOp.Name(): newListBinaryOperator(
+					// TODO: add doc
+					ops.AddOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
+						switch o := other.(type) {
+						case ListInstance:
+							self.Values = append(self.Values, o.Values...)
+							return self, nil
+						default:
+							return nil, nil
+						}
+					},
+				),
+			},
+			makeLogicalOperators(List),
+			makeComparisonOperators(List, compareLists),
+			makeCommonOperators(List),
+		)
+	}
+
 	return NewBuiltinClass(
 		common.ListTypeName,
 		BuiltinPackage,
-		attributes,
+		initAttributes,
 		"", // TODO: add doc
 		func() (common.Type, error) {
 			return NewListInstance(), nil

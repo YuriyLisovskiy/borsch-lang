@@ -161,56 +161,59 @@ func (t FunctionInstance) GetPrototype() *Class {
 }
 
 func newFunctionClass() *Class {
-	attributes := mergeAttributes(
-		map[string]common.Type{
-			ops.CallOperatorName: NewFunctionInstance(
-				ops.CallOperatorName,
-				[]FunctionArgument{
-					{
-						Type:       Function,
-						Name:       "я",
-						IsVariadic: false,
-						IsNullable: false,
+	initAttributes := func() map[string]common.Type {
+		return mergeAttributes(
+			map[string]common.Type{
+				ops.CallOperatorName: NewFunctionInstance(
+					ops.CallOperatorName,
+					[]FunctionArgument{
+						{
+							Type:       Function,
+							Name:       "я",
+							IsVariadic: false,
+							IsNullable: false,
+						},
+						{
+							Type:       nil,
+							Name:       "значення",
+							IsVariadic: true,
+							IsNullable: true,
+						},
 					},
-					{
-						Type:       nil,
-						Name:       "значення",
-						IsVariadic: true,
-						IsNullable: true,
-					},
-				},
-				func(ctx common.Context, args *[]common.Type, kwargs *map[string]common.Type) (
-					common.Type,
-					error,
-				) {
-					function := (*args)[0].(*FunctionInstance)
-					slicedArgs := (*args)[1:]
-					slicedKwargs := *kwargs
-					delete(slicedKwargs, "я")
-					if err := CheckFunctionArguments(ctx, function, &slicedArgs, &slicedKwargs); err != nil {
-						return nil, err
-					}
+					func(ctx common.Context, args *[]common.Type, kwargs *map[string]common.Type) (
+						common.Type,
+						error,
+					) {
+						function := (*args)[0].(*FunctionInstance)
+						slicedArgs := (*args)[1:]
+						slicedKwargs := *kwargs
+						delete(slicedKwargs, "я")
+						if err := CheckFunctionArguments(ctx, function, &slicedArgs, &slicedKwargs); err != nil {
+							return nil, err
+						}
 
-					return function.Call(ctx, &slicedArgs, &slicedKwargs)
-				},
-				[]FunctionReturnType{
-					{
-						Type:       Any,
-						IsNullable: true,
+						return function.Call(ctx, &slicedArgs, &slicedKwargs)
 					},
-				},
-				true,
-				nil,
-				"", // TODO: add doc
-			),
-		},
-		makeLogicalOperators(Function),
-		makeCommonOperators(Function),
-	)
+					[]FunctionReturnType{
+						{
+							Type:       Any,
+							IsNullable: true,
+						},
+					},
+					true,
+					nil,
+					"", // TODO: add doc
+				),
+			},
+			makeLogicalOperators(Function),
+			makeCommonOperators(Function),
+		)
+	}
+
 	return NewBuiltinClass(
 		common.FunctionTypeName,
 		BuiltinPackage,
-		attributes,
+		initAttributes,
 		"",  // TODO: add doc
 		nil, // CAUTION: segfault may be thrown when using without nil check!
 	)

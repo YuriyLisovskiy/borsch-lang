@@ -11,7 +11,7 @@ import (
 
 func (c *ClassDef) Evaluate(ctx common.Context, parentPackage *types.PackageInstance) (common.Type, error) {
 	// TODO: add doc
-	class := types.NewClass(c.Name, parentPackage, map[string]common.Type{}, "")
+	class := types.NewClass(c.Name, parentPackage, nil, "")
 	err := ctx.SetVar(c.Name, class)
 	if err != nil {
 		return nil, err

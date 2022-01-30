@@ -8,6 +8,7 @@ import (
 var BuiltinScope map[string]common.Type
 
 func init() {
+	initRuntime()
 	BuiltinScope = map[string]common.Type{
 
 		// I/O

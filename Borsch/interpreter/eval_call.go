@@ -111,16 +111,17 @@ func (a *Call) evalFunction(
 		return nil, err
 	}
 
-	ctx.PushScope(*kwargs)
-	res, err := function.Call(ctx, args, kwargs)
+	funcCtx := ctx.GetChild()
+	funcCtx.PushScope(*kwargs)
+	res, err := function.Call(funcCtx, args, kwargs)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := types.CheckResult(ctx, res, function); err != nil {
+	if err := types.CheckResult(funcCtx, res, function); err != nil {
 		return nil, err
 	}
 
-	ctx.PopScope()
+	funcCtx.PopScope()
 	return res, nil
 }

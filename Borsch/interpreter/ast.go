@@ -17,9 +17,10 @@ type ReturnStmt struct {
 type LoopStmt struct {
 	Pos lexer.Position
 
-	Keyword        string          `"цикл"`
-	RangeBasedLoop *RangeBasedLoop `"(" @@ ")"`
-	Body           *BlockStmts     `"{" @@ "}"`
+	Keyword         string           `"цикл"`
+	RangeBasedLoop  *RangeBasedLoop  `"(" (@@ `
+	ConditionalLoop *ConditionalLoop `|    @@) ")"`
+	Body            *BlockStmts      `"{" @@ "}"`
 }
 
 // RangeBasedLoop is a loop with two bounds to
@@ -35,6 +36,12 @@ type RangeBasedLoop struct {
 	LeftBound  *Expression `@@`
 	SS         string      `@("."".")`
 	RightBound *Expression `@@`
+}
+
+type ConditionalLoop struct {
+	Pos lexer.Position
+
+	Condition *Expression `@@`
 }
 
 type IfStmt struct {
