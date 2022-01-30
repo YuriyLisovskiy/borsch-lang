@@ -107,6 +107,7 @@ func ImportPackage(
 		return nil, err
 	}
 
+	// TODO: створювати контекст в ast.Evaluate
 	context := parser.NewContext(newPackagePath, parentPackage)
 	context.PushScope(baseScope)
 	package_, err := ast.Evaluate(context)

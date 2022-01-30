@@ -33,45 +33,45 @@ func NewPackageInstance(
 	}
 }
 
-func (t PackageInstance) String(common.Context) string {
-	return fmt.Sprintf("<пакет '%s'>", t.Name)
+func (p PackageInstance) String(common.Context) string {
+	return fmt.Sprintf("<пакет '%s'>", p.Name)
 }
 
-func (t PackageInstance) Representation(ctx common.Context) string {
-	return t.String(ctx)
+func (p PackageInstance) Representation(ctx common.Context) string {
+	return p.String(ctx)
 }
 
-func (t PackageInstance) AsBool(common.Context) bool {
+func (p PackageInstance) AsBool(common.Context) bool {
 	return true
 }
 
-func (t PackageInstance) GetTypeName() string {
-	return t.GetPrototype().GetTypeName()
+func (p PackageInstance) GetTypeName() string {
+	return p.GetPrototype().GetTypeName()
 }
 
-func (t PackageInstance) GetAttribute(name string) (common.Type, error) {
-	if attribute, err := t.Object.GetAttribute(name); err == nil {
+func (p PackageInstance) GetAttribute(name string) (common.Type, error) {
+	if attribute, err := p.Object.GetAttribute(name); err == nil {
 		return attribute, nil
 	}
 
-	return t.GetPrototype().GetAttribute(name)
+	return p.GetPrototype().GetAttribute(name)
 }
 
-func (t PackageInstance) SetAttribute(name string, value common.Type) (common.Type, error) {
-	if t.IsBuiltin {
-		if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
-			return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
+func (p PackageInstance) SetAttribute(name string, value common.Type) (common.Type, error) {
+	if p.IsBuiltin {
+		if p.Object.HasAttribute(name) || p.GetPrototype().HasAttribute(name) {
+			return nil, util.AttributeIsReadOnlyError(p.GetTypeName(), name)
 		}
 
-		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
+		return nil, util.AttributeNotFoundError(p.GetTypeName(), name)
 	}
 
-	err := t.Object.SetAttribute(name, value)
+	err := p.Object.SetAttribute(name, value)
 	if err != nil {
 		return nil, err
 	}
 
-	return t, nil
+	return p, nil
 }
 
 func (PackageInstance) GetPrototype() *Class {
