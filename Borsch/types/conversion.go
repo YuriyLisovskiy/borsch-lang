@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func ToInteger(_ common.Context, args ...common.Type) (common.Type, error) {
+func ToInteger(_ common.State, args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewIntegerInstance(0), nil
 	}
@@ -52,7 +52,7 @@ func ToInteger(_ common.Context, args ...common.Type) (common.Type, error) {
 	}
 }
 
-func ToReal(_ common.Context, args ...common.Type) (common.Type, error) {
+func ToReal(_ common.State, args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewRealInstance(0.0), nil
 	}
@@ -96,7 +96,7 @@ func ToReal(_ common.Context, args ...common.Type) (common.Type, error) {
 	}
 }
 
-func ToString(ctx common.Context, args ...common.Type) (common.Type, error) {
+func ToString(state common.State, args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewStringInstance(""), nil
 	}
@@ -109,7 +109,7 @@ func ToString(ctx common.Context, args ...common.Type) (common.Type, error) {
 		)
 	}
 
-	return NewStringInstance(args[0].String(ctx)), nil
+	return NewStringInstance(args[0].String(state)), nil
 
 	// TODO: remove
 	// switch vt := args[0].(type) {
@@ -125,7 +125,7 @@ func ToString(ctx common.Context, args ...common.Type) (common.Type, error) {
 	// }
 }
 
-func ToBool(_ common.Context, args ...common.Type) (common.Type, error) {
+func ToBool(_ common.State, args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewBoolInstance(false), nil
 	}
@@ -158,7 +158,7 @@ func ToBool(_ common.Context, args ...common.Type) (common.Type, error) {
 	}
 }
 
-func ToList(_ common.Context, args ...common.Type) (common.Type, error) {
+func ToList(_ common.State, args ...common.Type) (common.Type, error) {
 	list := NewListInstance()
 	if len(args) == 0 {
 		return list, nil
@@ -171,7 +171,7 @@ func ToList(_ common.Context, args ...common.Type) (common.Type, error) {
 	return list, nil
 }
 
-func ToDictionary(ctx common.Context, args ...common.Type) (common.Type, error) {
+func ToDictionary(state common.State, args ...common.Type) (common.Type, error) {
 	dict := NewDictionaryInstance()
 	if len(args) == 0 {
 		return dict, nil
@@ -189,7 +189,7 @@ func ToDictionary(ctx common.Context, args ...common.Type) (common.Type, error) 
 	case ListInstance:
 		switch values := args[1].(type) {
 		case ListInstance:
-			if keys.Length(ctx) != values.Length(ctx) {
+			if keys.Length(state) != values.Length(state) {
 				return nil, util.RuntimeError(
 					fmt.Sprintf(
 						"довжина списку ключів має співпадати з довжиною списку значень",
@@ -197,7 +197,7 @@ func ToDictionary(ctx common.Context, args ...common.Type) (common.Type, error) 
 				)
 			}
 
-			length := keys.Length(ctx)
+			length := keys.Length(state)
 			for i := int64(0); i < length; i++ {
 				err := dict.SetElement(keys.Values[i], values.Values[i])
 				if err != nil {

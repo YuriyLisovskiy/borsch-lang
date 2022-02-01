@@ -20,9 +20,9 @@ func getIndex(index, length int64) (int64, error) {
 	return 0, errors.New("індекс за межами послідовності")
 }
 
-func CheckResult(ctx common.Context, result common.Type, function *FunctionInstance) error {
+func CheckResult(state common.State, result common.Type, function *FunctionInstance) error {
 	if len(function.ReturnTypes) == 1 {
-		err := checkSingleResult(ctx, result, function.ReturnTypes[0], function.Name)
+		err := checkSingleResult(state, result, function.ReturnTypes[0], function.Name)
 		if err != nil {
 			return errors.New(fmt.Sprintf(err.Error(), ""))
 		}
@@ -32,7 +32,7 @@ func CheckResult(ctx common.Context, result common.Type, function *FunctionInsta
 
 	switch value := result.(type) {
 	case ListInstance:
-		if int64(len(function.ReturnTypes)) != value.Length(ctx) {
+		if int64(len(function.ReturnTypes)) != value.Length(state) {
 			var expectedTypes []string
 			for _, retType := range function.ReturnTypes {
 				expectedTypes = append(expectedTypes, retType.String())
@@ -55,7 +55,7 @@ func CheckResult(ctx common.Context, result common.Type, function *FunctionInsta
 
 		// TODO: check values in list
 		for i, returnType := range function.ReturnTypes {
-			if err := checkSingleResult(ctx, value.Values[i], returnType, function.Name); err != nil {
+			if err := checkSingleResult(state, value.Values[i], returnType, function.Name); err != nil {
 				return errors.New(fmt.Sprintf(err.Error(), fmt.Sprintf(" на позиції %d", i+1)))
 			}
 		}
@@ -87,7 +87,7 @@ func makeFuncSignature(funcName string) string {
 }
 
 func checkSingleResult(
-	ctx common.Context,
+	state common.State,
 	result common.Type,
 	returnType FunctionReturnType,
 	funcName string,
@@ -99,7 +99,7 @@ func checkSingleResult(
 					"%s повертає ненульове значення%s, отримано '%s'",
 					makeFuncSignature(funcName),
 					"%s",
-					result.String(ctx),
+					result.String(state),
 				),
 			)
 		}
@@ -116,7 +116,7 @@ func checkSingleResult(
 }
 
 func CheckFunctionArguments(
-	ctx common.Context,
+	state common.State,
 	function *FunctionInstance,
 	args *[]common.Type,
 	_ *map[string]common.Type,
@@ -191,7 +191,7 @@ func CheckFunctionArguments(
 				return util.RuntimeError(
 					fmt.Sprintf(
 						"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
-						function.Arguments[c].Name, arg.String(ctx),
+						function.Arguments[c].Name, arg.String(state),
 					),
 				)
 			}
@@ -217,7 +217,7 @@ func CheckFunctionArguments(
 							return util.RuntimeError(
 								fmt.Sprintf(
 									"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
-									lastArgument.Name, arg.String(ctx),
+									lastArgument.Name, arg.String(state),
 								),
 							)
 						}
@@ -267,12 +267,10 @@ func getAttributes(attributes map[string]common.Type) (DictionaryInstance, error
 	return dict, nil
 }
 
-func getLength(ctx common.Context, sequence common.Type) (int64, error) {
+func getLength(state common.State, sequence common.Type) (int64, error) {
 	switch self := sequence.(type) {
-	case ListInstance:
-		return self.Length(ctx), nil
-	case DictionaryInstance:
-		return self.Length(), nil
+	case common.SequentialType:
+		return self.Length(state), nil
 	}
 
 	return 0, errors.New(fmt.Sprint("invalid type in length operator: ", sequence.GetTypeName()))
@@ -293,7 +291,7 @@ func newBinaryMethod(
 	selfType *Class,
 	returnType *Class,
 	doc string,
-	handler func(common.Context, common.Type, common.Type) (common.Type, error),
+	handler func(common.State, common.Type, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		name,
@@ -311,8 +309,8 @@ func newBinaryMethod(
 				IsNullable: true,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			return handler(ctx, (*args)[0], (*args)[1])
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			return handler(state, (*args)[0], (*args)[1])
 		},
 		[]FunctionReturnType{
 			{
@@ -331,7 +329,7 @@ func newUnaryMethod(
 	selfType *Class,
 	returnType *Class,
 	doc string,
-	handler func(common.Context, common.Type) (common.Type, error),
+	handler func(common.State, common.Type) (common.Type, error),
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		name,
@@ -343,8 +341,8 @@ func newUnaryMethod(
 				IsNullable: false,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			return handler(ctx, (*args)[0])
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			return handler(state, (*args)[0])
 		},
 		[]FunctionReturnType{
 			{
@@ -362,7 +360,7 @@ func newComparisonOperator(
 	operator ops.Operator,
 	itemType *Class,
 	doc string,
-	comparator func(common.Context, common.Type, common.Type) (int, error),
+	comparator func(common.State, common.Type, common.Type) (int, error),
 	checker func(res int) bool,
 ) *FunctionInstance {
 	return newBinaryMethod(
@@ -370,8 +368,8 @@ func newComparisonOperator(
 		itemType,
 		Bool,
 		doc,
-		func(ctx common.Context, self common.Type, other common.Type) (common.Type, error) {
-			res, err := comparator(ctx, self, other)
+		func(state common.State, self common.Type, other common.Type) (common.Type, error) {
+			res, err := comparator(state, self, other)
 			if err != nil {
 				return nil, err
 			}
@@ -383,7 +381,7 @@ func newComparisonOperator(
 
 func makeComparisonOperators(
 	itemType *Class,
-	comparator func(common.Context, common.Type, common.Type) (int, error),
+	comparator func(common.State, common.Type, common.Type) (int, error),
 ) map[string]common.Type {
 	return map[string]common.Type{
 		ops.EqualsOp.Name(): newComparisonOperator(
@@ -433,8 +431,8 @@ func makeLogicalOperators(itemType *Class) map[string]common.Type {
 			itemType,
 			Bool,
 			"",
-			func(ctx common.Context, self common.Type) (common.Type, error) {
-				return NewBoolInstance(!self.AsBool(ctx)), nil
+			func(state common.State, self common.Type) (common.Type, error) {
+				return NewBoolInstance(!self.AsBool(state)), nil
 			},
 		),
 		ops.AndOp.Name(): newBinaryMethod(
@@ -443,8 +441,8 @@ func makeLogicalOperators(itemType *Class) map[string]common.Type {
 			itemType,
 			Bool,
 			"",
-			func(ctx common.Context, self common.Type, other common.Type) (common.Type, error) {
-				return NewBoolInstance(self.AsBool(ctx) && other.AsBool(ctx)), nil
+			func(state common.State, self common.Type, other common.Type) (common.Type, error) {
+				return NewBoolInstance(self.AsBool(state) && other.AsBool(state)), nil
 			},
 		),
 		ops.OrOp.Name(): newBinaryMethod(
@@ -453,8 +451,8 @@ func makeLogicalOperators(itemType *Class) map[string]common.Type {
 			itemType,
 			Bool,
 			"",
-			func(ctx common.Context, self common.Type, other common.Type) (common.Type, error) {
-				return NewBoolInstance(self.AsBool(ctx) || other.AsBool(ctx)), nil
+			func(state common.State, self common.Type, other common.Type) (common.Type, error) {
+				return NewBoolInstance(self.AsBool(state) || other.AsBool(state)), nil
 			},
 		),
 	}
@@ -465,8 +463,8 @@ func makeCommonOperators(itemType *Class) map[string]common.Type {
 		// TODO: add doc
 		ops.BoolOperatorName: newUnaryMethod(
 			ops.BoolOperatorName, itemType, Bool, "",
-			func(ctx common.Context, self common.Type) (common.Type, error) {
-				return NewBoolInstance(self.AsBool(ctx)), nil
+			func(state common.State, self common.Type) (common.Type, error) {
+				return NewBoolInstance(self.AsBool(state)), nil
 			},
 		),
 	}
@@ -474,7 +472,7 @@ func makeCommonOperators(itemType *Class) map[string]common.Type {
 
 func newBuiltinConstructor(
 	itemType *Class,
-	handler func(common.Context, ...common.Type) (common.Type, error),
+	handler func(common.State, ...common.Type) (common.Type, error),
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
@@ -493,8 +491,8 @@ func newBuiltinConstructor(
 				IsNullable: true,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			self, err := handler(ctx, (*args)[1:]...)
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			self, err := handler(state, (*args)[1:]...)
 			if err != nil {
 				return nil, err
 			}
@@ -516,7 +514,7 @@ func newBuiltinConstructor(
 
 func newLengthOperator(
 	itemType *Class,
-	handler func(common.Context, common.Type) (int64, error),
+	handler func(common.State, common.Type) (int64, error),
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
@@ -529,8 +527,8 @@ func newLengthOperator(
 				IsNullable: false,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			length, err := handler(ctx, (*args)[0])
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			length, err := handler(state, (*args)[0])
 			if err != nil {
 				return nil, err
 			}

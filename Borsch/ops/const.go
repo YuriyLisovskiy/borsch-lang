@@ -37,7 +37,7 @@ const (
 	LessOrEqualsOp
 )
 
-var opTypeNames = map[Operator]string{
+var opTypeSignatures = map[Operator]string{
 	PowOp:               "**",
 	ModuloOp:            "%",
 	AddOp:               "+",
@@ -63,7 +63,7 @@ var opTypeNames = map[Operator]string{
 	LessOrEqualsOp:      "<=",
 }
 
-var opTypeCaptions = map[Operator]string{
+var opTypeNames = map[Operator]string{
 	PowOp:               "__оператор_степеня__",             // **
 	ModuloOp:            "__оператор_ділення_за_модулем__",  // %
 	AddOp:               "__оператор_суми__",                // +
@@ -90,26 +90,26 @@ var opTypeCaptions = map[Operator]string{
 }
 
 func (op Operator) Sign() string {
-	if op >= 0 && int(op) < len(opTypeNames) {
-		return opTypeNames[op]
+	if op >= 0 && int(op) < len(opTypeSignatures) {
+		return opTypeSignatures[op]
 	}
 
 	panic(
 		fmt.Sprintf(
-			"Unable to retrieve description for operator '%d', please add it to 'opTypeNames' map first",
+			"Unable to retrieve description for operator '%d', please add it to 'opTypeSignatures' map first",
 			op,
 		),
 	)
 }
 
 func (op Operator) Name() string {
-	if op >= 0 && int(op) < len(opTypeCaptions) {
-		return opTypeCaptions[op]
+	if op >= 0 && int(op) < len(opTypeNames) {
+		return opTypeNames[op]
 	}
 
 	panic(
 		fmt.Sprintf(
-			"Unable to retrieve caption for operator '%d', please add it to 'opTypeCaptions' map first",
+			"Unable to retrieve caption for operator '%d', please add it to 'opTypeNames' map first",
 			op,
 		),
 	)

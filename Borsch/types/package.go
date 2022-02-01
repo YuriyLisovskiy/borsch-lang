@@ -9,7 +9,7 @@ import (
 )
 
 type PackageInstance struct {
-	Object
+	BuiltinObject
 	IsBuiltin bool
 	Name      string
 	Parent    *PackageInstance
@@ -29,28 +29,29 @@ func NewPackageInstance(
 		IsBuiltin: isBuiltin,
 		Name:      name,
 		Parent:    parent,
-		Object: Object{
-			typeName:    common.PackageTypeName,
-			Attributes:  attributes,
-			callHandler: nil,
+		BuiltinObject: BuiltinObject{
+			CommonObject{
+				Object: Object{
+					typeName:    common.PackageTypeName,
+					Attributes:  attributes,
+					callHandler: nil,
+				},
+				prototype: Package,
+			},
 		},
 	}
 }
 
-func (p PackageInstance) String(common.Context) string {
+func (p PackageInstance) String(common.State) string {
 	return fmt.Sprintf("<пакет '%s'>", p.Name)
 }
 
-func (p PackageInstance) Representation(ctx common.Context) string {
-	return p.String(ctx)
+func (p PackageInstance) Representation(state common.State) string {
+	return p.String(state)
 }
 
-func (p PackageInstance) AsBool(common.Context) bool {
+func (p PackageInstance) AsBool(common.State) bool {
 	return true
-}
-
-func (p PackageInstance) GetTypeName() string {
-	return p.GetPrototype().GetTypeName()
 }
 
 func (p PackageInstance) GetAttribute(name string) (common.Type, error) {
@@ -61,32 +62,23 @@ func (p PackageInstance) GetAttribute(name string) (common.Type, error) {
 	return p.GetPrototype().GetAttribute(name)
 }
 
-func (p PackageInstance) SetAttribute(name string, value common.Type) (common.Type, error) {
+func (p PackageInstance) SetAttribute(name string, value common.Type) error {
 	if p.IsBuiltin {
-		if p.Object.HasAttribute(name) || p.GetPrototype().HasAttribute(name) {
-			return nil, util.AttributeIsReadOnlyError(p.GetTypeName(), name)
-		}
-
-		return nil, util.AttributeNotFoundError(p.GetTypeName(), name)
+		return p.BuiltinObject.SetAttribute(name, value)
 	}
 
-	err := p.Object.SetAttribute(name, value)
-	if err != nil {
-		return nil, err
-	}
-
-	return p, nil
-}
-
-func (PackageInstance) GetPrototype() *Class {
-	return Package
+	return p.Object.SetAttribute(name, value)
 }
 
 func (p *PackageInstance) GetContext() common.Context {
 	return p.ctx
 }
 
-func comparePackages(_ common.Context, self common.Type, other common.Type) (int, error) {
+func (p *PackageInstance) SetContext(ctx common.Context) {
+	p.ctx = ctx
+}
+
+func comparePackages(_ common.State, self common.Type, other common.Type) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case *PackageInstance:

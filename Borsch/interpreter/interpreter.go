@@ -15,82 +15,90 @@ import (
 )
 
 type Interpreter struct {
-	parser   common.Parser
-	packages map[string]*types.PackageInstance
+	packages    map[string]*types.PackageInstance
+	rootContext common.Context
 }
 
 func NewInterpreter() *Interpreter {
-	return &Interpreter{
-		parser:   ParserInstance,
+	i := &Interpreter{
 		packages: map[string]*types.PackageInstance{},
 	}
+
+	i.rootContext = &ContextImpl{
+		scopes:        []map[string]common.Type{builtin.BuiltinScope},
+		classContext:  nil,
+		parentContext: nil,
+		interpreter:   i,
+	}
+	return i
 }
 
-func (i *Interpreter) Import(newPackagePath string, parentPackage common.Type) (common.Type, error) {
-	var parentPackageInstance *types.PackageInstance
-	if parentPackage != nil {
-		var ok bool
-		if parentPackageInstance, ok = parentPackage.(*types.PackageInstance); !ok {
-			return nil, errors.New("non-package instance received")
-		}
+func (i *Interpreter) Import(state common.State, newPackagePath string) (
+	common.Type,
+	error,
+) {
+	parentPackageInstance, _ := state.GetCurrentPackageOrNil().(*types.PackageInstance)
+	fullPackagePath, err := getFullPath(newPackagePath, parentPackageInstance)
+	if err != nil {
+		return nil, err
 	}
 
-	if strings.HasPrefix(newPackagePath, "!/") {
-		newPackagePath = path.Join(os.Getenv(common.BORSCH_LIB), newPackagePath[2:])
-	} else if !path.IsAbs(newPackagePath) {
-		var err error
-		if parentPackageInstance != nil {
-			baseDir := path.Dir(parentPackageInstance.Name)
-			newPackagePath = path.Join(baseDir, newPackagePath)
-		} else {
-			newPackagePath, err = filepath.Abs(newPackagePath)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if p, ok := i.packages[newPackagePath]; ok {
+	if p, ok := i.packages[fullPackagePath]; ok {
 		return p, nil
 	}
 
 	currPackage := parentPackageInstance
 	for currPackage != nil {
-		if currPackage.Name == newPackagePath {
+		if currPackage.Name == fullPackagePath {
 			return nil, util.RuntimeError("циклічний імпорт заборонений")
 		}
 
 		currPackage = currPackage.Parent
 	}
 
-	packageCode, err := util.ReadFile(newPackagePath)
+	packageCode, err := util.ReadFile(fullPackagePath)
 	if err != nil {
 		return nil, err
 	}
 
-	ast, err := i.parser.Parse(newPackagePath, string(packageCode))
+	ast, err := state.GetParser().Parse(fullPackagePath, string(packageCode))
 	if err != nil {
 		return nil, err
 	}
 
-	context := &ContextImpl{
-		scopes:      []map[string]common.Type{builtin.BuiltinScope},
-		interpreter: i,
-	}
 	pkg := types.NewPackageInstance(
-		context,
+		i.rootContext.GetChild(),
 		false,
-		newPackagePath,
+		fullPackagePath,
 		parentPackageInstance,
 		nil,
 	)
-	context.package_ = pkg
-	if _, err = ast.Evaluate(context); err != nil {
+	ctx := pkg.GetContext()
+	if _, err = ast.Evaluate(state.WithContext(ctx).WithPackage(pkg)); err != nil {
 		return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 	}
 
-	pkg.Attributes = context.scopes[len(context.scopes)-1]
-	i.packages[newPackagePath] = pkg
-	return context.package_, nil
+	pkg.Attributes = ctx.TopScope()
+	i.packages[fullPackagePath] = pkg
+	return pkg, nil
+}
+
+func getFullPath(packagePath string, parentPackage *types.PackageInstance) (string, error) {
+	if strings.HasPrefix(packagePath, "!/") {
+		packagePath = path.Join(os.Getenv(common.BORSCH_LIB), packagePath[2:])
+	} else if !path.IsAbs(packagePath) {
+		var err error
+		if parentPackage != nil {
+			baseDir := path.Dir(parentPackage.Name)
+			packagePath = path.Join(baseDir, packagePath)
+		} else {
+			packagePath, err = filepath.Abs(packagePath)
+		}
+
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return packagePath, nil
 }

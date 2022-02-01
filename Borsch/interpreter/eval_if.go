@@ -4,16 +4,17 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (s *IfStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResult {
+func (s *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
 	if s.Condition != nil {
-		condition, err := s.Condition.Evaluate(ctx, nil)
+		condition, err := s.Condition.Evaluate(state, nil)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
 
-		if condition.AsBool(ctx) {
+		ctx := state.GetContext()
+		if condition.AsBool(state) {
 			ctx.PushScope(Scope{})
-			result := s.Body.Evaluate(ctx, inFunction, inLoop)
+			result := s.Body.Evaluate(state, inFunction, inLoop)
 			if err != nil {
 				return result
 			}
@@ -28,7 +29,7 @@ func (s *IfStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResul
 			var err error = nil
 			for _, stmt := range s.ElseIfStmts {
 				ctx.PushScope(Scope{})
-				gotResult, result = stmt.Evaluate(ctx, inFunction, inLoop)
+				gotResult, result = stmt.Evaluate(state, inFunction, inLoop)
 				if err != nil {
 					return result
 				}
@@ -51,7 +52,7 @@ func (s *IfStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResul
 
 		if s.Else != nil {
 			ctx.PushScope(Scope{})
-			result := s.Else.Evaluate(ctx, inFunction, inLoop)
+			result := s.Else.Evaluate(state, inFunction, inLoop)
 			if result.Err != nil {
 				return result
 			}
@@ -66,15 +67,16 @@ func (s *IfStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResul
 	panic("unreachable")
 }
 
-func (s *ElseIfStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) (bool, StmtResult) {
-	condition, err := s.Condition.Evaluate(ctx, nil)
+func (s *ElseIfStmt) Evaluate(state common.State, inFunction, inLoop bool) (bool, StmtResult) {
+	condition, err := s.Condition.Evaluate(state, nil)
 	if err != nil {
 		return false, StmtResult{Err: err}
 	}
 
-	if condition.AsBool(ctx) {
+	if condition.AsBool(state) {
+		ctx := state.GetContext()
 		ctx.PushScope(Scope{})
-		result := s.Body.Evaluate(ctx, inFunction, inLoop)
+		result := s.Body.Evaluate(state, inFunction, inLoop)
 		if result.Err != nil {
 			return false, result
 		}

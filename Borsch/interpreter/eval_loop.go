@@ -7,32 +7,33 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 )
 
-func (l *LoopStmt) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResult {
+func (l *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
 	if l.Body == nil {
 		panic("unreachable")
 	}
 
 	if l.RangeBasedLoop != nil {
-		return l.RangeBasedLoop.Evaluate(ctx, l.Body, inFunction, inLoop)
+		return l.RangeBasedLoop.Evaluate(state, l.Body, inFunction, inLoop)
 	}
 
-	return l.ConditionalLoop.Evaluate(ctx, l.Body, inFunction, inLoop)
+	return l.ConditionalLoop.Evaluate(state, l.Body, inFunction, inLoop)
 }
 
-func (l *RangeBasedLoop) Evaluate(ctx common.Context, body *BlockStmts, inFunction, inLoop bool) StmtResult {
-	leftBound, err := getBound(ctx, l.LeftBound, "ліва")
+func (l *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFunction, inLoop bool) StmtResult {
+	leftBound, err := getBound(state, l.LeftBound, "ліва")
 	if err != nil {
 		return StmtResult{Err: err}
 	}
 
-	rightBound, err := getBound(ctx, l.RightBound, "права")
+	rightBound, err := getBound(state, l.RightBound, "права")
 	if err != nil {
 		return StmtResult{Err: err}
 	}
 
+	ctx := state.GetContext()
 	for leftBound < rightBound {
 		ctx.PushScope(Scope{l.Variable: types.NewIntegerInstance(leftBound)})
-		result := body.Evaluate(ctx, inFunction, true)
+		result := body.Evaluate(state, inFunction, true)
 		if result.Err != nil {
 			return result
 		}
@@ -52,19 +53,20 @@ func (l *RangeBasedLoop) Evaluate(ctx common.Context, body *BlockStmts, inFuncti
 	return StmtResult{}
 }
 
-func (l *ConditionalLoop) Evaluate(ctx common.Context, body *BlockStmts, inFunction, inLoop bool) StmtResult {
+func (l *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFunction, inLoop bool) StmtResult {
+	ctx := state.GetContext()
 	for {
-		condition, err := l.Condition.Evaluate(ctx, nil)
+		condition, err := l.Condition.Evaluate(state, nil)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
 
-		if !condition.AsBool(ctx) {
+		if !condition.AsBool(state) {
 			break
 		}
 
 		ctx.PushScope(Scope{})
-		result := body.Evaluate(ctx, inFunction, true)
+		result := body.Evaluate(state, inFunction, true)
 		if result.Err != nil {
 			return result
 		}
@@ -82,9 +84,9 @@ func (l *ConditionalLoop) Evaluate(ctx common.Context, body *BlockStmts, inFunct
 	return StmtResult{}
 }
 
-func getBound(ctx common.Context, bound *Expression, boundName string) (int64, error) {
+func getBound(state common.State, bound *Expression, boundName string) (int64, error) {
 	return mustInt(
-		ctx, bound, func(t common.Type) string {
+		state, bound, func(t common.Type) string {
 			return fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.GetTypeName())
 		},
 	)

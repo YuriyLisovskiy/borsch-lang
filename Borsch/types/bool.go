@@ -11,22 +11,27 @@ import (
 )
 
 type BoolInstance struct {
-	Object
+	BuiltinObject
 	Value bool
 }
 
 func NewBoolInstance(value bool) BoolInstance {
 	return BoolInstance{
 		Value: value,
-		Object: Object{
-			typeName:    common.BoolTypeName,
-			Attributes:  nil,
-			callHandler: nil,
+		BuiltinObject: BuiltinObject{
+			CommonObject{
+				Object: Object{
+					typeName:    common.BoolTypeName,
+					Attributes:  nil,
+					callHandler: nil,
+				},
+				prototype: Bool,
+			},
 		},
 	}
 }
 
-func (t BoolInstance) String(common.Context) string {
+func (t BoolInstance) String(common.State) string {
 	if t.Value {
 		return "істина"
 	}
@@ -34,43 +39,15 @@ func (t BoolInstance) String(common.Context) string {
 	return "хиба"
 }
 
-func (t BoolInstance) Representation(ctx common.Context) string {
-	return t.String(ctx)
+func (t BoolInstance) Representation(state common.State) string {
+	return t.String(state)
 }
 
-func (t BoolInstance) AsBool(common.Context) bool {
+func (t BoolInstance) AsBool(common.State) bool {
 	return t.Value
 }
 
-func (t BoolInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
-	if name == ops.AttributesName {
-		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-	}
-
-	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
-		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
-	}
-
-	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-}
-
-func (t BoolInstance) GetAttribute(name string) (common.Type, error) {
-	if name == ops.AttributesName {
-		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-	}
-
-	if attribute, err := t.Object.GetAttribute(name); err == nil {
-		return attribute, nil
-	}
-
-	return t.GetPrototype().GetAttribute(name)
-}
-
-func (BoolInstance) GetPrototype() *Class {
-	return Bool
-}
-
-func compareBooleans(ctx common.Context, self common.Type, other common.Type) (int, error) {
+func compareBooleans(state common.State, self common.Type, other common.Type) (int, error) {
 	left, ok := self.(BoolInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareBooleans")
@@ -83,7 +60,7 @@ func compareBooleans(ctx common.Context, self common.Type, other common.Type) (i
 			return 0, nil
 		}
 	case IntegerInstance, RealInstance:
-		if left.Value == right.AsBool(ctx) {
+		if left.Value == right.AsBool(state) {
 			return 0, nil
 		}
 	default:
@@ -109,7 +86,7 @@ func newBoolBinaryOperator(
 		Bool,
 		Any,
 		doc,
-		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
+		func(_ common.State, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(BoolInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -125,7 +102,7 @@ func newBoolUnaryOperator(
 	handler func(BoolInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, Bool, Any, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
+		name, Bool, Any, doc, func(_ common.State, left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(BoolInstance); ok {
 				return handler(leftInstance)
 			}

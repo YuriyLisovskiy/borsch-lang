@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
@@ -13,75 +12,39 @@ import (
 )
 
 type IntegerInstance struct {
-	Object
+	BuiltinObject
 	Value int64
-}
-
-func NewIntegerInstanceFromString(value string) (IntegerInstance, error) {
-	number, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		return IntegerInstance{}, util.RuntimeError(err.Error())
-	}
-
-	return NewIntegerInstance(number), nil
 }
 
 func NewIntegerInstance(value int64) IntegerInstance {
 	return IntegerInstance{
-		Object: Object{
-			typeName:    common.IntegerTypeName,
-			Attributes:  nil,
-			callHandler: nil,
+		BuiltinObject: BuiltinObject{
+			CommonObject{
+				Object: Object{
+					typeName:    common.IntegerTypeName,
+					Attributes:  nil,
+					callHandler: nil,
+				},
+				prototype: Integer,
+			},
 		},
 		Value: value,
 	}
 }
 
-func (t IntegerInstance) String(common.Context) string {
+func (t IntegerInstance) String(common.State) string {
 	return fmt.Sprintf("%d", t.Value)
 }
 
-func (t IntegerInstance) Representation(ctx common.Context) string {
-	return t.String(ctx)
+func (t IntegerInstance) Representation(state common.State) string {
+	return t.String(state)
 }
 
-func (t IntegerInstance) AsBool(common.Context) bool {
+func (t IntegerInstance) AsBool(common.State) bool {
 	return t.Value != 0
 }
 
-func (t IntegerInstance) GetTypeName() string {
-	return t.GetPrototype().GetTypeName()
-}
-
-func (t IntegerInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
-	if name == ops.AttributesName {
-		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-	}
-
-	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
-		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
-	}
-
-	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-}
-
-func (t IntegerInstance) GetAttribute(name string) (common.Type, error) {
-	if name == ops.AttributesName {
-		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-	}
-
-	if attribute, err := t.Object.GetAttribute(name); err == nil {
-		return attribute, nil
-	}
-
-	return t.GetPrototype().GetAttribute(name)
-}
-
-func (IntegerInstance) GetPrototype() *Class {
-	return Integer
-}
-
-func compareIntegers(_ common.Context, self common.Type, other common.Type) (int, error) {
+func compareIntegers(_ common.State, self common.Type, other common.Type) (int, error) {
 	left, ok := self.(IntegerInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareIntegers")
@@ -144,7 +107,7 @@ func newIntegerBinaryOperator(
 		Integer,
 		Any,
 		doc,
-		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
+		func(_ common.State, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -160,7 +123,7 @@ func newIntegerUnaryOperator(
 	handler func(IntegerInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, Integer, Any, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
+		name, Integer, Any, doc, func(_ common.State, left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
 				return handler(leftInstance)
 			}

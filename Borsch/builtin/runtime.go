@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -42,8 +43,8 @@ func initRuntime() {
 				IsNullable: true,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			Print(ctx, *args...)
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			Print(state, *args...)
 			return types.NewNilInstance(), nil
 		},
 		[]types.FunctionReturnType{
@@ -67,8 +68,8 @@ func initRuntime() {
 				IsNullable: true,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			Print(ctx, append(*args, types.StringInstance{Value: "\n"})...)
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			Print(state, append(*args, types.StringInstance{Value: "\n"})...)
 			return types.NewNilInstance(), nil
 		},
 		[]types.FunctionReturnType{
@@ -92,8 +93,8 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			return Input(ctx, *args...)
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			return Input(state, *args...)
 		},
 		[]types.FunctionReturnType{
 			{
@@ -116,10 +117,10 @@ func initRuntime() {
 				IsNullable: true,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			var strArgs []string
 			for _, arg := range *args {
-				strArgs = append(strArgs, arg.String(ctx))
+				strArgs = append(strArgs, arg.String(state))
 			}
 
 			return types.NewNilInstance(), util.RuntimeError(strings.Join(strArgs, " "))
@@ -145,8 +146,8 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			return types.StringInstance{Value: os.Getenv((*args)[0].String(ctx))}, nil
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			return types.StringInstance{Value: os.Getenv((*args)[0].String(state))}, nil
 		},
 		[]types.FunctionReturnType{
 			{
@@ -181,20 +182,20 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			message := ""
 			if len(*args) > 2 {
 				messageArgs := (*args)[2:]
 				sz := len(messageArgs)
 				for c := 0; c < sz; c++ {
-					message += messageArgs[c].String(ctx)
+					message += messageArgs[c].String(state)
 					if c < sz-1 {
 						message += " "
 					}
 				}
 			}
 
-			return types.NewNilInstance(), Assert(ctx, (*args)[0], (*args)[1], message)
+			return types.NewNilInstance(), Assert(state, (*args)[0], (*args)[1], message)
 		},
 		[]types.FunctionReturnType{
 			{
@@ -210,7 +211,7 @@ func initRuntime() {
 	CopyrightFunction = types.NewFunctionInstance(
 		"авторське_право",
 		[]types.FunctionArgument{},
-		func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error) {
+		func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error) {
 			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
 			return types.NewNilInstance(), nil
 		},
@@ -228,7 +229,7 @@ func initRuntime() {
 	LicenceFunction = types.NewFunctionInstance(
 		"ліцензія",
 		[]types.FunctionArgument{},
-		func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error) {
+		func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error) {
 			fmt.Println(build.License)
 			return types.NewNilInstance(), nil
 		},
@@ -253,8 +254,8 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			return types.NewNilInstance(), Help((*args)[0].String(ctx))
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			return types.NewNilInstance(), Help((*args)[0].String(state))
 		},
 		[]types.FunctionReturnType{
 			{
@@ -277,7 +278,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			os.Exit(int((*args)[0].(types.IntegerInstance).Value))
 			return types.NewNilInstance(), nil
 		},
@@ -302,10 +303,11 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			return ctx.GetInterpreter().Import(
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+			return state.GetInterpreter().Import(
+				state,
 				(*args)[0].(types.StringInstance).Value,
-				ctx.GetPackage().(*types.PackageInstance),
+				// state.GetCurrentPackage().(*types.PackageInstance),
 			)
 		},
 		[]types.FunctionReturnType{
@@ -329,14 +331,13 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			sequence := (*args)[0]
-			return runUnaryOperator(
-				ctx,
-				ops.LengthOperatorName,
-				sequence,
-				types.Integer,
-			)
+			if !sequence.HasAttribute(ops.LengthOperatorName) {
+				return nil, errors.New(fmt.Sprintf("об'єкт типу '%s' не має довжини", sequence.GetTypeName()))
+			}
+
+			return runUnaryOperator(state, ops.LengthOperatorName, sequence, types.Integer)
 		},
 		[]types.FunctionReturnType{
 			{
@@ -365,7 +366,7 @@ func initRuntime() {
 				IsNullable: true,
 			},
 		},
-		func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			list := (*args)[0].(types.ListInstance)
 			values := (*args)[1:]
 			for _, value := range values {
@@ -395,7 +396,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			return DeepCopy((*args)[0])
 		},
 		[]types.FunctionReturnType{
@@ -419,7 +420,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			return types.GetTypeOfInstance((*args)[0])
 		},
 		[]types.FunctionReturnType{

@@ -12,63 +12,44 @@ import (
 )
 
 type StringInstance struct {
-	Object
+	BuiltinObject
 	Value string
 }
 
 func NewStringInstance(value string) StringInstance {
 	return StringInstance{
 		Value: value,
-		Object: Object{
-			typeName:    common.StringTypeName,
-			Attributes:  nil,
-			callHandler: nil,
+		BuiltinObject: BuiltinObject{
+			CommonObject{
+				Object: Object{
+					typeName:    common.StringTypeName,
+					Attributes:  nil,
+					callHandler: nil,
+				},
+				prototype: String,
+			},
 		},
 	}
 }
 
-func (t StringInstance) String(common.Context) string {
+func (t StringInstance) String(common.State) string {
 	return t.Value
 }
 
-func (t StringInstance) Representation(ctx common.Context) string {
-	return "\"" + t.String(ctx) + "\""
+func (t StringInstance) Representation(state common.State) string {
+	return "\"" + t.String(state) + "\""
 }
 
-func (t StringInstance) AsBool(ctx common.Context) bool {
-	return t.Length(ctx) != 0
+func (t StringInstance) AsBool(state common.State) bool {
+	return t.Length(state) != 0
 }
 
-func (t StringInstance) GetTypeName() string {
-	return t.GetPrototype().GetTypeName()
-}
-
-func (t StringInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
-	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
-		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
-	}
-
-	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-}
-
-func (t StringInstance) GetAttribute(name string) (common.Type, error) {
-	if attribute, err := t.Object.GetAttribute(name); err == nil {
-		return attribute, nil
-	}
-
-	return t.GetPrototype().GetAttribute(name)
-}
-
-func (StringInstance) GetPrototype() *Class {
-	return String
-}
-
-func (t StringInstance) Length(_ common.Context) int64 {
+func (t StringInstance) Length(_ common.State) int64 {
 	return int64(utf8.RuneCountInString(t.Value))
 }
 
-func (t StringInstance) GetElement(ctx common.Context, index int64) (common.Type, error) {
-	idx, err := getIndex(index, t.Length(ctx)-1)
+func (t StringInstance) GetElement(state common.State, index int64) (common.Type, error) {
+	idx, err := getIndex(index, t.Length(state)-1)
 	if err != nil {
 		return nil, err
 	}
@@ -76,10 +57,10 @@ func (t StringInstance) GetElement(ctx common.Context, index int64) (common.Type
 	return NewStringInstance(string([]rune(t.Value)[idx])), nil
 }
 
-func (t StringInstance) SetElement(ctx common.Context, index int64, value common.Type) (common.Type, error) {
+func (t StringInstance) SetElement(state common.State, index int64, value common.Type) (common.Type, error) {
 	switch v := value.(type) {
 	case StringInstance:
-		idx, err := getIndex(index, t.Length(ctx)-1)
+		idx, err := getIndex(index, t.Length(state)-1)
 		if err != nil {
 			return nil, err
 		}
@@ -99,13 +80,13 @@ func (t StringInstance) SetElement(ctx common.Context, index int64, value common
 	return t, nil
 }
 
-func (t StringInstance) Slice(ctx common.Context, from, to int64) (common.Type, error) {
-	fromIdx, err := getIndex(from, t.Length(ctx))
+func (t StringInstance) Slice(state common.State, from, to int64) (common.Type, error) {
+	fromIdx, err := getIndex(from, t.Length(state))
 	if err != nil {
 		return nil, err
 	}
 
-	toIdx, err := getIndex(to, t.Length(ctx))
+	toIdx, err := getIndex(to, t.Length(state))
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +98,7 @@ func (t StringInstance) Slice(ctx common.Context, from, to int64) (common.Type, 
 	return NewStringInstance(t.Value[fromIdx:toIdx]), nil
 }
 
-func compareStrings(_ common.Context, self, other common.Type) (int, error) {
+func compareStrings(_ common.State, self, other common.Type) (int, error) {
 	left, ok := self.(StringInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareStrings")
@@ -158,7 +139,7 @@ func newStringBinaryOperator(
 		String,
 		Any,
 		doc,
-		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
+		func(_ common.State, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(StringInstance); ok {
 				return handler(leftInstance, right)
 			}

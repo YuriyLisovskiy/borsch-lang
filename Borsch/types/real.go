@@ -12,87 +12,39 @@ import (
 )
 
 type RealInstance struct {
-	Object
+	BuiltinObject
 	Value float64
 }
 
 func NewRealInstance(value float64) RealInstance {
 	return RealInstance{
-		Value: value,
-		Object: Object{
-			typeName:    common.RealTypeName,
-			Attributes:  nil,
-			callHandler: nil,
+		BuiltinObject: BuiltinObject{
+			CommonObject{
+				Object: Object{
+					typeName:    common.RealTypeName,
+					Attributes:  nil,
+					callHandler: nil,
+				},
+				prototype: Real,
+			},
 		},
+		Value: value,
 	}
 }
 
-func (t RealInstance) String(common.Context) string {
+func (t RealInstance) String(common.State) string {
 	return strconv.FormatFloat(t.Value, 'f', -1, 64)
 }
 
-func (t RealInstance) Representation(ctx common.Context) string {
-	return t.String(ctx)
+func (t RealInstance) Representation(state common.State) string {
+	return t.String(state)
 }
 
-func (t RealInstance) AsBool(common.Context) bool {
+func (t RealInstance) AsBool(common.State) bool {
 	return t.Value != 0.0
 }
 
-func (t RealInstance) GetTypeName() string {
-	return t.GetPrototype().GetTypeName()
-}
-
-func (t RealInstance) SetAttribute(name string, _ common.Type) (common.Type, error) {
-	if name == ops.AttributesName {
-		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-	}
-
-	if t.Object.HasAttribute(name) || t.GetPrototype().HasAttribute(name) {
-		return nil, util.AttributeIsReadOnlyError(t.GetTypeName(), name)
-	}
-
-	return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-}
-
-func (t RealInstance) GetAttribute(name string) (common.Type, error) {
-	if name == ops.AttributesName {
-		return nil, util.AttributeNotFoundError(t.GetTypeName(), name)
-	}
-
-	if attribute, err := t.Object.GetAttribute(name); err == nil {
-		return attribute, nil
-	}
-
-	return t.GetPrototype().GetAttribute(name)
-}
-
-func (RealInstance) GetPrototype() *Class {
-	return Real
-}
-
-func (t RealInstance) Div(other common.Type) (common.Type, error) {
-	switch o := other.(type) {
-	case BoolInstance:
-		if o.Value {
-			return NewRealInstance(t.Value), nil
-		}
-	case IntegerInstance:
-		if o.Value != 0 {
-			return NewRealInstance(t.Value / float64(o.Value)), nil
-		}
-	case RealInstance:
-		if o.Value != 0.0 {
-			return NewRealInstance(t.Value / o.Value), nil
-		}
-	default:
-		return nil, nil
-	}
-
-	return nil, errors.New("ділення на нуль")
-}
-
-func compareReals(_ common.Context, self, other common.Type) (int, error) {
+func compareReals(_ common.State, self, other common.Type) (int, error) {
 	left, ok := self.(RealInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareReals")
@@ -155,7 +107,7 @@ func newRealBinaryOperator(
 		Real,
 		Any,
 		doc,
-		func(ctx common.Context, left common.Type, right common.Type) (common.Type, error) {
+		func(_ common.State, left common.Type, right common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -171,7 +123,7 @@ func newRealUnaryOperator(
 	handler func(RealInstance) (common.Type, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, Real, Any, doc, func(ctx common.Context, left common.Type) (common.Type, error) {
+		name, Real, Any, doc, func(_ common.State, left common.Type) (common.Type, error) {
 			if leftInstance, ok := left.(RealInstance); ok {
 				return handler(leftInstance)
 			}

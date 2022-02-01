@@ -9,15 +9,11 @@ import (
 )
 
 type ContextImpl struct {
-	scopes        []map[string]common.Type
-	package_      *types.PackageInstance
+	scopes []map[string]common.Type
+	// package_      *types.PackageInstance
 	classContext  common.Context
 	parentContext common.Context
 	interpreter   common.Interpreter
-}
-
-func (c *ContextImpl) GetParser() common.Parser {
-	return ParserInstance
 }
 
 func (c *ContextImpl) PushScope(scope map[string]common.Type) {
@@ -33,6 +29,14 @@ func (c *ContextImpl) PopScope() map[string]common.Type {
 	scope := c.scopes[lastScopeIdx]
 	c.scopes = c.scopes[:lastScopeIdx]
 	return scope
+}
+
+func (c *ContextImpl) TopScope() map[string]common.Type {
+	if len(c.scopes) == 0 {
+		panic("fatal: not enough scopes")
+	}
+
+	return c.scopes[len(c.scopes)-1]
 }
 
 func (c *ContextImpl) GetVar(name string) (common.Type, error) {
@@ -118,27 +122,26 @@ func (c *ContextImpl) GetClass(name string) (common.Type, error) {
 	return nil, util.RuntimeError(fmt.Sprintf("невідомий тип '%s'", name))
 }
 
-// GetPackage returns pointer to current evaluating package
-// instance without its scope. This method can be called during
-// the evaluation process.
-func (c *ContextImpl) GetPackage() common.Type {
-	return c.package_
+func (c *ContextImpl) GetChild() common.Context {
+	return c.getChildContext()
 }
 
-func (c *ContextImpl) GetChild() common.Context {
+// func (c *ContextImpl) WithPackage(pkg common.Type) common.Context {
+// 	if p, ok := pkg.(*types.PackageInstance); ok {
+// 		ctx := c.getChildContext()
+// 		// ctx.package_ = p
+// 		return ctx
+// 	}
+//
+// 	panic("ContextImpl: pkg is not *PackageInstance")
+// }
+
+func (c *ContextImpl) getChildContext() *ContextImpl {
 	return &ContextImpl{
-		scopes:        nil,
-		package_:      c.package_,
+		scopes: nil,
+		// package_:      c.package_,
 		classContext:  nil,
 		parentContext: c,
 		interpreter:   c.interpreter,
 	}
-}
-
-func (c *ContextImpl) GetInterpreter() common.Interpreter {
-	if c.interpreter == nil {
-		panic("interpreter is nil")
-	}
-
-	return c.interpreter
 }

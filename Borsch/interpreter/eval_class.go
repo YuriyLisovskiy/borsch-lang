@@ -9,9 +9,11 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (c *ClassDef) Evaluate(ctx common.Context, parentPackage *types.PackageInstance) (common.Type, error) {
+func (c *ClassDef) Evaluate(state common.State) (common.Type, error) {
 	// TODO: add doc
-	class := types.NewClass(c.Name, parentPackage, nil, "")
+	class := types.NewClass(c.Name, state.GetCurrentPackage().(*types.PackageInstance), nil, "")
+
+	ctx := state.GetContext()
 	err := ctx.SetVar(c.Name, class)
 	if err != nil {
 		return nil, err
@@ -23,7 +25,7 @@ func (c *ClassDef) Evaluate(ctx common.Context, parentPackage *types.PackageInst
 	}
 
 	for _, classMember := range c.Members {
-		_, err := classMember.Evaluate(&classContext, class)
+		_, err := classMember.Evaluate(state.WithContext(&classContext), class)
 		if err != nil {
 			return nil, err
 		}
@@ -33,14 +35,14 @@ func (c *ClassDef) Evaluate(ctx common.Context, parentPackage *types.PackageInst
 	return class, nil
 }
 
-func (m *ClassMember) Evaluate(ctx common.Context, class *types.Class) (common.Type, error) {
+func (m *ClassMember) Evaluate(state common.State, class *types.Class) (common.Type, error) {
 	if m.Variable != nil {
-		return m.Variable.Evaluate(ctx)
+		return m.Variable.Evaluate(state)
 	}
 
 	if m.Method != nil {
 		return m.Method.Evaluate(
-			ctx,
+			state,
 			nil,
 			func(arguments []types.FunctionArgument, returnTypes []types.FunctionReturnType) error {
 				if err := checkMethod(class, arguments, returnTypes); err != nil {
@@ -57,7 +59,7 @@ func (m *ClassMember) Evaluate(ctx common.Context, class *types.Class) (common.T
 	}
 
 	if m.Class != nil {
-		return m.Class.Evaluate(ctx, nil)
+		return m.Class.Evaluate(state)
 	}
 
 	panic("unreachable")

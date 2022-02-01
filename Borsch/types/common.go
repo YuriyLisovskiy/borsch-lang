@@ -2,6 +2,8 @@ package types
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type ObjectInstance interface {
@@ -9,6 +11,62 @@ type ObjectInstance interface {
 }
 
 type AttributesInitializer func() map[string]common.Type
+
+type CommonObject struct {
+	Object
+	prototype *Class
+}
+
+func (o CommonObject) GetTypeName() string {
+	return o.GetPrototype().GetTypeName()
+}
+
+func (o CommonObject) GetPrototype() *Class {
+	return o.prototype
+}
+
+func (o CommonObject) GetAttribute(name string) (common.Type, error) {
+	if attribute, err := o.Object.GetAttribute(name); err == nil {
+		return attribute, nil
+	}
+
+	return o.GetPrototype().GetAttribute(name)
+}
+
+func (o CommonObject) HasAttribute(name string) bool {
+	return o.Object.HasAttribute(name) || o.GetPrototype().HasAttribute(name)
+}
+
+func (o CommonObject) Copy() CommonObject {
+	return CommonObject{
+		Object:    o.Object.Copy(),
+		prototype: o.prototype,
+	}
+}
+
+type BuiltinObject struct {
+	CommonObject
+}
+
+func (o BuiltinObject) GetAttribute(name string) (common.Type, error) {
+	if name == ops.AttributesName {
+		return nil, util.AttributeNotFoundError(o.GetTypeName(), name)
+	}
+
+	return o.CommonObject.GetAttribute(name)
+}
+
+func (o BuiltinObject) SetAttribute(name string, _ common.Type) error {
+	if name == ops.AttributesName {
+		return util.AttributeNotFoundError(o.GetTypeName(), name)
+	}
+
+	if o.Object.HasAttribute(name) || o.GetPrototype().HasAttribute(name) {
+		return util.AttributeIsReadOnlyError(o.GetTypeName(), name)
+	}
+
+	return util.AttributeNotFoundError(o.GetTypeName(), name)
+}
 
 var (
 	Bool       *Class = nil

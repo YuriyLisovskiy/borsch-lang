@@ -38,7 +38,7 @@ func newTypeClass() *Class {
 						IsNullable: false,
 					},
 				},
-				func(_ common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 					return getTypeFunc((*args)[1])
 				},
 				[]FunctionReturnType{

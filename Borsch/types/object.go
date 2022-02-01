@@ -11,7 +11,7 @@ import (
 type Object struct {
 	typeName       string
 	Attributes     map[string]common.Type
-	callHandler    func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error)
+	callHandler    func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error)
 	initAttributes AttributesInitializer
 }
 
@@ -71,16 +71,20 @@ func (o Object) SetAttribute(name string, value common.Type) error {
 }
 
 func (o Object) HasAttribute(name string) bool {
+	if name == ops.AttributesName {
+		return true
+	}
+
 	_, ok := o.Attributes[name]
 	return ok
 }
 
-func (o *Object) Call(ctx common.Context, args *[]common.Type, kwargs *map[string]common.Type) (
+func (o *Object) Call(state common.State, args *[]common.Type, kwargs *map[string]common.Type) (
 	common.Type,
 	error,
 ) {
 	if o.callHandler != nil {
-		return o.callHandler(ctx, args, kwargs)
+		return o.callHandler(state, args, kwargs)
 	}
 
 	return nil, util.ObjectIsNotCallable(o.GetTypeName(), o.GetTypeName())
