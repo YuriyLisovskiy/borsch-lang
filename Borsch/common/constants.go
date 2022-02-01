@@ -2,6 +2,8 @@ package common
 
 const BORSCH_LIB = "BORSCH_LIB"
 
+const LANGUAGE_FILE_EXT = "борщ"
+
 const (
 	AnyTypeName        = "довільний"
 	BoolTypeName       = "логічний"

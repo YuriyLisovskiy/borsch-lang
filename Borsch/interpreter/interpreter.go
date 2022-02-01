@@ -100,5 +100,10 @@ func getFullPath(packagePath string, parentPackage *types.PackageInstance) (stri
 		}
 	}
 
+	ext := "." + common.LANGUAGE_FILE_EXT
+	if !strings.HasSuffix(packagePath, ext) {
+		packagePath += ext
+	}
+
 	return packagePath, nil
 }
