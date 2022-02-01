@@ -112,13 +112,9 @@ func (a *Call) evalFunction(
 	}
 
 	var funcCtx common.Context
-	if pkg := function.GetPackage(); pkg != nil {
-		if funcCtx = pkg.GetContext(); funcCtx != nil {
-			funcCtx = funcCtx.GetChild()
-		}
-	}
-
-	if funcCtx == nil {
+	if funcCtx = function.GetContext(); funcCtx != nil {
+		funcCtx = funcCtx.GetChild()
+	} else {
 		funcCtx = ctx.GetChild()
 	}
 

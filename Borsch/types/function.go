@@ -160,8 +160,16 @@ func (t FunctionInstance) GetPrototype() *Class {
 	return Function
 }
 
-func (t *FunctionInstance) GetPackage() *PackageInstance {
+func (t *FunctionInstance) GetParent() common.Type {
 	return t.package_
+}
+
+func (t *FunctionInstance) GetContext() common.Context {
+	if t.package_ != nil {
+		return t.package_.GetContext()
+	}
+
+	return nil
 }
 
 func newFunctionClass() *Class {

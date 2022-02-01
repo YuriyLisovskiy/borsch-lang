@@ -15,18 +15,6 @@ type Object struct {
 	initAttributes AttributesInitializer
 }
 
-func (o Object) makeAttributes() (DictionaryInstance, error) {
-	dict := NewDictionaryInstance()
-	for key, val := range o.Attributes {
-		err := dict.SetElement(NewStringInstance(key), val)
-		if err != nil {
-			return DictionaryInstance{}, err
-		}
-	}
-
-	return dict, nil
-}
-
 func (o Object) GetTypeName() string {
 	return o.typeName
 }
@@ -100,12 +88,25 @@ func (o *Object) Call(ctx common.Context, args *[]common.Type, kwargs *map[strin
 
 func (o Object) Copy() Object {
 	object := Object{
-		typeName:   o.typeName,
-		Attributes: map[string]common.Type{},
+		typeName:    o.typeName,
+		Attributes:  map[string]common.Type{},
+		callHandler: o.callHandler,
 	}
 	for k, v := range o.Attributes {
 		object.Attributes[k] = v
 	}
 
 	return object
+}
+
+func (o Object) makeAttributes() (DictionaryInstance, error) {
+	dict := NewDictionaryInstance()
+	for key, val := range o.Attributes {
+		err := dict.SetElement(NewStringInstance(key), val)
+		if err != nil {
+			return DictionaryInstance{}, err
+		}
+	}
+
+	return dict, nil
 }
