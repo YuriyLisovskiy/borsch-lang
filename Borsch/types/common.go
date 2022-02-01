@@ -1,6 +1,8 @@
 package types
 
-import "github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+)
 
 type ObjectInstance interface {
 	GetPrototype() *Class
@@ -25,7 +27,7 @@ var (
 var BuiltinPackage *PackageInstance
 
 func Init() {
-	BuiltinPackage = NewPackageInstance(true, "вбудований", nil, map[string]common.Type{})
+	BuiltinPackage = NewPackageInstance(nil, true, "вбудований", nil, map[string]common.Type{})
 
 	Bool = newBoolClass()
 	Dictionary = newDictionaryClass()

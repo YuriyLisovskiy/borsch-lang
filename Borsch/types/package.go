@@ -13,15 +13,19 @@ type PackageInstance struct {
 	IsBuiltin bool
 	Name      string
 	Parent    *PackageInstance
+
+	ctx common.Context
 }
 
 func NewPackageInstance(
+	ctx common.Context,
 	isBuiltin bool,
 	name string,
 	parent *PackageInstance,
 	attributes map[string]common.Type,
 ) *PackageInstance {
 	return &PackageInstance{
+		ctx:       ctx,
 		IsBuiltin: isBuiltin,
 		Name:      name,
 		Parent:    parent,
@@ -78,10 +82,14 @@ func (PackageInstance) GetPrototype() *Class {
 	return Package
 }
 
+func (p *PackageInstance) GetContext() common.Context {
+	return p.ctx
+}
+
 func comparePackages(_ common.Context, self common.Type, other common.Type) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
-	case *PackageInstance, PackageInstance:
+	case *PackageInstance:
 		return -2, util.RuntimeError(
 			fmt.Sprintf(
 				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",

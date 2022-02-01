@@ -303,17 +303,10 @@ func initRuntime() {
 			},
 		},
 		func(ctx common.Context, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			pack, err := ImportPackage(
-				BuiltinScope,
+			return ctx.GetInterpreter().Import(
 				(*args)[0].(types.StringInstance).Value,
-				ctx.GetParser(),
 				ctx.GetPackage().(*types.PackageInstance),
 			)
-			if err != nil {
-				return nil, err
-			}
-
-			return pack, nil
 		},
 		[]types.FunctionReturnType{
 			{

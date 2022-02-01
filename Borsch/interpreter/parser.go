@@ -7,7 +7,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/alecthomas/participle/v2"
 )
 
@@ -61,15 +60,4 @@ func (p *ParserImpl) Parse(filename string, code string) (common.Evaluatable, er
 	}
 
 	return packageAST, nil
-}
-
-func (p *ParserImpl) NewContext(packageFilename string, parentPackage common.Type) common.Context {
-	return &ContextImpl{
-		package_: types.NewPackageInstance(
-			false,
-			packageFilename,
-			parentPackage.(*types.PackageInstance),
-			map[string]common.Type{},
-		),
-	}
 }

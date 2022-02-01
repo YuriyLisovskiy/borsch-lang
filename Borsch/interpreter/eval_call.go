@@ -111,7 +111,17 @@ func (a *Call) evalFunction(
 		return nil, err
 	}
 
-	funcCtx := ctx.GetChild()
+	var funcCtx common.Context
+	if pkg := function.GetPackage(); pkg != nil {
+		if funcCtx = pkg.GetContext(); funcCtx != nil {
+			funcCtx = funcCtx.GetChild()
+		}
+	}
+
+	if funcCtx == nil {
+		funcCtx = ctx.GetChild()
+	}
+
 	funcCtx.PushScope(*kwargs)
 	res, err := function.Call(funcCtx, args, kwargs)
 	if err != nil {

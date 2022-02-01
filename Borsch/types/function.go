@@ -160,6 +160,10 @@ func (t FunctionInstance) GetPrototype() *Class {
 	return Function
 }
 
+func (t *FunctionInstance) GetPackage() *PackageInstance {
+	return t.package_
+}
+
 func newFunctionClass() *Class {
 	initAttributes := func() map[string]common.Type {
 		return mergeAttributes(

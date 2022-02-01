@@ -2,7 +2,10 @@ package common
 
 type Parser interface {
 	Parse(filename string, code string) (Evaluatable, error)
-	NewContext(packageName string, parentPackage Type) Context
+}
+
+type Interpreter interface {
+	Import(packageName string, parentPackage Type) (Type, error)
 }
 
 type Context interface {
@@ -12,9 +15,9 @@ type Context interface {
 	GetVar(name string) (Type, error)
 	SetVar(name string, value Type) error
 	GetClass(name string) (Type, error)
-	BuildPackage() error
 	GetPackage() Type
 	GetChild() Context
+	GetInterpreter() Interpreter
 }
 
 type Evaluatable interface {

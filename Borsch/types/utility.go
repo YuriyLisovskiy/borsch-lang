@@ -11,7 +11,7 @@ import (
 )
 
 func getIndex(index, length int64) (int64, error) {
-	if index >= 0 && index < length+1 {
+	if index >= 0 && index <= length {
 		return index, nil
 	} else if index < 0 && index >= -length {
 		return length + index, nil

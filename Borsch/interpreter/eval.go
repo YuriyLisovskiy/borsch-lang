@@ -27,13 +27,7 @@ func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 		}
 	}
 
-	// TODO: будувати пакет тут; забрати посилання на пакет з контексту!
-	if err := ctx.BuildPackage(); err != nil {
-		return nil, err
-	}
-
-	ctx.PopScope()
-	return ctx.GetPackage(), nil
+	return nil, nil
 }
 
 // Evaluate executes block of statements.

@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
@@ -14,6 +13,7 @@ type ContextImpl struct {
 	package_      *types.PackageInstance
 	classContext  common.Context
 	parentContext common.Context
+	interpreter   common.Interpreter
 }
 
 func (c *ContextImpl) GetParser() common.Parser {
@@ -125,30 +125,20 @@ func (c *ContextImpl) GetPackage() common.Type {
 	return c.package_
 }
 
-// BuildPackage sets scope to package instance.
-// This method should be called after the package is evaluated.
-// After building the package, call GetPackage to retrieve it.
-func (c *ContextImpl) BuildPackage() error {
-	if len(c.scopes) == 0 {
-		return errors.New("not enough scopes")
+func (c *ContextImpl) GetChild() common.Context {
+	return &ContextImpl{
+		scopes:        nil,
+		package_:      c.package_,
+		classContext:  nil,
+		parentContext: c,
+		interpreter:   c.interpreter,
 	}
-
-	c.package_.Attributes = c.scopes[len(c.scopes)-1]
-	return nil
 }
 
-func (c *ContextImpl) GetChild() common.Context {
-	pkgFileName := ""
-	if c.package_ != nil {
-		pkgFileName = c.package_.Name
+func (c *ContextImpl) GetInterpreter() common.Interpreter {
+	if c.interpreter == nil {
+		panic("interpreter is nil")
 	}
-	return &ContextImpl{
-		package_: types.NewPackageInstance(
-			false,
-			pkgFileName,
-			c.package_,
-			map[string]common.Type{},
-		),
-		parentContext: c,
-	}
+
+	return c.interpreter
 }
