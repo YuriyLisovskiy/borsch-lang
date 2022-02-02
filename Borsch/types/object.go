@@ -4,27 +4,14 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type Object struct {
 	typeName       string
 	Attributes     map[string]common.Type
-	callHandler    func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error)
+	callHandler    func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error)
 	initAttributes AttributesInitializer
-}
-
-func (o Object) makeAttributes() (DictionaryInstance, error) {
-	dict := NewDictionaryInstance()
-	for key, val := range o.Attributes {
-		err := dict.SetElement(NewStringInstance(key), val)
-		if err != nil {
-			return DictionaryInstance{}, err
-		}
-	}
-
-	return dict, nil
 }
 
 func (o Object) GetTypeName() string {
@@ -32,7 +19,7 @@ func (o Object) GetTypeName() string {
 }
 
 func (o Object) GetAttribute(name string) (common.Type, error) {
-	if name == ops.AttributesName {
+	if name == common.AttributesName {
 		dict, err := getAttributes(o.Attributes)
 		if err != nil {
 			return nil, err
@@ -51,7 +38,7 @@ func (o Object) GetAttribute(name string) (common.Type, error) {
 }
 
 func (o Object) SetAttribute(name string, value common.Type) error {
-	if name == ops.AttributesName {
+	if name == common.AttributesName {
 		return util.RuntimeError(
 			fmt.Sprintf(
 				"неможливо записати значення у атрибут '%s', що призначений лише для читання",
@@ -83,16 +70,20 @@ func (o Object) SetAttribute(name string, value common.Type) error {
 }
 
 func (o Object) HasAttribute(name string) bool {
+	if name == common.AttributesName {
+		return true
+	}
+
 	_, ok := o.Attributes[name]
 	return ok
 }
 
-func (o *Object) Call(ctx common.Context, args *[]common.Type, kwargs *map[string]common.Type) (
+func (o *Object) Call(state common.State, args *[]common.Type, kwargs *map[string]common.Type) (
 	common.Type,
 	error,
 ) {
 	if o.callHandler != nil {
-		return o.callHandler(ctx, args, kwargs)
+		return o.callHandler(state, args, kwargs)
 	}
 
 	return nil, util.ObjectIsNotCallable(o.GetTypeName(), o.GetTypeName())
@@ -100,12 +91,25 @@ func (o *Object) Call(ctx common.Context, args *[]common.Type, kwargs *map[strin
 
 func (o Object) Copy() Object {
 	object := Object{
-		typeName:   o.typeName,
-		Attributes: map[string]common.Type{},
+		typeName:    o.typeName,
+		Attributes:  map[string]common.Type{},
+		callHandler: o.callHandler,
 	}
 	for k, v := range o.Attributes {
 		object.Attributes[k] = v
 	}
 
 	return object
+}
+
+func (o Object) makeAttributes() (DictionaryInstance, error) {
+	dict := NewDictionaryInstance()
+	for key, val := range o.Attributes {
+		err := dict.SetElement(NewStringInstance(key), val)
+		if err != nil {
+			return DictionaryInstance{}, err
+		}
+	}
+
+	return dict, nil
 }

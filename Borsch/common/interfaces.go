@@ -2,45 +2,58 @@ package common
 
 type Parser interface {
 	Parse(filename string, code string) (Evaluatable, error)
-	NewContext(packageName string, parentPackage Type) Context
+}
+
+type Interpreter interface {
+	Import(state State, packageName string) (Type, error)
 }
 
 type Context interface {
-	GetParser() Parser
 	PushScope(scope map[string]Type)
 	PopScope() map[string]Type
+	TopScope() map[string]Type
 	GetVar(name string) (Type, error)
 	SetVar(name string, value Type) error
 	GetClass(name string) (Type, error)
-	BuildPackage() error
-	GetPackage() Type
 	GetChild() Context
 }
 
+type State interface {
+	GetParser() Parser
+	GetInterpreter() Interpreter
+	GetContext() Context
+	GetCurrentPackage() Type
+	GetCurrentPackageOrNil() Type
+	WithContext(Context) State
+	WithPackage(p Type) State
+}
+
 type Evaluatable interface {
-	Evaluate(Context) (Type, error)
+	Evaluate(State) (Type, error)
 }
 
 type OperatorEvaluatable interface {
-	Evaluate(Context, Type) (Type, error)
+	Evaluate(State, Type) (Type, error)
 }
 
 type Type interface {
-	String(Context) string
-	Representation(Context) string
-	AsBool(Context) bool
+	String(State) (string, error)
+	Representation(State) (string, error)
+	AsBool(State) (bool, error)
 	GetTypeName() string
+	GetOperator(string) (Type, error)
 	GetAttribute(string) (Type, error)
-	SetAttribute(string, Type) (Type, error)
+	SetAttribute(string, Type) error
+	HasAttribute(string) bool
 }
 
 type SequentialType interface {
-	Length(Context) int64
-	GetElement(Context, int64) (Type, error)
-	SetElement(Context, int64, Type) (Type, error)
-	Slice(Context, int64, int64) (Type, error)
+	Length(State) int64
+	GetElement(State, int64) (Type, error)
+	SetElement(State, int64, Type) (Type, error)
+	Slice(State, int64, int64) (Type, error)
 }
 
 type CallableType interface {
-	Call(Context, *[]Type, *map[string]Type) (Type, error)
+	Call(State, *[]Type, *map[string]Type) (Type, error)
 }

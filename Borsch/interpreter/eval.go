@@ -5,17 +5,16 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type Scope map[string]common.Type
 
-func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
-	ctx.PushScope(Scope{})
+func (p *Package) Evaluate(state common.State) (common.Type, error) {
+	state.GetContext().PushScope(Scope{})
 	for _, stmt := range p.Stmts {
-		state := stmt.Evaluate(ctx, false, false)
+		state := stmt.Evaluate(state, false, false)
 		if state.Err != nil {
 			pos := stmt.Pos
 			return nil, errors.New(
@@ -27,20 +26,14 @@ func (p *Package) Evaluate(ctx common.Context) (common.Type, error) {
 		}
 	}
 
-	// TODO: будувати пакет тут; забрати посилання на пакет з контексту!
-	if err := ctx.BuildPackage(); err != nil {
-		return nil, err
-	}
-
-	ctx.PopScope()
-	return ctx.GetPackage(), nil
+	return nil, nil
 }
 
 // Evaluate executes block of statements.
 // Returns (result value, force stop flag, error)
-func (b *BlockStmts) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtResult {
+func (b *BlockStmts) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
 	for _, stmt := range b.Stmts {
-		result := stmt.Evaluate(ctx, inFunction, inLoop)
+		result := stmt.Evaluate(state, inFunction, inLoop)
 		if result.Err != nil {
 			return result
 		}
@@ -57,141 +50,147 @@ func (b *BlockStmts) Evaluate(ctx common.Context, inFunction, inLoop bool) StmtR
 	return StmtResult{Value: types.NewNilInstance()}
 }
 
-func (e *Expression) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+func (e *Expression) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
 	if e.LogicalAnd != nil {
-		return e.LogicalAnd.Evaluate(ctx, valueToSet)
+		return e.LogicalAnd.Evaluate(state, valueToSet)
 	}
 
 	panic("unreachable")
 }
 
-func (a *Assignment) Evaluate(ctx common.Context) (common.Type, error) {
+func (a *Assignment) Evaluate(state common.State) (common.Type, error) {
 	if len(a.Next) == 0 {
-		return a.Expression[0].Evaluate(ctx, nil)
+		return a.Expression[0].Evaluate(state, nil)
 	}
 
-	return unpack(ctx, a.Expression, a.Next)
+	return unpack(state, a.Expression, a.Next)
 }
 
 // Evaluate executes LogicalAnd operation.
 // If `valueToSet` is nil, return variable or value from context,
 // set a new value or return an error otherwise.
-func (a *LogicalAnd) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.AndOp.Name(), a.LogicalOr, a.Next)
+func (a *LogicalAnd) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
+	return evalBinaryOperator(state, valueToSet, common.AndOp.Name(), a.LogicalOr, a.Next)
 }
 
-func (a *LogicalOr) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.OrOp.Name(), a.LogicalNot, a.Next)
+func (a *LogicalOr) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
+	return evalBinaryOperator(state, valueToSet, common.OrOp.Name(), a.LogicalNot, a.Next)
 }
 
-func (a *LogicalNot) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+func (a *LogicalNot) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
 	if a.Comparison != nil {
-		return a.Comparison.Evaluate(ctx, valueToSet)
+		return a.Comparison.Evaluate(state, valueToSet)
 	}
 
 	if a.Next != nil {
-		value, err := a.Next.Evaluate(ctx, nil)
+		value, err := a.Next.Evaluate(state, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		return callMethod(ctx, value, ops.NotOp.Name(), &[]common.Type{}, nil)
+		opName := common.NotOp.Name()
+		operatorFunc, err := value.GetOperator(opName)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.CallAttribute(state, value, operatorFunc, opName, nil, nil, true)
 	}
 
 	panic("unreachable")
 }
 
-func (a *Comparison) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+func (a *Comparison) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case ">=":
-		return evalBinaryOperator(ctx, valueToSet, ops.GreaterOrEqualsOp.Name(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.GreaterOrEqualsOp.Name(), a.BitwiseOr, a.Next)
 	case ">":
-		return evalBinaryOperator(ctx, valueToSet, ops.GreaterOp.Name(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.GreaterOp.Name(), a.BitwiseOr, a.Next)
 	case "<=":
-		return evalBinaryOperator(ctx, valueToSet, ops.LessOrEqualsOp.Name(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.LessOrEqualsOp.Name(), a.BitwiseOr, a.Next)
 	case "<":
-		return evalBinaryOperator(ctx, valueToSet, ops.LessOp.Name(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.LessOp.Name(), a.BitwiseOr, a.Next)
 	case "==":
-		return evalBinaryOperator(ctx, valueToSet, ops.EqualsOp.Name(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.EqualsOp.Name(), a.BitwiseOr, a.Next)
 	case "!=":
-		return evalBinaryOperator(ctx, valueToSet, ops.NotEqualsOp.Name(), a.BitwiseOr, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.NotEqualsOp.Name(), a.BitwiseOr, a.Next)
 	default:
-		return a.BitwiseOr.Evaluate(ctx, valueToSet)
+		return a.BitwiseOr.Evaluate(state, valueToSet)
 	}
 }
 
-func (a *BitwiseOr) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseOrOp.Name(), a.BitwiseXor, a.Next)
+func (a *BitwiseOr) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
+	return evalBinaryOperator(state, valueToSet, common.BitwiseOrOp.Name(), a.BitwiseXor, a.Next)
 }
 
-func (a *BitwiseXor) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseXorOp.Name(), a.BitwiseAnd, a.Next)
+func (a *BitwiseXor) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
+	return evalBinaryOperator(state, valueToSet, common.BitwiseXorOp.Name(), a.BitwiseAnd, a.Next)
 }
 
-func (a *BitwiseAnd) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.BitwiseAndOp.Name(), a.BitwiseShift, a.Next)
+func (a *BitwiseAnd) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
+	return evalBinaryOperator(state, valueToSet, common.BitwiseAndOp.Name(), a.BitwiseShift, a.Next)
 }
 
-func (a *BitwiseShift) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+func (a *BitwiseShift) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "<<":
-		return evalBinaryOperator(ctx, valueToSet, ops.BitwiseLeftShiftOp.Name(), a.Addition, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.BitwiseLeftShiftOp.Name(), a.Addition, a.Next)
 	case ">>":
-		return evalBinaryOperator(ctx, valueToSet, ops.BitwiseRightShiftOp.Name(), a.Addition, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.BitwiseRightShiftOp.Name(), a.Addition, a.Next)
 	default:
-		return a.Addition.Evaluate(ctx, valueToSet)
+		return a.Addition.Evaluate(state, valueToSet)
 	}
 }
 
-func (a *Addition) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+func (a *Addition) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "+":
-		return evalBinaryOperator(ctx, valueToSet, ops.AddOp.Name(), a.MultiplicationOrMod, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.AddOp.Name(), a.MultiplicationOrMod, a.Next)
 	case "-":
-		return evalBinaryOperator(ctx, valueToSet, ops.SubOp.Name(), a.MultiplicationOrMod, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.SubOp.Name(), a.MultiplicationOrMod, a.Next)
 	default:
-		return a.MultiplicationOrMod.Evaluate(ctx, valueToSet)
+		return a.MultiplicationOrMod.Evaluate(state, valueToSet)
 	}
 }
 
-func (a *MultiplicationOrMod) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+func (a *MultiplicationOrMod) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "/":
-		return evalBinaryOperator(ctx, valueToSet, ops.DivOp.Name(), a.Unary, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.DivOp.Name(), a.Unary, a.Next)
 	case "*":
-		return evalBinaryOperator(ctx, valueToSet, ops.MulOp.Name(), a.Unary, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.MulOp.Name(), a.Unary, a.Next)
 	case "%":
-		return evalBinaryOperator(ctx, valueToSet, ops.ModuloOp.Name(), a.Unary, a.Next)
+		return evalBinaryOperator(state, valueToSet, common.ModuloOp.Name(), a.Unary, a.Next)
 	default:
-		return a.Unary.Evaluate(ctx, valueToSet)
+		return a.Unary.Evaluate(state, valueToSet)
 	}
 }
 
-func (a *Unary) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+func (a *Unary) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
 	switch a.Op {
 	case "+":
-		return evalUnaryOperator(ctx, ops.UnaryPlus.Name(), a.Next)
+		return evalUnaryOperator(state, common.UnaryPlus.Name(), a.Next)
 	case "-":
-		return evalUnaryOperator(ctx, ops.UnaryMinus.Name(), a.Next)
+		return evalUnaryOperator(state, common.UnaryMinus.Name(), a.Next)
 	case "~":
-		return evalUnaryOperator(ctx, ops.UnaryBitwiseNotOp.Name(), a.Next)
+		return evalUnaryOperator(state, common.UnaryBitwiseNotOp.Name(), a.Next)
 	default:
-		return a.Exponent.Evaluate(ctx, valueToSet)
+		return a.Exponent.Evaluate(state, valueToSet)
 	}
 }
 
-func (a *Exponent) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(ctx, valueToSet, ops.PowOp.Name(), a.Primary, a.Next)
+func (a *Exponent) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
+	return evalBinaryOperator(state, valueToSet, common.PowOp.Name(), a.Primary, a.Next)
 }
 
-func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.Type, error) {
+func (a *Primary) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
 	if a.SubExpression != nil {
 		if valueToSet != nil {
 			// TODO: change to normal description
 			return nil, errors.New("unable to set to subexpression evaluation")
 		}
 
-		return a.SubExpression.Evaluate(ctx, valueToSet)
+		return a.SubExpression.Evaluate(state, valueToSet)
 	}
 
 	if a.Constant != nil {
@@ -200,21 +199,21 @@ func (a *Primary) Evaluate(ctx common.Context, valueToSet common.Type) (common.T
 			return nil, errors.New("unable to set to constant")
 		}
 
-		return a.Constant.Evaluate(ctx)
+		return a.Constant.Evaluate(state)
 	}
 
 	if a.AttributeAccess != nil {
-		return a.AttributeAccess.Evaluate(ctx, valueToSet, nil)
+		return a.AttributeAccess.Evaluate(state, valueToSet, nil)
 	}
 
 	if a.LambdaDef != nil {
-		return a.LambdaDef.Evaluate(ctx)
+		return a.LambdaDef.Evaluate(state)
 	}
 
 	panic("unreachable")
 }
 
-func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
+func (c *Constant) Evaluate(state common.State) (common.Type, error) {
 	if c.Integer != nil {
 		return types.NewIntegerInstance(*c.Integer), nil
 	}
@@ -234,7 +233,7 @@ func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
 	if c.List != nil {
 		list := types.NewListInstance()
 		for _, expr := range c.List {
-			value, err := expr.Evaluate(ctx, nil)
+			value, err := expr.Evaluate(state, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -252,7 +251,7 @@ func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
 	if c.Dictionary != nil {
 		dict := types.NewDictionaryInstance()
 		for _, entry := range c.Dictionary {
-			key, value, err := entry.Evaluate(ctx)
+			key, value, err := entry.Evaluate(state)
 			if err != nil {
 				return nil, err
 			}
@@ -272,13 +271,13 @@ func (c *Constant) Evaluate(ctx common.Context) (common.Type, error) {
 	panic("unreachable")
 }
 
-func (d *DictionaryEntry) Evaluate(ctx common.Context) (common.Type, common.Type, error) {
-	key, err := d.Key.Evaluate(ctx, nil)
+func (d *DictionaryEntry) Evaluate(state common.State) (common.Type, common.Type, error) {
+	key, err := d.Key.Evaluate(state, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	value, err := d.Value.Evaluate(ctx, nil)
+	value, err := d.Value.Evaluate(state, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -286,8 +285,8 @@ func (d *DictionaryEntry) Evaluate(ctx common.Context) (common.Type, common.Type
 	return key, value, nil
 }
 
-func (a *AttributeAccess) Evaluate(ctx common.Context, valueToSet, prevValue common.Type) (common.Type, error) {
-	if a.Slicing == nil {
+func (a *AttributeAccess) Evaluate(state common.State, valueToSet, prevValue common.Type) (common.Type, error) {
+	if a.SlicingOrSubscription == nil {
 		panic("unreachable")
 	}
 
@@ -296,14 +295,14 @@ func (a *AttributeAccess) Evaluate(ctx common.Context, valueToSet, prevValue com
 		var currentValue common.Type
 		var err error
 		if a.AttributeAccess != nil {
-			currentValue, err = a.Slicing.Evaluate(ctx, nil, prevValue)
+			currentValue, err = a.SlicingOrSubscription.Evaluate(state, nil, prevValue)
 			if err != nil {
 				return nil, err
 			}
 
-			currentValue, err = a.AttributeAccess.Evaluate(ctx, valueToSet, currentValue)
+			currentValue, err = a.AttributeAccess.Evaluate(state, valueToSet, currentValue)
 		} else {
-			currentValue, err = a.Slicing.Evaluate(ctx, valueToSet, prevValue)
+			currentValue, err = a.SlicingOrSubscription.Evaluate(state, valueToSet, prevValue)
 		}
 
 		if err != nil {
@@ -314,20 +313,20 @@ func (a *AttributeAccess) Evaluate(ctx common.Context, valueToSet, prevValue com
 	}
 
 	// get
-	currentValue, err := a.Slicing.Evaluate(ctx, valueToSet, prevValue)
+	currentValue, err := a.SlicingOrSubscription.Evaluate(state, valueToSet, prevValue)
 	if err != nil {
 		return nil, err
 	}
 
 	if a.AttributeAccess != nil {
-		return a.AttributeAccess.Evaluate(ctx, valueToSet, currentValue)
+		return a.AttributeAccess.Evaluate(state, valueToSet, currentValue)
 	}
 
 	return currentValue, err
 }
 
 func (s *SlicingOrSubscription) Evaluate(
-	ctx common.Context,
+	state common.State,
 	valueToSet common.Type,
 	prevValue common.Type,
 ) (common.Type, error) {
@@ -337,7 +336,7 @@ func (s *SlicingOrSubscription) Evaluate(
 		var err error = nil
 		rangesLen := len(s.Ranges)
 		if rangesLen != 0 && s.Ranges[rangesLen-1].RightBound != nil {
-			return nil, util.RuntimeError("неможливо присвоїти значення у зріз")
+			return nil, util.RuntimeError("неможливо присвоїти значення зрізу")
 		}
 
 		if s.Call != nil {
@@ -345,15 +344,15 @@ func (s *SlicingOrSubscription) Evaluate(
 				return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
 			}
 
-			variable, err = s.callFunction(ctx, prevValue)
+			variable, err = s.callFunction(state, prevValue)
 			if err != nil {
 				return nil, err
 			}
 		} else if s.Ident != nil {
 			if len(s.Ranges) != 0 {
-				variable, err = getCurrentValue(ctx, prevValue, *s.Ident)
+				variable, err = getCurrentValue(state.GetContext(), prevValue, *s.Ident)
 			} else {
-				variable, err = setCurrentValue(ctx, prevValue, *s.Ident, valueToSet)
+				variable, err = setCurrentValue(state.GetContext(), prevValue, *s.Ident, valueToSet)
 			}
 
 			if err != nil {
@@ -364,7 +363,7 @@ func (s *SlicingOrSubscription) Evaluate(
 		}
 
 		if len(s.Ranges) != 0 {
-			return evalSlicingOperation(ctx, variable, s.Ranges, valueToSet)
+			return evalSlicingOperation(state, variable, s.Ranges, valueToSet)
 		}
 
 		return variable, nil
@@ -374,12 +373,12 @@ func (s *SlicingOrSubscription) Evaluate(
 	var variable common.Type
 	var err error = nil
 	if s.Call != nil {
-		variable, err = s.callFunction(ctx, prevValue)
+		variable, err = s.callFunction(state, prevValue)
 		if err != nil {
 			return nil, err
 		}
 	} else if s.Ident != nil {
-		variable, err = getCurrentValue(ctx, prevValue, *s.Ident)
+		variable, err = getCurrentValue(state.GetContext(), prevValue, *s.Ident)
 		if err != nil {
 			return nil, err
 		}
@@ -388,19 +387,20 @@ func (s *SlicingOrSubscription) Evaluate(
 	}
 
 	if len(s.Ranges) != 0 {
-		return evalSlicingOperation(ctx, variable, s.Ranges, nil)
+		return evalSlicingOperation(state, variable, s.Ranges, nil)
 	}
 
 	return variable, nil
 }
 
-func (s *SlicingOrSubscription) callFunction(ctx common.Context, prevValue common.Type) (common.Type, error) {
+func (s *SlicingOrSubscription) callFunction(state common.State, prevValue common.Type) (common.Type, error) {
+	ctx := state.GetContext()
 	variable, err := getCurrentValue(ctx, prevValue, s.Call.Ident)
 	if err != nil {
 		return nil, err
 	}
 
-	variable, err = s.Call.Evaluate(ctx, variable, prevValue)
+	variable, err = s.Call.Evaluate(state, variable, prevValue)
 	if err != nil {
 		return nil, errors.New(
 			fmt.Sprintf(
@@ -413,26 +413,43 @@ func (s *SlicingOrSubscription) callFunction(ctx common.Context, prevValue commo
 	return variable, nil
 }
 
-func (l *LambdaDef) Evaluate(ctx common.Context) (common.Type, error) {
-	arguments, err := l.ParametersSet.Evaluate(ctx)
+func (l *LambdaDef) Evaluate(state common.State) (common.Type, error) {
+	arguments, err := l.ParametersSet.Evaluate(state)
 	if err != nil {
 		return nil, err
 	}
 
-	returnTypes, err := evalReturnTypes(ctx, l.ReturnTypes)
+	returnTypes, err := evalReturnTypes(state, l.ReturnTypes)
 	if err != nil {
 		return nil, err
 	}
 
-	return types.NewFunctionInstance(
+	lambda := types.NewFunctionInstance(
 		"",
 		arguments,
-		func(ctx common.Context, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
-			return l.Body.Evaluate(ctx)
+		func(state common.State, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
+			return l.Body.Evaluate(state)
 		},
 		returnTypes,
 		false,
-		ctx.GetPackage().(*types.PackageInstance),
+		state.GetCurrentPackage().(*types.PackageInstance),
 		"", // TODO: add doc
-	), nil
+	)
+
+	if l.InstantCall {
+		return l.evalInstantCall(state, lambda)
+	}
+
+	return lambda, nil
+}
+
+func (l *LambdaDef) evalInstantCall(state common.State, function *types.FunctionInstance) (common.Type, error) {
+	var args []common.Type
+	if len(l.InstantCallArguments) != 0 {
+		if err := updateArgs(state, l.InstantCallArguments, &args); err != nil {
+			return nil, err
+		}
+	}
+
+	return types.Call(state, function, &args, nil)
 }

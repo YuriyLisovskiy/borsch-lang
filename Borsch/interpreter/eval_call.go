@@ -2,126 +2,69 @@ package interpreter
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (a *Call) Evaluate(ctx common.Context, variable common.Type, selfInstance common.Type) (common.Type, error) {
-	switch function := variable.(type) {
+func (a *Call) Evaluate(state common.State, variable common.Type, selfInstance common.Type) (common.Type, error) {
+	switch object := variable.(type) {
 	case *types.Class:
-		callable, err := function.GetAttribute(ops.ConstructorName)
+		var args []common.Type
+		instance, err := object.GetEmptyInstance()
 		if err != nil {
 			return nil, err
 		}
 
-		switch __constructor__ := callable.(type) {
-		case *types.FunctionInstance:
-			instance, err := function.GetEmptyInstance()
-			if err != nil {
-				return nil, err
-			}
-
-			args := []common.Type{instance}
-			kwargs := map[string]common.Type{__constructor__.Arguments[0].Name: instance}
-
-			// TODO: check if constructor returns nothing.
-			_, err = a.evalFunction(ctx, __constructor__, &args, &kwargs, 1)
-			if err != nil {
-				return nil, err
-			}
-
-			return args[0], nil
-		default:
-			return nil, util.ObjectIsNotCallable(a.Ident, callable.GetTypeName())
+		_, err = a.evalFunctionByName(state, instance, common.ConstructorName, &args, nil, true)
+		if err != nil {
+			return nil, err
 		}
+
+		return args[0], nil
 	case *types.FunctionInstance:
 		var args []common.Type
-		kwargs := map[string]common.Type{}
-		argsShift := 0
 		if selfInstance != nil {
 			switch selfInstance.(type) {
 			case *types.Class, *types.PackageInstance:
 				// ignore
 			case types.ObjectInstance:
-				argsShift++
 				args = append(args, selfInstance)
-				kwargs[function.Arguments[0].Name] = selfInstance
 			}
 		}
 
-		return a.evalFunction(ctx, function, &args, &kwargs, argsShift)
+		return a.evalFunction(state, object, &args, nil)
 	case types.ObjectInstance:
-		operator, err := function.GetPrototype().GetAttribute(ops.CallOperatorName)
-		if err != nil {
-			return nil, err
-		}
-
-		switch __call__ := operator.(type) {
-		case *types.FunctionInstance:
-			args := []common.Type{variable}
-			kwargs := map[string]common.Type{__call__.Arguments[0].Name: variable}
-			return a.evalFunction(ctx, __call__, &args, &kwargs, 1)
-		default:
-			return nil, util.ObjectIsNotCallable(a.Ident, operator.GetTypeName())
-		}
+		args := []common.Type{variable}
+		return a.evalFunctionByName(state, object.GetPrototype(), common.CallOperatorName, &args, nil, true)
 	default:
-		return nil, util.ObjectIsNotCallable(a.Ident, function.GetTypeName())
+		return nil, util.ObjectIsNotCallable(a.Ident, object.GetTypeName())
 	}
 }
 
+func (a *Call) evalFunctionByName(
+	state common.State,
+	object common.Type,
+	functionName string,
+	args *[]common.Type,
+	kwargs *map[string]common.Type,
+	isMethod bool,
+) (common.Type, error) {
+	if err := updateArgs(state, a.Arguments, args); err != nil {
+		return nil, err
+	}
+
+	return types.CallByName(state, object, functionName, args, kwargs, isMethod)
+}
+
 func (a *Call) evalFunction(
-	ctx common.Context,
+	state common.State,
 	function *types.FunctionInstance,
 	args *[]common.Type,
 	kwargs *map[string]common.Type,
-	argsShift int,
 ) (common.Type, error) {
-	variadicArgs := types.NewListInstance()
-	variadicArgsIndex := -1
-	for i, expressionArgument := range a.Arguments {
-		arg, err := expressionArgument.Evaluate(ctx, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		*args = append(*args, arg)
-		if variadicArgsIndex == -1 {
-			if i+argsShift >= len(function.Arguments) {
-				// TODO: return ukr error!
-				return nil, util.RuntimeError("too many arguments")
-			}
-
-			if function.Arguments[i+argsShift].IsVariadic {
-				variadicArgsIndex = i + argsShift
-				variadicArgs.Values = append(variadicArgs.Values, arg)
-			} else {
-				(*kwargs)[function.Arguments[i+argsShift].Name] = arg
-			}
-		} else {
-			variadicArgs.Values = append(variadicArgs.Values, arg)
-		}
-	}
-
-	if variadicArgsIndex != -1 {
-		(*kwargs)[function.Arguments[variadicArgsIndex].Name] = variadicArgs
-	}
-
-	if err := types.CheckFunctionArguments(ctx, function, args, kwargs); err != nil {
+	if err := updateArgs(state, a.Arguments, args); err != nil {
 		return nil, err
 	}
 
-	funcCtx := ctx.GetChild()
-	funcCtx.PushScope(*kwargs)
-	res, err := function.Call(funcCtx, args, kwargs)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := types.CheckResult(funcCtx, res, function); err != nil {
-		return nil, err
-	}
-
-	funcCtx.PopScope()
-	return res, nil
+	return types.Call(state, function, args, kwargs)
 }

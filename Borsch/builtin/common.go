@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
@@ -8,18 +9,29 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func Assert(ctx common.Context, expected common.Type, actual common.Type, errorTemplate string) error {
-	leftV := expected
-	leftVClass := expected.(types.ObjectInstance).GetPrototype()
-	rightV := actual
-	rightVClass := actual.(types.ObjectInstance).GetPrototype()
-	if leftVClass != rightVClass {
-		return util.RuntimeError(
-			fmt.Sprintf(
-				"неможливо застосувати оператор умови рівності до значень типів '%s' та '%s'",
-				leftVClass.GetTypeName(), rightVClass.GetTypeName(),
-			),
-		)
+func Assert(state common.State, expected common.Type, actual common.Type, errorTemplate string) error {
+	args := []common.Type{actual}
+	result, err := types.CallByName(state, expected, common.EqualsOp.Name(), &args, nil, true)
+	if err != nil {
+		return err
+	}
+
+	success, err := MustBool(
+		result, func(t common.Type) error {
+			return errors.New(
+				fmt.Sprintf(
+					"результат порівняння має бути логічного типу, отримано %s",
+					t.GetTypeName(),
+				),
+			)
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	if success {
+		return nil
 	}
 
 	errMsg := ""
@@ -28,46 +40,18 @@ func Assert(ctx common.Context, expected common.Type, actual common.Type, errorT
 	} else {
 		errMsg = "не вдалося підтвердити, що %s дорівнює %s"
 	}
-	
-	switch left := leftV.(type) {
-	case types.NilInstance:
-		return nil
-	case types.RealInstance:
-		right := rightV.(types.RealInstance)
-		if left.Value != right.Value {
-			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(ctx), right.String(ctx)))
-		}
 
-		return nil
-	case types.IntegerInstance:
-		right := rightV.(types.IntegerInstance)
-		if left.Value != right.Value {
-			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(ctx), right.String(ctx)))
-		}
-
-		return nil
-	case types.StringInstance:
-		right := rightV.(types.StringInstance)
-		if left.Value != right.Value {
-			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(ctx), right.String(ctx)))
-		}
-
-		return nil
-	case types.BoolInstance:
-		right := rightV.(types.BoolInstance)
-		if left.Value != right.Value {
-			return util.RuntimeError(fmt.Sprintf(errMsg, left.String(ctx), right.String(ctx)))
-		}
-
-		return nil
+	expectedStr, err := expected.String(state)
+	if err != nil {
+		return err
 	}
 
-	return util.RuntimeError(
-		fmt.Sprintf(
-			"непідтримувані типи операндів для оператора умови рівності: '%s' і '%s'",
-			leftV.GetTypeName(), rightV.GetTypeName(),
-		),
-	)
+	actualStr, err := actual.String(state)
+	if err != nil {
+		return err
+	}
+
+	return util.RuntimeError(fmt.Sprintf(errMsg, expectedStr, actualStr))
 }
 
 func Help(word string) error {

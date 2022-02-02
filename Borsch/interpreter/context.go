@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
@@ -10,14 +9,11 @@ import (
 )
 
 type ContextImpl struct {
-	scopes        []map[string]common.Type
-	package_      *types.PackageInstance
+	scopes []map[string]common.Type
+	// package_      *types.PackageInstance
 	classContext  common.Context
 	parentContext common.Context
-}
-
-func (c *ContextImpl) GetParser() common.Parser {
-	return ParserInstance
+	interpreter   common.Interpreter
 }
 
 func (c *ContextImpl) PushScope(scope map[string]common.Type) {
@@ -33,6 +29,14 @@ func (c *ContextImpl) PopScope() map[string]common.Type {
 	scope := c.scopes[lastScopeIdx]
 	c.scopes = c.scopes[:lastScopeIdx]
 	return scope
+}
+
+func (c *ContextImpl) TopScope() map[string]common.Type {
+	if len(c.scopes) == 0 {
+		panic("fatal: not enough scopes")
+	}
+
+	return c.scopes[len(c.scopes)-1]
 }
 
 func (c *ContextImpl) GetVar(name string) (common.Type, error) {
@@ -118,37 +122,16 @@ func (c *ContextImpl) GetClass(name string) (common.Type, error) {
 	return nil, util.RuntimeError(fmt.Sprintf("невідомий тип '%s'", name))
 }
 
-// GetPackage returns pointer to current evaluating package
-// instance without its scope. This method can be called during
-// the evaluation process.
-func (c *ContextImpl) GetPackage() common.Type {
-	return c.package_
-}
-
-// BuildPackage sets scope to package instance.
-// This method should be called after the package is evaluated.
-// After building the package, call GetPackage to retrieve it.
-func (c *ContextImpl) BuildPackage() error {
-	if len(c.scopes) == 0 {
-		return errors.New("not enough scopes")
-	}
-
-	c.package_.Attributes = c.scopes[len(c.scopes)-1]
-	return nil
-}
-
 func (c *ContextImpl) GetChild() common.Context {
-	pkgFileName := ""
-	if c.package_ != nil {
-		pkgFileName = c.package_.Name
-	}
+	return c.getChildContext()
+}
+
+func (c *ContextImpl) getChildContext() *ContextImpl {
 	return &ContextImpl{
-		package_: types.NewPackageInstance(
-			false,
-			pkgFileName,
-			c.package_,
-			map[string]common.Type{},
-		),
+		scopes: nil,
+		// package_:      c.package_,
+		classContext:  nil,
 		parentContext: c,
+		interpreter:   c.interpreter,
 	}
 }

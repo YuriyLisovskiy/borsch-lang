@@ -6,16 +6,16 @@ import (
 )
 
 func (f *FunctionDef) Evaluate(
-	ctx common.Context,
+	state common.State,
 	parentPackage *types.PackageInstance,
-	check func([]types.FunctionArgument, []types.FunctionReturnType) error,
+	check func([]types.FunctionParameter, []types.FunctionReturnType) error,
 ) (common.Type, error) {
-	arguments, err := f.ParametersSet.Evaluate(ctx)
+	arguments, err := f.ParametersSet.Evaluate(state)
 	if err != nil {
 		return nil, err
 	}
 
-	returnTypes, err := evalReturnTypes(ctx, f.ReturnTypes)
+	returnTypes, err := evalReturnTypes(state, f.ReturnTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -29,22 +29,22 @@ func (f *FunctionDef) Evaluate(
 	function := types.NewFunctionInstance(
 		f.Name,
 		arguments,
-		func(ctx common.Context, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
-			return f.Body.Evaluate(ctx)
+		func(state common.State, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
+			return f.Body.Evaluate(state)
 		},
 		returnTypes,
 		parentPackage == nil,
 		parentPackage,
 		"", // TODO: add doc
 	)
-	return function, ctx.SetVar(f.Name, function)
+	return function, state.GetContext().SetVar(f.Name, function)
 }
 
-func (p *ParametersSet) Evaluate(ctx common.Context) ([]types.FunctionArgument, error) {
-	var arguments []types.FunctionArgument
+func (p *ParametersSet) Evaluate(state common.State) ([]types.FunctionParameter, error) {
+	var arguments []types.FunctionParameter
 	parameters := p.Parameters
 	for _, parameter := range parameters {
-		arg, err := parameter.Evaluate(ctx)
+		arg, err := parameter.Evaluate(state.GetContext())
 		if err != nil {
 			return nil, err
 		}
@@ -55,13 +55,13 @@ func (p *ParametersSet) Evaluate(ctx common.Context) ([]types.FunctionArgument, 
 	return arguments, nil
 }
 
-func (p *Parameter) Evaluate(ctx common.Context) (*types.FunctionArgument, error) {
+func (p *Parameter) Evaluate(ctx common.Context) (*types.FunctionParameter, error) {
 	class, err := ctx.GetClass(p.Type)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.FunctionArgument{
+	return &types.FunctionParameter{
 		Type:       class.(*types.Class),
 		Name:       p.Name,
 		IsVariadic: false,
@@ -69,8 +69,8 @@ func (p *Parameter) Evaluate(ctx common.Context) (*types.FunctionArgument, error
 	}, nil
 }
 
-func (b *FunctionBody) Evaluate(ctx common.Context) (common.Type, error) {
-	result := b.Stmts.Evaluate(ctx, true, false)
+func (b *FunctionBody) Evaluate(state common.State) (common.Type, error) {
+	result := b.Stmts.Evaluate(state, true, false)
 	return result.Value, result.Err
 }
 
@@ -86,15 +86,15 @@ func (t *ReturnType) Evaluate(ctx common.Context) (*types.FunctionReturnType, er
 	}, nil
 }
 
-func (s *ReturnStmt) Evaluate(ctx common.Context) (common.Type, error) {
+func (s *ReturnStmt) Evaluate(state common.State) (common.Type, error) {
 	resultCount := len(s.Expressions)
 	switch {
 	case resultCount == 1:
-		return s.Expressions[0].Evaluate(ctx, nil)
+		return s.Expressions[0].Evaluate(state, nil)
 	case resultCount > 1:
 		result := types.NewListInstance()
 		for _, expression := range s.Expressions {
-			value, err := expression.Evaluate(ctx, nil)
+			value, err := expression.Evaluate(state, nil)
 			if err != nil {
 				return nil, err
 			}

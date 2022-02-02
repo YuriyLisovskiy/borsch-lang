@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
 	"github.com/spf13/cobra"
@@ -48,7 +47,10 @@ var rootCmd = &cobra.Command{
 				return
 			}
 
-			_, err = builtin.ImportPackage(builtin.BuiltinScope, filePath, interpreter.ParserInstance, nil)
+			i := interpreter.NewInterpreter()
+			parser, err := interpreter.NewParser()
+			state := interpreter.NewState(parser, i, nil, nil)
+			_, err = i.Import(state, filePath)
 			if err != nil {
 				fmt.Println(err.Error())
 				return

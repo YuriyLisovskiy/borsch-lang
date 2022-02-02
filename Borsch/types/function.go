@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
 
-type FunctionArgument struct {
+type FunctionParameter struct {
 	// nil means any type
 	Type       *Class
 	Name       string
@@ -15,7 +14,7 @@ type FunctionArgument struct {
 	IsNullable bool
 }
 
-func (fa *FunctionArgument) String() string {
+func (fa *FunctionParameter) String() string {
 	res := fa.Name
 	if fa.IsVariadic {
 		res += "..."
@@ -24,9 +23,9 @@ func (fa *FunctionArgument) String() string {
 	return res + fa.GetTypeName()
 }
 
-func (fa FunctionArgument) GetTypeName() string {
+func (fa FunctionParameter) GetTypeName() string {
 	res := ""
-	if fa.Type != Nil {
+	if fa.Type != Any {
 		res = fa.Type.GetTypeName()
 	} else {
 		res = common.AnyTypeName
@@ -54,7 +53,7 @@ func (r *FunctionReturnType) String() string {
 }
 
 func (r *FunctionReturnType) GetTypeName() string {
-	if r.Type != Nil {
+	if r.Type != Any {
 		return r.Type.GetTypeName()
 	}
 
@@ -62,19 +61,19 @@ func (r *FunctionReturnType) GetTypeName() string {
 }
 
 type FunctionInstance struct {
-	Object
+	CommonInstance
 	package_    *PackageInstance
 	address     string
 	Name        string
-	Arguments   []FunctionArgument
+	Parameters  []FunctionParameter
 	ReturnTypes []FunctionReturnType
 	IsMethod    bool
 }
 
 func NewFunctionInstance(
 	name string,
-	arguments []FunctionArgument,
-	handler func(common.Context, *[]common.Type, *map[string]common.Type) (common.Type, error),
+	arguments []FunctionParameter,
+	handler func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error),
 	returnTypes []FunctionReturnType,
 	isMethod bool,
 	package_ *PackageInstance,
@@ -82,22 +81,25 @@ func NewFunctionInstance(
 ) *FunctionInstance {
 	attributes := map[string]common.Type{}
 	if package_ != nil {
-		attributes[ops.PackageAttributeName] = package_
+		attributes[common.PackageAttributeName] = package_
 	}
 
 	if len(doc) > 0 {
-		attributes[ops.DocAttributeName] = NewStringInstance(doc)
+		attributes[common.DocAttributeName] = NewStringInstance(doc)
 	}
 
 	function := &FunctionInstance{
-		Object: Object{
-			typeName:    common.FunctionTypeName,
-			Attributes:  attributes,
-			callHandler: handler,
+		CommonInstance: CommonInstance{
+			Object: Object{
+				typeName:    common.FunctionTypeName,
+				Attributes:  attributes,
+				callHandler: handler,
+			},
+			prototype: Function,
 		},
 		package_:    package_,
 		Name:        name,
-		Arguments:   arguments,
+		Parameters:  arguments,
 		ReturnTypes: returnTypes,
 		IsMethod:    isMethod,
 	}
@@ -106,7 +108,7 @@ func NewFunctionInstance(
 	return function
 }
 
-func (t FunctionInstance) String(common.Context) string {
+func (t FunctionInstance) String(common.State) (string, error) {
 	template := ""
 	if t.Name == "" {
 		template = "функція <лямбда>"
@@ -124,49 +126,32 @@ func (t FunctionInstance) String(common.Context) string {
 	}
 
 	template += " з адресою %s"
-	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.address)
+	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.address), nil
 }
 
-func (t FunctionInstance) Representation(ctx common.Context) string {
-	return t.String(ctx)
+func (t FunctionInstance) Representation(state common.State) (string, error) {
+	return t.String(state)
 }
 
-func (t FunctionInstance) AsBool(common.Context) bool {
-	return true
+func (t FunctionInstance) AsBool(common.State) (bool, error) {
+	return true, nil
 }
 
-func (t FunctionInstance) GetTypeName() string {
-	return t.GetPrototype().GetTypeName()
-}
-
-func (t FunctionInstance) SetAttribute(name string, value common.Type) (common.Type, error) {
-	err := t.Object.SetAttribute(name, value)
-	if err != nil {
-		return nil, err
+func (t *FunctionInstance) GetContext() common.Context {
+	if t.package_ != nil {
+		return t.package_.GetContext()
 	}
 
-	return t, nil
-}
-
-func (t FunctionInstance) GetAttribute(name string) (common.Type, error) {
-	if attribute, err := t.Object.GetAttribute(name); err == nil {
-		return attribute, nil
-	}
-
-	return t.GetPrototype().GetAttribute(name)
-}
-
-func (t FunctionInstance) GetPrototype() *Class {
-	return Function
+	return nil
 }
 
 func newFunctionClass() *Class {
 	initAttributes := func() map[string]common.Type {
 		return mergeAttributes(
 			map[string]common.Type{
-				ops.CallOperatorName: NewFunctionInstance(
-					ops.CallOperatorName,
-					[]FunctionArgument{
+				common.CallOperatorName: NewFunctionInstance(
+					common.CallOperatorName,
+					[]FunctionParameter{
 						{
 							Type:       Function,
 							Name:       "я",
@@ -180,7 +165,7 @@ func newFunctionClass() *Class {
 							IsNullable: true,
 						},
 					},
-					func(ctx common.Context, args *[]common.Type, kwargs *map[string]common.Type) (
+					func(state common.State, args *[]common.Type, kwargs *map[string]common.Type) (
 						common.Type,
 						error,
 					) {
@@ -188,11 +173,11 @@ func newFunctionClass() *Class {
 						slicedArgs := (*args)[1:]
 						slicedKwargs := *kwargs
 						delete(slicedKwargs, "я")
-						if err := CheckFunctionArguments(ctx, function, &slicedArgs, &slicedKwargs); err != nil {
+						if err := CheckFunctionArguments(state, function, &slicedArgs, &slicedKwargs); err != nil {
 							return nil, err
 						}
 
-						return function.Call(ctx, &slicedArgs, &slicedKwargs)
+						return function.Call(state, &slicedArgs, &slicedKwargs)
 					},
 					[]FunctionReturnType{
 						{

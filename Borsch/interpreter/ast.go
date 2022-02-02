@@ -278,16 +278,18 @@ type DictionaryEntry struct {
 type LambdaDef struct {
 	Pos lexer.Position
 
-	ParametersSet *ParametersSet `@@`
-	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body          *FunctionBody  `"="">" "{" @@ "}"`
+	ParametersSet        *ParametersSet `@@`
+	ReturnTypes          []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
+	Body                 *FunctionBody  `"="">" "{" @@ "}"`
+	InstantCall          bool           `[ @"("`
+	InstantCallArguments []*Expression  `[(@@ ("," @@)*)?] ")"]`
 }
 
 type AttributeAccess struct {
 	Pos lexer.Position
 
-	Slicing         *SlicingOrSubscription `@@`
-	AttributeAccess *AttributeAccess       `("." @@)?`
+	SlicingOrSubscription *SlicingOrSubscription `@@`
+	AttributeAccess       *AttributeAccess       `("." @@)?`
 }
 
 type SlicingOrSubscription struct {
@@ -303,7 +305,7 @@ type Range struct {
 
 	LeftBound  *Expression `"[" @@`
 	IsSlicing  bool        `[ @":"`
-	RightBound *Expression ` @@] "]"`
+	RightBound *Expression ` @@?] "]"`
 }
 
 type Call struct {
