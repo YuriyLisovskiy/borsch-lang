@@ -8,4 +8,5 @@ const (
 	DocAttributeName     = "__документ__"
 	LengthOperatorName   = "__довжина__"
 	BoolOperatorName     = "__логічний__"
+	StringOperatorName   = "__рядок__"
 )

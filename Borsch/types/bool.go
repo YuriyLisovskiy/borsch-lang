@@ -11,15 +11,15 @@ import (
 )
 
 type BoolInstance struct {
-	BuiltinObject
+	BuiltinInstance
 	Value bool
 }
 
 func NewBoolInstance(value bool) BoolInstance {
 	return BoolInstance{
 		Value: value,
-		BuiltinObject: BuiltinObject{
-			CommonObject{
+		BuiltinInstance: BuiltinInstance{
+			CommonInstance{
 				Object: Object{
 					typeName:    common.BoolTypeName,
 					Attributes:  nil,
@@ -31,15 +31,15 @@ func NewBoolInstance(value bool) BoolInstance {
 	}
 }
 
-func (t BoolInstance) String(common.State) string {
+func (t BoolInstance) String(common.State) (string, error) {
 	if t.Value {
-		return "істина"
+		return "істина", nil
 	}
 
-	return "хиба"
+	return "хиба", nil
 }
 
-func (t BoolInstance) Representation(state common.State) string {
+func (t BoolInstance) Representation(state common.State) (string, error) {
 	return t.String(state)
 }
 

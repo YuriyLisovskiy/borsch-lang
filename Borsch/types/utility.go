@@ -11,13 +11,21 @@ import (
 )
 
 func getIndex(index, length int64) (int64, error) {
-	if index >= 0 && index <= length {
+	if index >= 0 && index < length {
 		return index, nil
 	} else if index < 0 && index >= -length {
 		return length + index, nil
 	}
 
 	return 0, errors.New("індекс за межами послідовності")
+}
+
+func normalizeBound(bound, length int64) int64 {
+	if bound < 0 {
+		return length + bound
+	}
+
+	return bound
 }
 
 func CheckResult(state common.State, result common.Type, function *FunctionInstance) error {
@@ -94,12 +102,17 @@ func checkSingleResult(
 ) error {
 	if result.(ObjectInstance).GetPrototype() == Nil {
 		if returnType.Type != Nil && !returnType.IsNullable {
+			resultStr, err := result.String(state)
+			if err != nil {
+				return err
+			}
+
 			return util.RuntimeError(
 				fmt.Sprintf(
 					"%s повертає ненульове значення%s, отримано '%s'",
 					makeFuncSignature(funcName),
 					"%s",
-					result.String(state),
+					resultStr,
 				),
 			)
 		}
@@ -122,8 +135,8 @@ func CheckFunctionArguments(
 	_ *map[string]common.Type,
 ) error {
 	parametersLen := len(*args)
-	argsLen := len(function.Arguments)
-	if argsLen > 0 && function.Arguments[argsLen-1].IsVariadic {
+	argsLen := len(function.Parameters)
+	if argsLen > 0 && function.Parameters[argsLen-1].IsVariadic {
 		argsLen--
 		if parametersLen > argsLen {
 			parametersLen = argsLen
@@ -148,7 +161,7 @@ func CheckFunctionArguments(
 
 			parametersStr := ""
 			for c := parametersLen; c < argsLen; c++ {
-				parametersStr += fmt.Sprintf("'%s'", function.Arguments[c].Name)
+				parametersStr += fmt.Sprintf("'%s'", function.Parameters[c].Name)
 				if c < argsLen-2 {
 					parametersStr += ", "
 				} else if c < argsLen-1 {
@@ -184,29 +197,55 @@ func CheckFunctionArguments(
 
 	var c int
 	for c = 0; c < argsLen; c++ {
+		parameter := function.Parameters[c]
+		if parameter.Type == Any {
+			continue
+		}
+
 		arg := (*args)[c]
 		argPrototype := arg.(ObjectInstance).GetPrototype()
-		if argPrototype == Nil {
-			if function.Arguments[c].Type != Nil && !function.Arguments[c].IsNullable {
-				return util.RuntimeError(
-					fmt.Sprintf(
-						"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
-						function.Arguments[c].Name, arg.String(state),
-					),
-				)
-			}
-		} else if function.Arguments[c].Type != Any && argPrototype != function.Arguments[c].Type {
-			return util.RuntimeError(
-				fmt.Sprintf(
-					"аргумент '%s' очікує параметр з типом '%s', отримано '%s'",
-					function.Arguments[c].Name, function.Arguments[c].GetTypeName(), arg.GetTypeName(),
-				),
-			)
+		if argPrototype == Nil && parameter.IsNullable {
+			continue
 		}
+
+		if parameter.Type == argPrototype {
+			continue
+		}
+
+		return util.RuntimeError(
+			fmt.Sprintf(
+				"аргумент '%s' очікує параметр з типом '%s', отримано '%s'",
+				parameter.Name, parameter.GetTypeName(), arg.GetTypeName(),
+			),
+		)
+
+		// if argPrototype == Nil {
+		// 	if function.Parameters[c].Type != Nil && !function.Parameters[c].IsNullable {
+		// 		argStr, err := arg.String(state)
+		// 		if err != nil {
+		// 			return err
+		// 		}
+		//
+		// 		return util.RuntimeError(
+		// 			fmt.Sprintf(
+		// 				"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
+		// 				function.Parameters[c].Name,
+		// 				argStr,
+		// 			),
+		// 		)
+		// 	}
+		// } else if function.Parameters[c].Type != Any && argPrototype != function.Parameters[c].Type {
+		// 	return util.RuntimeError(
+		// 		fmt.Sprintf(
+		// 			"аргумент '%s' очікує параметр з типом '%s', отримано '%s'",
+		// 			function.Parameters[c].Name, function.Parameters[c].GetTypeName(), arg.GetTypeName(),
+		// 		),
+		// 	)
+		// }
 	}
 
-	if len(function.Arguments) > 0 {
-		if lastArgument := function.Arguments[len(function.Arguments)-1]; lastArgument.IsVariadic {
+	if len(function.Parameters) > 0 {
+		if lastArgument := function.Parameters[len(function.Parameters)-1]; lastArgument.IsVariadic {
 			if len(*args)-parametersLen > 0 {
 				parametersLen = len(*args)
 				for k := c; k < parametersLen; k++ {
@@ -214,10 +253,16 @@ func CheckFunctionArguments(
 					argPrototype := arg.(ObjectInstance).GetPrototype()
 					if argPrototype == Nil {
 						if lastArgument.Type != Nil && !lastArgument.IsNullable {
+							argStr, err := arg.String(state)
+							if err != nil {
+								return err
+							}
+
 							return util.RuntimeError(
 								fmt.Sprintf(
 									"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
-									lastArgument.Name, arg.String(state),
+									lastArgument.Name,
+									argStr,
 								),
 							)
 						}
@@ -295,7 +340,7 @@ func newBinaryMethod(
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		name,
-		[]FunctionArgument{
+		[]FunctionParameter{
 			{
 				Type:       selfType,
 				Name:       "я",
@@ -333,7 +378,7 @@ func newUnaryMethod(
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		name,
-		[]FunctionArgument{
+		[]FunctionParameter{
 			{
 				Type:       selfType,
 				Name:       "я",
@@ -477,7 +522,7 @@ func newBuiltinConstructor(
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		ops.ConstructorName,
-		[]FunctionArgument{
+		[]FunctionParameter{
 			{
 				Type:       itemType,
 				Name:       "я",
@@ -519,7 +564,7 @@ func newLengthOperator(
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		ops.LengthOperatorName,
-		[]FunctionArgument{
+		[]FunctionParameter{
 			{
 				Type:       itemType,
 				Name:       "я",

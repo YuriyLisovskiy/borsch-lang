@@ -303,7 +303,7 @@ type Range struct {
 
 	LeftBound  *Expression `"[" @@`
 	IsSlicing  bool        `[ @":"`
-	RightBound *Expression ` @@] "]"`
+	RightBound *Expression ` @@?] "]"`
 }
 
 type Call struct {

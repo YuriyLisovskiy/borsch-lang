@@ -6,13 +6,13 @@ import (
 )
 
 type NilInstance struct {
-	BuiltinObject
+	BuiltinInstance
 }
 
 func NewNilInstance() NilInstance {
 	return NilInstance{
-		BuiltinObject{
-			CommonObject{
+		BuiltinInstance{
+			CommonInstance{
 				Object: Object{
 					typeName:    common.NilTypeName,
 					Attributes:  nil,
@@ -24,11 +24,11 @@ func NewNilInstance() NilInstance {
 	}
 }
 
-func (t NilInstance) String(common.State) string {
-	return "нуль"
+func (t NilInstance) String(common.State) (string, error) {
+	return "нуль", nil
 }
 
-func (t NilInstance) Representation(state common.State) string {
+func (t NilInstance) Representation(state common.State) (string, error) {
 	return t.String(state)
 }
 
@@ -53,7 +53,7 @@ func newNilClass() *Class {
 				// TODO: add doc
 				ops.ConstructorName: NewFunctionInstance(
 					ops.ConstructorName,
-					[]FunctionArgument{
+					[]FunctionParameter{
 						{
 							Type:       Nil,
 							Name:       "я",

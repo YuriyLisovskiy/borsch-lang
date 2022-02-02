@@ -35,7 +35,7 @@ func initRuntime() {
 	types.Init()
 	PrintFunction = types.NewFunctionInstance(
 		"друк",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.Any,
 				Name:       "х",
@@ -44,8 +44,7 @@ func initRuntime() {
 			},
 		},
 		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			Print(state, *args...)
-			return types.NewNilInstance(), nil
+			return types.NewNilInstance(), Print(state, *args...)
 		},
 		[]types.FunctionReturnType{
 			{
@@ -60,7 +59,7 @@ func initRuntime() {
 
 	PrintLineFunction = types.NewFunctionInstance(
 		"друкр",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.Any,
 				Name:       "а",
@@ -69,8 +68,7 @@ func initRuntime() {
 			},
 		},
 		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			Print(state, append(*args, types.StringInstance{Value: "\n"})...)
-			return types.NewNilInstance(), nil
+			return types.NewNilInstance(), Print(state, append(*args, types.StringInstance{Value: "\n"})...)
 		},
 		[]types.FunctionReturnType{
 			{
@@ -85,7 +83,7 @@ func initRuntime() {
 
 	InputFunction = types.NewFunctionInstance(
 		"ввід",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.String,
 				Name:       "повідомлення",
@@ -109,7 +107,7 @@ func initRuntime() {
 
 	PanicFunction = types.NewFunctionInstance(
 		"панікувати",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.Any,
 				Name:       "повідомлення",
@@ -120,7 +118,12 @@ func initRuntime() {
 		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			var strArgs []string
 			for _, arg := range *args {
-				strArgs = append(strArgs, arg.String(state))
+				argStr, err := arg.String(state)
+				if err != nil {
+					return nil, err
+				}
+
+				strArgs = append(strArgs, argStr)
 			}
 
 			return types.NewNilInstance(), util.RuntimeError(strings.Join(strArgs, " "))
@@ -138,7 +141,7 @@ func initRuntime() {
 
 	EnvFunction = types.NewFunctionInstance(
 		"середовище",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.String,
 				Name:       "ключ",
@@ -147,7 +150,12 @@ func initRuntime() {
 			},
 		},
 		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			return types.StringInstance{Value: os.Getenv((*args)[0].String(state))}, nil
+			argStr, err := (*args)[0].String(state)
+			if err != nil {
+				return nil, err
+			}
+
+			return types.StringInstance{Value: os.Getenv(argStr)}, nil
 		},
 		[]types.FunctionReturnType{
 			{
@@ -162,7 +170,7 @@ func initRuntime() {
 
 	AssertFunction = types.NewFunctionInstance(
 		"підтвердити",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.Any,
 				Name:       "очікуване",
@@ -188,7 +196,12 @@ func initRuntime() {
 				messageArgs := (*args)[2:]
 				sz := len(messageArgs)
 				for c := 0; c < sz; c++ {
-					message += messageArgs[c].String(state)
+					argStr, err := messageArgs[c].String(state)
+					if err != nil {
+						return nil, err
+					}
+
+					message += argStr
 					if c < sz-1 {
 						message += " "
 					}
@@ -210,7 +223,7 @@ func initRuntime() {
 
 	CopyrightFunction = types.NewFunctionInstance(
 		"авторське_право",
-		[]types.FunctionArgument{},
+		[]types.FunctionParameter{},
 		func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error) {
 			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
 			return types.NewNilInstance(), nil
@@ -228,7 +241,7 @@ func initRuntime() {
 
 	LicenceFunction = types.NewFunctionInstance(
 		"ліцензія",
-		[]types.FunctionArgument{},
+		[]types.FunctionParameter{},
 		func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error) {
 			fmt.Println(build.License)
 			return types.NewNilInstance(), nil
@@ -246,7 +259,7 @@ func initRuntime() {
 
 	HelpFunction = types.NewFunctionInstance(
 		"допомога",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.String,
 				Name:       "слово",
@@ -255,7 +268,12 @@ func initRuntime() {
 			},
 		},
 		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			return types.NewNilInstance(), Help((*args)[0].String(state))
+			argStr, err := (*args)[0].String(state)
+			if err != nil {
+				return nil, err
+			}
+
+			return types.NewNilInstance(), Help(argStr)
 		},
 		[]types.FunctionReturnType{
 			{
@@ -270,7 +288,7 @@ func initRuntime() {
 
 	ExitFunction = types.NewFunctionInstance(
 		"вихід",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.Integer,
 				Name:       "код",
@@ -295,7 +313,7 @@ func initRuntime() {
 
 	ImportFunction = types.NewFunctionInstance(
 		"імпорт",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.String,
 				Name:       "шлях",
@@ -323,7 +341,7 @@ func initRuntime() {
 
 	LengthFunction = types.NewFunctionInstance(
 		"довжина",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.Any,
 				Name:       "послідовність",
@@ -352,7 +370,7 @@ func initRuntime() {
 
 	AddToListFunction = types.NewFunctionInstance(
 		"додати",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.List,
 				Name:       "вхідний_список",
@@ -388,7 +406,7 @@ func initRuntime() {
 
 	DeepCopyFunction = types.NewFunctionInstance(
 		"копіювати",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.Any,
 				Name:       "значення",
@@ -397,7 +415,7 @@ func initRuntime() {
 			},
 		},
 		func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			return DeepCopy((*args)[0])
+			return deepCopy((*args)[0])
 		},
 		[]types.FunctionReturnType{
 			{
@@ -412,7 +430,7 @@ func initRuntime() {
 
 	TypeFunction = types.NewFunctionInstance(
 		"тип",
-		[]types.FunctionArgument{
+		[]types.FunctionParameter{
 			{
 				Type:       types.Any,
 				Name:       "значення",

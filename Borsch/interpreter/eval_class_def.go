@@ -43,8 +43,8 @@ func (m *ClassMember) Evaluate(state common.State, class *types.Class) (common.T
 	if m.Method != nil {
 		return m.Method.Evaluate(
 			state,
-			nil,
-			func(arguments []types.FunctionArgument, returnTypes []types.FunctionReturnType) error {
+			state.GetCurrentPackage().(*types.PackageInstance),
+			func(arguments []types.FunctionParameter, returnTypes []types.FunctionReturnType) error {
 				if err := checkMethod(class, arguments, returnTypes); err != nil {
 					return err
 				}
@@ -65,7 +65,7 @@ func (m *ClassMember) Evaluate(state common.State, class *types.Class) (common.T
 	panic("unreachable")
 }
 
-func checkMethod(class *types.Class, args []types.FunctionArgument, _ []types.FunctionReturnType) error {
+func checkMethod(class *types.Class, args []types.FunctionParameter, _ []types.FunctionReturnType) error {
 	if len(args) == 0 {
 		// TODO: ukr error text!
 		return util.RuntimeError("not enough args, self required")
@@ -84,7 +84,7 @@ func checkMethod(class *types.Class, args []types.FunctionArgument, _ []types.Fu
 	return nil
 }
 
-func checkConstructor(_ []types.FunctionArgument, returnTypes []types.FunctionReturnType) error {
+func checkConstructor(_ []types.FunctionParameter, returnTypes []types.FunctionReturnType) error {
 	switch len(returnTypes) {
 	case 0:
 		// skip

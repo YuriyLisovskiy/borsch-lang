@@ -12,15 +12,15 @@ import (
 )
 
 type StringInstance struct {
-	BuiltinObject
+	BuiltinInstance
 	Value string
 }
 
 func NewStringInstance(value string) StringInstance {
 	return StringInstance{
 		Value: value,
-		BuiltinObject: BuiltinObject{
-			CommonObject{
+		BuiltinInstance: BuiltinInstance{
+			CommonInstance{
 				Object: Object{
 					typeName:    common.StringTypeName,
 					Attributes:  nil,
@@ -32,12 +32,17 @@ func NewStringInstance(value string) StringInstance {
 	}
 }
 
-func (t StringInstance) String(common.State) string {
-	return t.Value
+func (t StringInstance) String(common.State) (string, error) {
+	return t.Value, nil
 }
 
-func (t StringInstance) Representation(state common.State) string {
-	return "\"" + t.String(state) + "\""
+func (t StringInstance) Representation(state common.State) (string, error) {
+	value, err := t.String(state)
+	if err != nil {
+		return "", err
+	}
+
+	return "\"" + value + "\"", nil
 }
 
 func (t StringInstance) AsBool(state common.State) bool {
@@ -49,7 +54,7 @@ func (t StringInstance) Length(_ common.State) int64 {
 }
 
 func (t StringInstance) GetElement(state common.State, index int64) (common.Type, error) {
-	idx, err := getIndex(index, t.Length(state)-1)
+	idx, err := getIndex(index, t.Length(state))
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +65,7 @@ func (t StringInstance) GetElement(state common.State, index int64) (common.Type
 func (t StringInstance) SetElement(state common.State, index int64, value common.Type) (common.Type, error) {
 	switch v := value.(type) {
 	case StringInstance:
-		idx, err := getIndex(index, t.Length(state)-1)
+		idx, err := getIndex(index, t.Length(state))
 		if err != nil {
 			return nil, err
 		}
@@ -81,16 +86,9 @@ func (t StringInstance) SetElement(state common.State, index int64, value common
 }
 
 func (t StringInstance) Slice(state common.State, from, to int64) (common.Type, error) {
-	fromIdx, err := getIndex(from, t.Length(state))
-	if err != nil {
-		return nil, err
-	}
-
-	toIdx, err := getIndex(to, t.Length(state))
-	if err != nil {
-		return nil, err
-	}
-
+	length := t.Length(state)
+	fromIdx := normalizeBound(from, length)
+	toIdx := normalizeBound(to, length)
 	if fromIdx > toIdx {
 		return nil, errors.New("індекс рядка за межами послідовності")
 	}

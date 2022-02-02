@@ -7,7 +7,8 @@ import (
 
 func GetTypeOfInstance(object common.Type) (common.Type, error) {
 	if instance, ok := object.(ObjectInstance); ok {
-		return instance.GetPrototype(), nil
+		proto := instance.GetPrototype()
+		return proto, nil
 	}
 
 	panic("unreachable")
@@ -24,7 +25,7 @@ func newTypeClass() *Class {
 			// TODO: add doc
 			ops.CallOperatorName: NewFunctionInstance(
 				ops.CallOperatorName,
-				[]FunctionArgument{
+				[]FunctionParameter{
 					{
 						Type:       TypeClass,
 						Name:       "я",
@@ -54,13 +55,14 @@ func newTypeClass() *Class {
 		}
 	}
 
-	return NewBuiltinClass(
-		common.TypeTypeName,
-		BuiltinPackage,
-		initAttributes,
-		"", // TODO: add doc
-		func() (common.Type, error) {
+	class := &Class{
+		// TODO: add doc
+		Object: *newClassObject(common.TypeTypeName, BuiltinPackage, initAttributes, ""),
+		GetEmptyInstance: func() (common.Type, error) {
 			panic("unreachable")
 		},
-	)
+	}
+
+	class.prototype = class
+	return class
 }

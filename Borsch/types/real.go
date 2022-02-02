@@ -12,14 +12,14 @@ import (
 )
 
 type RealInstance struct {
-	BuiltinObject
+	BuiltinInstance
 	Value float64
 }
 
 func NewRealInstance(value float64) RealInstance {
 	return RealInstance{
-		BuiltinObject: BuiltinObject{
-			CommonObject{
+		BuiltinInstance: BuiltinInstance{
+			CommonInstance{
 				Object: Object{
 					typeName:    common.RealTypeName,
 					Attributes:  nil,
@@ -32,11 +32,11 @@ func NewRealInstance(value float64) RealInstance {
 	}
 }
 
-func (t RealInstance) String(common.State) string {
-	return strconv.FormatFloat(t.Value, 'f', -1, 64)
+func (t RealInstance) String(common.State) (string, error) {
+	return strconv.FormatFloat(t.Value, 'f', -1, 64), nil
 }
 
-func (t RealInstance) Representation(state common.State) string {
+func (t RealInstance) Representation(state common.State) (string, error) {
 	return t.String(state)
 }
 

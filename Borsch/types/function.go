@@ -7,7 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
 
-type FunctionArgument struct {
+type FunctionParameter struct {
 	// nil means any type
 	Type       *Class
 	Name       string
@@ -15,7 +15,7 @@ type FunctionArgument struct {
 	IsNullable bool
 }
 
-func (fa *FunctionArgument) String() string {
+func (fa *FunctionParameter) String() string {
 	res := fa.Name
 	if fa.IsVariadic {
 		res += "..."
@@ -24,9 +24,9 @@ func (fa *FunctionArgument) String() string {
 	return res + fa.GetTypeName()
 }
 
-func (fa FunctionArgument) GetTypeName() string {
+func (fa FunctionParameter) GetTypeName() string {
 	res := ""
-	if fa.Type != Nil {
+	if fa.Type != Any {
 		res = fa.Type.GetTypeName()
 	} else {
 		res = common.AnyTypeName
@@ -54,7 +54,7 @@ func (r *FunctionReturnType) String() string {
 }
 
 func (r *FunctionReturnType) GetTypeName() string {
-	if r.Type != Nil {
+	if r.Type != Any {
 		return r.Type.GetTypeName()
 	}
 
@@ -62,18 +62,18 @@ func (r *FunctionReturnType) GetTypeName() string {
 }
 
 type FunctionInstance struct {
-	CommonObject
+	CommonInstance
 	package_    *PackageInstance
 	address     string
 	Name        string
-	Arguments   []FunctionArgument
+	Parameters  []FunctionParameter
 	ReturnTypes []FunctionReturnType
 	IsMethod    bool
 }
 
 func NewFunctionInstance(
 	name string,
-	arguments []FunctionArgument,
+	arguments []FunctionParameter,
 	handler func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error),
 	returnTypes []FunctionReturnType,
 	isMethod bool,
@@ -90,7 +90,7 @@ func NewFunctionInstance(
 	}
 
 	function := &FunctionInstance{
-		CommonObject: CommonObject{
+		CommonInstance: CommonInstance{
 			Object: Object{
 				typeName:    common.FunctionTypeName,
 				Attributes:  attributes,
@@ -100,7 +100,7 @@ func NewFunctionInstance(
 		},
 		package_:    package_,
 		Name:        name,
-		Arguments:   arguments,
+		Parameters:  arguments,
 		ReturnTypes: returnTypes,
 		IsMethod:    isMethod,
 	}
@@ -109,7 +109,7 @@ func NewFunctionInstance(
 	return function
 }
 
-func (t FunctionInstance) String(common.State) string {
+func (t FunctionInstance) String(common.State) (string, error) {
 	template := ""
 	if t.Name == "" {
 		template = "функція <лямбда>"
@@ -127,10 +127,10 @@ func (t FunctionInstance) String(common.State) string {
 	}
 
 	template += " з адресою %s"
-	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.address)
+	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.address), nil
 }
 
-func (t FunctionInstance) Representation(state common.State) string {
+func (t FunctionInstance) Representation(state common.State) (string, error) {
 	return t.String(state)
 }
 
@@ -152,7 +152,7 @@ func newFunctionClass() *Class {
 			map[string]common.Type{
 				ops.CallOperatorName: NewFunctionInstance(
 					ops.CallOperatorName,
-					[]FunctionArgument{
+					[]FunctionParameter{
 						{
 							Type:       Function,
 							Name:       "я",

@@ -37,8 +37,8 @@ type OperatorEvaluatable interface {
 }
 
 type Type interface {
-	String(State) string
-	Representation(State) string
+	String(State) (string, error)
+	Representation(State) (string, error)
 	AsBool(State) bool
 	GetTypeName() string
 	GetAttribute(string) (Type, error)

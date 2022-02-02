@@ -9,7 +9,7 @@ import (
 )
 
 type PackageInstance struct {
-	BuiltinObject
+	BuiltinInstance
 	IsBuiltin bool
 	Name      string
 	Parent    *PackageInstance
@@ -29,8 +29,8 @@ func NewPackageInstance(
 		IsBuiltin: isBuiltin,
 		Name:      name,
 		Parent:    parent,
-		BuiltinObject: BuiltinObject{
-			CommonObject{
+		BuiltinInstance: BuiltinInstance{
+			CommonInstance{
 				Object: Object{
 					typeName:    common.PackageTypeName,
 					Attributes:  attributes,
@@ -42,11 +42,11 @@ func NewPackageInstance(
 	}
 }
 
-func (p PackageInstance) String(common.State) string {
-	return fmt.Sprintf("<пакет '%s'>", p.Name)
+func (p PackageInstance) String(common.State) (string, error) {
+	return fmt.Sprintf("<пакет '%s'>", p.Name), nil
 }
 
-func (p PackageInstance) Representation(state common.State) string {
+func (p PackageInstance) Representation(state common.State) (string, error) {
 	return p.String(state)
 }
 
@@ -64,7 +64,7 @@ func (p PackageInstance) GetAttribute(name string) (common.Type, error) {
 
 func (p PackageInstance) SetAttribute(name string, value common.Type) error {
 	if p.IsBuiltin {
-		return p.BuiltinObject.SetAttribute(name, value)
+		return p.BuiltinInstance.SetAttribute(name, value)
 	}
 
 	return p.Object.SetAttribute(name, value)
@@ -104,50 +104,6 @@ func comparePackages(_ common.State, self common.Type, other common.Type) (int, 
 func NewPackageClass() *Class {
 	initAttributes := func() map[string]common.Type {
 		return mergeAttributes(
-			map[string]common.Type{
-				// TODO: add doc
-				// ops.ConstructorName: NewFunctionInstance(
-				// 	ops.ConstructorName,
-				// 	[]FunctionArgument{
-				// 		{
-				// 			TypeHash:   PackageTypeHash,
-				// 			Name:       "я",
-				// 			IsVariadic: false,
-				// 			IsNullable: false,
-				// 		},
-				// 		{
-				// 			TypeHash:   StringTypeHash,
-				// 			Name:       "шлях",
-				// 			IsVariadic: false,
-				// 			IsNullable: false,
-				// 		},
-				// 	},
-				// 	func(ctx interface{}, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-				// 		p, err := ImportPackage(baseScope, (*args)[0].(StringInstance).Value, ctx.(common.CallContext).Parser)
-				// 		if err != nil {
-				// 			return nil, err
-				// 		}
-				//
-				// 		return p, nil
-				// 		self, err := handler((*args)[1:]...)
-				// 		if err != nil {
-				// 			return nil, err
-				// 		}
-				//
-				// 		(*args)[0] = self
-				// 		return NewNilInstance(), nil
-				// 	},
-				// 	[]FunctionReturnType{
-				// 		{
-				// 			TypeHash:   NilTypeHash,
-				// 			IsNullable: false,
-				// 		},
-				// 	},
-				// 	true,
-				// 	nil,
-				// 	"", // TODO: add doc
-				// ),
-			},
 			makeLogicalOperators(Package),
 			makeComparisonOperators(Package, comparePackages),
 			makeCommonOperators(Package),

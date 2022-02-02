@@ -126,16 +126,6 @@ func (c *ContextImpl) GetChild() common.Context {
 	return c.getChildContext()
 }
 
-// func (c *ContextImpl) WithPackage(pkg common.Type) common.Context {
-// 	if p, ok := pkg.(*types.PackageInstance); ok {
-// 		ctx := c.getChildContext()
-// 		// ctx.package_ = p
-// 		return ctx
-// 	}
-//
-// 	panic("ContextImpl: pkg is not *PackageInstance")
-// }
-
 func (c *ContextImpl) getChildContext() *ContextImpl {
 	return &ContextImpl{
 		scopes: nil,

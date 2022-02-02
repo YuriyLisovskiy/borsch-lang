@@ -18,15 +18,15 @@ type DictionaryEntry struct {
 }
 
 type DictionaryInstance struct {
-	BuiltinObject
+	BuiltinInstance
 	Map map[uint64]DictionaryEntry
 }
 
 func NewDictionaryInstance() DictionaryInstance {
 	return DictionaryInstance{
 		Map: map[uint64]DictionaryEntry{},
-		BuiltinObject: BuiltinObject{
-			CommonObject{
+		BuiltinInstance: BuiltinInstance{
+			CommonInstance{
 				Object: Object{
 					typeName:    common.DictionaryTypeName,
 					Attributes:  nil,
@@ -48,21 +48,27 @@ func (t DictionaryInstance) calcHash(obj interface{}) (uint64, error) {
 	return binary.BigEndian.Uint64(h.Sum(nil)), nil
 }
 
-func (t DictionaryInstance) String(state common.State) string {
+func (t DictionaryInstance) String(state common.State) (string, error) {
 	return t.Representation(state)
 }
 
-func (t DictionaryInstance) Representation(state common.State) string {
+func (t DictionaryInstance) Representation(state common.State) (string, error) {
 	var strValues []string
 	for _, value := range t.Map {
-		strValues = append(
-			strValues, fmt.Sprintf(
-				"%s: %s", value.Key.Representation(state), value.Value.Representation(state),
-			),
-		)
+		keyRepresentation, err := value.Key.Representation(state)
+		if err != nil {
+			return "", err
+		}
+
+		valueRepresentation, err := value.Value.Representation(state)
+		if err != nil {
+			return "", err
+		}
+
+		strValues = append(strValues, fmt.Sprintf("%s: %s", keyRepresentation, valueRepresentation))
 	}
 
-	return "{" + strings.Join(strValues, ", ") + "}"
+	return "{" + strings.Join(strValues, ", ") + "}", nil
 }
 
 func (t DictionaryInstance) AsBool(state common.State) bool {
@@ -83,7 +89,12 @@ func (t DictionaryInstance) GetElement(state common.State, key common.Type) (com
 		return value.Value, nil
 	}
 
-	return nil, errors.New(fmt.Sprintf("значення за ключем '%s' не існує", key.String(state)))
+	keyStr, err := key.String(state)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, errors.New(fmt.Sprintf("значення за ключем '%s' не існує", keyStr))
 }
 
 func (t *DictionaryInstance) SetElement(key common.Type, value common.Type) error {
@@ -104,7 +115,12 @@ func (t *DictionaryInstance) RemoveElement(state common.State, key common.Type) 
 
 	value, ok := t.Map[keyHash]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("значення за ключем '%s' не існує", key.String(state)))
+		keyStr, err := key.String(state)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, errors.New(fmt.Sprintf("значення за ключем '%s' не існує", keyStr))
 	}
 
 	delete(t.Map, keyHash)
@@ -145,7 +161,7 @@ func newDictionaryClass() *Class {
 				ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
 				"вилучити": NewFunctionInstance(
 					"вилучити",
-					[]FunctionArgument{
+					[]FunctionParameter{
 						{
 							Type:       Dictionary,
 							Name:       "я",

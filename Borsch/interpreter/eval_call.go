@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
@@ -55,7 +54,7 @@ func (a *Call) evalFunctionByName(
 		return nil, err
 	}
 
-	return builtin.CallByName(state, object, functionName, args, kwargs, isMethod)
+	return types.CallByName(state, object, functionName, args, kwargs, isMethod)
 }
 
 func (a *Call) evalFunction(
@@ -68,7 +67,7 @@ func (a *Call) evalFunction(
 		return nil, err
 	}
 
-	return builtin.Call(state, function, args, kwargs)
+	return types.Call(state, function, args, kwargs)
 }
 
 func (a *Call) updateArgs(state common.State, args *[]common.Type) error {

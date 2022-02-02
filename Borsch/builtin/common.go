@@ -6,12 +6,13 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func Assert(state common.State, expected common.Type, actual common.Type, errorTemplate string) error {
 	args := []common.Type{actual}
-	result, err := CallByName(state, expected, ops.EqualsOp.Name(), &args, nil, true)
+	result, err := types.CallByName(state, expected, ops.EqualsOp.Name(), &args, nil, true)
 	if err != nil {
 		return err
 	}
@@ -41,7 +42,17 @@ func Assert(state common.State, expected common.Type, actual common.Type, errorT
 		errMsg = "не вдалося підтвердити, що %s дорівнює %s"
 	}
 
-	return util.RuntimeError(fmt.Sprintf(errMsg, expected.String(state), actual.String(state)))
+	expectedStr, err := expected.String(state)
+	if err != nil {
+		return err
+	}
+
+	actualStr, err := actual.String(state)
+	if err != nil {
+		return err
+	}
+	
+	return util.RuntimeError(fmt.Sprintf(errMsg, expectedStr, actualStr))
 }
 
 func Help(word string) error {

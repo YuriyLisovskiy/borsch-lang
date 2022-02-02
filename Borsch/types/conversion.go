@@ -109,7 +109,12 @@ func ToString(state common.State, args ...common.Type) (common.Type, error) {
 		)
 	}
 
-	return NewStringInstance(args[0].String(state)), nil
+	argStr, err := args[0].String(state)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewStringInstance(argStr), nil
 
 	// TODO: remove
 	// switch vt := args[0].(type) {

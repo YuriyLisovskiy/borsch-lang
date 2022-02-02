@@ -12,14 +12,14 @@ import (
 )
 
 type IntegerInstance struct {
-	BuiltinObject
+	BuiltinInstance
 	Value int64
 }
 
 func NewIntegerInstance(value int64) IntegerInstance {
 	return IntegerInstance{
-		BuiltinObject: BuiltinObject{
-			CommonObject{
+		BuiltinInstance: BuiltinInstance{
+			CommonInstance{
 				Object: Object{
 					typeName:    common.IntegerTypeName,
 					Attributes:  nil,
@@ -32,11 +32,11 @@ func NewIntegerInstance(value int64) IntegerInstance {
 	}
 }
 
-func (t IntegerInstance) String(common.State) string {
-	return fmt.Sprintf("%d", t.Value)
+func (t IntegerInstance) String(common.State) (string, error) {
+	return fmt.Sprintf("%d", t.Value), nil
 }
 
-func (t IntegerInstance) Representation(state common.State) string {
+func (t IntegerInstance) Representation(state common.State) (string, error) {
 	return t.String(state)
 }
 

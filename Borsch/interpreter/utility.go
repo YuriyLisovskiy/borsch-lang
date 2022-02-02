@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
@@ -28,7 +27,7 @@ func evalBinaryOperator(
 			return nil, err
 		}
 
-		return builtin.CallByName(state, left, operatorName, &[]common.Type{right}, nil, true)
+		return types.CallByName(state, left, operatorName, &[]common.Type{right}, nil, true)
 	}
 
 	return left, nil
@@ -45,7 +44,7 @@ func evalUnaryOperator(
 			return nil, err
 		}
 
-		return builtin.CallByName(state, value, operatorName, &[]common.Type{}, nil, true)
+		return types.CallByName(state, value, operatorName, &[]common.Type{}, nil, true)
 	}
 
 	panic("unreachable")
@@ -88,6 +87,16 @@ func evalSlicingOperation(
 			}
 
 			element, err = iterable.Slice(state, leftIdx, rightIdx)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(ranges_) == 1 {
+				// valueToSet is ignored, return error maybe.
+				return element, nil
+			}
+		} else if ranges_[0].IsSlicing {
+			element, err = iterable.Slice(state, leftIdx, iterable.Length(state))
 			if err != nil {
 				return nil, err
 			}

@@ -8,7 +8,7 @@ import (
 func (f *FunctionDef) Evaluate(
 	state common.State,
 	parentPackage *types.PackageInstance,
-	check func([]types.FunctionArgument, []types.FunctionReturnType) error,
+	check func([]types.FunctionParameter, []types.FunctionReturnType) error,
 ) (common.Type, error) {
 	arguments, err := f.ParametersSet.Evaluate(state)
 	if err != nil {
@@ -40,8 +40,8 @@ func (f *FunctionDef) Evaluate(
 	return function, state.GetContext().SetVar(f.Name, function)
 }
 
-func (p *ParametersSet) Evaluate(state common.State) ([]types.FunctionArgument, error) {
-	var arguments []types.FunctionArgument
+func (p *ParametersSet) Evaluate(state common.State) ([]types.FunctionParameter, error) {
+	var arguments []types.FunctionParameter
 	parameters := p.Parameters
 	for _, parameter := range parameters {
 		arg, err := parameter.Evaluate(state.GetContext())
@@ -55,13 +55,13 @@ func (p *ParametersSet) Evaluate(state common.State) ([]types.FunctionArgument, 
 	return arguments, nil
 }
 
-func (p *Parameter) Evaluate(ctx common.Context) (*types.FunctionArgument, error) {
+func (p *Parameter) Evaluate(ctx common.Context) (*types.FunctionParameter, error) {
 	class, err := ctx.GetClass(p.Type)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.FunctionArgument{
+	return &types.FunctionParameter{
 		Type:       class.(*types.Class),
 		Name:       p.Name,
 		IsVariadic: false,

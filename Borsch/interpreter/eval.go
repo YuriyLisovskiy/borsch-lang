@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
@@ -90,7 +89,7 @@ func (a *LogicalNot) Evaluate(state common.State, valueToSet common.Type) (commo
 			return nil, err
 		}
 
-		return builtin.CallByName(state, value, ops.NotOp.Name(), &[]common.Type{}, nil, true)
+		return types.CallByName(state, value, ops.NotOp.Name(), &[]common.Type{}, nil, true)
 	}
 
 	panic("unreachable")
@@ -332,7 +331,7 @@ func (s *SlicingOrSubscription) Evaluate(
 		var err error = nil
 		rangesLen := len(s.Ranges)
 		if rangesLen != 0 && s.Ranges[rangesLen-1].RightBound != nil {
-			return nil, util.RuntimeError("неможливо присвоїти значення у зріз")
+			return nil, util.RuntimeError("неможливо присвоїти значення зрізу")
 		}
 
 		if s.Call != nil {
