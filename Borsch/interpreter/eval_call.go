@@ -49,7 +49,7 @@ func (a *Call) evalFunctionByName(
 	kwargs *map[string]common.Type,
 	isMethod bool,
 ) (common.Type, error) {
-	if err := a.updateArgs(state, args); err != nil {
+	if err := updateArgs(state, a.Arguments, args); err != nil {
 		return nil, err
 	}
 
@@ -62,22 +62,9 @@ func (a *Call) evalFunction(
 	args *[]common.Type,
 	kwargs *map[string]common.Type,
 ) (common.Type, error) {
-	if err := a.updateArgs(state, args); err != nil {
+	if err := updateArgs(state, a.Arguments, args); err != nil {
 		return nil, err
 	}
 
 	return types.Call(state, function, args, kwargs)
-}
-
-func (a *Call) updateArgs(state common.State, args *[]common.Type) error {
-	for _, expressionArgument := range a.Arguments {
-		arg, err := expressionArgument.Evaluate(state, nil)
-		if err != nil {
-			return err
-		}
-
-		*args = append(*args, arg)
-	}
-
-	return nil
 }

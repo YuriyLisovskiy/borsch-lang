@@ -278,9 +278,11 @@ type DictionaryEntry struct {
 type LambdaDef struct {
 	Pos lexer.Position
 
-	ParametersSet *ParametersSet `@@`
-	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body          *FunctionBody  `"="">" "{" @@ "}"`
+	ParametersSet        *ParametersSet `@@`
+	ReturnTypes          []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
+	Body                 *FunctionBody  `"="">" "{" @@ "}"`
+	InstantCall          bool           `[ @"("`
+	InstantCallArguments []*Expression  `[(@@ ("," @@)*)?] ")"]`
 }
 
 type AttributeAccess struct {

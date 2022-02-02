@@ -424,7 +424,7 @@ func (l *LambdaDef) Evaluate(state common.State) (common.Type, error) {
 		return nil, err
 	}
 
-	return types.NewFunctionInstance(
+	lambda := types.NewFunctionInstance(
 		"",
 		arguments,
 		func(state common.State, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
@@ -434,5 +434,22 @@ func (l *LambdaDef) Evaluate(state common.State) (common.Type, error) {
 		false,
 		state.GetCurrentPackage().(*types.PackageInstance),
 		"", // TODO: add doc
-	), nil
+	)
+
+	if l.InstantCall {
+		return l.evalInstantCall(state, lambda)
+	}
+
+	return lambda, nil
+}
+
+func (l *LambdaDef) evalInstantCall(state common.State, function *types.FunctionInstance) (common.Type, error) {
+	var args []common.Type
+	if len(l.InstantCallArguments) != 0 {
+		if err := updateArgs(state, l.InstantCallArguments, &args); err != nil {
+			return nil, err
+		}
+	}
+
+	return types.Call(state, function, &args, nil)
 }

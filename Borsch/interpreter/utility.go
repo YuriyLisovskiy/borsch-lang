@@ -341,7 +341,7 @@ func setCurrentValue(ctx common.Context, prevValue common.Type, ident string, va
 		if err := checkForNilAttribute(ident); err != nil {
 			return nil, err
 		}
-		
+
 		return prevValue, prevValue.SetAttribute(ident, valueToSet)
 	}
 
@@ -352,6 +352,19 @@ func checkForNilAttribute(ident string) error {
 	switch ident {
 	case "нуль", "нульовий":
 		return util.RuntimeError(fmt.Sprintf("'%s' не є атрибутом", ident))
+	}
+
+	return nil
+}
+
+func updateArgs(state common.State, arguments []*Expression, args *[]common.Type) error {
+	for _, expressionArgument := range arguments {
+		arg, err := expressionArgument.Evaluate(state, nil)
+		if err != nil {
+			return err
+		}
+
+		*args = append(*args, arg)
 	}
 
 	return nil
