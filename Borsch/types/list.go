@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
@@ -49,8 +48,8 @@ func (t ListInstance) Representation(state common.State) (string, error) {
 	return "[" + strings.Join(strValues, ", ") + "]", nil
 }
 
-func (t ListInstance) AsBool(state common.State) bool {
-	return t.Length(state) != 0
+func (t ListInstance) AsBool(state common.State) (bool, error) {
+	return t.Length(state) != 0, nil
 }
 
 func (t ListInstance) Length(common.State) int64 {
@@ -137,14 +136,14 @@ func newListClass() *Class {
 		return mergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
-				ops.ConstructorName: newBuiltinConstructor(List, ToList, ""),
+				common.ConstructorName: newBuiltinConstructor(List, ToList, ""),
 
 				// TODO: add doc
-				ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
+				common.LengthOperatorName: newLengthOperator(List, getLength, ""),
 
-				ops.MulOp.Name(): newListBinaryOperator(
+				common.MulOp.Name(): newListBinaryOperator(
 					// TODO: add doc
-					ops.MulOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
+					common.MulOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
 						switch o := other.(type) {
 						case IntegerInstance:
 							count := int(o.Value)
@@ -161,9 +160,9 @@ func newListClass() *Class {
 						}
 					},
 				),
-				ops.AddOp.Name(): newListBinaryOperator(
+				common.AddOp.Name(): newListBinaryOperator(
 					// TODO: add doc
-					ops.AddOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
+					common.AddOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
 						switch o := other.(type) {
 						case ListInstance:
 							self.Values = append(self.Values, o.Values...)

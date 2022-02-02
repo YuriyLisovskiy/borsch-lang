@@ -286,8 +286,8 @@ type LambdaDef struct {
 type AttributeAccess struct {
 	Pos lexer.Position
 
-	Slicing         *SlicingOrSubscription `@@`
-	AttributeAccess *AttributeAccess       `("." @@)?`
+	SlicingOrSubscription *SlicingOrSubscription `@@`
+	AttributeAccess       *AttributeAccess       `("." @@)?`
 }
 
 type SlicingOrSubscription struct {

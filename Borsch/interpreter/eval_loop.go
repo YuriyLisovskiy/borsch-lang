@@ -61,7 +61,12 @@ func (l *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFunct
 			return StmtResult{Err: err}
 		}
 
-		if !condition.AsBool(state) {
+		conditionValue, err := condition.AsBool(state)
+		if err != nil {
+			return StmtResult{Err: err}
+		}
+
+		if !conditionValue {
 			break
 		}
 

@@ -5,14 +5,13 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func Assert(state common.State, expected common.Type, actual common.Type, errorTemplate string) error {
 	args := []common.Type{actual}
-	result, err := types.CallByName(state, expected, ops.EqualsOp.Name(), &args, nil, true)
+	result, err := types.CallByName(state, expected, common.EqualsOp.Name(), &args, nil, true)
 	if err != nil {
 		return err
 	}
@@ -51,7 +50,7 @@ func Assert(state common.State, expected common.Type, actual common.Type, errorT
 	if err != nil {
 		return err
 	}
-	
+
 	return util.RuntimeError(fmt.Sprintf(errMsg, expectedStr, actualStr))
 }
 

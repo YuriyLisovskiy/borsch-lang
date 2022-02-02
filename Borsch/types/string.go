@@ -7,7 +7,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
@@ -45,8 +44,8 @@ func (t StringInstance) Representation(state common.State) (string, error) {
 	return "\"" + value + "\"", nil
 }
 
-func (t StringInstance) AsBool(state common.State) bool {
-	return t.Length(state) != 0
+func (t StringInstance) AsBool(state common.State) (bool, error) {
+	return t.Length(state) != 0, nil
 }
 
 func (t StringInstance) Length(_ common.State) int64 {
@@ -152,10 +151,10 @@ func newStringClass() *Class {
 		return mergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
-				ops.ConstructorName: newBuiltinConstructor(String, ToString, ""),
-				ops.MulOp.Name(): newStringBinaryOperator(
+				common.ConstructorName: newBuiltinConstructor(String, ToString, ""),
+				common.MulOp.Name(): newStringBinaryOperator(
 					// TODO: add doc
-					ops.MulOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
+					common.MulOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
 						switch o := other.(type) {
 						case IntegerInstance:
 							count := int(o.Value)
@@ -169,9 +168,9 @@ func newStringClass() *Class {
 						}
 					},
 				),
-				ops.AddOp.Name(): newStringBinaryOperator(
+				common.AddOp.Name(): newStringBinaryOperator(
 					// TODO: add doc
-					ops.AddOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
+					common.AddOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
 						switch o := other.(type) {
 						case StringInstance:
 							return NewStringInstance(self.Value + o.Value), nil

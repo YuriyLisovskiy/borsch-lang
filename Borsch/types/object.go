@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
@@ -20,7 +19,7 @@ func (o Object) GetTypeName() string {
 }
 
 func (o Object) GetAttribute(name string) (common.Type, error) {
-	if name == ops.AttributesName {
+	if name == common.AttributesName {
 		dict, err := getAttributes(o.Attributes)
 		if err != nil {
 			return nil, err
@@ -39,7 +38,7 @@ func (o Object) GetAttribute(name string) (common.Type, error) {
 }
 
 func (o Object) SetAttribute(name string, value common.Type) error {
-	if name == ops.AttributesName {
+	if name == common.AttributesName {
 		return util.RuntimeError(
 			fmt.Sprintf(
 				"неможливо записати значення у атрибут '%s', що призначений лише для читання",
@@ -71,7 +70,7 @@ func (o Object) SetAttribute(name string, value common.Type) error {
 }
 
 func (o Object) HasAttribute(name string) bool {
-	if name == ops.AttributesName {
+	if name == common.AttributesName {
 		return true
 	}
 

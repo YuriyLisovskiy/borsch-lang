@@ -2,7 +2,6 @@ package types
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
 
 type NilInstance struct {
@@ -32,8 +31,8 @@ func (t NilInstance) Representation(state common.State) (string, error) {
 	return t.String(state)
 }
 
-func (t NilInstance) AsBool(common.State) bool {
-	return false
+func (t NilInstance) AsBool(common.State) (bool, error) {
+	return false, nil
 }
 
 func compareNils(_ common.State, _ common.Type, other common.Type) (int, error) {
@@ -51,8 +50,8 @@ func newNilClass() *Class {
 		return mergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
-				ops.ConstructorName: NewFunctionInstance(
-					ops.ConstructorName,
+				common.ConstructorName: NewFunctionInstance(
+					common.ConstructorName,
 					[]FunctionParameter{
 						{
 							Type:       Nil,

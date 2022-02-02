@@ -115,22 +115,9 @@ func ToString(state common.State, args ...common.Type) (common.Type, error) {
 	}
 
 	return NewStringInstance(argStr), nil
-
-	// TODO: remove
-	// switch vt := args[0].(type) {
-	// case StringInstance:
-	// 	return vt, nil
-	// case RealInstance, IntegerInstance, BoolInstance, NilInstance:
-	// 	return NewStringInstance(vt.String()), nil
-	// default:
-	// 	return NewStringInstance(vt.String()), nil
-	// 	// return nil, util.RuntimeError(fmt.Sprintf(
-	// 	// 	"'%s' неможливо інтерпретувати як рядок", args[0].GetTypeName(),
-	// 	// ))
-	// }
 }
 
-func ToBool(_ common.State, args ...common.Type) (common.Type, error) {
+func ToBool(state common.State, args ...common.Type) (common.Type, error) {
 	if len(args) == 0 {
 		return NewBoolInstance(false), nil
 	}
@@ -143,24 +130,12 @@ func ToBool(_ common.State, args ...common.Type) (common.Type, error) {
 		)
 	}
 
-	switch vt := args[0].(type) {
-	case RealInstance:
-		return NewBoolInstance(vt.Value != 0.0), nil
-	case IntegerInstance:
-		return NewBoolInstance(vt.Value != 0), nil
-	case StringInstance:
-		return NewBoolInstance(vt.Value != ""), nil
-	case BoolInstance:
-		return vt, nil
-	case NilInstance:
-		return NewBoolInstance(false), nil
-	default:
-		return nil, util.RuntimeError(
-			fmt.Sprintf(
-				"'%s' неможливо інтерпретувати як логічне значення", args[0].GetTypeName(),
-			),
-		)
+	boolValue, err := args[0].AsBool(state)
+	if err != nil {
+		return nil, err
 	}
+
+	return NewBoolInstance(boolValue), err
 }
 
 func ToList(_ common.State, args ...common.Type) (common.Type, error) {

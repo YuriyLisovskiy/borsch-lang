@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
@@ -71,8 +70,8 @@ func (t DictionaryInstance) Representation(state common.State) (string, error) {
 	return "{" + strings.Join(strValues, ", ") + "}", nil
 }
 
-func (t DictionaryInstance) AsBool(state common.State) bool {
-	return t.Length(state) != 0
+func (t DictionaryInstance) AsBool(state common.State) (bool, error) {
+	return t.Length(state) != 0, nil
 }
 
 func (t DictionaryInstance) Length(common.State) int64 {
@@ -155,10 +154,10 @@ func newDictionaryClass() *Class {
 		return mergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
-				ops.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
+				common.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
 
 				// TODO: add doc
-				ops.LengthOperatorName: newLengthOperator(List, getLength, ""),
+				common.LengthOperatorName: newLengthOperator(List, getLength, ""),
 				"вилучити": NewFunctionInstance(
 					"вилучити",
 					[]FunctionParameter{

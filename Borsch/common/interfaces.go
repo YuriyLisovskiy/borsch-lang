@@ -39,8 +39,9 @@ type OperatorEvaluatable interface {
 type Type interface {
 	String(State) (string, error)
 	Representation(State) (string, error)
-	AsBool(State) bool
+	AsBool(State) (bool, error)
 	GetTypeName() string
+	GetOperator(string) (Type, error)
 	GetAttribute(string) (Type, error)
 	SetAttribute(string, Type) error
 	HasAttribute(string) bool

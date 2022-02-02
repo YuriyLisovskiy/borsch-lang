@@ -47,19 +47,15 @@ func Call(
 	return result, nil
 }
 
-func CallByName(
+func CallAttribute(
 	state common.State,
 	object common.Type,
-	funcName string,
+	attribute common.Type,
+	attributeName string,
 	args *[]common.Type,
 	kwargs *map[string]common.Type,
 	isMethod bool,
 ) (common.Type, error) {
-	attribute, err := object.GetAttribute(funcName)
-	if err != nil {
-		return nil, err
-	}
-
 	switch function := attribute.(type) {
 	case *FunctionInstance:
 		if isMethod {
@@ -81,8 +77,24 @@ func CallByName(
 
 		return Call(state, function, args, kwargs)
 	default:
-		return nil, util.ObjectIsNotCallable(funcName, attribute.GetTypeName())
+		return nil, util.ObjectIsNotCallable(attributeName, attribute.GetTypeName())
 	}
+}
+
+func CallByName(
+	state common.State,
+	object common.Type,
+	funcName string,
+	args *[]common.Type,
+	kwargs *map[string]common.Type,
+	isMethod bool,
+) (common.Type, error) {
+	attribute, err := object.GetAttribute(funcName)
+	if err != nil {
+		return nil, err
+	}
+
+	return CallAttribute(state, object, attribute, funcName, args, kwargs, isMethod)
 }
 
 func updateKwargs(args []common.Type, kwargs *map[string]common.Type, funcArgs []FunctionParameter) {

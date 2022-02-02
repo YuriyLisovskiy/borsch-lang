@@ -12,7 +12,12 @@ func (s *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResul
 		}
 
 		ctx := state.GetContext()
-		if condition.AsBool(state) {
+		conditionValue, err := condition.AsBool(state)
+		if err != nil {
+			return StmtResult{Err: err}
+		}
+		
+		if conditionValue {
 			ctx.PushScope(Scope{})
 			result := s.Body.Evaluate(state, inFunction, inLoop)
 			if err != nil {
@@ -73,7 +78,12 @@ func (s *ElseIfStmt) Evaluate(state common.State, inFunction, inLoop bool) (bool
 		return false, StmtResult{Err: err}
 	}
 
-	if condition.AsBool(state) {
+	conditionValue, err := condition.AsBool(state)
+	if err != nil {
+		return false, StmtResult{Err: err}
+	}
+
+	if conditionValue {
 		ctx := state.GetContext()
 		ctx.PushScope(Scope{})
 		result := s.Body.Evaluate(state, inFunction, inLoop)

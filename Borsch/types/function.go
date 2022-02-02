@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 )
 
 type FunctionParameter struct {
@@ -82,11 +81,11 @@ func NewFunctionInstance(
 ) *FunctionInstance {
 	attributes := map[string]common.Type{}
 	if package_ != nil {
-		attributes[ops.PackageAttributeName] = package_
+		attributes[common.PackageAttributeName] = package_
 	}
 
 	if len(doc) > 0 {
-		attributes[ops.DocAttributeName] = NewStringInstance(doc)
+		attributes[common.DocAttributeName] = NewStringInstance(doc)
 	}
 
 	function := &FunctionInstance{
@@ -134,8 +133,8 @@ func (t FunctionInstance) Representation(state common.State) (string, error) {
 	return t.String(state)
 }
 
-func (t FunctionInstance) AsBool(common.State) bool {
-	return true
+func (t FunctionInstance) AsBool(common.State) (bool, error) {
+	return true, nil
 }
 
 func (t *FunctionInstance) GetContext() common.Context {
@@ -150,8 +149,8 @@ func newFunctionClass() *Class {
 	initAttributes := func() map[string]common.Type {
 		return mergeAttributes(
 			map[string]common.Type{
-				ops.CallOperatorName: NewFunctionInstance(
-					ops.CallOperatorName,
+				common.CallOperatorName: NewFunctionInstance(
+					common.CallOperatorName,
 					[]FunctionParameter{
 						{
 							Type:       Function,

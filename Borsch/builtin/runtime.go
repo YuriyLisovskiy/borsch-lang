@@ -8,7 +8,6 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
@@ -351,11 +350,11 @@ func initRuntime() {
 		},
 		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
 			sequence := (*args)[0]
-			if !sequence.HasAttribute(ops.LengthOperatorName) {
+			if !sequence.HasAttribute(common.LengthOperatorName) {
 				return nil, errors.New(fmt.Sprintf("об'єкт типу '%s' не має довжини", sequence.GetTypeName()))
 			}
 
-			return runUnaryOperator(state, ops.LengthOperatorName, sequence, types.Integer)
+			return runUnaryOperator(state, common.LengthOperatorName, sequence, types.Integer)
 		},
 		[]types.FunctionReturnType{
 			{

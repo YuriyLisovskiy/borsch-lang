@@ -27,7 +27,12 @@ func evalBinaryOperator(
 			return nil, err
 		}
 
-		return types.CallByName(state, left, operatorName, &[]common.Type{right}, nil, true)
+		operator, err := left.GetOperator(operatorName)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.CallAttribute(state, left, operator, operatorName, &[]common.Type{right}, nil, true)
 	}
 
 	return left, nil
@@ -44,7 +49,12 @@ func evalUnaryOperator(
 			return nil, err
 		}
 
-		return types.CallByName(state, value, operatorName, &[]common.Type{}, nil, true)
+		operatorFunc, err := value.GetOperator(operatorName)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.CallAttribute(state, value, operatorFunc, operatorName, nil, nil, true)
 	}
 
 	panic("unreachable")
@@ -331,7 +341,7 @@ func setCurrentValue(ctx common.Context, prevValue common.Type, ident string, va
 		if err := checkForNilAttribute(ident); err != nil {
 			return nil, err
 		}
-
+		
 		return prevValue, prevValue.SetAttribute(ident, valueToSet)
 	}
 

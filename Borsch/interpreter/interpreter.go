@@ -78,7 +78,30 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 		return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
 	}
 
-	pkg.Attributes = ctx.TopScope()
+	scope := ctx.TopScope()
+	if toExport, err := ctx.GetVar(common.ExportedAttributeName); err == nil {
+		switch exported := toExport.(type) {
+		case types.ListInstance:
+			pkg.Attributes = map[string]common.Type{}
+			for _, value := range exported.Values {
+				if name, ok := value.(types.StringInstance); ok {
+					if attr, ok := scope[name.Value]; ok {
+						pkg.Attributes[name.Value] = attr
+					}
+				}
+			}
+		case types.StringInstance:
+			pkg.Attributes = map[string]common.Type{}
+			if attr, ok := scope[exported.Value]; ok {
+				pkg.Attributes[exported.Value] = attr
+			}
+		}
+	}
+
+	if pkg.Attributes == nil {
+		pkg.Attributes = scope
+	}
+
 	i.packages[fullPackagePath] = pkg
 	return pkg, nil
 }

@@ -2,16 +2,29 @@ package types
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func GetTypeOfInstance(object common.Type) (common.Type, error) {
 	if instance, ok := object.(ObjectInstance); ok {
-		proto := instance.GetPrototype()
-		return proto, nil
+		return instance.GetPrototype(), nil
 	}
 
 	panic("unreachable")
+}
+
+func compareTypes(_ common.State, self, other common.Type) (int, error) {
+	left, ok := self.(*Class)
+	if !ok {
+		return 0, util.IncorrectUseOfFunctionError("compareTypes")
+	}
+
+	if left.EqualsTo(other) {
+		return 0, nil
+	}
+
+	// -2 is something other than -1, 0 or 1 and means 'not equals'
+	return -2, nil
 }
 
 func newTypeClass() *Class {
@@ -23,8 +36,8 @@ func newTypeClass() *Class {
 	initAttributes := func() map[string]common.Type {
 		return map[string]common.Type{
 			// TODO: add doc
-			ops.CallOperatorName: NewFunctionInstance(
-				ops.CallOperatorName,
+			common.CallOperatorName: NewFunctionInstance(
+				common.CallOperatorName,
 				[]FunctionParameter{
 					{
 						Type:       TypeClass,
@@ -51,6 +64,18 @@ func newTypeClass() *Class {
 				true,
 				nil,
 				"", // TODO: add doc
+			),
+			common.EqualsOp.Name(): newComparisonOperator(
+				// TODO: add doc
+				common.EqualsOp, TypeClass, "", compareTypes, func(res int) bool {
+					return res == 0
+				},
+			),
+			common.NotEqualsOp.Name(): newComparisonOperator(
+				// TODO: add doc
+				common.NotEqualsOp, TypeClass, "", compareTypes, func(res int) bool {
+					return res != 0
+				},
 			),
 		}
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 type PackageInstance struct {
-	BuiltinInstance
+	CommonInstance
 	IsBuiltin bool
 	Name      string
 	Parent    *PackageInstance
@@ -29,15 +29,13 @@ func NewPackageInstance(
 		IsBuiltin: isBuiltin,
 		Name:      name,
 		Parent:    parent,
-		BuiltinInstance: BuiltinInstance{
-			CommonInstance{
-				Object: Object{
-					typeName:    common.PackageTypeName,
-					Attributes:  attributes,
-					callHandler: nil,
-				},
-				prototype: Package,
+		CommonInstance: CommonInstance{
+			Object: Object{
+				typeName:    common.PackageTypeName,
+				Attributes:  attributes,
+				callHandler: nil,
 			},
+			prototype: Package,
 		},
 	}
 }
@@ -50,24 +48,20 @@ func (p PackageInstance) Representation(state common.State) (string, error) {
 	return p.String(state)
 }
 
-func (p PackageInstance) AsBool(common.State) bool {
-	return true
-}
-
-func (p PackageInstance) GetAttribute(name string) (common.Type, error) {
-	if attribute, err := p.Object.GetAttribute(name); err == nil {
-		return attribute, nil
-	}
-
-	return p.GetPrototype().GetAttribute(name)
+func (p PackageInstance) AsBool(common.State) (bool, error) {
+	return true, nil
 }
 
 func (p PackageInstance) SetAttribute(name string, value common.Type) error {
 	if p.IsBuiltin {
-		return p.BuiltinInstance.SetAttribute(name, value)
+		if p.HasAttribute(name) {
+			return util.AttributeIsReadOnlyError(p.GetTypeName(), name)
+		}
+
+		return util.AttributeNotFoundError(p.GetTypeName(), name)
 	}
 
-	return p.Object.SetAttribute(name, value)
+	return p.CommonInstance.SetAttribute(name, value)
 }
 
 func (p *PackageInstance) GetContext() common.Context {

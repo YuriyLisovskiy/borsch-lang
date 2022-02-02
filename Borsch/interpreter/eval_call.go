@@ -2,7 +2,6 @@ package interpreter
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
@@ -16,7 +15,7 @@ func (a *Call) Evaluate(state common.State, variable common.Type, selfInstance c
 			return nil, err
 		}
 
-		_, err = a.evalFunctionByName(state, instance, ops.ConstructorName, &args, nil, true)
+		_, err = a.evalFunctionByName(state, instance, common.ConstructorName, &args, nil, true)
 		if err != nil {
 			return nil, err
 		}
@@ -36,7 +35,7 @@ func (a *Call) Evaluate(state common.State, variable common.Type, selfInstance c
 		return a.evalFunction(state, object, &args, nil)
 	case types.ObjectInstance:
 		args := []common.Type{variable}
-		return a.evalFunctionByName(state, object.GetPrototype(), ops.CallOperatorName, &args, nil, true)
+		return a.evalFunctionByName(state, object.GetPrototype(), common.CallOperatorName, &args, nil, true)
 	default:
 		return nil, util.ObjectIsNotCallable(a.Ident, object.GetTypeName())
 	}

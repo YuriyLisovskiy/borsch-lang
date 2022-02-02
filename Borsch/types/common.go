@@ -2,7 +2,6 @@ package types
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
@@ -18,20 +17,34 @@ type CommonInstance struct {
 }
 
 func (o CommonInstance) GetTypeName() string {
-	return o.GetPrototype().GetTypeName()
+	return o.Object.GetTypeName()
 }
 
 func (o CommonInstance) GetPrototype() *Class {
+	if o.prototype == nil {
+		panic("CommonInstance: prototype is nil")
+	}
+
 	return o.prototype
 }
 
-func (o CommonInstance) GetAttribute(name string) (common.Type, error) {
-	if attribute, err := o.Object.GetAttribute(name); err == nil {
-		return attribute, nil
+func (o CommonInstance) GetOperator(name string) (common.Type, error) {
+	if common.IsOperator(name) {
+		if attr, err := o.GetPrototype().GetAttribute(name); err == nil {
+			return attr, nil
+		}
 	}
 
-	if proto := o.GetPrototype(); proto != nil {
-		return proto.GetAttribute(name)
+	return nil, util.OperatorNotFoundError(o.GetTypeName(), name)
+}
+
+func (o CommonInstance) GetAttribute(name string) (common.Type, error) {
+	if attr, err := o.Object.GetAttribute(name); err == nil {
+		return attr, nil
+	}
+
+	if attr, err := o.GetPrototype().GetAttribute(name); err == nil {
+		return attr, nil
 	}
 
 	return nil, util.AttributeNotFoundError(o.GetTypeName(), name)
@@ -42,11 +55,7 @@ func (o CommonInstance) HasAttribute(name string) bool {
 		return true
 	}
 
-	if proto := o.GetPrototype(); proto != nil {
-		return proto.HasAttribute(name)
-	}
-
-	return false
+	return o.GetPrototype().HasAttribute(name)
 }
 
 func (o CommonInstance) Copy() CommonInstance {
@@ -61,7 +70,7 @@ type BuiltinInstance struct {
 }
 
 func (o BuiltinInstance) GetAttribute(name string) (common.Type, error) {
-	if name == ops.AttributesName {
+	if name == common.AttributesName {
 		return nil, util.AttributeNotFoundError(o.GetTypeName(), name)
 	}
 
@@ -69,7 +78,7 @@ func (o BuiltinInstance) GetAttribute(name string) (common.Type, error) {
 }
 
 func (o BuiltinInstance) SetAttribute(name string, _ common.Type) error {
-	if name == ops.AttributesName {
+	if name == common.AttributesName {
 		return util.AttributeNotFoundError(o.GetTypeName(), name)
 	}
 

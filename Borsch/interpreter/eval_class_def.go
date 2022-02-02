@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
@@ -49,7 +48,7 @@ func (m *ClassMember) Evaluate(state common.State, class *types.Class) (common.T
 					return err
 				}
 
-				if m.Method.Name == ops.ConstructorName {
+				if m.Method.Name == common.ConstructorName {
 					return checkConstructor(arguments, returnTypes)
 				}
 

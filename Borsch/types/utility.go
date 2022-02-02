@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/ops"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
@@ -402,7 +401,7 @@ func newUnaryMethod(
 }
 
 func newComparisonOperator(
-	operator ops.Operator,
+	operator common.Operator,
 	itemType *Class,
 	doc string,
 	comparator func(common.State, common.Type, common.Type) (int, error),
@@ -429,39 +428,39 @@ func makeComparisonOperators(
 	comparator func(common.State, common.Type, common.Type) (int, error),
 ) map[string]common.Type {
 	return map[string]common.Type{
-		ops.EqualsOp.Name(): newComparisonOperator(
+		common.EqualsOp.Name(): newComparisonOperator(
 			// TODO: add doc
-			ops.EqualsOp, itemType, "", comparator, func(res int) bool {
+			common.EqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0
 			},
 		),
-		ops.NotEqualsOp.Name(): newComparisonOperator(
+		common.NotEqualsOp.Name(): newComparisonOperator(
 			// TODO: add doc
-			ops.NotEqualsOp, itemType, "", comparator, func(res int) bool {
+			common.NotEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res != 0
 			},
 		),
-		ops.GreaterOp.Name(): newComparisonOperator(
+		common.GreaterOp.Name(): newComparisonOperator(
 			// TODO: add doc
-			ops.GreaterOp, itemType, "", comparator, func(res int) bool {
+			common.GreaterOp, itemType, "", comparator, func(res int) bool {
 				return res == 1
 			},
 		),
-		ops.GreaterOrEqualsOp.Name(): newComparisonOperator(
+		common.GreaterOrEqualsOp.Name(): newComparisonOperator(
 			// TODO: add doc
-			ops.GreaterOrEqualsOp, itemType, "", comparator, func(res int) bool {
+			common.GreaterOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == 1
 			},
 		),
-		ops.LessOp.Name(): newComparisonOperator(
+		common.LessOp.Name(): newComparisonOperator(
 			// TODO: add doc
-			ops.LessOp, itemType, "", comparator, func(res int) bool {
+			common.LessOp, itemType, "", comparator, func(res int) bool {
 				return res == -1
 			},
 		),
-		ops.LessOrEqualsOp.Name(): newComparisonOperator(
+		common.LessOrEqualsOp.Name(): newComparisonOperator(
 			// TODO: add doc
-			ops.LessOrEqualsOp, itemType, "", comparator, func(res int) bool {
+			common.LessOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == -1
 			},
 		),
@@ -470,34 +469,59 @@ func makeComparisonOperators(
 
 func makeLogicalOperators(itemType *Class) map[string]common.Type {
 	return map[string]common.Type{
-		ops.NotOp.Name(): newUnaryMethod(
+		common.NotOp.Name(): newUnaryMethod(
 			// TODO: add doc
-			ops.NotOp.Name(),
+			common.NotOp.Name(),
 			itemType,
 			Bool,
 			"",
 			func(state common.State, self common.Type) (common.Type, error) {
-				return NewBoolInstance(!self.AsBool(state)), nil
+				selfBool, err := self.AsBool(state)
+				if err != nil {
+					return nil, err
+				}
+
+				return NewBoolInstance(!selfBool), nil
 			},
 		),
-		ops.AndOp.Name(): newBinaryMethod(
+		common.AndOp.Name(): newBinaryMethod(
 			// TODO: add doc
-			ops.AndOp.Name(),
+			common.AndOp.Name(),
 			itemType,
 			Bool,
 			"",
 			func(state common.State, self common.Type, other common.Type) (common.Type, error) {
-				return NewBoolInstance(self.AsBool(state) && other.AsBool(state)), nil
+				selfBool, err := self.AsBool(state)
+				if err != nil {
+					return nil, err
+				}
+
+				otherBool, err := other.AsBool(state)
+				if err != nil {
+					return nil, err
+				}
+
+				return NewBoolInstance(selfBool && otherBool), nil
 			},
 		),
-		ops.OrOp.Name(): newBinaryMethod(
+		common.OrOp.Name(): newBinaryMethod(
 			// TODO: add doc
-			ops.OrOp.Name(),
+			common.OrOp.Name(),
 			itemType,
 			Bool,
 			"",
 			func(state common.State, self common.Type, other common.Type) (common.Type, error) {
-				return NewBoolInstance(self.AsBool(state) || other.AsBool(state)), nil
+				selfBool, err := self.AsBool(state)
+				if err != nil {
+					return nil, err
+				}
+
+				otherBool, err := other.AsBool(state)
+				if err != nil {
+					return nil, err
+				}
+
+				return NewBoolInstance(selfBool || otherBool), nil
 			},
 		),
 	}
@@ -506,10 +530,15 @@ func makeLogicalOperators(itemType *Class) map[string]common.Type {
 func makeCommonOperators(itemType *Class) map[string]common.Type {
 	return map[string]common.Type{
 		// TODO: add doc
-		ops.BoolOperatorName: newUnaryMethod(
-			ops.BoolOperatorName, itemType, Bool, "",
+		common.BoolOperatorName: newUnaryMethod(
+			common.BoolOperatorName, itemType, Bool, "",
 			func(state common.State, self common.Type) (common.Type, error) {
-				return NewBoolInstance(self.AsBool(state)), nil
+				boolVal, err := self.AsBool(state)
+				if err != nil {
+					return nil, err
+				}
+
+				return NewBoolInstance(boolVal), nil
 			},
 		),
 	}
@@ -521,7 +550,7 @@ func newBuiltinConstructor(
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
-		ops.ConstructorName,
+		common.ConstructorName,
 		[]FunctionParameter{
 			{
 				Type:       itemType,
@@ -563,7 +592,7 @@ func newLengthOperator(
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
-		ops.LengthOperatorName,
+		common.LengthOperatorName,
 		[]FunctionParameter{
 			{
 				Type:       itemType,
