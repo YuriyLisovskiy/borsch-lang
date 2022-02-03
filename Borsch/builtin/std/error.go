@@ -30,10 +30,10 @@ func (t ErrorInstance) Representation(common.State) (string, error) {
 }
 
 func (t ErrorInstance) AsBool(common.State) (bool, error) {
-	return false, nil
+	return true, nil
 }
 
-func compareErrors(_ common.State, self common.Type, other common.Type) (int, error) {
+func compareErrors(_ common.State, _ common.Operator, self common.Type, other common.Type) (int, error) {
 	if _, ok := other.(*ErrorInstance); ok {
 		if self == other {
 			return 0, nil

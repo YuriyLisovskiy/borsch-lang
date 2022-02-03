@@ -1,11 +1,15 @@
 package common
 
+import "github.com/alecthomas/participle/v2/lexer"
+
 type Parser interface {
 	Parse(filename string, code string) (Evaluatable, error)
 }
 
 type Interpreter interface {
 	Import(state State, packageName string) (Type, error)
+	Trace(pos lexer.Position, place string, statement string)
+	StackTrace() *StackTrace
 }
 
 type Context interface {

@@ -2,7 +2,6 @@ package types
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
@@ -88,23 +87,13 @@ func (t ListInstance) Slice(state common.State, from, to int64) (common.Type, er
 	return listInstance, nil
 }
 
-func compareLists(_ common.State, self common.Type, other common.Type) (int, error) {
+func compareLists(_ common.State, op common.Operator, self common.Type, other common.Type) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case ListInstance:
-		return -2, util.RuntimeError(
-			fmt.Sprintf(
-				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-				"%s", self.GetTypeName(), right.GetTypeName(),
-			),
-		)
+		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	default:
-		return -2, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
-				"%s", self.GetTypeName(), right.GetTypeName(),
-			),
-		)
+		return -2, util.OperatorNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'

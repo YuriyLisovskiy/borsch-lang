@@ -2,7 +2,6 @@ package interpreter
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
@@ -14,15 +13,10 @@ type Scope map[string]common.Type
 func (p *Package) Evaluate(state common.State) (common.Type, error) {
 	state.GetContext().PushScope(Scope{})
 	for _, stmt := range p.Stmts {
-		state := stmt.Evaluate(state, false, false)
-		if state.Err != nil {
-			err := state.Err
-			if _, ok := err.(util.TraceError); ok {
-				err = errors.New(fmt.Sprintf(err.Error(), "<пакет>"))
-			} else {
-				err = util.Trace(p.Pos, "<пакет>", stmt.String(), util.RuntimeError(err.Error()))
-			}
-
+		stmtState := stmt.Evaluate(state, false, false)
+		if stmtState.Err != nil {
+			err := stmtState.Err
+			state.GetInterpreter().Trace(p.Pos, "<пакет>", stmt.String())
 			return nil, err
 		}
 	}
@@ -401,16 +395,13 @@ func (s *SlicingOrSubscription) callFunction(state common.State, prevValue commo
 	isLambda := false
 	variable, err = s.Call.Evaluate(state, variable, prevValue, &isLambda)
 	if err != nil {
-		if _, ok := err.(util.TraceError); ok {
-			funcName := s.Call.Ident
-			if isLambda {
-				funcName = common.LambdaSignature
-			}
-
-			err = errors.New(fmt.Sprintf(err.Error(), funcName))
+		funcName := s.Call.Ident
+		if isLambda {
+			funcName = common.LambdaSignature
 		}
 
-		return nil, util.Trace(s.Call.Pos, "", s.Call.String(), err)
+		state.GetInterpreter().Trace(s.Call.Pos, funcName, s.Call.String())
+		return nil, err
 	}
 
 	return variable, nil

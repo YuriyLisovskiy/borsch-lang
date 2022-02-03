@@ -76,7 +76,7 @@ func NewComparisonOperator(
 	operator common.Operator,
 	itemType *Class,
 	doc string,
-	comparator func(common.State, common.Type, common.Type) (int, error),
+	comparator func(common.State, common.Operator, common.Type, common.Type) (int, error),
 	checker func(res int) bool,
 ) *FunctionInstance {
 	return newBinaryMethod(
@@ -85,7 +85,7 @@ func NewComparisonOperator(
 		Bool,
 		doc,
 		func(state common.State, self common.Type, other common.Type) (common.Type, error) {
-			res, err := comparator(state, self, other)
+			res, err := comparator(state, operator, self, other)
 			if err != nil {
 				return nil, err
 			}
@@ -97,7 +97,7 @@ func NewComparisonOperator(
 
 func MakeComparisonOperators(
 	itemType *Class,
-	comparator func(common.State, common.Type, common.Type) (int, error),
+	comparator func(common.State, common.Operator, common.Type, common.Type) (int, error),
 ) map[string]common.Type {
 	return map[string]common.Type{
 		common.EqualsOp.Name(): NewComparisonOperator(

@@ -2,7 +2,6 @@ package types
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -43,7 +42,7 @@ func (t RealInstance) AsBool(common.State) (bool, error) {
 	return t.Value != 0.0, nil
 }
 
-func compareReals(_ common.State, self, other common.Type) (int, error) {
+func compareReals(_ common.State, op common.Operator, self, other common.Type) (int, error) {
 	left, ok := self.(RealInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareReals")
@@ -84,12 +83,7 @@ func compareReals(_ common.State, self, other common.Type) (int, error) {
 
 		return 1, nil
 	default:
-		return 0, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
-				"%s", left.GetTypeName(), right.GetTypeName(),
-			),
-		)
+		return 0, util.OperatorNotSupportedError(op, left.GetTypeName(), right.GetTypeName())
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'

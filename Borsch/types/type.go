@@ -13,7 +13,7 @@ func GetTypeOfInstance(object common.Type) (common.Type, error) {
 	panic("unreachable")
 }
 
-func compareTypes(_ common.State, self, other common.Type) (int, error) {
+func compareTypes(_ common.State, _ common.Operator, self, other common.Type) (int, error) {
 	left, ok := self.(*Class)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareTypes")

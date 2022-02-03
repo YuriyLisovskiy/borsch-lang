@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
@@ -29,31 +30,6 @@ func ParseError(pos lexer.Position, unexpected string, err string) error {
 			err,
 		),
 	)
-}
-
-type TraceError struct {
-	message string
-}
-
-func (e TraceError) Error() string {
-	return e.message
-}
-
-func Trace(pos lexer.Position, place, statement string, err error) error {
-	if place == "" {
-		place = "%s"
-	}
-
-	return TraceError{
-		message: fmt.Sprintf(
-			"  Файл \"%s\", рядок %d, у %s\n    %s\n%s",
-			pos.Filename,
-			pos.Line,
-			place,
-			statement,
-			err,
-		),
-	}
 }
 
 func AttributeNotFoundError(objTypeName, attrName string) error {
@@ -84,11 +60,20 @@ func AttributeIsReadOnlyError(objTypeName, attrName string) error {
 	)
 }
 
-func OperatorError(opName, lType, rType string) error {
+func OperatorNotSupportedError(operator common.Operator, leftType, rightType string) error {
+	return RuntimeError(
+		fmt.Sprintf(
+			"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
+			operator.Sign(), leftType, rightType,
+		),
+	)
+}
+
+func OperandsNotSupportedError(operator common.Operator, leftType, rightType string) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-			opName, lType, rType,
+			operator.Sign(), leftType, rightType,
 		),
 	)
 }
@@ -103,10 +88,6 @@ func ObjectIsNotCallable(objectName, typeName string) error {
 
 type InterpreterError struct {
 	message string
-}
-
-func NewInterpreterError(message string) InterpreterError {
-	return InterpreterError{message: message}
 }
 
 func (e InterpreterError) Error() string {

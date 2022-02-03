@@ -43,7 +43,7 @@ func (t IntegerInstance) AsBool(common.State) (bool, error) {
 	return t.Value != 0, nil
 }
 
-func compareIntegers(_ common.State, self common.Type, other common.Type) (int, error) {
+func compareIntegers(_ common.State, op common.Operator, self common.Type, other common.Type) (int, error) {
 	left, ok := self.(IntegerInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareIntegers")
@@ -84,12 +84,7 @@ func compareIntegers(_ common.State, self common.Type, other common.Type) (int, 
 
 		return 1, nil
 	default:
-		return 0, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
-				"%s", self.GetTypeName(), right.GetTypeName(),
-			),
-		)
+		return 0, util.OperatorNotSupportedError(op, left.GetTypeName(), right.GetTypeName())
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'

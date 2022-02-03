@@ -35,7 +35,7 @@ func (t NilInstance) AsBool(common.State) (bool, error) {
 	return false, nil
 }
 
-func compareNils(_ common.State, _ common.Type, other common.Type) (int, error) {
+func compareNils(_ common.State, _ common.Operator, _ common.Type, other common.Type) (int, error) {
 	switch other.(type) {
 	case NilInstance:
 		return 0, nil
