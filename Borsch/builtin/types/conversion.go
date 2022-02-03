@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func ToInteger(_ common.State, args ...common.Type) (common.Type, error) {
+func ToInteger(_ common.State, args ...common.Value) (common.Value, error) {
 	if len(args) == 0 {
 		return NewIntegerInstance(0), nil
 	}
@@ -52,7 +52,7 @@ func ToInteger(_ common.State, args ...common.Type) (common.Type, error) {
 	}
 }
 
-func ToReal(_ common.State, args ...common.Type) (common.Type, error) {
+func ToReal(_ common.State, args ...common.Value) (common.Value, error) {
 	if len(args) == 0 {
 		return NewRealInstance(0.0), nil
 	}
@@ -96,7 +96,7 @@ func ToReal(_ common.State, args ...common.Type) (common.Type, error) {
 	}
 }
 
-func ToString(state common.State, args ...common.Type) (common.Type, error) {
+func ToString(state common.State, args ...common.Value) (common.Value, error) {
 	if len(args) == 0 {
 		return NewStringInstance(""), nil
 	}
@@ -117,7 +117,7 @@ func ToString(state common.State, args ...common.Type) (common.Type, error) {
 	return NewStringInstance(argStr), nil
 }
 
-func ToBool(state common.State, args ...common.Type) (common.Type, error) {
+func ToBool(state common.State, args ...common.Value) (common.Value, error) {
 	if len(args) == 0 {
 		return NewBoolInstance(false), nil
 	}
@@ -138,7 +138,7 @@ func ToBool(state common.State, args ...common.Type) (common.Type, error) {
 	return NewBoolInstance(boolValue), err
 }
 
-func ToList(_ common.State, args ...common.Type) (common.Type, error) {
+func ToList(_ common.State, args ...common.Value) (common.Value, error) {
 	list := NewListInstance()
 	if len(args) == 0 {
 		return list, nil
@@ -151,7 +151,7 @@ func ToList(_ common.State, args ...common.Type) (common.Type, error) {
 	return list, nil
 }
 
-func ToDictionary(state common.State, args ...common.Type) (common.Type, error) {
+func ToDictionary(state common.State, args ...common.Value) (common.Value, error) {
 	dict := NewDictionaryInstance()
 	if len(args) == 0 {
 		return dict, nil

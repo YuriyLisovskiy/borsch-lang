@@ -12,8 +12,8 @@ import (
 )
 
 type DictionaryEntry struct {
-	Key   common.Type
-	Value common.Type
+	Key   common.Value
+	Value common.Value
 }
 
 type DictionaryInstance struct {
@@ -26,7 +26,7 @@ func NewDictionaryInstance() DictionaryInstance {
 		Map: map[uint64]DictionaryEntry{},
 		BuiltinInstance: BuiltinInstance{
 			CommonInstance{
-				Object: Object{
+				ObjectBase: ObjectBase{
 					typeName:    common.DictionaryTypeName,
 					Attributes:  nil,
 					callHandler: nil,
@@ -78,7 +78,7 @@ func (t DictionaryInstance) Length(common.State) int64 {
 	return int64(len(t.Map))
 }
 
-func (t DictionaryInstance) GetElement(state common.State, key common.Type) (common.Type, error) {
+func (t DictionaryInstance) GetElement(state common.State, key common.Value) (common.Value, error) {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (t DictionaryInstance) GetElement(state common.State, key common.Type) (com
 	return nil, errors.New(fmt.Sprintf("значення за ключем '%s' не існує", keyStr))
 }
 
-func (t *DictionaryInstance) SetElement(key common.Type, value common.Type) error {
+func (t *DictionaryInstance) SetElement(key common.Value, value common.Value) error {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func (t *DictionaryInstance) SetElement(key common.Type, value common.Type) erro
 	return nil
 }
 
-func (t *DictionaryInstance) RemoveElement(state common.State, key common.Type) (common.Type, error) {
+func (t *DictionaryInstance) RemoveElement(state common.State, key common.Value) (common.Value, error) {
 	keyHash, err := t.calcHash(key)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (t *DictionaryInstance) RemoveElement(state common.State, key common.Type) 
 	return value.Value, nil
 }
 
-func compareDictionaries(_ common.State, op common.Operator, self common.Type, other common.Type) (int, error) {
+func compareDictionaries(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case *DictionaryInstance, DictionaryInstance:
@@ -140,9 +140,9 @@ func compareDictionaries(_ common.State, op common.Operator, self common.Type, o
 }
 
 func newDictionaryClass() *Class {
-	initAttributes := func() map[string]common.Type {
+	initAttributes := func() map[string]common.Value {
 		return MergeAttributes(
-			map[string]common.Type{
+			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
 
@@ -164,7 +164,7 @@ func newDictionaryClass() *Class {
 							IsNullable: true,
 						},
 					},
-					func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+					func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 						dict := (*args)[0].(DictionaryInstance)
 						value, err := dict.RemoveElement(state, (*args)[1])
 						if err != nil {
@@ -196,7 +196,7 @@ func newDictionaryClass() *Class {
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc
-		func() (common.Type, error) {
+		func() (common.Value, error) {
 			return NewDictionaryInstance(), nil
 		},
 	)

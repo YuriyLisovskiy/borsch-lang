@@ -4,20 +4,20 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func Assert(state common.State, expected common.Type, actual common.Type, errorTemplate string) error {
-	args := []common.Type{actual}
+func Assert(state common.State, expected common.Value, actual common.Value, errorTemplate string) error {
+	args := []common.Value{actual}
 	result, err := types.CallByName(state, expected, common.EqualsOp.Name(), &args, nil, true)
 	if err != nil {
 		return err
 	}
 
 	success, err := MustBool(
-		result, func(t common.Type) error {
+		result, func(t common.Value) error {
 			return errors.New(
 				fmt.Sprintf(
 					"результат порівняння має бути логічного типу, отримано %s",

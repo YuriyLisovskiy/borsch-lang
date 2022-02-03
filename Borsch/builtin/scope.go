@@ -2,15 +2,15 @@ package builtin
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/std"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 )
 
-var BuiltinScope map[string]common.Type
+var BuiltinScope map[string]common.Value
 
 func init() {
 	initRuntime()
-	BuiltinScope = map[string]common.Type{
+	BuiltinScope = map[string]common.Value{
 
 		// I/O
 		PrintFunction.Name:     PrintFunction,

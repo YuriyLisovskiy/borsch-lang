@@ -3,8 +3,8 @@ package interpreter
 import (
 	"errors"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 )
 
 type StmtState uint8
@@ -17,7 +17,7 @@ const (
 
 type StmtResult struct {
 	State StmtState
-	Value common.Type
+	Value common.Value
 	Err   error
 }
 

@@ -3,12 +3,12 @@ package interpreter
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (c *ClassDef) Evaluate(state common.State) (common.Type, error) {
+func (c *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	ctx := state.GetContext()
 	var bases []*types.Class
 	for _, name := range c.Bases {
@@ -29,7 +29,7 @@ func (c *ClassDef) Evaluate(state common.State) (common.Type, error) {
 	}
 
 	classContext := ContextImpl{
-		scopes:       []map[string]common.Type{{}},
+		scopes:       []map[string]common.Value{{}},
 		classContext: ctx,
 	}
 
@@ -44,7 +44,7 @@ func (c *ClassDef) Evaluate(state common.State) (common.Type, error) {
 	return class, nil
 }
 
-func (m *ClassMember) Evaluate(state common.State, class *types.Class) (common.Type, error) {
+func (m *ClassMember) Evaluate(state common.State, class *types.Class) (common.Value, error) {
 	if m.Variable != nil {
 		return m.Variable.Evaluate(state)
 	}

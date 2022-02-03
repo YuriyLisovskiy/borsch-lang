@@ -41,7 +41,7 @@ func boolToFloat64(v bool) float64 {
 	return 0.0
 }
 
-func getAttributes(attributes map[string]common.Type) (DictionaryInstance, error) {
+func getAttributes(attributes map[string]common.Value) (DictionaryInstance, error) {
 	dict := NewDictionaryInstance()
 	for key, val := range attributes {
 		err := dict.SetElement(NewStringInstance(key), val)
@@ -53,7 +53,7 @@ func getAttributes(attributes map[string]common.Type) (DictionaryInstance, error
 	return dict, nil
 }
 
-func getLength(state common.State, sequence common.Type) (int64, error) {
+func getLength(state common.State, sequence common.Value) (int64, error) {
 	switch self := sequence.(type) {
 	case common.SequentialType:
 		return self.Length(state), nil
@@ -62,7 +62,7 @@ func getLength(state common.State, sequence common.Type) (int64, error) {
 	return 0, errors.New(fmt.Sprint("invalid type in length operator: ", sequence.GetTypeName()))
 }
 
-func MergeAttributes(a map[string]common.Type, b ...map[string]common.Type) map[string]common.Type {
+func MergeAttributes(a map[string]common.Value, b ...map[string]common.Value) map[string]common.Value {
 	for _, m := range b {
 		for key, val := range m {
 			a[key] = val

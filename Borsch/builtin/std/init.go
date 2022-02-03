@@ -1,6 +1,6 @@
 package std
 
-import "github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
+import "github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 
 var ErrorClass *types.Class = nil
 

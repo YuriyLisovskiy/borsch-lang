@@ -20,7 +20,7 @@ func NewStringInstance(value string) StringInstance {
 		Value: value,
 		BuiltinInstance: BuiltinInstance{
 			CommonInstance{
-				Object: Object{
+				ObjectBase: ObjectBase{
 					typeName:    common.StringTypeName,
 					Attributes:  nil,
 					callHandler: nil,
@@ -52,7 +52,7 @@ func (t StringInstance) Length(_ common.State) int64 {
 	return int64(utf8.RuneCountInString(t.Value))
 }
 
-func (t StringInstance) GetElement(state common.State, index int64) (common.Type, error) {
+func (t StringInstance) GetElement(state common.State, index int64) (common.Value, error) {
 	idx, err := getIndex(index, t.Length(state))
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (t StringInstance) GetElement(state common.State, index int64) (common.Type
 	return NewStringInstance(string([]rune(t.Value)[idx])), nil
 }
 
-func (t StringInstance) SetElement(state common.State, index int64, value common.Type) (common.Type, error) {
+func (t StringInstance) SetElement(state common.State, index int64, value common.Value) (common.Value, error) {
 	switch v := value.(type) {
 	case StringInstance:
 		idx, err := getIndex(index, t.Length(state))
@@ -84,7 +84,7 @@ func (t StringInstance) SetElement(state common.State, index int64, value common
 	return t, nil
 }
 
-func (t StringInstance) Slice(state common.State, from, to int64) (common.Type, error) {
+func (t StringInstance) Slice(state common.State, from, to int64) (common.Value, error) {
 	length := t.Length(state)
 	fromIdx := normalizeBound(from, length)
 	toIdx := normalizeBound(to, length)
@@ -95,7 +95,7 @@ func (t StringInstance) Slice(state common.State, from, to int64) (common.Type, 
 	return NewStringInstance(t.Value[fromIdx:toIdx]), nil
 }
 
-func compareStrings(_ common.State, op common.Operator, self, other common.Type) (int, error) {
+func compareStrings(_ common.State, op common.Operator, self, other common.Value) (int, error) {
 	left, ok := self.(StringInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareStrings")
@@ -124,14 +124,14 @@ func compareStrings(_ common.State, op common.Operator, self, other common.Type)
 func newStringBinaryOperator(
 	name string,
 	doc string,
-	handler func(StringInstance, common.Type) (common.Type, error),
+	handler func(StringInstance, common.Value) (common.Value, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
 		name,
 		String,
 		Any,
 		doc,
-		func(_ common.State, left common.Type, right common.Type) (common.Type, error) {
+		func(_ common.State, left common.Value, right common.Value) (common.Value, error) {
 			if leftInstance, ok := left.(StringInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -142,14 +142,14 @@ func newStringBinaryOperator(
 }
 
 func newStringClass() *Class {
-	initAttributes := func() map[string]common.Type {
+	initAttributes := func() map[string]common.Value {
 		return MergeAttributes(
-			map[string]common.Type{
+			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(String, ToString, ""),
 				common.MulOp.Name(): newStringBinaryOperator(
 					// TODO: add doc
-					common.MulOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
+					common.MulOp.Name(), "", func(self StringInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case IntegerInstance:
 							count := int(o.Value)
@@ -165,7 +165,7 @@ func newStringClass() *Class {
 				),
 				common.AddOp.Name(): newStringBinaryOperator(
 					// TODO: add doc
-					common.AddOp.Name(), "", func(self StringInstance, other common.Type) (common.Type, error) {
+					common.AddOp.Name(), "", func(self StringInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case StringInstance:
 							return NewStringInstance(self.Value + o.Value), nil
@@ -187,7 +187,7 @@ func newStringClass() *Class {
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc
-		func() (common.Type, error) {
+		func() (common.Value, error) {
 			return NewStringInstance(""), nil
 		},
 	)

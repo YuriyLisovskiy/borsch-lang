@@ -5,7 +5,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func GetTypeOfInstance(object common.Type) (common.Type, error) {
+func GetTypeOfInstance(object common.Value) (common.Value, error) {
 	if instance, ok := object.(ObjectInstance); ok {
 		return instance.GetPrototype(), nil
 	}
@@ -13,7 +13,7 @@ func GetTypeOfInstance(object common.Type) (common.Type, error) {
 	panic("unreachable")
 }
 
-func compareTypes(_ common.State, _ common.Operator, self, other common.Type) (int, error) {
+func compareTypes(_ common.State, _ common.Operator, self, other common.Value) (int, error) {
 	left, ok := self.(*Class)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareTypes")
@@ -28,13 +28,13 @@ func compareTypes(_ common.State, _ common.Operator, self, other common.Type) (i
 }
 
 func newTypeClass() *Class {
-	getTypeFunc := func(args ...common.Type) (common.Type, error) {
+	getTypeFunc := func(args ...common.Value) (common.Value, error) {
 		return GetTypeOfInstance(args[0])
 	}
 
 	// TODO: add required operators and methods
-	initAttributes := func() map[string]common.Type {
-		return map[string]common.Type{
+	initAttributes := func() map[string]common.Value {
+		return map[string]common.Value{
 			// TODO: add doc
 			common.CallOperatorName: NewFunctionInstance(
 				common.CallOperatorName,
@@ -52,7 +52,7 @@ func newTypeClass() *Class {
 						IsNullable: false,
 					},
 				},
-				func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+				func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 					return getTypeFunc((*args)[1])
 				},
 				[]FunctionReturnType{
@@ -82,8 +82,8 @@ func newTypeClass() *Class {
 
 	class := &Class{
 		// TODO: add doc
-		Object: *newClassObject(common.TypeTypeName, BuiltinPackage, initAttributes, ""),
-		GetEmptyInstance: func() (common.Type, error) {
+		ObjectBase: *newClassObject(common.TypeTypeName, BuiltinPackage, initAttributes, ""),
+		GetEmptyInstance: func() (common.Value, error) {
 			panic("unreachable")
 		},
 	}

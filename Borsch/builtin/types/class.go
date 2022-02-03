@@ -8,29 +8,29 @@ import (
 )
 
 type Class struct {
-	Object
+	ObjectBase
 
 	prototype        *Class
 	bases            []*Class
 	attrInitializer  AttributesInitializer
-	GetEmptyInstance func() (common.Type, error)
+	GetEmptyInstance func() (common.Value, error)
 }
 
 func NewClass(
 	name string,
 	bases []*Class,
 	package_ *PackageInstance,
-	initAttributes func() map[string]common.Type,
+	initAttributes func() map[string]common.Value,
 	doc string,
 ) *Class {
 	class := &Class{
-		Object:    *newClassObject(name, package_, initAttributes, doc),
-		prototype: TypeClass,
-		bases:     bases,
+		ObjectBase: *newClassObject(name, package_, initAttributes, doc),
+		prototype:  TypeClass,
+		bases:      bases,
 	}
-	class.GetEmptyInstance = func() (common.Type, error) {
+	class.GetEmptyInstance = func() (common.Value, error) {
 		// TODO: set default attributes
-		return NewClassInstance(class, map[string]common.Type{}), nil
+		return NewClassInstance(class, map[string]common.Value{}), nil
 	}
 	return class
 }
@@ -39,12 +39,12 @@ func NewBuiltinClass(
 	typeName string,
 	bases []*Class,
 	package_ *PackageInstance,
-	initAttributes func() map[string]common.Type,
+	initAttributes func() map[string]common.Value,
 	doc string,
-	getEmptyInstance func() (common.Type, error),
+	getEmptyInstance func() (common.Value, error),
 ) *Class {
 	return &Class{
-		Object:           *newClassObject(typeName, package_, initAttributes, doc),
+		ObjectBase:       *newClassObject(typeName, package_, initAttributes, doc),
 		prototype:        TypeClass,
 		bases:            bases,
 		GetEmptyInstance: getEmptyInstance,
@@ -75,20 +75,20 @@ func (c *Class) GetPrototype() *Class {
 	return c.prototype
 }
 
-func (c *Class) GetOperator(name string) (common.Type, error) {
+func (c *Class) GetOperator(name string) (common.Value, error) {
 	if c.isType() {
-		return c.Object.GetAttribute(name)
+		return c.ObjectBase.GetAttribute(name)
 	}
 
 	return c.prototype.GetAttribute(name)
 }
 
-func (c *Class) GetAttribute(name string) (common.Type, error) {
+func (c *Class) GetAttribute(name string) (common.Value, error) {
 	if c.isType() {
-		return c.Object.GetAttribute(name)
+		return c.ObjectBase.GetAttribute(name)
 	}
 
-	if attr, err := c.Object.GetAttribute(name); err == nil {
+	if attr, err := c.ObjectBase.GetAttribute(name); err == nil {
 		return attr, nil
 	}
 
@@ -99,7 +99,7 @@ func (c *Class) GetAttribute(name string) (common.Type, error) {
 	return nil, util.AttributeNotFoundError(c.GetTypeName(), name)
 }
 
-func (c *Class) SetAttribute(name string, value common.Type) error {
+func (c *Class) SetAttribute(name string, value common.Value) error {
 	if c.isType() {
 		if c.HasAttribute(name) {
 			return util.AttributeIsReadOnlyError(c.GetTypeName(), name)
@@ -108,15 +108,15 @@ func (c *Class) SetAttribute(name string, value common.Type) error {
 		return util.AttributeNotFoundError(c.GetTypeName(), name)
 	}
 
-	return c.Object.SetAttribute(name, value)
+	return c.ObjectBase.SetAttribute(name, value)
 }
 
 func (c *Class) HasAttribute(name string) bool {
 	if c.isType() {
-		return c.Object.HasAttribute(name)
+		return c.ObjectBase.HasAttribute(name)
 	}
 
-	if !c.Object.HasAttribute(name) {
+	if !c.ObjectBase.HasAttribute(name) {
 		return c.prototype.HasAttribute(name)
 	}
 
@@ -124,13 +124,13 @@ func (c *Class) HasAttribute(name string) bool {
 }
 
 func (c *Class) InitAttributes() {
-	if c.Object.initAttributes != nil {
-		c.Attributes = c.Object.initAttributes()
-		c.Object.initAttributes = nil
+	if c.ObjectBase.initAttributes != nil {
+		c.Attributes = c.ObjectBase.initAttributes()
+		c.ObjectBase.initAttributes = nil
 	}
 }
 
-func (c *Class) EqualsTo(other common.Type) bool {
+func (c *Class) EqualsTo(other common.Value) bool {
 	switch right := other.(type) {
 	case *Class:
 		return c == right
@@ -158,14 +158,14 @@ func newClassObject(
 	package_ *PackageInstance,
 	attrInitializer AttributesInitializer,
 	doc string,
-) *Object {
-	object := &Object{
+) *ObjectBase {
+	object := &ObjectBase{
 		typeName:    typeName,
 		Attributes:  nil,
 		callHandler: nil,
 	}
 
-	object.initAttributes = func() map[string]common.Type {
+	object.initAttributes = func() map[string]common.Value {
 		attributes := attrInitializer()
 		if constructor, ok := attributes[common.ConstructorName]; ok {
 			switch handler := constructor.(type) {
@@ -199,10 +199,10 @@ type ClassInstance struct {
 	Address string
 }
 
-func NewClassInstance(class *Class, attributes map[string]common.Type) *ClassInstance {
+func NewClassInstance(class *Class, attributes map[string]common.Value) *ClassInstance {
 	instance := &ClassInstance{
 		CommonInstance: CommonInstance{
-			Object: Object{
+			ObjectBase: ObjectBase{
 				typeName:    class.GetTypeName(),
 				Attributes:  attributes,
 				callHandler: nil,

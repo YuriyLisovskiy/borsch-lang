@@ -3,8 +3,8 @@ package std
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 )
 
 type ErrorInstance struct {
@@ -15,7 +15,7 @@ type ErrorInstance struct {
 func NewErrorInstance(message string) *ErrorInstance {
 	return &ErrorInstance{
 		BuiltinInstance: types.BuiltinInstance{
-			CommonInstance: *types.NewCommonInstance(types.NewObject(common.ErrorTypeName, nil, nil), ErrorClass),
+			CommonInstance: *types.NewCommonInstance(types.NewObjectBase(common.ErrorTypeName, nil, nil), ErrorClass),
 		},
 		message: message,
 	}
@@ -33,7 +33,7 @@ func (t ErrorInstance) AsBool(common.State) (bool, error) {
 	return true, nil
 }
 
-func compareErrors(_ common.State, _ common.Operator, self common.Type, other common.Type) (int, error) {
+func compareErrors(_ common.State, _ common.Operator, self common.Value, other common.Value) (int, error) {
 	if _, ok := other.(*ErrorInstance); ok {
 		if self == other {
 			return 0, nil
@@ -45,9 +45,9 @@ func compareErrors(_ common.State, _ common.Operator, self common.Type, other co
 }
 
 func newErrorClass() *types.Class {
-	initAttributes := func() map[string]common.Type {
+	initAttributes := func() map[string]common.Value {
 		return types.MergeAttributes(
-			map[string]common.Type{
+			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: types.NewFunctionInstance(
 					common.ConstructorName,
@@ -65,7 +65,7 @@ func newErrorClass() *types.Class {
 							IsNullable: false,
 						},
 					},
-					func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+					func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 						rawParts := (*args)[1:]
 						self := (*args)[0].(*ErrorInstance)
 						for _, rawPart := range rawParts {
@@ -100,7 +100,7 @@ func newErrorClass() *types.Class {
 							IsNullable: false,
 						},
 					},
-					func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+					func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 						msg, err := (*args)[0].String(state)
 						if err != nil {
 							return nil, err
@@ -121,7 +121,7 @@ func newErrorClass() *types.Class {
 			},
 			types.MakeLogicalOperators(ErrorClass),
 			types.MergeAttributes(
-				map[string]common.Type{
+				map[string]common.Value{
 					common.EqualsOp.Name(): types.NewComparisonOperator(
 						// TODO: add doc
 						common.EqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
@@ -146,7 +146,7 @@ func newErrorClass() *types.Class {
 		types.BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc
-		func() (common.Type, error) {
+		func() (common.Value, error) {
 			return NewErrorInstance(""), nil
 		},
 	)

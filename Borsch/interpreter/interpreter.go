@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -27,7 +27,7 @@ func NewInterpreter() *Interpreter {
 	}
 
 	i.rootContext = &ContextImpl{
-		scopes:        []map[string]common.Type{builtin.BuiltinScope},
+		scopes:        []map[string]common.Value{builtin.BuiltinScope},
 		classContext:  nil,
 		parentContext: nil,
 		interpreter:   i,
@@ -36,7 +36,7 @@ func NewInterpreter() *Interpreter {
 }
 
 func (i *Interpreter) Import(state common.State, newPackagePath string) (
-	common.Type,
+	common.Value,
 	error,
 ) {
 	parentPackageInstance, _ := state.GetCurrentPackageOrNil().(*types.PackageInstance)
@@ -85,7 +85,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	if toExport, err := ctx.GetVar(common.ExportedAttributeName); err == nil {
 		switch exported := toExport.(type) {
 		case types.ListInstance:
-			pkg.Attributes = map[string]common.Type{}
+			pkg.Attributes = map[string]common.Value{}
 			for _, value := range exported.Values {
 				if name, ok := value.(types.StringInstance); ok {
 					if attr, ok := scope[name.Value]; ok {
@@ -94,7 +94,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 				}
 			}
 		case types.StringInstance:
-			pkg.Attributes = map[string]common.Type{}
+			pkg.Attributes = map[string]common.Value{}
 			if attr, ok := scope[exported.Value]; ok {
 				pkg.Attributes[exported.Value] = attr
 			}

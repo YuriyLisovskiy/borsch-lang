@@ -7,19 +7,19 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-type Object struct {
+type ObjectBase struct {
 	typeName       string
-	Attributes     map[string]common.Type
-	callHandler    func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error)
+	Attributes     map[string]common.Value
+	callHandler    func(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error)
 	initAttributes AttributesInitializer
 }
 
-func NewObject(
+func NewObjectBase(
 	typeName string,
-	attributes map[string]common.Type,
-	callHandler func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error),
-) *Object {
-	return &Object{
+	attributes map[string]common.Value,
+	callHandler func(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error),
+) *ObjectBase {
+	return &ObjectBase{
 		typeName:       typeName,
 		Attributes:     attributes,
 		callHandler:    callHandler,
@@ -27,11 +27,11 @@ func NewObject(
 	}
 }
 
-func (o Object) GetTypeName() string {
+func (o ObjectBase) GetTypeName() string {
 	return o.typeName
 }
 
-func (o Object) GetAttribute(name string) (common.Type, error) {
+func (o ObjectBase) GetAttribute(name string) (common.Value, error) {
 	if name == common.AttributesName {
 		dict, err := getAttributes(o.Attributes)
 		if err != nil {
@@ -50,7 +50,7 @@ func (o Object) GetAttribute(name string) (common.Type, error) {
 	return nil, util.AttributeNotFoundError(o.GetTypeName(), name)
 }
 
-func (o Object) SetAttribute(name string, value common.Type) error {
+func (o ObjectBase) SetAttribute(name string, value common.Value) error {
 	if name == common.AttributesName {
 		return util.RuntimeError(
 			fmt.Sprintf(
@@ -82,7 +82,7 @@ func (o Object) SetAttribute(name string, value common.Type) error {
 	return nil
 }
 
-func (o Object) HasAttribute(name string) bool {
+func (o ObjectBase) HasAttribute(name string) bool {
 	if name == common.AttributesName {
 		return true
 	}
@@ -91,8 +91,8 @@ func (o Object) HasAttribute(name string) bool {
 	return ok
 }
 
-func (o *Object) Call(state common.State, args *[]common.Type, kwargs *map[string]common.Type) (
-	common.Type,
+func (o *ObjectBase) Call(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (
+	common.Value,
 	error,
 ) {
 	if o.callHandler != nil {
@@ -102,10 +102,10 @@ func (o *Object) Call(state common.State, args *[]common.Type, kwargs *map[strin
 	return nil, util.ObjectIsNotCallable(o.GetTypeName(), o.GetTypeName())
 }
 
-func (o Object) Copy() Object {
-	object := Object{
+func (o ObjectBase) Copy() ObjectBase {
+	object := ObjectBase{
 		typeName:    o.typeName,
-		Attributes:  map[string]common.Type{},
+		Attributes:  map[string]common.Value{},
 		callHandler: o.callHandler,
 	}
 	for k, v := range o.Attributes {
@@ -115,7 +115,7 @@ func (o Object) Copy() Object {
 	return object
 }
 
-func (o Object) makeAttributes() (DictionaryInstance, error) {
+func (o ObjectBase) makeAttributes() (DictionaryInstance, error) {
 	dict := NewDictionaryInstance()
 	for key, val := range o.Attributes {
 		err := dict.SetElement(NewStringInstance(key), val)

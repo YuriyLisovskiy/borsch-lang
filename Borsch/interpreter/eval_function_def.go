@@ -1,15 +1,15 @@
 package interpreter
 
 import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 )
 
 func (f *FunctionDef) Evaluate(
 	state common.State,
 	parentPackage *types.PackageInstance,
 	check func([]types.FunctionParameter, []types.FunctionReturnType) error,
-) (common.Type, error) {
+) (common.Value, error) {
 	arguments, err := f.ParametersSet.Evaluate(state)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func (f *FunctionDef) Evaluate(
 	function := types.NewFunctionInstance(
 		f.Name,
 		arguments,
-		func(state common.State, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
+		func(state common.State, _ *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
 			return f.Body.Evaluate(state)
 		},
 		returnTypes,
@@ -69,7 +69,7 @@ func (p *Parameter) Evaluate(ctx common.Context) (*types.FunctionParameter, erro
 	}, nil
 }
 
-func (b *FunctionBody) Evaluate(state common.State) (common.Type, error) {
+func (b *FunctionBody) Evaluate(state common.State) (common.Value, error) {
 	result := b.Stmts.Evaluate(state, true, false)
 	return result.Value, result.Err
 }
@@ -86,7 +86,7 @@ func (t *ReturnType) Evaluate(ctx common.Context) (*types.FunctionReturnType, er
 	}, nil
 }
 
-func (s *ReturnStmt) Evaluate(state common.State) (common.Type, error) {
+func (s *ReturnStmt) Evaluate(state common.State) (common.Value, error) {
 	resultCount := len(s.Expressions)
 	switch {
 	case resultCount == 1:

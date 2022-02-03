@@ -12,7 +12,7 @@ func NewNilInstance() NilInstance {
 	return NilInstance{
 		BuiltinInstance{
 			CommonInstance{
-				Object: Object{
+				ObjectBase: ObjectBase{
 					typeName:    common.NilTypeName,
 					Attributes:  nil,
 					callHandler: nil,
@@ -35,7 +35,7 @@ func (t NilInstance) AsBool(common.State) (bool, error) {
 	return false, nil
 }
 
-func compareNils(_ common.State, _ common.Operator, _ common.Type, other common.Type) (int, error) {
+func compareNils(_ common.State, _ common.Operator, _ common.Value, other common.Value) (int, error) {
 	switch other.(type) {
 	case NilInstance:
 		return 0, nil
@@ -46,9 +46,9 @@ func compareNils(_ common.State, _ common.Operator, _ common.Type, other common.
 }
 
 func newNilClass() *Class {
-	initAttributes := func() map[string]common.Type {
+	initAttributes := func() map[string]common.Value {
 		return MergeAttributes(
-			map[string]common.Type{
+			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: NewFunctionInstance(
 					common.ConstructorName,
@@ -60,7 +60,7 @@ func newNilClass() *Class {
 							IsNullable: false,
 						},
 					},
-					func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+					func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 						return (*args)[0], nil
 					},
 					[]FunctionReturnType{
@@ -86,7 +86,7 @@ func newNilClass() *Class {
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc
-		func() (common.Type, error) {
+		func() (common.Value, error) {
 			return NewNilInstance(), nil
 		},
 	)

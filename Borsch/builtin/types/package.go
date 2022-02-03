@@ -21,7 +21,7 @@ func NewPackageInstance(
 	isBuiltin bool,
 	name string,
 	parent *PackageInstance,
-	attributes map[string]common.Type,
+	attributes map[string]common.Value,
 ) *PackageInstance {
 	return &PackageInstance{
 		ctx:       ctx,
@@ -29,7 +29,7 @@ func NewPackageInstance(
 		Name:      name,
 		Parent:    parent,
 		CommonInstance: CommonInstance{
-			Object: Object{
+			ObjectBase: ObjectBase{
 				typeName:    common.PackageTypeName,
 				Attributes:  attributes,
 				callHandler: nil,
@@ -51,7 +51,7 @@ func (p PackageInstance) AsBool(common.State) (bool, error) {
 	return true, nil
 }
 
-func (p PackageInstance) SetAttribute(name string, value common.Type) error {
+func (p PackageInstance) SetAttribute(name string, value common.Value) error {
 	if p.IsBuiltin {
 		if p.HasAttribute(name) {
 			return util.AttributeIsReadOnlyError(p.GetTypeName(), name)
@@ -71,7 +71,7 @@ func (p *PackageInstance) SetContext(ctx common.Context) {
 	p.ctx = ctx
 }
 
-func comparePackages(_ common.State, op common.Operator, self common.Type, other common.Type) (int, error) {
+func comparePackages(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case *PackageInstance:
@@ -85,7 +85,7 @@ func comparePackages(_ common.State, op common.Operator, self common.Type, other
 }
 
 func NewPackageClass() *Class {
-	initAttributes := func() map[string]common.Type {
+	initAttributes := func() map[string]common.Value {
 		return MergeAttributes(
 			MakeLogicalOperators(Package),
 			MakeComparisonOperators(Package, comparePackages),

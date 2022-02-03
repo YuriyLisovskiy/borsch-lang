@@ -9,22 +9,22 @@ type ObjectInstance interface {
 	GetPrototype() *Class
 }
 
-type AttributesInitializer func() map[string]common.Type
+type AttributesInitializer func() map[string]common.Value
 
 type CommonInstance struct {
-	Object
+	ObjectBase
 	prototype *Class
 }
 
-func NewCommonInstance(object *Object, prototype *Class) *CommonInstance {
+func NewCommonInstance(object *ObjectBase, prototype *Class) *CommonInstance {
 	return &CommonInstance{
-		Object:    *object,
-		prototype: prototype,
+		ObjectBase: *object,
+		prototype:  prototype,
 	}
 }
 
 func (o CommonInstance) GetTypeName() string {
-	return o.Object.GetTypeName()
+	return o.ObjectBase.GetTypeName()
 }
 
 func (o CommonInstance) GetPrototype() *Class {
@@ -35,7 +35,7 @@ func (o CommonInstance) GetPrototype() *Class {
 	return o.prototype
 }
 
-func (o CommonInstance) GetOperator(name string) (common.Type, error) {
+func (o CommonInstance) GetOperator(name string) (common.Value, error) {
 	if common.IsOperator(name) {
 		if attr, err := o.GetPrototype().GetAttribute(name); err == nil {
 			return attr, nil
@@ -45,8 +45,8 @@ func (o CommonInstance) GetOperator(name string) (common.Type, error) {
 	return nil, util.OperatorNotFoundError(o.GetTypeName(), name)
 }
 
-func (o CommonInstance) GetAttribute(name string) (common.Type, error) {
-	if attr, err := o.Object.GetAttribute(name); err == nil {
+func (o CommonInstance) GetAttribute(name string) (common.Value, error) {
+	if attr, err := o.ObjectBase.GetAttribute(name); err == nil {
 		return attr, nil
 	}
 
@@ -58,7 +58,7 @@ func (o CommonInstance) GetAttribute(name string) (common.Type, error) {
 }
 
 func (o CommonInstance) HasAttribute(name string) bool {
-	if o.Object.HasAttribute(name) {
+	if o.ObjectBase.HasAttribute(name) {
 		return true
 	}
 
@@ -67,8 +67,8 @@ func (o CommonInstance) HasAttribute(name string) bool {
 
 func (o CommonInstance) Copy() CommonInstance {
 	return CommonInstance{
-		Object:    o.Object.Copy(),
-		prototype: o.prototype,
+		ObjectBase: o.ObjectBase.Copy(),
+		prototype:  o.prototype,
 	}
 }
 
@@ -76,7 +76,7 @@ type BuiltinInstance struct {
 	CommonInstance
 }
 
-func (o BuiltinInstance) GetAttribute(name string) (common.Type, error) {
+func (o BuiltinInstance) GetAttribute(name string) (common.Value, error) {
 	if name == common.AttributesName {
 		return nil, util.AttributeNotFoundError(o.GetTypeName(), name)
 	}
@@ -84,7 +84,7 @@ func (o BuiltinInstance) GetAttribute(name string) (common.Type, error) {
 	return o.CommonInstance.GetAttribute(name)
 }
 
-func (o BuiltinInstance) SetAttribute(name string, _ common.Type) error {
+func (o BuiltinInstance) SetAttribute(name string, _ common.Value) error {
 	if name == common.AttributesName {
 		return util.AttributeNotFoundError(o.GetTypeName(), name)
 	}
@@ -113,7 +113,7 @@ var (
 var BuiltinPackage *PackageInstance
 
 func Init() {
-	BuiltinPackage = NewPackageInstance(nil, true, "вбудований", nil, map[string]common.Type{})
+	BuiltinPackage = NewPackageInstance(nil, true, "вбудований", nil, map[string]common.Value{})
 
 	TypeClass = newTypeClass()
 	Nil = newNilClass()

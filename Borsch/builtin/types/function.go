@@ -73,13 +73,13 @@ type FunctionInstance struct {
 func NewFunctionInstance(
 	name string,
 	arguments []FunctionParameter,
-	handler func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error),
+	handler func(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error),
 	returnTypes []FunctionReturnType,
 	isMethod bool,
 	package_ *PackageInstance,
 	doc string,
 ) *FunctionInstance {
-	attributes := map[string]common.Type{}
+	attributes := map[string]common.Value{}
 	if package_ != nil {
 		attributes[common.PackageAttributeName] = package_
 	}
@@ -90,7 +90,7 @@ func NewFunctionInstance(
 
 	function := &FunctionInstance{
 		CommonInstance: CommonInstance{
-			Object: Object{
+			ObjectBase: ObjectBase{
 				typeName:    common.FunctionTypeName,
 				Attributes:  attributes,
 				callHandler: handler,
@@ -150,9 +150,9 @@ func (t *FunctionInstance) IsLambda() bool {
 }
 
 func newFunctionClass() *Class {
-	initAttributes := func() map[string]common.Type {
+	initAttributes := func() map[string]common.Value {
 		return MergeAttributes(
-			map[string]common.Type{
+			map[string]common.Value{
 				common.CallOperatorName: NewFunctionInstance(
 					common.CallOperatorName,
 					[]FunctionParameter{
@@ -169,8 +169,8 @@ func newFunctionClass() *Class {
 							IsNullable: true,
 						},
 					},
-					func(state common.State, args *[]common.Type, kwargs *map[string]common.Type) (
-						common.Type,
+					func(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (
+						common.Value,
 						error,
 					) {
 						function := (*args)[0].(*FunctionInstance)

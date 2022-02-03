@@ -7,18 +7,18 @@ type Parser interface {
 }
 
 type Interpreter interface {
-	Import(state State, packageName string) (Type, error)
+	Import(state State, packageName string) (Value, error)
 	Trace(pos lexer.Position, place string, statement string)
 	StackTrace() *StackTrace
 }
 
 type Context interface {
-	PushScope(scope map[string]Type)
-	PopScope() map[string]Type
-	TopScope() map[string]Type
-	GetVar(name string) (Type, error)
-	SetVar(name string, value Type) error
-	GetClass(name string) (Type, error)
+	PushScope(scope map[string]Value)
+	PopScope() map[string]Value
+	TopScope() map[string]Value
+	GetVar(name string) (Value, error)
+	SetVar(name string, value Value) error
+	GetClass(name string) (Value, error)
 	GetChild() Context
 }
 
@@ -26,38 +26,38 @@ type State interface {
 	GetParser() Parser
 	GetInterpreter() Interpreter
 	GetContext() Context
-	GetCurrentPackage() Type
-	GetCurrentPackageOrNil() Type
+	GetCurrentPackage() Value
+	GetCurrentPackageOrNil() Value
 	WithContext(Context) State
-	WithPackage(p Type) State
+	WithPackage(p Value) State
 }
 
 type Evaluatable interface {
-	Evaluate(State) (Type, error)
+	Evaluate(State) (Value, error)
 }
 
 type OperatorEvaluatable interface {
-	Evaluate(State, Type) (Type, error)
+	Evaluate(State, Value) (Value, error)
 }
 
-type Type interface {
+type Value interface {
 	String(State) (string, error)
 	Representation(State) (string, error)
 	AsBool(State) (bool, error)
 	GetTypeName() string
-	GetOperator(string) (Type, error)
-	GetAttribute(string) (Type, error)
-	SetAttribute(string, Type) error
+	GetOperator(string) (Value, error)
+	GetAttribute(string) (Value, error)
+	SetAttribute(string, Value) error
 	HasAttribute(string) bool
 }
 
 type SequentialType interface {
 	Length(State) int64
-	GetElement(State, int64) (Type, error)
-	SetElement(State, int64, Type) (Type, error)
-	Slice(State, int64, int64) (Type, error)
+	GetElement(State, int64) (Value, error)
+	SetElement(State, int64, Value) (Value, error)
+	Slice(State, int64, int64) (Value, error)
 }
 
 type CallableType interface {
-	Call(State, *[]Type, *map[string]Type) (Type, error)
+	Call(State, *[]Value, *map[string]Value) (Value, error)
 }

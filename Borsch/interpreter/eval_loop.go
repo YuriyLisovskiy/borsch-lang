@@ -3,8 +3,8 @@ package interpreter
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 )
 
 func (l *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
@@ -91,7 +91,7 @@ func (l *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFunct
 
 func getBound(state common.State, bound *Expression, boundName string) (int64, error) {
 	return mustInt(
-		state, bound, func(t common.Type) string {
+		state, bound, func(t common.Value) string {
 			return fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.GetTypeName())
 		},
 	)
