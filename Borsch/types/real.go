@@ -242,6 +242,7 @@ func newRealClass() *Class {
 
 	return NewBuiltinClass(
 		common.RealTypeName,
+		nil,
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc

@@ -188,6 +188,7 @@ func newStringClass() *Class {
 
 	return NewBuiltinClass(
 		common.StringTypeName,
+		nil,
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc

@@ -173,7 +173,7 @@ func newFunctionClass() *Class {
 						slicedArgs := (*args)[1:]
 						slicedKwargs := *kwargs
 						delete(slicedKwargs, "я")
-						if err := CheckFunctionArguments(state, function, &slicedArgs, &slicedKwargs); err != nil {
+						if err := CheckFunctionArguments(function, &slicedArgs, &slicedKwargs); err != nil {
 							return nil, err
 						}
 
@@ -197,6 +197,7 @@ func newFunctionClass() *Class {
 
 	return NewBuiltinClass(
 		common.FunctionTypeName,
+		nil,
 		BuiltinPackage,
 		initAttributes,
 		"",  // TODO: add doc

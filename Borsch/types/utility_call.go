@@ -18,7 +18,7 @@ func Call(
 		args = &[]common.Type{}
 	}
 
-	if err := CheckFunctionArguments(state, function, args, nil); err != nil {
+	if err := CheckFunctionArguments(function, args, nil); err != nil {
 		return nil, err
 	}
 

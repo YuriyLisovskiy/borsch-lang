@@ -11,12 +11,14 @@ type Class struct {
 	Object
 
 	prototype        *Class
+	bases            []*Class
 	attrInitializer  AttributesInitializer
 	GetEmptyInstance func() (common.Type, error)
 }
 
 func NewClass(
 	name string,
+	bases []*Class,
 	package_ *PackageInstance,
 	initAttributes func() map[string]common.Type,
 	doc string,
@@ -24,6 +26,7 @@ func NewClass(
 	class := &Class{
 		Object:    *newClassObject(name, package_, initAttributes, doc),
 		prototype: TypeClass,
+		bases:     bases,
 	}
 	class.GetEmptyInstance = func() (common.Type, error) {
 		// TODO: set default attributes
@@ -34,6 +37,7 @@ func NewClass(
 
 func NewBuiltinClass(
 	typeName string,
+	bases []*Class,
 	package_ *PackageInstance,
 	initAttributes func() map[string]common.Type,
 	doc string,
@@ -42,6 +46,7 @@ func NewBuiltinClass(
 	return &Class{
 		Object:           *newClassObject(typeName, package_, initAttributes, doc),
 		prototype:        TypeClass,
+		bases:            bases,
 		GetEmptyInstance: getEmptyInstance,
 	}
 }
@@ -140,6 +145,16 @@ func (c *Class) EqualsTo(other common.Type) bool {
 	default:
 		return false
 	}
+}
+
+func (c *Class) HasBase(cls *Class) bool {
+	for _, base := range c.bases {
+		if cls == base {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c *Class) isType() bool {

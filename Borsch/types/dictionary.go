@@ -202,6 +202,7 @@ func newDictionaryClass() *Class {
 
 	return NewBuiltinClass(
 		common.DictionaryTypeName,
+		nil,
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc

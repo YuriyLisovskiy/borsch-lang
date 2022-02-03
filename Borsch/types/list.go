@@ -181,6 +181,7 @@ func newListClass() *Class {
 
 	return NewBuiltinClass(
 		common.ListTypeName,
+		nil,
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc

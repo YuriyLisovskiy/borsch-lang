@@ -353,6 +353,7 @@ func newIntegerClass() *Class {
 
 	return NewBuiltinClass(
 		common.IntegerTypeName,
+		nil,
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc

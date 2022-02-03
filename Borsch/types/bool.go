@@ -327,6 +327,7 @@ func newBoolClass() *Class {
 
 	return NewBuiltinClass(
 		common.BoolTypeName,
+		nil,
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc

@@ -118,6 +118,7 @@ type ClassDef struct {
 	Pos lexer.Position
 
 	Name    string         `"клас" @Ident`
+	Bases   []string       `[":" (@Ident)+]`
 	Members []*ClassMember `"{" @@* "}"`
 }
 

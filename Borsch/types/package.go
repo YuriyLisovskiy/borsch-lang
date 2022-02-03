@@ -106,6 +106,7 @@ func NewPackageClass() *Class {
 
 	return NewBuiltinClass(
 		common.PackageTypeName,
+		nil,
 		BuiltinPackage,
 		initAttributes,
 		"",  // TODO: add doc

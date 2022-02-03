@@ -82,6 +82,7 @@ func newNilClass() *Class {
 
 	return NewBuiltinClass(
 		common.NilTypeName,
+		nil,
 		BuiltinPackage,
 		initAttributes,
 		"", // TODO: add doc

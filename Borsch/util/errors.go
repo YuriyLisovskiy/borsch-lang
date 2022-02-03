@@ -62,10 +62,6 @@ type InterpreterError struct {
 	message string
 }
 
-func NewInterpreterError(message string) InterpreterError {
-	return InterpreterError{message: message}
-}
-
 func (e InterpreterError) Error() string {
 	return fmt.Sprintf("InterpreterError: %s", e.message)
 }

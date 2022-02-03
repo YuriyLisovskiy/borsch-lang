@@ -9,10 +9,20 @@ import (
 )
 
 func (c *ClassDef) Evaluate(state common.State) (common.Type, error) {
-	// TODO: add doc
-	class := types.NewClass(c.Name, state.GetCurrentPackage().(*types.PackageInstance), nil, "")
-
 	ctx := state.GetContext()
+	var bases []*types.Class
+	for _, name := range c.Bases {
+		base, err := ctx.GetClass(name)
+		if err != nil {
+			return nil, err
+		}
+
+		bases = append(bases, base.(*types.Class))
+	}
+
+	// TODO: add doc
+	class := types.NewClass(c.Name, bases, state.GetCurrentPackage().(*types.PackageInstance), nil, "")
+
 	err := ctx.SetVar(c.Name, class)
 	if err != nil {
 		return nil, err
