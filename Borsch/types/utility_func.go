@@ -51,30 +51,6 @@ func CheckFunctionArguments(
 				parameter.Name, parameter.GetTypeName(), arg.GetTypeName(),
 			),
 		)
-
-		// if argPrototype == Nil {
-		// 	if function.Parameters[c].Type != Nil && !function.Parameters[c].IsNullable {
-		// 		argStr, err := arg.String(state)
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		//
-		// 		return util.RuntimeError(
-		// 			fmt.Sprintf(
-		// 				"аргумент '%s' очікує ненульовий параметр, отримано '%s'",
-		// 				function.Parameters[c].Name,
-		// 				argStr,
-		// 			),
-		// 		)
-		// 	}
-		// } else if function.Parameters[c].Type != Any && argPrototype != function.Parameters[c].Type {
-		// 	return util.RuntimeError(
-		// 		fmt.Sprintf(
-		// 			"аргумент '%s' очікує параметр з типом '%s', отримано '%s'",
-		// 			function.Parameters[c].Name, function.Parameters[c].GetTypeName(), arg.GetTypeName(),
-		// 		),
-		// 	)
-		// }
 	}
 
 	if len(function.Parameters) > 0 {
