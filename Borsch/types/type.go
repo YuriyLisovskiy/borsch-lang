@@ -13,7 +13,7 @@ func GetTypeOfInstance(object common.Type) (common.Type, error) {
 	panic("unreachable")
 }
 
-func compareTypes(_ common.State, self, other common.Type) (int, error) {
+func compareTypes(_ common.State, _ common.Operator, self, other common.Type) (int, error) {
 	left, ok := self.(*Class)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareTypes")
@@ -65,13 +65,13 @@ func newTypeClass() *Class {
 				nil,
 				"", // TODO: add doc
 			),
-			common.EqualsOp.Name(): newComparisonOperator(
+			common.EqualsOp.Name(): NewComparisonOperator(
 				// TODO: add doc
 				common.EqualsOp, TypeClass, "", compareTypes, func(res int) bool {
 					return res == 0
 				},
 			),
-			common.NotEqualsOp.Name(): newComparisonOperator(
+			common.NotEqualsOp.Name(): NewComparisonOperator(
 				// TODO: add doc
 				common.NotEqualsOp, TypeClass, "", compareTypes, func(res int) bool {
 					return res != 0

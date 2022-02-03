@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/std"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 var (
@@ -32,6 +31,7 @@ var (
 
 func initRuntime() {
 	types.Init()
+	std.Init()
 	PrintFunction = types.NewFunctionInstance(
 		"друк",
 		[]types.FunctionParameter{
@@ -108,24 +108,20 @@ func initRuntime() {
 		"панікувати",
 		[]types.FunctionParameter{
 			{
-				Type:       types.Any,
-				Name:       "повідомлення",
+				Type:       std.ErrorClass,
+				Name:       "помилка",
 				IsVariadic: false,
-				IsNullable: true,
+				IsNullable: false,
 			},
 		},
 		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
-			var strArgs []string
-			for _, arg := range *args {
-				argStr, err := arg.String(state)
-				if err != nil {
-					return nil, err
-				}
-
-				strArgs = append(strArgs, argStr)
+			self := (*args)[0]
+			msg, err := self.String(state)
+			if err != nil {
+				return nil, err
 			}
 
-			return types.NewNilInstance(), util.RuntimeError(strings.Join(strArgs, " "))
+			return types.NewNilInstance(), errors.New(fmt.Sprintf("%s: %s", self.GetTypeName(), msg))
 		},
 		[]types.FunctionReturnType{
 			{

@@ -3,10 +3,9 @@ package interpreter
 import (
 	"errors"
 	"fmt"
-	"strings"
-	"unicode/utf8"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 	"github.com/alecthomas/participle/v2"
 )
 
@@ -44,16 +43,8 @@ func (p *ParserImpl) Parse(filename string, code string) (common.Evaluatable, er
 	if err != nil {
 		switch parseError := err.(type) {
 		case participle.UnexpectedTokenError:
-			stacktrace := fmt.Sprintf(
-				"  Файл \"%s\", рядок %d, позиція %d,\n    %s\n    %s\nСинтаксична помилка: %s",
-				filename,
-				parseError.Position().Line,
-				parseError.Position().Column,
-				parseError.Unexpected.Value,
-				strings.Repeat(" ", utf8.RuneCountInString(parseError.Unexpected.Value))+"^",
-				parseError.Message(),
-			)
-			return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", stacktrace))
+			err := util.ParseError(parseError.Position(), parseError.Unexpected.Value, parseError.Message())
+			return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err))
 		default:
 			return nil, err
 		}

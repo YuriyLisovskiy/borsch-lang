@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/std"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 )
@@ -43,6 +44,9 @@ func init() {
 		"додати":    AddToListFunction,
 		"копіювати": DeepCopyFunction,
 		"тип":       TypeFunction,
+
+		// Classes
+		std.ErrorClass.GetTypeName(): std.ErrorClass,
 	}
 
 	types.BuiltinPackage.Attributes = BuiltinScope

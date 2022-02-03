@@ -6,7 +6,12 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (a *Call) Evaluate(state common.State, variable common.Type, selfInstance common.Type) (common.Type, error) {
+func (a *Call) Evaluate(
+	state common.State,
+	variable common.Type,
+	selfInstance common.Type,
+	isLambda *bool,
+) (common.Type, error) {
 	switch object := variable.(type) {
 	case *types.Class:
 		var args []common.Type
@@ -32,6 +37,7 @@ func (a *Call) Evaluate(state common.State, variable common.Type, selfInstance c
 			}
 		}
 
+		*isLambda = object.IsLambda()
 		return a.evalFunction(state, object, &args, nil)
 	case types.ObjectInstance:
 		args := []common.Type{variable}

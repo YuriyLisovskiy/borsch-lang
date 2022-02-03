@@ -20,7 +20,7 @@ func (fa *FunctionParameter) String() string {
 		res += "..."
 	}
 
-	return res + fa.GetTypeName()
+	return res + ": " + fa.GetTypeName()
 }
 
 func (fa FunctionParameter) GetTypeName() string {
@@ -110,8 +110,8 @@ func NewFunctionInstance(
 
 func (t FunctionInstance) String(common.State) (string, error) {
 	template := ""
-	if t.Name == "" {
-		template = "функція <лямбда>"
+	if t.Name == common.LambdaSignature {
+		template = "функція " + common.LambdaSignature
 	} else {
 		if t.package_ != nil {
 			template = "функція '%s'"
@@ -145,9 +145,13 @@ func (t *FunctionInstance) GetContext() common.Context {
 	return nil
 }
 
+func (t *FunctionInstance) IsLambda() bool {
+	return t.Name == common.LambdaSignature
+}
+
 func newFunctionClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				common.CallOperatorName: NewFunctionInstance(
 					common.CallOperatorName,
@@ -190,8 +194,8 @@ func newFunctionClass() *Class {
 					"", // TODO: add doc
 				),
 			},
-			makeLogicalOperators(Function),
-			makeCommonOperators(Function),
+			MakeLogicalOperators(Function),
+			MakeCommonOperators(Function),
 		)
 	}
 
