@@ -3,6 +3,11 @@ package util
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/alecthomas/participle/v2/lexer"
 )
 
 func RuntimeError(text string) error {
@@ -11,6 +16,20 @@ func RuntimeError(text string) error {
 
 func InternalError(text string) error {
 	return errors.New(fmt.Sprintf("Внутрішня помилка: %s", text))
+}
+
+func ParseError(pos lexer.Position, unexpected string, err string) error {
+	return errors.New(
+		fmt.Sprintf(
+			"  Файл \"%s\", рядок %d, позиція %d,\n    %s\n    %s\nСинтаксична помилка: %s",
+			pos.Filename,
+			pos.Line,
+			pos.Column,
+			unexpected,
+			strings.Repeat(" ", utf8.RuneCountInString(unexpected))+"^",
+			err,
+		),
+	)
 }
 
 func AttributeNotFoundError(objTypeName, attrName string) error {
@@ -41,11 +60,20 @@ func AttributeIsReadOnlyError(objTypeName, attrName string) error {
 	)
 }
 
-func OperatorError(opName, lType, rType string) error {
+func OperatorNotSupportedError(operator common.Operator, leftType, rightType string) error {
+	return RuntimeError(
+		fmt.Sprintf(
+			"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
+			operator.Sign(), leftType, rightType,
+		),
+	)
+}
+
+func OperandsNotSupportedError(operator common.Operator, leftType, rightType string) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-			opName, lType, rType,
+			operator.Sign(), leftType, rightType,
 		),
 	)
 }

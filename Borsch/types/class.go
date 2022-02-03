@@ -63,14 +63,6 @@ func (c Class) AsBool(common.State) (bool, error) {
 	return true, nil
 }
 
-// func (c *Class) GetTypeName() string {
-// 	if c.prototype == c {
-// 		return c.Object.GetTypeName()
-// 	}
-//
-// 	return c.prototype.GetTypeName()
-// }
-
 func (c *Class) GetPrototype() *Class {
 	if c.prototype == nil {
 		panic("Class: prototype is nil")

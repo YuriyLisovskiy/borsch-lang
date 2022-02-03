@@ -95,7 +95,7 @@ func (t StringInstance) Slice(state common.State, from, to int64) (common.Type, 
 	return NewStringInstance(t.Value[fromIdx:toIdx]), nil
 }
 
-func compareStrings(_ common.State, self, other common.Type) (int, error) {
+func compareStrings(_ common.State, op common.Operator, self, other common.Type) (int, error) {
 	left, ok := self.(StringInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareStrings")
@@ -114,12 +114,7 @@ func compareStrings(_ common.State, self, other common.Type) (int, error) {
 
 		return 1, nil
 	default:
-		return 0, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
-				"%s", left.GetTypeName(), right.GetTypeName(),
-			),
-		)
+		return 0, util.OperatorNotSupportedError(op, left.GetTypeName(), right.GetTypeName())
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -148,7 +143,7 @@ func newStringBinaryOperator(
 
 func newStringClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(String, ToString, ""),
@@ -180,9 +175,9 @@ func newStringClass() *Class {
 					},
 				),
 			},
-			makeLogicalOperators(String),
-			makeComparisonOperators(String, compareStrings),
-			makeCommonOperators(String),
+			MakeLogicalOperators(String),
+			MakeComparisonOperators(String, compareStrings),
+			MakeCommonOperators(String),
 		)
 	}
 

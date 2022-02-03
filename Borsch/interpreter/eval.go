@@ -2,7 +2,6 @@ package interpreter
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
@@ -14,15 +13,11 @@ type Scope map[string]common.Type
 func (p *Package) Evaluate(state common.State) (common.Type, error) {
 	state.GetContext().PushScope(Scope{})
 	for _, stmt := range p.Stmts {
-		state := stmt.Evaluate(state, false, false)
-		if state.Err != nil {
-			pos := stmt.Pos
-			return nil, errors.New(
-				fmt.Sprintf(
-					"  Файл \"%s\", рядок %d, позиція %d,\n    %s\n%s",
-					pos.Filename, pos.Line, pos.Column, stmt.String(), state.Err.Error(),
-				),
-			)
+		stmtState := stmt.Evaluate(state, false, false)
+		if stmtState.Err != nil {
+			err := stmtState.Err
+			state.GetInterpreter().Trace(p.Pos, "<пакет>", stmt.String())
+			return nil, err
 		}
 	}
 
@@ -42,9 +37,6 @@ func (b *BlockStmts) Evaluate(state common.State, inFunction, inLoop bool) StmtR
 		case StmtForceReturn, StmtBreak:
 			return result
 		}
-		// if result.State == StmtForceReturn || stmt.ReturnStmt != nil {
-		// 	return result
-		// }
 	}
 
 	return StmtResult{Value: types.NewNilInstance()}
@@ -60,10 +52,10 @@ func (e *Expression) Evaluate(state common.State, valueToSet common.Type) (commo
 
 func (a *Assignment) Evaluate(state common.State) (common.Type, error) {
 	if len(a.Next) == 0 {
-		return a.Expression[0].Evaluate(state, nil)
+		return a.Expressions[0].Evaluate(state, nil)
 	}
 
-	return unpack(state, a.Expression, a.Next)
+	return unpack(state, a.Expressions, a.Next)
 }
 
 // Evaluate executes LogicalAnd operation.
@@ -73,8 +65,8 @@ func (a *LogicalAnd) Evaluate(state common.State, valueToSet common.Type) (commo
 	return evalBinaryOperator(state, valueToSet, common.AndOp.Name(), a.LogicalOr, a.Next)
 }
 
-func (a *LogicalOr) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
-	return evalBinaryOperator(state, valueToSet, common.OrOp.Name(), a.LogicalNot, a.Next)
+func (o *LogicalOr) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
+	return evalBinaryOperator(state, valueToSet, common.OrOp.Name(), o.LogicalNot, o.Next)
 }
 
 func (a *LogicalNot) Evaluate(state common.State, valueToSet common.Type) (common.Type, error) {
@@ -226,8 +218,8 @@ func (c *Constant) Evaluate(state common.State) (common.Type, error) {
 		return types.NewBoolInstance(bool(*c.Bool)), nil
 	}
 
-	if c.String != nil {
-		return types.NewStringInstance(*c.String), nil
+	if c.StringValue != nil {
+		return types.NewStringInstance(*c.StringValue), nil
 	}
 
 	if c.List != nil {
@@ -400,14 +392,16 @@ func (s *SlicingOrSubscription) callFunction(state common.State, prevValue commo
 		return nil, err
 	}
 
-	variable, err = s.Call.Evaluate(state, variable, prevValue)
+	isLambda := false
+	variable, err = s.Call.Evaluate(state, variable, prevValue, &isLambda)
 	if err != nil {
-		return nil, errors.New(
-			fmt.Sprintf(
-				"  Файл \"%s\", рядок %d, позиція %d\n    %s\n%s",
-				s.Call.Pos.Filename, s.Call.Pos.Line, s.Call.Pos.Column, "TODO", err.Error(),
-			),
-		)
+		funcName := s.Call.Ident
+		if isLambda {
+			funcName = common.LambdaSignature
+		}
+
+		state.GetInterpreter().Trace(s.Call.Pos, funcName, s.Call.String())
+		return nil, err
 	}
 
 	return variable, nil
@@ -425,7 +419,7 @@ func (l *LambdaDef) Evaluate(state common.State) (common.Type, error) {
 	}
 
 	lambda := types.NewFunctionInstance(
-		"",
+		common.LambdaSignature,
 		arguments,
 		func(state common.State, _ *[]common.Type, kwargs *map[string]common.Type) (common.Type, error) {
 			return l.Body.Evaluate(state)

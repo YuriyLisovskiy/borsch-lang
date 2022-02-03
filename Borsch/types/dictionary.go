@@ -126,23 +126,13 @@ func (t *DictionaryInstance) RemoveElement(state common.State, key common.Type) 
 	return value.Value, nil
 }
 
-func compareDictionaries(_ common.State, self common.Type, other common.Type) (int, error) {
+func compareDictionaries(_ common.State, op common.Operator, self common.Type, other common.Type) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case *DictionaryInstance, DictionaryInstance:
-		return -2, util.RuntimeError(
-			fmt.Sprintf(
-				"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
-				"%s", self.GetTypeName(), right.GetTypeName(),
-			),
-		)
+		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	default:
-		return -2, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
-				"%s", self.GetTypeName(), right.GetTypeName(),
-			),
-		)
+		return -2, util.OperatorNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -151,7 +141,7 @@ func compareDictionaries(_ common.State, self common.Type, other common.Type) (i
 
 func newDictionaryClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
@@ -194,9 +184,9 @@ func newDictionaryClass() *Class {
 					"", // TODO: add doc
 				),
 			},
-			makeLogicalOperators(Dictionary),
-			makeComparisonOperators(Dictionary, compareDictionaries),
-			makeCommonOperators(Dictionary),
+			MakeLogicalOperators(Dictionary),
+			MakeComparisonOperators(Dictionary, compareDictionaries),
+			MakeCommonOperators(Dictionary),
 		)
 	}
 

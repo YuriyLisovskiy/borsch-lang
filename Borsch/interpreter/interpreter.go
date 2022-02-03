@@ -12,11 +12,13 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/alecthomas/participle/v2/lexer"
 )
 
 type Interpreter struct {
 	packages    map[string]*types.PackageInstance
 	rootContext common.Context
+	stacktrace  common.StackTrace
 }
 
 func NewInterpreter() *Interpreter {
@@ -75,7 +77,8 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	)
 	ctx := pkg.GetContext()
 	if _, err = ast.Evaluate(state.WithContext(ctx).WithPackage(pkg)); err != nil {
-		return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err.Error()))
+		stackTrace := state.GetInterpreter().StackTrace()
+		return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", stackTrace.String(err)))
 	}
 
 	scope := ctx.TopScope()
@@ -104,6 +107,14 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 
 	i.packages[fullPackagePath] = pkg
 	return pkg, nil
+}
+
+func (i *Interpreter) Trace(pos lexer.Position, place string, statement string) {
+	i.stacktrace.Push(common.NewTraceRow(pos, statement, place))
+}
+
+func (i *Interpreter) StackTrace() *common.StackTrace {
+	return &i.stacktrace
 }
 
 func getFullPath(packagePath string, parentPackage *types.PackageInstance) (string, error) {

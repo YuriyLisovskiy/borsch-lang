@@ -2,7 +2,6 @@ package types
 
 import (
 	"errors"
-	"fmt"
 	"math"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
@@ -46,7 +45,7 @@ func (t BoolInstance) AsBool(common.State) (bool, error) {
 	return t.Value, nil
 }
 
-func compareBooleans(state common.State, self common.Type, other common.Type) (int, error) {
+func compareBooleans(state common.State, op common.Operator, self common.Type, other common.Type) (int, error) {
 	left, ok := self.(BoolInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareBooleans")
@@ -68,12 +67,7 @@ func compareBooleans(state common.State, self common.Type, other common.Type) (i
 			return 0, nil
 		}
 	default:
-		return 0, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
-				"%s", self.GetTypeName(), right.GetTypeName(),
-			),
-		)
+		return 0, util.OperatorNotSupportedError(op, left.GetTypeName(), right.GetTypeName())
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -118,7 +112,7 @@ func newBoolUnaryOperator(
 
 func newBoolClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Bool, ToBool, ""),
@@ -319,9 +313,9 @@ func newBoolClass() *Class {
 					},
 				),
 			},
-			makeLogicalOperators(Bool),
-			makeComparisonOperators(Bool, compareBooleans),
-			makeCommonOperators(Bool),
+			MakeLogicalOperators(Bool),
+			MakeComparisonOperators(Bool, compareBooleans),
+			MakeCommonOperators(Bool),
 		)
 	}
 
