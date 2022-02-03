@@ -134,7 +134,7 @@ func newRealUnaryOperator(
 
 func newRealClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Real, ToReal, ""),
@@ -234,9 +234,9 @@ func newRealClass() *Class {
 					},
 				),
 			},
-			makeLogicalOperators(Real),
-			makeComparisonOperators(Real, compareReals),
-			makeCommonOperators(Real),
+			MakeLogicalOperators(Real),
+			MakeComparisonOperators(Real, compareReals),
+			MakeCommonOperators(Real),
 		)
 	}
 

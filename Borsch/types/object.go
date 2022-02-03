@@ -14,6 +14,19 @@ type Object struct {
 	initAttributes AttributesInitializer
 }
 
+func NewObject(
+	typeName string,
+	attributes map[string]common.Type,
+	callHandler func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error),
+) *Object {
+	return &Object{
+		typeName:       typeName,
+		Attributes:     attributes,
+		callHandler:    callHandler,
+		initAttributes: nil,
+	}
+}
+
 func (o Object) GetTypeName() string {
 	return o.typeName
 }

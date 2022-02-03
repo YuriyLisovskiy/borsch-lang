@@ -4,6 +4,11 @@ const BORSCH_LIB = "BORSCH_LIB"
 
 const LANGUAGE_FILE_EXT = "борщ"
 
+// Signatures
+const (
+	LambdaSignature = "<лямбда>"
+)
+
 // Built-in types
 const (
 	AnyTypeName        = "довільний"
@@ -17,6 +22,7 @@ const (
 	RealTypeName       = "дійсний"
 	StringTypeName     = "рядок"
 	TypeTypeName       = "тип"
+	ErrorTypeName      = "Помилка"
 )
 
 // Special attributes

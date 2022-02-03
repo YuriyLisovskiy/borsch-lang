@@ -16,6 +16,13 @@ type CommonInstance struct {
 	prototype *Class
 }
 
+func NewCommonInstance(object *Object, prototype *Class) *CommonInstance {
+	return &CommonInstance{
+		Object:    *object,
+		prototype: prototype,
+	}
+}
+
 func (o CommonInstance) GetTypeName() string {
 	return o.Object.GetTypeName()
 }

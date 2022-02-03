@@ -97,10 +97,10 @@ func comparePackages(_ common.State, self common.Type, other common.Type) (int, 
 
 func NewPackageClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
-			makeLogicalOperators(Package),
-			makeComparisonOperators(Package, comparePackages),
-			makeCommonOperators(Package),
+		return MergeAttributes(
+			MakeLogicalOperators(Package),
+			MakeComparisonOperators(Package, comparePackages),
+			MakeCommonOperators(Package),
 		)
 	}
 

@@ -26,7 +26,7 @@ type LoopStmt struct {
 // RangeBasedLoop is a loop with two bounds to
 // iterate over.
 //
-//   цикл (і : 1..7)
+//   цикл (і : 1 .. 7)
 //   {
 //   }
 type RangeBasedLoop struct {
@@ -132,9 +132,9 @@ type ClassMember struct {
 type Assignment struct {
 	Pos lexer.Position
 
-	Expression []*Expression ` @@ ("," @@)*`
-	Op         string        `[@"="`
-	Next       []*Expression ` @@ ("," @@)*]`
+	Expressions []*Expression ` @@ ("," @@)*`
+	Op          string        `[@"="`
+	Next        []*Expression ` @@ ("," @@)*]`
 }
 
 type Expression struct {
@@ -254,7 +254,7 @@ type Constant struct {
 	Integer         *int64             `  @Int`
 	Real            *float64           `| @Float`
 	Bool            *Boolean           `| @("істина" | "хиба")`
-	String          *string            `| @String`
+	StringValue     *string            `| @String`
 	List            []*Expression      `| "[" @@ ("," @@)* "]"`
 	EmptyList       bool               `| @("[""]")`
 	Dictionary      []*DictionaryEntry `| "{" @@ ("," @@)* "}"`

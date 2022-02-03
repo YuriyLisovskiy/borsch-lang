@@ -151,7 +151,7 @@ func compareDictionaries(_ common.State, self common.Type, other common.Type) (i
 
 func newDictionaryClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
@@ -194,9 +194,9 @@ func newDictionaryClass() *Class {
 					"", // TODO: add doc
 				),
 			},
-			makeLogicalOperators(Dictionary),
-			makeComparisonOperators(Dictionary, compareDictionaries),
-			makeCommonOperators(Dictionary),
+			MakeLogicalOperators(Dictionary),
+			MakeComparisonOperators(Dictionary, compareDictionaries),
+			MakeCommonOperators(Dictionary),
 		)
 	}
 

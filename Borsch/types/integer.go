@@ -134,7 +134,7 @@ func newIntegerUnaryOperator(
 
 func newIntegerClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Integer, ToInteger, ""),
@@ -345,9 +345,9 @@ func newIntegerClass() *Class {
 					},
 				),
 			},
-			makeLogicalOperators(Integer),
-			makeComparisonOperators(Integer, compareIntegers),
-			makeCommonOperators(Integer),
+			MakeLogicalOperators(Integer),
+			MakeComparisonOperators(Integer, compareIntegers),
+			MakeCommonOperators(Integer),
 		)
 	}
 

@@ -75,27 +75,3 @@ func (s *Stmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult 
 		panic("unreachable")
 	}
 }
-
-func (s *Stmt) String() string {
-	if s.IfStmt != nil {
-		return "s.IfStmt."
-	} else if s.LoopStmt != nil {
-		return "s.LoopStmt."
-	} else if s.Block != nil {
-		return "s.Block."
-	} else if s.FunctionDef != nil {
-		return "s.FunctionDef."
-	} else if s.ClassDef != nil {
-		return "s.ClassDef."
-	} else if s.ReturnStmt != nil {
-		return "повернути ..."
-	} else if s.BreakStmt {
-		return "перервати"
-	} else if s.Assignment != nil {
-		return "s.Assignment."
-	} else if s.Empty {
-		return ";"
-	}
-
-	panic("unreachable")
-}

@@ -65,13 +65,13 @@ func newTypeClass() *Class {
 				nil,
 				"", // TODO: add doc
 			),
-			common.EqualsOp.Name(): newComparisonOperator(
+			common.EqualsOp.Name(): NewComparisonOperator(
 				// TODO: add doc
 				common.EqualsOp, TypeClass, "", compareTypes, func(res int) bool {
 					return res == 0
 				},
 			),
-			common.NotEqualsOp.Name(): newComparisonOperator(
+			common.NotEqualsOp.Name(): NewComparisonOperator(
 				// TODO: add doc
 				common.NotEqualsOp, TypeClass, "", compareTypes, func(res int) bool {
 					return res != 0

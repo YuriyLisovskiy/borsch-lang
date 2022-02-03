@@ -133,7 +133,7 @@ func newListBinaryOperator(
 
 func newListClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(List, ToList, ""),
@@ -173,9 +173,9 @@ func newListClass() *Class {
 					},
 				),
 			},
-			makeLogicalOperators(List),
-			makeComparisonOperators(List, compareLists),
-			makeCommonOperators(List),
+			MakeLogicalOperators(List),
+			MakeComparisonOperators(List, compareLists),
+			MakeCommonOperators(List),
 		)
 	}
 

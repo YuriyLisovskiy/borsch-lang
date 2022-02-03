@@ -47,7 +47,7 @@ func compareNils(_ common.State, _ common.Type, other common.Type) (int, error) 
 
 func newNilClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: NewFunctionInstance(
@@ -74,9 +74,9 @@ func newNilClass() *Class {
 					"",
 				),
 			},
-			makeLogicalOperators(Nil),
-			makeComparisonOperators(Nil, compareNils),
-			makeCommonOperators(Nil),
+			MakeLogicalOperators(Nil),
+			MakeComparisonOperators(Nil, compareNils),
+			MakeCommonOperators(Nil),
 		)
 	}
 

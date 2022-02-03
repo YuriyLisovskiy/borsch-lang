@@ -148,7 +148,7 @@ func newStringBinaryOperator(
 
 func newStringClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(String, ToString, ""),
@@ -180,9 +180,9 @@ func newStringClass() *Class {
 					},
 				),
 			},
-			makeLogicalOperators(String),
-			makeComparisonOperators(String, compareStrings),
-			makeCommonOperators(String),
+			MakeLogicalOperators(String),
+			MakeComparisonOperators(String, compareStrings),
+			MakeCommonOperators(String),
 		)
 	}
 

@@ -118,7 +118,7 @@ func newBoolUnaryOperator(
 
 func newBoolClass() *Class {
 	initAttributes := func() map[string]common.Type {
-		return mergeAttributes(
+		return MergeAttributes(
 			map[string]common.Type{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Bool, ToBool, ""),
@@ -319,9 +319,9 @@ func newBoolClass() *Class {
 					},
 				),
 			},
-			makeLogicalOperators(Bool),
-			makeComparisonOperators(Bool, compareBooleans),
-			makeCommonOperators(Bool),
+			MakeLogicalOperators(Bool),
+			MakeComparisonOperators(Bool, compareBooleans),
+			MakeCommonOperators(Bool),
 		)
 	}
 
