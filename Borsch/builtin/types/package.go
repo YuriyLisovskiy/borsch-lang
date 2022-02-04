@@ -8,59 +8,36 @@ import (
 )
 
 type PackageInstance struct {
-	CommonInstance
-	IsBuiltin bool
-	Name      string
-	Parent    *PackageInstance
+	ClassInstance
+	Name   string
+	Parent *PackageInstance
 
 	ctx common.Context
 }
 
 func NewPackageInstance(
 	ctx common.Context,
-	isBuiltin bool,
 	name string,
 	parent *PackageInstance,
 	attributes map[string]common.Value,
 ) *PackageInstance {
-	return &PackageInstance{
-		ctx:       ctx,
-		IsBuiltin: isBuiltin,
-		Name:      name,
-		Parent:    parent,
-		CommonInstance: CommonInstance{
-			ObjectBase: ObjectBase{
-				typeName:    common.PackageTypeName,
-				Attributes:  attributes,
-				callHandler: nil,
-			},
-			prototype: Package,
-		},
+	instance := &PackageInstance{
+		ClassInstance: *NewClassInstance(Package, attributes),
+		Name:          name,
+		Parent:        parent,
+		ctx:           ctx,
 	}
+
+	instance.address = fmt.Sprintf("%p", instance)
+	return instance
 }
 
-func (p PackageInstance) String(common.State) (string, error) {
+func (p *PackageInstance) String(common.State) (string, error) {
 	return fmt.Sprintf("<пакет '%s'>", p.Name), nil
 }
 
-func (p PackageInstance) Representation(state common.State) (string, error) {
+func (p *PackageInstance) Representation(state common.State) (string, error) {
 	return p.String(state)
-}
-
-func (p PackageInstance) AsBool(common.State) (bool, error) {
-	return true, nil
-}
-
-func (p PackageInstance) SetAttribute(name string, value common.Value) error {
-	if p.IsBuiltin {
-		if p.HasAttribute(name) {
-			return util.AttributeIsReadOnlyError(p.GetTypeName(), name)
-		}
-
-		return util.AttributeNotFoundError(p.GetTypeName(), name)
-	}
-
-	return p.CommonInstance.SetAttribute(name, value)
 }
 
 func (p *PackageInstance) GetContext() common.Context {
@@ -85,20 +62,13 @@ func comparePackages(_ common.State, op common.Operator, self common.Value, othe
 }
 
 func NewPackageClass() *Class {
-	initAttributes := func() map[string]common.Value {
-		return MergeAttributes(
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
 			MakeLogicalOperators(Package),
 			MakeComparisonOperators(Package, comparePackages),
 			MakeCommonOperators(Package),
 		)
 	}
 
-	return NewBuiltinClass(
-		common.PackageTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		"",  // TODO: add doc
-		nil, // CAUTION: segfault may be thrown when using without nil check!
-	)
+	return NewClass(common.PackageTypeName, nil, BuiltinPackage, initAttributes, nil)
 }

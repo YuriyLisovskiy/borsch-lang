@@ -28,7 +28,7 @@ func runUnaryOperator(state common.State, name string, object common.Value, expe
 		return nil, err
 	}
 
-	if result.(types.ObjectInstance).GetPrototype() != expectedType {
+	if result.(types.ObjectInstance).GetClass() != expectedType {
 		return nil, util.RuntimeError(
 			fmt.Sprintf(
 				"'%s' має повертати значення з типом '%s', отримано '%s'",

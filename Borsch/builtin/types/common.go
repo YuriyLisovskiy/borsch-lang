@@ -6,7 +6,8 @@ import (
 )
 
 type ObjectInstance interface {
-	GetPrototype() *Class
+	GetClass() *Class
+	GetAddress() string
 }
 
 type AttributesInitializer func() map[string]common.Value

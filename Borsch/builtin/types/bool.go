@@ -9,23 +9,14 @@ import (
 )
 
 type BoolInstance struct {
-	BuiltinInstance
+	ClassInstance
 	Value bool
 }
 
 func NewBoolInstance(value bool) BoolInstance {
 	return BoolInstance{
-		Value: value,
-		BuiltinInstance: BuiltinInstance{
-			CommonInstance{
-				ObjectBase: ObjectBase{
-					typeName:    common.BoolTypeName,
-					Attributes:  nil,
-					callHandler: nil,
-				},
-				prototype: Bool,
-			},
-		},
+		ClassInstance: *NewClassInstance(Bool, nil),
+		Value:         value,
 	}
 }
 
@@ -111,8 +102,8 @@ func newBoolUnaryOperator(
 }
 
 func newBoolClass() *Class {
-	initAttributes := func() map[string]common.Value {
-		return MergeAttributes(
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Bool, ToBool, ""),
@@ -326,12 +317,11 @@ func newBoolClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
+	return NewClass(
 		common.BoolTypeName,
 		nil,
 		BuiltinPackage,
 		initAttributes,
-		"", // TODO: add doc
 		func() (common.Value, error) {
 			return NewBoolInstance(false), nil
 		},

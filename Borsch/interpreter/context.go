@@ -70,8 +70,8 @@ func (c *ContextImpl) SetVar(name string, value common.Value) error {
 	scopesLen := len(c.scopes)
 	for idx := 0; idx < scopesLen; idx++ {
 		if oldValue, ok := c.scopes[idx][name]; ok {
-			oldValuePrototype := oldValue.(types.ObjectInstance).GetPrototype()
-			if oldValuePrototype != value.(types.ObjectInstance).GetPrototype() && oldValuePrototype != types.Nil {
+			oldValuePrototype := oldValue.(types.ObjectInstance).GetClass()
+			if oldValuePrototype != value.(types.ObjectInstance).GetClass() && oldValuePrototype != types.Nil {
 				if idx == scopesLen-1 {
 					return util.RuntimeError(
 						fmt.Sprintf(

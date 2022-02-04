@@ -22,7 +22,7 @@ func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bo
 		return nil
 	}
 
-	argPrototype := arg.(ObjectInstance).GetPrototype()
+	argPrototype := arg.(ObjectInstance).GetClass()
 	if argPrototype == Nil && parameter.IsNullable {
 		return nil
 	}
@@ -149,7 +149,7 @@ func checkSingleResult(
 	returnType FunctionReturnType,
 	funcName string,
 ) error {
-	if result.(ObjectInstance).GetPrototype() == Nil {
+	if result.(ObjectInstance).GetClass() == Nil {
 		if returnType.Type != Nil && !returnType.IsNullable {
 			resultStr, err := result.String(state)
 			if err != nil {
@@ -163,7 +163,7 @@ func checkSingleResult(
 				),
 			)
 		}
-	} else if returnType.Type != Any && result.(ObjectInstance).GetPrototype() != returnType.Type {
+	} else if returnType.Type != Any && result.(ObjectInstance).GetClass() != returnType.Type {
 		return util.RuntimeError(
 			fmt.Sprintf(
 				"'%s()' повертає значення типу '%s'%s, отримано значення з типом '%s'",

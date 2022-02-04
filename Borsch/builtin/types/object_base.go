@@ -65,7 +65,7 @@ func (o ObjectBase) SetAttribute(name string, value common.Value) error {
 	}
 
 	if val, ok := o.Attributes[name]; ok {
-		if val.(ObjectInstance).GetPrototype() == value.(ObjectInstance).GetPrototype() {
+		if val.(ObjectInstance).GetClass() == value.(ObjectInstance).GetClass() {
 			o.Attributes[name] = value
 			return nil
 		}

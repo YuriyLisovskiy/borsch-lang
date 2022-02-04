@@ -7,7 +7,7 @@ import (
 
 func GetTypeOfInstance(object common.Value) (common.Value, error) {
 	if instance, ok := object.(ObjectInstance); ok {
-		return instance.GetPrototype(), nil
+		return instance.GetClass(), nil
 	}
 
 	panic("unreachable")
@@ -33,8 +33,8 @@ func newTypeClass() *Class {
 	}
 
 	// TODO: add required operators and methods
-	initAttributes := func() map[string]common.Value {
-		return map[string]common.Value{
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = map[string]common.Value{
 			// TODO: add doc
 			common.CallOperatorName: NewFunctionInstance(
 				common.CallOperatorName,
@@ -80,14 +80,18 @@ func newTypeClass() *Class {
 		}
 	}
 
-	class := &Class{
-		// TODO: add doc
-		ObjectBase: *newClassObject(common.TypeTypeName, BuiltinPackage, initAttributes, ""),
+	typeClass := &Class{
+		name:            common.TypeTypeName,
+		attributes:      nil,
+		class:           nil,
+		bases:           nil,
+		parent:          BuiltinPackage,
+		attrInitializer: initAttributes,
 		GetEmptyInstance: func() (common.Value, error) {
 			panic("unreachable")
 		},
 	}
 
-	class.prototype = class
-	return class
+	typeClass.class = typeClass
+	return typeClass
 }

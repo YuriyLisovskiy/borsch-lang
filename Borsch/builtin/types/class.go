@@ -8,98 +8,121 @@ import (
 )
 
 type Class struct {
-	ObjectBase
+	name       string
+	attributes map[string]common.Value
 
-	prototype        *Class
-	bases            []*Class
-	attrInitializer  AttributesInitializer
+	class *Class
+	bases []*Class
+
+	parent common.Value
+
+	attrInitializer  func(*map[string]common.Value)
 	GetEmptyInstance func() (common.Value, error)
 }
 
 func NewClass(
 	name string,
 	bases []*Class,
-	package_ *PackageInstance,
-	initAttributes func() map[string]common.Value,
-	doc string,
+	parent common.Value,
+	attrInitializer func(*map[string]common.Value),
+	getEmptyInstanceFunc func() (common.Value, error),
 ) *Class {
 	class := &Class{
-		ObjectBase: *newClassObject(name, package_, initAttributes, doc),
-		prototype:  TypeClass,
-		bases:      bases,
+		name:             name,
+		attributes:       map[string]common.Value{},
+		class:            TypeClass,
+		bases:            bases,
+		parent:           parent,
+		attrInitializer:  attrInitializer,
+		GetEmptyInstance: getEmptyInstanceFunc,
 	}
-	class.GetEmptyInstance = func() (common.Value, error) {
-		// TODO: set default attributes
-		return NewClassInstance(class, map[string]common.Value{}), nil
+	if len(class.bases) == 0 {
+		// TODO: set object as a base class
 	}
+
+	if class.GetEmptyInstance == nil {
+		class.GetEmptyInstance = func() (common.Value, error) {
+			return NewClassInstance(class, map[string]common.Value{}), nil
+		}
+	}
+
 	return class
 }
 
-func NewBuiltinClass(
-	typeName string,
-	bases []*Class,
-	package_ *PackageInstance,
-	initAttributes func() map[string]common.Value,
-	doc string,
-	getEmptyInstance func() (common.Value, error),
-) *Class {
-	return &Class{
-		ObjectBase:       *newClassObject(typeName, package_, initAttributes, doc),
-		prototype:        TypeClass,
-		bases:            bases,
-		GetEmptyInstance: getEmptyInstance,
+func (c *Class) GetName() string {
+	return c.name
+}
+
+func (c *Class) GetTypeName() string {
+	if c.isType() {
+		return c.name
 	}
+
+	return c.GetClass().GetTypeName()
 }
 
-func (c Class) String(common.State) (string, error) {
-	return fmt.Sprintf("<клас '%s'>", c.GetTypeName()), nil
+func (c *Class) GetClass() *Class {
+	if c.class == nil {
+		panic("Class: class is nil")
+	}
+
+	return c.class
 }
 
-func (c Class) Representation(state common.State) (string, error) {
+func (c *Class) GetAddress() string {
+	return fmt.Sprintf("%p", c)
+}
+
+func (c *Class) String(common.State) (string, error) {
+	return fmt.Sprintf("<клас '%s'>", c.GetName()), nil
+}
+
+func (c *Class) Representation(state common.State) (string, error) {
 	return c.String(state)
 }
 
-func (c Class) AsBool(common.State) (bool, error) {
+func (c *Class) AsBool(common.State) (bool, error) {
 	return true, nil
-}
-
-func (c *Class) GetPrototype() *Class {
-	if c.prototype == nil {
-		panic("Class: prototype is nil")
-	}
-
-	if c.prototype == c {
-		return c
-	}
-
-	return c.prototype
 }
 
 func (c *Class) GetOperator(name string) (common.Value, error) {
 	if c.isType() {
-		return c.ObjectBase.GetAttribute(name)
+		if c.attributes != nil {
+			if val, ok := c.attributes[name]; ok {
+				return val, nil
+			}
+		}
+
+		return nil, util.AttributeNotFoundError(c.GetTypeName(), name)
 	}
 
-	return c.prototype.GetAttribute(name)
+	return c.GetClass().GetAttribute(name)
 }
 
 func (c *Class) GetAttribute(name string) (common.Value, error) {
-	if c.isType() {
-		return c.ObjectBase.GetAttribute(name)
+	if c.attributes != nil {
+		if val, ok := c.attributes[name]; ok {
+			return val, nil
+		}
 	}
 
-	if attr, err := c.ObjectBase.GetAttribute(name); err == nil {
-		return attr, nil
+	basesLastIdx := len(c.bases) - 1
+	for i := basesLastIdx; i >= 0; i-- {
+		if attr, err := c.bases[i].GetAttribute(name); err == nil {
+			return attr, nil
+		}
 	}
 
-	if attr, err := c.prototype.GetAttribute(name); err == nil {
-		return attr, nil
+	if !c.isType() {
+		if attr, err := c.GetClass().GetAttribute(name); err == nil {
+			return attr, nil
+		}
 	}
 
-	return nil, util.AttributeNotFoundError(c.GetTypeName(), name)
+	return nil, util.AttributeNotFoundError(c.GetName(), name)
 }
 
-func (c *Class) SetAttribute(name string, value common.Value) error {
+func (c *Class) SetAttribute(name string, newValue common.Value) error {
 	if c.isType() {
 		if c.HasAttribute(name) {
 			return util.AttributeIsReadOnlyError(c.GetTypeName(), name)
@@ -108,25 +131,42 @@ func (c *Class) SetAttribute(name string, value common.Value) error {
 		return util.AttributeNotFoundError(c.GetTypeName(), name)
 	}
 
-	return c.ObjectBase.SetAttribute(name, value)
+	if oldValue, ok := c.attributes[name]; ok {
+		oldValueClass := oldValue.(ObjectInstance).GetClass()
+		newValueClass := newValue.(ObjectInstance).GetClass()
+		if oldValueClass == newValueClass || newValueClass.HasBase(oldValueClass) {
+			c.attributes[name] = newValue
+			return nil
+		}
+
+		return util.RuntimeError(
+			fmt.Sprintf(
+				"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
+				newValue.GetTypeName(), name, oldValue.GetTypeName(),
+			),
+		)
+	}
+
+	c.attributes[name] = newValue
+	return nil
 }
 
 func (c *Class) HasAttribute(name string) bool {
-	if c.isType() {
-		return c.ObjectBase.HasAttribute(name)
-	}
+	if _, ok := c.attributes[name]; !ok {
+		if !c.isType() {
+			return c.GetClass().HasAttribute(name)
+		}
 
-	if !c.ObjectBase.HasAttribute(name) {
-		return c.prototype.HasAttribute(name)
+		return false
 	}
 
 	return true
 }
 
 func (c *Class) InitAttributes() {
-	if c.ObjectBase.initAttributes != nil {
-		c.Attributes = c.ObjectBase.initAttributes()
-		c.ObjectBase.initAttributes = nil
+	if c.attrInitializer != nil {
+		c.attrInitializer(&c.attributes)
+		c.attrInitializer = nil
 	}
 }
 
@@ -149,8 +189,17 @@ func (c *Class) HasBase(cls *Class) bool {
 	return false
 }
 
+func (c *Class) Call(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
+	operator, err := c.GetOperator(common.ConstructorName)
+	if err != nil {
+		return nil, util.ObjectIsNotCallable(c.GetName(), c.GetTypeName())
+	}
+
+	return CallAttribute(state, c, operator, common.ConstructorName, args, kwargs, true)
+}
+
 func (c *Class) isType() bool {
-	return c.prototype == c
+	return c.class == c
 }
 
 func newClassObject(
@@ -191,67 +240,4 @@ func newClassObject(
 	}
 
 	return object
-}
-
-type ClassInstance struct {
-	CommonInstance
-	class   *Class
-	Address string
-}
-
-func NewClassInstance(class *Class, attributes map[string]common.Value) *ClassInstance {
-	instance := &ClassInstance{
-		CommonInstance: CommonInstance{
-			ObjectBase: ObjectBase{
-				typeName:    class.GetTypeName(),
-				Attributes:  attributes,
-				callHandler: nil,
-			},
-			prototype: class,
-		},
-		class: class,
-	}
-	instance.Address = fmt.Sprintf("%p", instance)
-	return instance
-}
-
-func (i ClassInstance) String(state common.State) (string, error) {
-	if i.HasAttribute(common.StringOperatorName) {
-		result, err := CallByName(state, i, common.StringOperatorName, nil, nil, true)
-		if err != nil {
-			return "", err
-		}
-
-		return result.String(state)
-	}
-
-	return fmt.Sprintf("<об'єкт %s з адресою %s>", i.GetTypeName(), i.Address), nil
-}
-
-// Representation TODO: поміняти __рядок__ на __представлення__
-func (i ClassInstance) Representation(state common.State) (string, error) {
-	return i.String(state)
-}
-
-func (i ClassInstance) AsBool(state common.State) (bool, error) {
-	if !i.HasAttribute(common.BoolOperatorName) {
-		return true, nil
-	}
-
-	boolOperator, _ := i.GetOperator(common.BoolOperatorName)
-	result, err := CallAttribute(state, i, boolOperator, common.BoolOperatorName, nil, nil, true)
-	if err != nil {
-		return false, err
-	}
-
-	return result.AsBool(state)
-}
-
-func (i ClassInstance) Copy() *ClassInstance {
-	instance := ClassInstance{
-		CommonInstance: i.CommonInstance.Copy(),
-		class:          i.class,
-	}
-	instance.Address = fmt.Sprintf("%p", &instance)
-	return &instance
 }

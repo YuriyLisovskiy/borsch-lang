@@ -41,7 +41,7 @@ func (a *Call) Evaluate(
 		return a.evalFunction(state, object, &args, nil)
 	case types.ObjectInstance:
 		args := []common.Value{variable}
-		return a.evalFunctionByName(state, object.GetPrototype(), common.CallOperatorName, &args, nil, true)
+		return a.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
 	default:
 		return nil, util.ObjectIsNotCallable(a.Ident, object.GetTypeName())
 	}
