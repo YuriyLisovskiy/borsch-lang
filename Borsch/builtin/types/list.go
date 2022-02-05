@@ -9,23 +9,18 @@ import (
 )
 
 type ListInstance struct {
-	BuiltinInstance
+	ClassInstance
 	Values []common.Value
 }
 
 func NewListInstance() ListInstance {
 	return ListInstance{
-		Values: []common.Value{},
-		BuiltinInstance: BuiltinInstance{
-			CommonInstance{
-				ObjectBase: ObjectBase{
-					typeName:    common.ListTypeName,
-					Attributes:  nil,
-					callHandler: nil,
-				},
-				prototype: List,
-			},
+		ClassInstance: ClassInstance{
+			class:      List,
+			attributes: map[string]common.Value{},
+			address:    "",
 		},
+		Values: []common.Value{},
 	}
 }
 
@@ -121,8 +116,8 @@ func newListBinaryOperator(
 }
 
 func newListClass() *Class {
-	initAttributes := func() map[string]common.Value {
-		return MergeAttributes(
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(List, ToList, ""),
@@ -168,12 +163,11 @@ func newListClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
+	return NewClass(
 		common.ListTypeName,
 		nil,
 		BuiltinPackage,
 		initAttributes,
-		"", // TODO: add doc
 		func() (common.Value, error) {
 			return NewListInstance(), nil
 		},

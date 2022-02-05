@@ -11,23 +11,18 @@ import (
 )
 
 type StringInstance struct {
-	BuiltinInstance
+	ClassInstance
 	Value string
 }
 
 func NewStringInstance(value string) StringInstance {
 	return StringInstance{
-		Value: value,
-		BuiltinInstance: BuiltinInstance{
-			CommonInstance{
-				ObjectBase: ObjectBase{
-					typeName:    common.StringTypeName,
-					Attributes:  nil,
-					callHandler: nil,
-				},
-				prototype: String,
-			},
+		ClassInstance: ClassInstance{
+			class:      String,
+			attributes: map[string]common.Value{},
+			address:    "",
 		},
+		Value: value,
 	}
 }
 
@@ -142,8 +137,8 @@ func newStringBinaryOperator(
 }
 
 func newStringClass() *Class {
-	initAttributes := func() map[string]common.Value {
-		return MergeAttributes(
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(String, ToString, ""),
@@ -181,12 +176,11 @@ func newStringClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
+	return NewClass(
 		common.StringTypeName,
 		nil,
 		BuiltinPackage,
 		initAttributes,
-		"", // TODO: add doc
 		func() (common.Value, error) {
 			return NewStringInstance(""), nil
 		},

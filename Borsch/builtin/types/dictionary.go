@@ -17,23 +17,18 @@ type DictionaryEntry struct {
 }
 
 type DictionaryInstance struct {
-	BuiltinInstance
+	ClassInstance
 	Map map[uint64]DictionaryEntry
 }
 
 func NewDictionaryInstance() DictionaryInstance {
 	return DictionaryInstance{
-		Map: map[uint64]DictionaryEntry{},
-		BuiltinInstance: BuiltinInstance{
-			CommonInstance{
-				ObjectBase: ObjectBase{
-					typeName:    common.DictionaryTypeName,
-					Attributes:  nil,
-					callHandler: nil,
-				},
-				prototype: Dictionary,
-			},
+		ClassInstance: ClassInstance{
+			class:      Dictionary,
+			attributes: map[string]common.Value{},
+			address:    "",
 		},
+		Map: map[uint64]DictionaryEntry{},
 	}
 }
 
@@ -140,8 +135,8 @@ func compareDictionaries(_ common.State, op common.Operator, self common.Value, 
 }
 
 func newDictionaryClass() *Class {
-	initAttributes := func() map[string]common.Value {
-		return MergeAttributes(
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
@@ -190,12 +185,11 @@ func newDictionaryClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
+	return NewClass(
 		common.DictionaryTypeName,
 		nil,
 		BuiltinPackage,
 		initAttributes,
-		"", // TODO: add doc
 		func() (common.Value, error) {
 			return NewDictionaryInstance(), nil
 		},

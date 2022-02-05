@@ -19,7 +19,7 @@ func NewClassInstance(class *Class, attributes map[string]common.Value) *ClassIn
 		attributes: attributes,
 		address:    "",
 	}
-	
+
 	if instance.attributes == nil {
 		instance.attributes = map[string]common.Value{}
 	}
@@ -63,7 +63,7 @@ func (i ClassInstance) Representation(state common.State) (string, error) {
 }
 
 func (i ClassInstance) GetTypeName() string {
-	return i.GetClass().GetTypeName()
+	return i.GetClass().GetName()
 }
 
 func (i ClassInstance) AsBool(common.State) (bool, error) {

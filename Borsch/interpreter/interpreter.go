@@ -70,7 +70,6 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 
 	pkg := types.NewPackageInstance(
 		i.rootContext.GetChild(),
-		false,
 		fullPackagePath,
 		parentPackageInstance,
 		nil,
@@ -82,29 +81,29 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	}
 
 	scope := ctx.TopScope()
+	attrs := map[string]common.Value{}
 	if toExport, err := ctx.GetVar(common.ExportedAttributeName); err == nil {
 		switch exported := toExport.(type) {
 		case types.ListInstance:
-			pkg.Attributes = map[string]common.Value{}
 			for _, value := range exported.Values {
 				if name, ok := value.(types.StringInstance); ok {
 					if attr, ok := scope[name.Value]; ok {
-						pkg.Attributes[name.Value] = attr
+						attrs[name.Value] = attr
 					}
 				}
 			}
 		case types.StringInstance:
-			pkg.Attributes = map[string]common.Value{}
 			if attr, ok := scope[exported.Value]; ok {
-				pkg.Attributes[exported.Value] = attr
+				attrs[exported.Value] = attr
 			}
+		default:
+			attrs = scope
 		}
+	} else {
+		attrs = scope
 	}
 
-	if pkg.Attributes == nil {
-		pkg.Attributes = scope
-	}
-
+	pkg.SetAttributes(attrs)
 	i.packages[fullPackagePath] = pkg
 	return pkg, nil
 }

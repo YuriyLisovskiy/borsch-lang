@@ -21,7 +21,7 @@ func (c *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	}
 
 	// TODO: add doc
-	class := types.NewClass(c.Name, bases, state.GetCurrentPackage().(*types.PackageInstance), nil, "")
+	class := types.NewClass(c.Name, bases, state.GetCurrentPackage(), nil, nil)
 
 	err := ctx.SetVar(c.Name, class)
 	if err != nil {
@@ -40,7 +40,7 @@ func (c *ClassDef) Evaluate(state common.State) (common.Value, error) {
 		}
 	}
 
-	class.Attributes = classContext.PopScope()
+	class.SetAttributes(classContext.PopScope())
 	return class, nil
 }
 

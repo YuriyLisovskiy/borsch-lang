@@ -8,16 +8,14 @@ import (
 )
 
 type ErrorInstance struct {
-	types.BuiltinInstance
+	types.ClassInstance
 	message string
 }
 
 func NewErrorInstance(message string) *ErrorInstance {
 	return &ErrorInstance{
-		BuiltinInstance: types.BuiltinInstance{
-			CommonInstance: *types.NewCommonInstance(types.NewObjectBase(common.ErrorTypeName, nil, nil), ErrorClass),
-		},
-		message: message,
+		ClassInstance: *types.NewClassInstance(ErrorClass, nil),
+		message:       message,
 	}
 }
 
@@ -45,8 +43,8 @@ func compareErrors(_ common.State, _ common.Operator, self common.Value, other c
 }
 
 func newErrorClass() *types.Class {
-	initAttributes := func() map[string]common.Value {
-		return types.MergeAttributes(
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = types.MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: types.NewFunctionInstance(
@@ -140,12 +138,11 @@ func newErrorClass() *types.Class {
 		)
 	}
 
-	return types.NewBuiltinClass(
+	return types.NewClass(
 		common.ErrorTypeName,
 		nil,
 		types.BuiltinPackage,
 		initAttributes,
-		"", // TODO: add doc
 		func() (common.Value, error) {
 			return NewErrorInstance(""), nil
 		},

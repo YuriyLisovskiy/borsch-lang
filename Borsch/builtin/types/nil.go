@@ -5,20 +5,15 @@ import (
 )
 
 type NilInstance struct {
-	BuiltinInstance
+	ClassInstance
 }
 
 func NewNilInstance() NilInstance {
 	return NilInstance{
-		BuiltinInstance{
-			CommonInstance{
-				ObjectBase: ObjectBase{
-					typeName:    common.NilTypeName,
-					Attributes:  nil,
-					callHandler: nil,
-				},
-				prototype: Nil,
-			},
+		ClassInstance{
+			class:      Nil,
+			attributes: map[string]common.Value{},
+			address:    "",
 		},
 	}
 }
@@ -46,8 +41,8 @@ func compareNils(_ common.State, _ common.Operator, _ common.Value, other common
 }
 
 func newNilClass() *Class {
-	initAttributes := func() map[string]common.Value {
-		return MergeAttributes(
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: NewFunctionInstance(
@@ -80,12 +75,11 @@ func newNilClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
+	return NewClass(
 		common.NilTypeName,
 		nil,
 		BuiltinPackage,
 		initAttributes,
-		"", // TODO: add doc
 		func() (common.Value, error) {
 			return NewNilInstance(), nil
 		},

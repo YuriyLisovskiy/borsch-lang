@@ -49,5 +49,5 @@ func init() {
 		std.ErrorClass.GetTypeName(): std.ErrorClass,
 	}
 
-	types.BuiltinPackage.Attributes = BuiltinScope
+	types.BuiltinPackage.SetAttributes(BuiltinScope)
 }

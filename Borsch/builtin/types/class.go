@@ -163,6 +163,13 @@ func (c *Class) HasAttribute(name string) bool {
 	return true
 }
 
+func (c *Class) SetAttributes(attrs map[string]common.Value) {
+	c.attributes = attrs
+	if c.attributes == nil {
+		c.attributes = map[string]common.Value{}
+	}
+}
+
 func (c *Class) InitAttributes() {
 	if c.attrInitializer != nil {
 		c.attrInitializer(&c.attributes)
@@ -189,6 +196,7 @@ func (c *Class) HasBase(cls *Class) bool {
 	return false
 }
 
+// Call executes common.ConstructorName operator if it exists in attributes.
 func (c *Class) Call(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
 	operator, err := c.GetOperator(common.ConstructorName)
 	if err != nil {
@@ -198,46 +206,7 @@ func (c *Class) Call(state common.State, args *[]common.Value, kwargs *map[strin
 	return CallAttribute(state, c, operator, common.ConstructorName, args, kwargs, true)
 }
 
+// isType checks if address of current class is equal to TypeClass.
 func (c *Class) isType() bool {
 	return c.class == c
-}
-
-func newClassObject(
-	typeName string,
-	package_ *PackageInstance,
-	attrInitializer AttributesInitializer,
-	doc string,
-) *ObjectBase {
-	object := &ObjectBase{
-		typeName:    typeName,
-		Attributes:  nil,
-		callHandler: nil,
-	}
-
-	object.initAttributes = func() map[string]common.Value {
-		attributes := attrInitializer()
-		if constructor, ok := attributes[common.ConstructorName]; ok {
-			switch handler := constructor.(type) {
-			case common.CallableType:
-				object.callHandler = handler.Call
-			}
-		}
-
-		if _, ok := attributes[common.DocAttributeName]; !ok {
-			if len(doc) > 0 {
-				attributes[common.DocAttributeName] = NewStringInstance(doc)
-			} else {
-				attributes[common.DocAttributeName] = NewNilInstance()
-			}
-		}
-
-		attributes[common.PackageAttributeName] = package_
-		return attributes
-	}
-
-	if object.callHandler == nil {
-		// TODO: set handler which returns class instance!
-	}
-
-	return object
 }

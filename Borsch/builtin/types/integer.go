@@ -11,21 +11,16 @@ import (
 )
 
 type IntegerInstance struct {
-	BuiltinInstance
+	ClassInstance
 	Value int64
 }
 
 func NewIntegerInstance(value int64) IntegerInstance {
 	return IntegerInstance{
-		BuiltinInstance: BuiltinInstance{
-			CommonInstance{
-				ObjectBase: ObjectBase{
-					typeName:    common.IntegerTypeName,
-					Attributes:  nil,
-					callHandler: nil,
-				},
-				prototype: Integer,
-			},
+		ClassInstance: ClassInstance{
+			class:      Integer,
+			attributes: map[string]common.Value{},
+			address:    "",
 		},
 		Value: value,
 	}
@@ -128,8 +123,8 @@ func newIntegerUnaryOperator(
 }
 
 func newIntegerClass() *Class {
-	initAttributes := func() map[string]common.Value {
-		return MergeAttributes(
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Integer, ToInteger, ""),
@@ -359,12 +354,11 @@ func newIntegerClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
+	return NewClass(
 		common.IntegerTypeName,
 		nil,
 		BuiltinPackage,
 		initAttributes,
-		"", // TODO: add doc
 		func() (common.Value, error) {
 			return NewIntegerInstance(0), nil
 		},

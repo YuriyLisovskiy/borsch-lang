@@ -10,21 +10,16 @@ import (
 )
 
 type RealInstance struct {
-	BuiltinInstance
+	ClassInstance
 	Value float64
 }
 
 func NewRealInstance(value float64) RealInstance {
 	return RealInstance{
-		BuiltinInstance: BuiltinInstance{
-			CommonInstance{
-				ObjectBase: ObjectBase{
-					typeName:    common.RealTypeName,
-					Attributes:  nil,
-					callHandler: nil,
-				},
-				prototype: Real,
-			},
+		ClassInstance: ClassInstance{
+			class:      Real,
+			attributes: map[string]common.Value{},
+			address:    "",
 		},
 		Value: value,
 	}
@@ -127,8 +122,8 @@ func newRealUnaryOperator(
 }
 
 func newRealClass() *Class {
-	initAttributes := func() map[string]common.Value {
-		return MergeAttributes(
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Real, ToReal, ""),
@@ -234,12 +229,11 @@ func newRealClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
+	return NewClass(
 		common.RealTypeName,
 		nil,
 		BuiltinPackage,
 		initAttributes,
-		"", // TODO: add doc
 		func() (common.Value, error) {
 			return NewRealInstance(0), nil
 		},

@@ -48,6 +48,13 @@ func (p *PackageInstance) SetContext(ctx common.Context) {
 	p.ctx = ctx
 }
 
+func (p *PackageInstance) SetAttributes(attrs map[string]common.Value) {
+	p.attributes = attrs
+	if p.attributes == nil {
+		p.attributes = map[string]common.Value{}
+	}
+}
+
 func comparePackages(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
