@@ -9,14 +9,16 @@ import (
 )
 
 type BoolInstance struct {
-	ClassInstance
+	BuiltinInstance
 	Value bool
 }
 
 func NewBoolInstance(value bool) BoolInstance {
 	return BoolInstance{
-		ClassInstance: *NewClassInstance(Bool, nil),
-		Value:         value,
+		BuiltinInstance: BuiltinInstance{
+			ClassInstance: *NewClassInstance(Bool, nil),
+		},
+		Value: value,
 	}
 }
 

@@ -14,14 +14,14 @@ type ClassInstance struct {
 }
 
 func NewClassInstance(class *Class, attributes map[string]common.Value) *ClassInstance {
+	if attributes == nil {
+		attributes = map[string]common.Value{}
+	}
+
 	instance := &ClassInstance{
 		class:      class,
 		attributes: attributes,
 		address:    "",
-	}
-
-	if instance.attributes == nil {
-		instance.attributes = map[string]common.Value{}
 	}
 
 	instance.address = fmt.Sprintf("%p", instance)
@@ -82,17 +82,15 @@ func (i ClassInstance) GetOperator(name string) (common.Value, error) {
 }
 
 func (i ClassInstance) GetAttribute(name string) (common.Value, error) {
-	if i.attributes != nil {
-		if val, ok := i.attributes[name]; ok {
-			return val, nil
-		}
+	if val, ok := i.attributes[name]; ok {
+		return val, nil
 	}
 
 	if attr, err := i.GetClass().GetAttribute(name); err == nil {
 		return attr, nil
 	}
 
-	return nil, util.OperatorNotFoundError(i.GetTypeName(), name)
+	return nil, util.AttributeNotFoundError(i.GetTypeName(), name)
 }
 
 func (i ClassInstance) SetAttribute(name string, newValue common.Value) error {
@@ -117,11 +115,11 @@ func (i ClassInstance) SetAttribute(name string, newValue common.Value) error {
 }
 
 func (i ClassInstance) HasAttribute(name string) bool {
-	if _, ok := i.attributes[name]; !ok {
-		return i.GetClass().HasAttribute(name)
+	if _, ok := i.attributes[name]; ok {
+		return true
 	}
 
-	return true
+	return i.GetClass().HasAttribute(name)
 }
 
 func (i ClassInstance) Call(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (

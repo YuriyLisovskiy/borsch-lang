@@ -5,15 +5,17 @@ import (
 )
 
 type NilInstance struct {
-	ClassInstance
+	BuiltinInstance
 }
 
 func NewNilInstance() NilInstance {
 	return NilInstance{
-		ClassInstance{
-			class:      Nil,
-			attributes: map[string]common.Value{},
-			address:    "",
+		BuiltinInstance: BuiltinInstance{
+			ClassInstance: ClassInstance{
+				class:      Nil,
+				attributes: map[string]common.Value{},
+				address:    "",
+			},
 		},
 	}
 }

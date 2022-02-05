@@ -11,16 +11,18 @@ import (
 )
 
 type IntegerInstance struct {
-	ClassInstance
+	BuiltinInstance
 	Value int64
 }
 
 func NewIntegerInstance(value int64) IntegerInstance {
 	return IntegerInstance{
-		ClassInstance: ClassInstance{
-			class:      Integer,
-			attributes: map[string]common.Value{},
-			address:    "",
+		BuiltinInstance: BuiltinInstance{
+			ClassInstance{
+				class:      Integer,
+				attributes: map[string]common.Value{},
+				address:    "",
+			},
 		},
 		Value: value,
 	}

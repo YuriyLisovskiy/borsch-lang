@@ -17,16 +17,18 @@ type DictionaryEntry struct {
 }
 
 type DictionaryInstance struct {
-	ClassInstance
+	BuiltinInstance
 	Map map[uint64]DictionaryEntry
 }
 
 func NewDictionaryInstance() DictionaryInstance {
 	return DictionaryInstance{
-		ClassInstance: ClassInstance{
-			class:      Dictionary,
-			attributes: map[string]common.Value{},
-			address:    "",
+		BuiltinInstance: BuiltinInstance{
+			ClassInstance{
+				class:      Dictionary,
+				attributes: map[string]common.Value{},
+				address:    "",
+			},
 		},
 		Map: map[uint64]DictionaryEntry{},
 	}

@@ -10,16 +10,18 @@ import (
 )
 
 type RealInstance struct {
-	ClassInstance
+	BuiltinInstance
 	Value float64
 }
 
 func NewRealInstance(value float64) RealInstance {
 	return RealInstance{
-		ClassInstance: ClassInstance{
-			class:      Real,
-			attributes: map[string]common.Value{},
-			address:    "",
+		BuiltinInstance: BuiltinInstance{
+			ClassInstance: ClassInstance{
+				class:      Real,
+				attributes: map[string]common.Value{},
+				address:    "",
+			},
 		},
 		Value: value,
 	}

@@ -294,3 +294,39 @@ func newLengthOperator(
 		doc,
 	)
 }
+
+func getDefaultConstructor(cls *Class, doc string) *FunctionInstance {
+	if cls == nil {
+		panic("getDefaultConstructor: cls is nil")
+	}
+
+	return NewFunctionInstance(
+		common.ConstructorName,
+		[]FunctionParameter{
+			{
+				Type:       cls,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+		},
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+			instance, err := cls.GetEmptyInstance()
+			if err != nil {
+				return nil, err
+			}
+
+			(*args)[0] = instance
+			return NewNilInstance(), nil
+		},
+		[]FunctionReturnType{
+			{
+				Type:       Nil,
+				IsNullable: false,
+			},
+		},
+		true,
+		nil,
+		doc,
+	)
+}

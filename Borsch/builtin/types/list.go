@@ -9,16 +9,18 @@ import (
 )
 
 type ListInstance struct {
-	ClassInstance
+	BuiltinInstance
 	Values []common.Value
 }
 
 func NewListInstance() ListInstance {
 	return ListInstance{
-		ClassInstance: ClassInstance{
-			class:      List,
-			attributes: map[string]common.Value{},
-			address:    "",
+		BuiltinInstance: BuiltinInstance{
+			ClassInstance{
+				class:      List,
+				attributes: map[string]common.Value{},
+				address:    "",
+			},
 		},
 		Values: []common.Value{},
 	}

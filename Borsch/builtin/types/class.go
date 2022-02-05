@@ -175,15 +175,16 @@ func (c *Class) InitAttributes() {
 		c.attrInitializer(&c.attributes)
 		c.attrInitializer = nil
 	}
+
+	if _, ok := c.attributes[common.ConstructorName]; !ok {
+		// TODO: add doc
+		c.attributes[common.ConstructorName] = getDefaultConstructor(c, "")
+	}
 }
 
 func (c *Class) EqualsTo(other common.Value) bool {
-	switch right := other.(type) {
-	case *Class:
-		return c == right
-	default:
-		return false
-	}
+	cls, ok := other.(*Class)
+	return ok && cls == c
 }
 
 func (c *Class) HasBase(cls *Class) bool {

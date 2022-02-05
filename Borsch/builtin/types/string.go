@@ -11,16 +11,18 @@ import (
 )
 
 type StringInstance struct {
-	ClassInstance
+	BuiltinInstance
 	Value string
 }
 
 func NewStringInstance(value string) StringInstance {
 	return StringInstance{
-		ClassInstance: ClassInstance{
-			class:      String,
-			attributes: map[string]common.Value{},
-			address:    "",
+		BuiltinInstance: BuiltinInstance{
+			ClassInstance: ClassInstance{
+				class:      String,
+				attributes: map[string]common.Value{},
+				address:    "",
+			},
 		},
 		Value: value,
 	}

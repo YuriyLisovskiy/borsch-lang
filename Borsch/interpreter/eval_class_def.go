@@ -41,6 +41,7 @@ func (c *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	}
 
 	class.SetAttributes(classContext.PopScope())
+	class.InitAttributes()
 	return class, nil
 }
 
