@@ -1,45 +1,63 @@
 package common
 
+import "github.com/alecthomas/participle/v2/lexer"
+
 type Parser interface {
 	Parse(filename string, code string) (Evaluatable, error)
-	NewContext(packageName string, parentPackage Type) Context
+}
+
+type Interpreter interface {
+	Import(state State, packageName string) (Value, error)
+	Trace(pos lexer.Position, place string, statement string)
+	StackTrace() *StackTrace
 }
 
 type Context interface {
+	PushScope(scope map[string]Value)
+	PopScope() map[string]Value
+	TopScope() map[string]Value
+	GetVar(name string) (Value, error)
+	SetVar(name string, value Value) error
+	GetClass(name string) (Value, error)
+	GetChild() Context
+}
+
+type State interface {
 	GetParser() Parser
-	PushScope(scope map[string]Type)
-	PopScope() map[string]Type
-	GetVar(name string) (Type, error)
-	SetVar(name string, value Type) error
-	GetClass(name string) (Type, error)
-	BuildPackage() error
-	GetPackage() Type
+	GetInterpreter() Interpreter
+	GetContext() Context
+	GetCurrentPackage() Value
+	GetCurrentPackageOrNil() Value
+	WithContext(Context) State
+	WithPackage(p Value) State
 }
 
 type Evaluatable interface {
-	Evaluate(Context) (Type, error)
+	Evaluate(State) (Value, error)
 }
 
 type OperatorEvaluatable interface {
-	Evaluate(Context, Type) (Type, error)
+	Evaluate(State, Value) (Value, error)
 }
 
-type Type interface {
-	String(Context) string
-	Representation(Context) string
-	AsBool(Context) bool
+type Value interface {
+	String(State) (string, error)
+	Representation(State) (string, error)
+	AsBool(State) (bool, error)
 	GetTypeName() string
-	GetAttribute(string) (Type, error)
-	SetAttribute(string, Type) (Type, error)
+	GetOperator(string) (Value, error)
+	GetAttribute(string) (Value, error)
+	SetAttribute(string, Value) error
+	HasAttribute(string) bool
 }
 
 type SequentialType interface {
-	Length(Context) int64
-	GetElement(Context, int64) (Type, error)
-	SetElement(Context, int64, Type) (Type, error)
-	Slice(Context, int64, int64) (Type, error)
+	Length(State) int64
+	GetElement(State, int64) (Value, error)
+	SetElement(State, int64, Value) (Value, error)
+	Slice(State, int64, int64) (Value, error)
 }
 
 type CallableType interface {
-	Call(Context, *[]Type, *map[string]Type) (Type, error)
+	Call(State, *[]Value, *map[string]Value) (Value, error)
 }
