@@ -3,24 +3,24 @@ package interpreter
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type ContextImpl struct {
-	scopes []map[string]common.Type
+	scopes []map[string]common.Value
 	// package_      *types.PackageInstance
 	classContext  common.Context
 	parentContext common.Context
 	interpreter   common.Interpreter
 }
 
-func (c *ContextImpl) PushScope(scope map[string]common.Type) {
+func (c *ContextImpl) PushScope(scope map[string]common.Value) {
 	c.scopes = append(c.scopes, scope)
 }
 
-func (c *ContextImpl) PopScope() map[string]common.Type {
+func (c *ContextImpl) PopScope() map[string]common.Value {
 	if len(c.scopes) == 0 {
 		panic("fatal: not enough scopes")
 	}
@@ -31,7 +31,7 @@ func (c *ContextImpl) PopScope() map[string]common.Type {
 	return scope
 }
 
-func (c *ContextImpl) TopScope() map[string]common.Type {
+func (c *ContextImpl) TopScope() map[string]common.Value {
 	if len(c.scopes) == 0 {
 		panic("fatal: not enough scopes")
 	}
@@ -39,7 +39,7 @@ func (c *ContextImpl) TopScope() map[string]common.Type {
 	return c.scopes[len(c.scopes)-1]
 }
 
-func (c *ContextImpl) GetVar(name string) (common.Type, error) {
+func (c *ContextImpl) GetVar(name string) (common.Value, error) {
 	switch name {
 	case "нуль":
 		return types.NewNilInstance(), nil
@@ -61,7 +61,7 @@ func (c *ContextImpl) GetVar(name string) (common.Type, error) {
 	return nil, util.RuntimeError(fmt.Sprintf("ідентифікатор '%s' не визначений", name))
 }
 
-func (c *ContextImpl) SetVar(name string, value common.Type) error {
+func (c *ContextImpl) SetVar(name string, value common.Value) error {
 	switch name {
 	case "нуль", "нульовий":
 		return util.RuntimeError(fmt.Sprintf("неможливо записати значення у '%s'", name))
@@ -70,8 +70,8 @@ func (c *ContextImpl) SetVar(name string, value common.Type) error {
 	scopesLen := len(c.scopes)
 	for idx := 0; idx < scopesLen; idx++ {
 		if oldValue, ok := c.scopes[idx][name]; ok {
-			oldValuePrototype := oldValue.(types.ObjectInstance).GetPrototype()
-			if oldValuePrototype != value.(types.ObjectInstance).GetPrototype() && oldValuePrototype != types.Nil {
+			oldValuePrototype := oldValue.(types.ObjectInstance).GetClass()
+			if oldValuePrototype != value.(types.ObjectInstance).GetClass() && oldValuePrototype != types.Nil {
 				if idx == scopesLen-1 {
 					return util.RuntimeError(
 						fmt.Sprintf(
@@ -100,8 +100,8 @@ func (c *ContextImpl) SetVar(name string, value common.Type) error {
 	return nil
 }
 
-func (c *ContextImpl) GetClass(name string) (common.Type, error) {
-	var variable common.Type
+func (c *ContextImpl) GetClass(name string) (common.Value, error) {
+	var variable common.Value
 	var err error
 	if c.classContext != nil {
 		variable, err = c.classContext.GetVar(name)

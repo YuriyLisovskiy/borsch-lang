@@ -9,7 +9,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func checkArgument(parameter *FunctionParameter, arg common.Type, isVariadic bool) error {
+func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bool) error {
 	if parameter == nil {
 		return errors.New("checkArgument: parameter is nil")
 	}
@@ -22,7 +22,7 @@ func checkArgument(parameter *FunctionParameter, arg common.Type, isVariadic boo
 		return nil
 	}
 
-	argPrototype := arg.(ObjectInstance).GetPrototype()
+	argPrototype := arg.(ObjectInstance).GetClass()
 	if argPrototype == Nil && parameter.IsNullable {
 		return nil
 	}
@@ -48,7 +48,7 @@ func checkArgument(parameter *FunctionParameter, arg common.Type, isVariadic boo
 	)
 }
 
-func CheckFunctionArguments(function *FunctionInstance, args *[]common.Type, _ *map[string]common.Type) error {
+func CheckFunctionArguments(function *FunctionInstance, args *[]common.Value, _ *map[string]common.Value) error {
 	parametersLen := len(*args)
 	argsLen := len(function.Parameters)
 	if argsLen > 0 && function.Parameters[argsLen-1].IsVariadic {
@@ -85,7 +85,7 @@ func CheckFunctionArguments(function *FunctionInstance, args *[]common.Type, _ *
 	return nil
 }
 
-func CheckResult(state common.State, result common.Type, function *FunctionInstance) error {
+func CheckResult(state common.State, result common.Value, function *FunctionInstance) error {
 	if len(function.ReturnTypes) == 1 {
 		err := checkSingleResult(state, result, function.ReturnTypes[0], function.Name)
 		if err != nil {
@@ -145,11 +145,11 @@ func CheckResult(state common.State, result common.Type, function *FunctionInsta
 
 func checkSingleResult(
 	state common.State,
-	result common.Type,
+	result common.Value,
 	returnType FunctionReturnType,
 	funcName string,
 ) error {
-	if result.(ObjectInstance).GetPrototype() == Nil {
+	if result.(ObjectInstance).GetClass() == Nil {
 		if returnType.Type != Nil && !returnType.IsNullable {
 			resultStr, err := result.String(state)
 			if err != nil {
@@ -163,7 +163,7 @@ func checkSingleResult(
 				),
 			)
 		}
-	} else if returnType.Type != Any && result.(ObjectInstance).GetPrototype() != returnType.Type {
+	} else if returnType.Type != Any && result.(ObjectInstance).GetClass() != returnType.Type {
 		return util.RuntimeError(
 			fmt.Sprintf(
 				"'%s()' повертає значення типу '%s'%s, отримано значення з типом '%s'",

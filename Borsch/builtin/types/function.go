@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 type FunctionParameter struct {
@@ -61,25 +62,26 @@ func (r *FunctionReturnType) GetTypeName() string {
 }
 
 type FunctionInstance struct {
-	CommonInstance
+	ClassInstance
 	package_    *PackageInstance
 	address     string
 	Name        string
 	Parameters  []FunctionParameter
 	ReturnTypes []FunctionReturnType
 	IsMethod    bool
+	callFunc    func(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error)
 }
 
 func NewFunctionInstance(
 	name string,
 	arguments []FunctionParameter,
-	handler func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error),
+	handler func(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error),
 	returnTypes []FunctionReturnType,
 	isMethod bool,
 	package_ *PackageInstance,
 	doc string,
 ) *FunctionInstance {
-	attributes := map[string]common.Type{}
+	attributes := map[string]common.Value{}
 	if package_ != nil {
 		attributes[common.PackageAttributeName] = package_
 	}
@@ -89,70 +91,76 @@ func NewFunctionInstance(
 	}
 
 	function := &FunctionInstance{
-		CommonInstance: CommonInstance{
-			Object: Object{
-				typeName:    common.FunctionTypeName,
-				Attributes:  attributes,
-				callHandler: handler,
-			},
-			prototype: Function,
+		ClassInstance: ClassInstance{
+			class:      Function,
+			attributes: map[string]common.Value{},
+			address:    "",
 		},
 		package_:    package_,
 		Name:        name,
 		Parameters:  arguments,
 		ReturnTypes: returnTypes,
 		IsMethod:    isMethod,
+		callFunc:    handler,
 	}
 
 	function.address = fmt.Sprintf("%p", function)
 	return function
 }
 
-func (t FunctionInstance) String(common.State) (string, error) {
+func (i FunctionInstance) String(common.State) (string, error) {
 	template := ""
-	if t.Name == common.LambdaSignature {
+	if i.Name == common.LambdaSignature {
 		template = "функція " + common.LambdaSignature
 	} else {
-		if t.package_ != nil {
+		if i.package_ != nil {
 			template = "функція '%s'"
-			if t.package_.IsBuiltin {
-				template = "вбудована " + template
-			}
 		} else {
 			template = "метод '%s'"
 		}
 
-		template = fmt.Sprintf(template, t.Name)
+		template = fmt.Sprintf(template, i.Name)
 	}
 
 	template += " з адресою %s"
-	return fmt.Sprintf(fmt.Sprintf("<%s>", template), t.address), nil
+	return fmt.Sprintf(fmt.Sprintf("<%s>", template), i.address), nil
 }
 
-func (t FunctionInstance) Representation(state common.State) (string, error) {
-	return t.String(state)
+func (i FunctionInstance) Representation(state common.State) (string, error) {
+	return i.String(state)
 }
 
-func (t FunctionInstance) AsBool(common.State) (bool, error) {
+func (i FunctionInstance) AsBool(common.State) (bool, error) {
 	return true, nil
 }
 
-func (t *FunctionInstance) GetContext() common.Context {
-	if t.package_ != nil {
-		return t.package_.GetContext()
+func (i FunctionInstance) Call(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (
+	common.Value,
+	error,
+) {
+	if i.callFunc != nil {
+		return i.callFunc(state, args, kwargs)
+	}
+
+	return nil, util.ObjectIsNotCallable("", i.GetTypeName())
+}
+
+func (i *FunctionInstance) GetContext() common.Context {
+	if i.package_ != nil {
+		return i.package_.GetContext()
 	}
 
 	return nil
 }
 
-func (t *FunctionInstance) IsLambda() bool {
-	return t.Name == common.LambdaSignature
+func (i *FunctionInstance) IsLambda() bool {
+	return i.Name == common.LambdaSignature
 }
 
 func newFunctionClass() *Class {
-	initAttributes := func() map[string]common.Type {
-		return MergeAttributes(
-			map[string]common.Type{
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
+			map[string]common.Value{
 				common.CallOperatorName: NewFunctionInstance(
 					common.CallOperatorName,
 					[]FunctionParameter{
@@ -169,8 +177,8 @@ func newFunctionClass() *Class {
 							IsNullable: true,
 						},
 					},
-					func(state common.State, args *[]common.Type, kwargs *map[string]common.Type) (
-						common.Type,
+					func(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (
+						common.Value,
 						error,
 					) {
 						function := (*args)[0].(*FunctionInstance)
@@ -199,12 +207,14 @@ func newFunctionClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
-		common.FunctionTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		"",  // TODO: add doc
-		nil, // CAUTION: segfault may be thrown when using without nil check!
-	)
+	return &Class{
+		Name:            common.FunctionTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
+			panic("unreachable")
+		},
+	}
 }

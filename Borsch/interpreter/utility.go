@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func evalBinaryOperator(
 	state common.State,
-	valueToSet common.Type,
+	valueToSet common.Value,
 	operatorName string,
 	current common.OperatorEvaluatable,
 	next common.OperatorEvaluatable,
-) (common.Type, error) {
+) (common.Value, error) {
 	left, err := current.Evaluate(state, valueToSet)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func evalBinaryOperator(
 			return nil, err
 		}
 
-		return types.CallAttribute(state, left, operator, operatorName, &[]common.Type{right}, nil, true)
+		return types.CallAttribute(state, left, operator, operatorName, &[]common.Value{right}, nil, true)
 	}
 
 	return left, nil
@@ -42,7 +42,7 @@ func evalUnaryOperator(
 	state common.State,
 	operatorName string,
 	operator common.OperatorEvaluatable,
-) (common.Type, error) {
+) (common.Value, error) {
 	if operator != nil {
 		value, err := operator.Evaluate(state, nil)
 		if err != nil {
@@ -63,10 +63,10 @@ func evalUnaryOperator(
 // evalSlicingOperation: "ranges_" len should be greater than 0
 func evalSlicingOperation(
 	state common.State,
-	variable common.Type,
+	variable common.Value,
 	ranges_ []*Range,
-	valueToSet common.Type,
-) (common.Type, error) {
+	valueToSet common.Value,
+) (common.Value, error) {
 	switch iterable := variable.(type) {
 	case common.SequentialType:
 		errMsg := ""
@@ -77,7 +77,7 @@ func evalSlicingOperation(
 		}
 
 		leftIdx, err := mustInt(
-			state, ranges_[0].LeftBound, func(t common.Type) string {
+			state, ranges_[0].LeftBound, func(t common.Value) string {
 				return fmt.Sprintf("%s, отримано %s", errMsg, t.GetTypeName())
 			},
 		)
@@ -85,10 +85,10 @@ func evalSlicingOperation(
 			return nil, err
 		}
 
-		var element common.Type
+		var element common.Value
 		if ranges_[0].RightBound != nil {
 			rightIdx, err := mustInt(
-				state, ranges_[0].RightBound, func(t common.Type) string {
+				state, ranges_[0].RightBound, func(t common.Value) string {
 					return fmt.Sprintf("права межа має бути цілого типу, отримано %s", t.GetTypeName())
 				},
 			)
@@ -148,7 +148,7 @@ func evalSlicingOperation(
 	}
 }
 
-func mustInt(state common.State, expression *Expression, errFunc func(common.Type) string) (int64, error) {
+func mustInt(state common.State, expression *Expression, errFunc func(common.Value) string) (int64, error) {
 	value, err := expression.Evaluate(state, nil)
 	if err != nil {
 		return 0, err
@@ -162,7 +162,7 @@ func mustInt(state common.State, expression *Expression, errFunc func(common.Typ
 	}
 }
 
-func unpack(state common.State, lhs []*Expression, rhs []*Expression) (common.Type, error) {
+func unpack(state common.State, lhs []*Expression, rhs []*Expression) (common.Value, error) {
 	lhsLen := len(lhs)
 	rhsLen := len(rhs)
 	if lhsLen > rhsLen {
@@ -211,12 +211,12 @@ func unpack(state common.State, lhs []*Expression, rhs []*Expression) (common.Ty
 }
 
 func getSequenceOrResult(state common.State, lhs []*Expression, rhs []*Expression) (
-	[]common.Type,
-	common.Type,
+	[]common.Value,
+	common.Value,
 	error,
 ) {
 	rhsLen := len(rhs)
-	var sequence []common.Type
+	var sequence []common.Value
 	if rhsLen == 1 {
 		element, err := rhs[0].Evaluate(state, nil)
 		if err != nil {
@@ -252,7 +252,7 @@ func getSequenceOrResult(state common.State, lhs []*Expression, rhs []*Expressio
 	return sequence, nil, nil
 }
 
-func unpackList(state common.State, lhs []*Expression, rhs *Expression) (common.Type, error) {
+func unpackList(state common.State, lhs []*Expression, rhs *Expression) (common.Value, error) {
 	element, err := rhs.Evaluate(state, nil)
 	if err != nil {
 		return nil, err
@@ -321,7 +321,7 @@ func evalReturnTypes(state common.State, returnTypes []*ReturnType) ([]types.Fun
 	return result, nil
 }
 
-func getCurrentValue(ctx common.Context, prevValue common.Type, ident string) (common.Type, error) {
+func getCurrentValue(ctx common.Context, prevValue common.Value, ident string) (common.Value, error) {
 	if prevValue != nil {
 		if err := checkForNilAttribute(ident); err != nil {
 			return nil, err
@@ -333,8 +333,8 @@ func getCurrentValue(ctx common.Context, prevValue common.Type, ident string) (c
 	return ctx.GetVar(ident)
 }
 
-func setCurrentValue(ctx common.Context, prevValue common.Type, ident string, valueToSet common.Type) (
-	common.Type,
+func setCurrentValue(ctx common.Context, prevValue common.Value, ident string, valueToSet common.Value) (
+	common.Value,
 	error,
 ) {
 	if prevValue != nil {
@@ -357,7 +357,7 @@ func checkForNilAttribute(ident string) error {
 	return nil
 }
 
-func updateArgs(state common.State, arguments []*Expression, args *[]common.Type) error {
+func updateArgs(state common.State, arguments []*Expression, args *[]common.Value) error {
 	for _, expressionArgument := range arguments {
 		arg, err := expressionArgument.Evaluate(state, nil)
 		if err != nil {

@@ -3,48 +3,72 @@ package interpreter
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (c *ClassDef) Evaluate(state common.State) (common.Type, error) {
+func (c *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	ctx := state.GetContext()
-	var bases []*types.Class
+
+	// TODO: add doc
+	cls := &types.Class{
+		Name:    c.Name,
+		IsFinal: c.IsFinal,
+		Class:   nil,
+		Parent:  state.GetCurrentPackage(),
+	}
+
 	for _, name := range c.Bases {
 		base, err := ctx.GetClass(name)
 		if err != nil {
 			return nil, err
 		}
 
-		bases = append(bases, base.(*types.Class))
+		baseClass := base.(*types.Class)
+		if baseClass.IsFinalClass() {
+			return nil, util.RuntimeError(
+				fmt.Sprintf(
+					"клас '%s' є закритим для розширення, не наслідуйте цей клас",
+					name,
+				),
+			)
+		}
+
+		cls.Bases = append(cls.Bases, baseClass)
 	}
 
-	// TODO: add doc
-	class := types.NewClass(c.Name, bases, state.GetCurrentPackage().(*types.PackageInstance), nil, "")
+	cls.GetEmptyInstance = func() (common.Value, error) {
+		return types.NewClassInstance(cls, map[string]common.Value{}), nil
+	}
 
-	err := ctx.SetVar(c.Name, class)
+	err := ctx.SetVar(c.Name, cls)
 	if err != nil {
 		return nil, err
 	}
 
 	classContext := ContextImpl{
-		scopes:       []map[string]common.Type{{}},
+		scopes:       []map[string]common.Value{{}},
 		classContext: ctx,
 	}
 
 	for _, classMember := range c.Members {
-		_, err := classMember.Evaluate(state.WithContext(&classContext), class)
+		_, err := classMember.Evaluate(state.WithContext(&classContext), cls)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	class.Attributes = classContext.PopScope()
-	return class, nil
+	cls.SetAttributes(classContext.PopScope())
+	cls.Setup()
+	if !cls.IsValid() {
+		panic("custom class is invalid")
+	}
+
+	return cls, nil
 }
 
-func (m *ClassMember) Evaluate(state common.State, class *types.Class) (common.Type, error) {
+func (m *ClassMember) Evaluate(state common.State, class *types.Class) (common.Value, error) {
 	if m.Variable != nil {
 		return m.Variable.Evaluate(state)
 	}

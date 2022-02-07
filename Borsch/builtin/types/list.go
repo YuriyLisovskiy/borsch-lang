@@ -10,22 +10,19 @@ import (
 
 type ListInstance struct {
 	BuiltinInstance
-	Values []common.Type
+	Values []common.Value
 }
 
 func NewListInstance() ListInstance {
 	return ListInstance{
-		Values: []common.Type{},
 		BuiltinInstance: BuiltinInstance{
-			CommonInstance{
-				Object: Object{
-					typeName:    common.ListTypeName,
-					Attributes:  nil,
-					callHandler: nil,
-				},
-				prototype: List,
+			ClassInstance{
+				class:      List,
+				attributes: map[string]common.Value{},
+				address:    "",
 			},
 		},
+		Values: []common.Value{},
 	}
 }
 
@@ -55,7 +52,7 @@ func (t ListInstance) Length(common.State) int64 {
 	return int64(len(t.Values))
 }
 
-func (t ListInstance) GetElement(state common.State, index int64) (common.Type, error) {
+func (t ListInstance) GetElement(state common.State, index int64) (common.Value, error) {
 	idx, err := getIndex(index, t.Length(state))
 	if err != nil {
 		return nil, err
@@ -64,7 +61,7 @@ func (t ListInstance) GetElement(state common.State, index int64) (common.Type, 
 	return t.Values[idx], nil
 }
 
-func (t ListInstance) SetElement(state common.State, index int64, value common.Type) (common.Type, error) {
+func (t ListInstance) SetElement(state common.State, index int64, value common.Value) (common.Value, error) {
 	idx, err := getIndex(index, t.Length(state))
 	if err != nil {
 		return nil, err
@@ -74,7 +71,7 @@ func (t ListInstance) SetElement(state common.State, index int64, value common.T
 	return t, nil
 }
 
-func (t ListInstance) Slice(state common.State, from, to int64) (common.Type, error) {
+func (t ListInstance) Slice(state common.State, from, to int64) (common.Value, error) {
 	length := t.Length(state)
 	fromIdx := normalizeBound(from, length)
 	toIdx := normalizeBound(to, length)
@@ -87,7 +84,7 @@ func (t ListInstance) Slice(state common.State, from, to int64) (common.Type, er
 	return listInstance, nil
 }
 
-func compareLists(_ common.State, op common.Operator, self common.Type, other common.Type) (int, error) {
+func compareLists(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case ListInstance:
@@ -103,14 +100,14 @@ func compareLists(_ common.State, op common.Operator, self common.Type, other co
 func newListBinaryOperator(
 	name string,
 	doc string,
-	handler func(ListInstance, common.Type) (common.Type, error),
+	handler func(ListInstance, common.Value) (common.Value, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
 		name,
 		List,
 		Any,
 		doc,
-		func(_ common.State, left common.Type, right common.Type) (common.Type, error) {
+		func(_ common.State, left common.Value, right common.Value) (common.Value, error) {
 			if leftInstance, ok := left.(ListInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -121,9 +118,9 @@ func newListBinaryOperator(
 }
 
 func newListClass() *Class {
-	initAttributes := func() map[string]common.Type {
-		return MergeAttributes(
-			map[string]common.Type{
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
+			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(List, ToList, ""),
 
@@ -132,7 +129,7 @@ func newListClass() *Class {
 
 				common.MulOp.Name(): newListBinaryOperator(
 					// TODO: add doc
-					common.MulOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
+					common.MulOp.Name(), "", func(self ListInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case IntegerInstance:
 							count := int(o.Value)
@@ -151,7 +148,7 @@ func newListClass() *Class {
 				),
 				common.AddOp.Name(): newListBinaryOperator(
 					// TODO: add doc
-					common.AddOp.Name(), "", func(self ListInstance, other common.Type) (common.Type, error) {
+					common.AddOp.Name(), "", func(self ListInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case ListInstance:
 							self.Values = append(self.Values, o.Values...)
@@ -168,14 +165,14 @@ func newListClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
-		common.ListTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		"", // TODO: add doc
-		func() (common.Type, error) {
+	return &Class{
+		Name:            common.ListTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewListInstance(), nil
 		},
-	)
+	}
 }

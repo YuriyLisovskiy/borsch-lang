@@ -6,12 +6,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func Print(state common.State, args ...common.Type) error {
+func Print(state common.State, args ...common.Value) error {
 	var strArgs []string
 	for _, arg := range args {
 		argStr, err := arg.String(state)
@@ -35,7 +35,7 @@ func Print(state common.State, args ...common.Type) error {
 	return nil
 }
 
-func Input(state common.State, args ...common.Type) (common.Type, error) {
+func Input(state common.State, args ...common.Value) (common.Value, error) {
 	err := Print(state, args...)
 	if err != nil {
 		return nil, err

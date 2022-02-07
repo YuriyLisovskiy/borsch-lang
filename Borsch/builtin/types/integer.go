@@ -18,13 +18,10 @@ type IntegerInstance struct {
 func NewIntegerInstance(value int64) IntegerInstance {
 	return IntegerInstance{
 		BuiltinInstance: BuiltinInstance{
-			CommonInstance{
-				Object: Object{
-					typeName:    common.IntegerTypeName,
-					Attributes:  nil,
-					callHandler: nil,
-				},
-				prototype: Integer,
+			ClassInstance{
+				class:      Integer,
+				attributes: map[string]common.Value{},
+				address:    "",
 			},
 		},
 		Value: value,
@@ -43,7 +40,7 @@ func (t IntegerInstance) AsBool(common.State) (bool, error) {
 	return t.Value != 0, nil
 }
 
-func compareIntegers(_ common.State, op common.Operator, self common.Type, other common.Type) (int, error) {
+func compareIntegers(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
 	left, ok := self.(IntegerInstance)
 	if !ok {
 		return 0, util.IncorrectUseOfFunctionError("compareIntegers")
@@ -94,14 +91,14 @@ func compareIntegers(_ common.State, op common.Operator, self common.Type, other
 func newIntegerBinaryOperator(
 	name string,
 	doc string,
-	handler func(IntegerInstance, common.Type) (common.Type, error),
+	handler func(IntegerInstance, common.Value) (common.Value, error),
 ) *FunctionInstance {
 	return newBinaryMethod(
 		name,
 		Integer,
 		Any,
 		doc,
-		func(_ common.State, left common.Type, right common.Type) (common.Type, error) {
+		func(_ common.State, left common.Value, right common.Value) (common.Value, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
 				return handler(leftInstance, right)
 			}
@@ -114,10 +111,10 @@ func newIntegerBinaryOperator(
 func newIntegerUnaryOperator(
 	name string,
 	doc string,
-	handler func(IntegerInstance) (common.Type, error),
+	handler func(IntegerInstance) (common.Value, error),
 ) *FunctionInstance {
 	return newUnaryMethod(
-		name, Integer, Any, doc, func(_ common.State, left common.Type) (common.Type, error) {
+		name, Integer, Any, doc, func(_ common.State, left common.Value) (common.Value, error) {
 			if leftInstance, ok := left.(IntegerInstance); ok {
 				return handler(leftInstance)
 			}
@@ -128,21 +125,28 @@ func newIntegerUnaryOperator(
 }
 
 func newIntegerClass() *Class {
-	initAttributes := func() map[string]common.Type {
-		return MergeAttributes(
-			map[string]common.Type{
+	initAttributes := func(attrs *map[string]common.Value) {
+		*attrs = MergeAttributes(
+			map[string]common.Value{
 				// TODO: add doc
 				common.ConstructorName: newBuiltinConstructor(Integer, ToInteger, ""),
 				common.PowOp.Name(): newIntegerBinaryOperator(
 					// TODO: add doc
-					common.PowOp.Name(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
+					common.PowOp.Name(), "", func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case RealInstance:
 							return NewRealInstance(math.Pow(float64(self.Value), o.Value)), nil
 						case IntegerInstance:
 							return NewIntegerInstance(int64(math.Pow(float64(self.Value), float64(o.Value)))), nil
 						case BoolInstance:
-							return NewIntegerInstance(int64(math.Pow(float64(self.Value), boolToFloat64(o.Value)))), nil
+							return NewIntegerInstance(
+								int64(
+									math.Pow(
+										float64(self.Value),
+										boolToFloat64(o.Value),
+									),
+								),
+							), nil
 						default:
 							return nil, nil
 						}
@@ -150,25 +154,25 @@ func newIntegerClass() *Class {
 				),
 				common.UnaryPlus.Name(): newIntegerUnaryOperator(
 					// TODO: add doc
-					common.UnaryPlus.Name(), "", func(self IntegerInstance) (common.Type, error) {
+					common.UnaryPlus.Name(), "", func(self IntegerInstance) (common.Value, error) {
 						return self, nil
 					},
 				),
 				common.UnaryMinus.Name(): newIntegerUnaryOperator(
 					// TODO: add doc
-					common.UnaryMinus.Name(), "", func(self IntegerInstance) (common.Type, error) {
+					common.UnaryMinus.Name(), "", func(self IntegerInstance) (common.Value, error) {
 						return NewIntegerInstance(-self.Value), nil
 					},
 				),
 				common.UnaryBitwiseNotOp.Name(): newIntegerUnaryOperator(
 					// TODO: add doc
-					common.UnaryBitwiseNotOp.Name(), "", func(self IntegerInstance) (common.Type, error) {
+					common.UnaryBitwiseNotOp.Name(), "", func(self IntegerInstance) (common.Value, error) {
 						return NewIntegerInstance(^self.Value), nil
 					},
 				),
 				common.MulOp.Name(): newIntegerBinaryOperator(
 					// TODO: add doc
-					common.MulOp.Name(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
+					common.MulOp.Name(), "", func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							return NewIntegerInstance(self.Value * boolToInt64(o.Value)), nil
@@ -200,7 +204,7 @@ func newIntegerClass() *Class {
 				),
 				common.DivOp.Name(): newIntegerBinaryOperator(
 					// TODO: add doc
-					common.DivOp.Name(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
+					common.DivOp.Name(), "", func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							if o.Value {
@@ -223,7 +227,7 @@ func newIntegerClass() *Class {
 				),
 				common.ModuloOp.Name(): newIntegerBinaryOperator(
 					// TODO: add doc
-					common.ModuloOp.Name(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
+					common.ModuloOp.Name(), "", func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							if o.Value {
@@ -242,7 +246,7 @@ func newIntegerClass() *Class {
 				),
 				common.AddOp.Name(): newIntegerBinaryOperator(
 					// TODO: add doc
-					common.AddOp.Name(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
+					common.AddOp.Name(), "", func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							return NewIntegerInstance(self.Value + boolToInt64(o.Value)), nil
@@ -257,7 +261,7 @@ func newIntegerClass() *Class {
 				),
 				common.SubOp.Name(): newIntegerBinaryOperator(
 					// TODO: add doc
-					common.SubOp.Name(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
+					common.SubOp.Name(), "", func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							return NewIntegerInstance(self.Value - boolToInt64(o.Value)), nil
@@ -274,7 +278,7 @@ func newIntegerClass() *Class {
 					// TODO: add doc
 					common.BitwiseLeftShiftOp.Name(),
 					"",
-					func(self IntegerInstance, other common.Type) (common.Type, error) {
+					func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							return NewIntegerInstance(self.Value << boolToInt64(o.Value)), nil
@@ -289,7 +293,7 @@ func newIntegerClass() *Class {
 					// TODO: add doc
 					common.BitwiseRightShiftOp.Name(),
 					"",
-					func(self IntegerInstance, other common.Type) (common.Type, error) {
+					func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							return NewIntegerInstance(self.Value >> boolToInt64(o.Value)), nil
@@ -302,7 +306,9 @@ func newIntegerClass() *Class {
 				),
 				common.BitwiseAndOp.Name(): newIntegerBinaryOperator(
 					// TODO: add doc
-					common.BitwiseAndOp.Name(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
+					common.BitwiseAndOp.Name(),
+					"",
+					func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							return NewIntegerInstance(self.Value & boolToInt64(o.Value)), nil
@@ -315,7 +321,9 @@ func newIntegerClass() *Class {
 				),
 				common.BitwiseXorOp.Name(): newIntegerBinaryOperator(
 					// TODO: add doc
-					common.BitwiseXorOp.Name(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
+					common.BitwiseXorOp.Name(),
+					"",
+					func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							return NewIntegerInstance(self.Value ^ boolToInt64(o.Value)), nil
@@ -328,7 +336,9 @@ func newIntegerClass() *Class {
 				),
 				common.BitwiseOrOp.Name(): newIntegerBinaryOperator(
 					// TODO: add doc
-					common.BitwiseOrOp.Name(), "", func(self IntegerInstance, other common.Type) (common.Type, error) {
+					common.BitwiseOrOp.Name(),
+					"",
+					func(self IntegerInstance, other common.Value) (common.Value, error) {
 						switch o := other.(type) {
 						case BoolInstance:
 							return NewIntegerInstance(self.Value | boolToInt64(o.Value)), nil
@@ -346,14 +356,14 @@ func newIntegerClass() *Class {
 		)
 	}
 
-	return NewBuiltinClass(
-		common.IntegerTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		"", // TODO: add doc
-		func() (common.Type, error) {
+	return &Class{
+		Name:            common.IntegerTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewIntegerInstance(0), nil
 		},
-	)
+	}
 }

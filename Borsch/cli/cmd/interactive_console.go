@@ -8,7 +8,7 @@ package cmd
 // 	"strings"
 //
 // 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
-// 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
+// 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 // 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 // 	"github.com/peterh/liner"
 // )
@@ -39,7 +39,7 @@ package cmd
 // 		}
 // 	case types.PackageInstance:
 // 		keywords = append(keywords, name)
-// 		for attrName, attrValue := range v.Object.Attributes {
+// 		for attrName, attrValue := range v.ObjectBase.attributes {
 // 			pushKeywords(name, attrName, attrValue)
 // 		}
 // 	}

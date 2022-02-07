@@ -1,20 +1,20 @@
 package interpreter
 
 import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func (a *Call) Evaluate(
 	state common.State,
-	variable common.Type,
-	selfInstance common.Type,
+	variable common.Value,
+	selfInstance common.Value,
 	isLambda *bool,
-) (common.Type, error) {
+) (common.Value, error) {
 	switch object := variable.(type) {
 	case *types.Class:
-		var args []common.Type
+		var args []common.Value
 		instance, err := object.GetEmptyInstance()
 		if err != nil {
 			return nil, err
@@ -27,7 +27,7 @@ func (a *Call) Evaluate(
 
 		return args[0], nil
 	case *types.FunctionInstance:
-		var args []common.Type
+		var args []common.Value
 		if selfInstance != nil {
 			switch selfInstance.(type) {
 			case *types.Class, *types.PackageInstance:
@@ -40,8 +40,8 @@ func (a *Call) Evaluate(
 		*isLambda = object.IsLambda()
 		return a.evalFunction(state, object, &args, nil)
 	case types.ObjectInstance:
-		args := []common.Type{variable}
-		return a.evalFunctionByName(state, object.GetPrototype(), common.CallOperatorName, &args, nil, true)
+		args := []common.Value{variable}
+		return a.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
 	default:
 		return nil, util.ObjectIsNotCallable(a.Ident, object.GetTypeName())
 	}
@@ -49,12 +49,12 @@ func (a *Call) Evaluate(
 
 func (a *Call) evalFunctionByName(
 	state common.State,
-	object common.Type,
+	object common.Value,
 	functionName string,
-	args *[]common.Type,
-	kwargs *map[string]common.Type,
+	args *[]common.Value,
+	kwargs *map[string]common.Value,
 	isMethod bool,
-) (common.Type, error) {
+) (common.Value, error) {
 	if err := updateArgs(state, a.Arguments, args); err != nil {
 		return nil, err
 	}
@@ -65,9 +65,9 @@ func (a *Call) evalFunctionByName(
 func (a *Call) evalFunction(
 	state common.State,
 	function *types.FunctionInstance,
-	args *[]common.Type,
-	kwargs *map[string]common.Type,
-) (common.Type, error) {
+	args *[]common.Value,
+	kwargs *map[string]common.Value,
+) (common.Value, error) {
 	if err := updateArgs(state, a.Arguments, args); err != nil {
 		return nil, err
 	}

@@ -3,14 +3,15 @@ package interpreter
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -27,7 +28,7 @@ func NewInterpreter() *Interpreter {
 	}
 
 	i.rootContext = &ContextImpl{
-		scopes:        []map[string]common.Type{builtin.BuiltinScope},
+		scopes:        []map[string]common.Value{builtin.BuiltinScope},
 		classContext:  nil,
 		parentContext: nil,
 		interpreter:   i,
@@ -36,7 +37,7 @@ func NewInterpreter() *Interpreter {
 }
 
 func (i *Interpreter) Import(state common.State, newPackagePath string) (
-	common.Type,
+	common.Value,
 	error,
 ) {
 	parentPackageInstance, _ := state.GetCurrentPackageOrNil().(*types.PackageInstance)
@@ -58,7 +59,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 		currPackage = currPackage.Parent
 	}
 
-	packageCode, err := util.ReadFile(fullPackagePath)
+	packageCode, err := readFile(fullPackagePath)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +71,6 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 
 	pkg := types.NewPackageInstance(
 		i.rootContext.GetChild(),
-		false,
 		fullPackagePath,
 		parentPackageInstance,
 		nil,
@@ -82,29 +82,29 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	}
 
 	scope := ctx.TopScope()
+	attrs := map[string]common.Value{}
 	if toExport, err := ctx.GetVar(common.ExportedAttributeName); err == nil {
 		switch exported := toExport.(type) {
 		case types.ListInstance:
-			pkg.Attributes = map[string]common.Type{}
 			for _, value := range exported.Values {
 				if name, ok := value.(types.StringInstance); ok {
 					if attr, ok := scope[name.Value]; ok {
-						pkg.Attributes[name.Value] = attr
+						attrs[name.Value] = attr
 					}
 				}
 			}
 		case types.StringInstance:
-			pkg.Attributes = map[string]common.Type{}
 			if attr, ok := scope[exported.Value]; ok {
-				pkg.Attributes[exported.Value] = attr
+				attrs[exported.Value] = attr
 			}
+		default:
+			attrs = scope
 		}
+	} else {
+		attrs = scope
 	}
 
-	if pkg.Attributes == nil {
-		pkg.Attributes = scope
-	}
-
+	pkg.SetAttributes(attrs)
 	i.packages[fullPackagePath] = pkg
 	return pkg, nil
 }
@@ -140,4 +140,14 @@ func getFullPath(packagePath string, parentPackage *types.PackageInstance) (stri
 	}
 
 	return packagePath, nil
+}
+
+func readFile(filePath string) (content []byte, err error) {
+	if _, err = os.Stat(filePath); os.IsNotExist(err) {
+		err = util.RuntimeError(fmt.Sprintf("файл з ім'ям '%s' не існує", filePath))
+		return
+	}
+
+	content, err = ioutil.ReadFile(filePath)
+	return
 }

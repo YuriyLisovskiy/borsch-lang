@@ -79,9 +79,13 @@ func OperandsNotSupportedError(operator common.Operator, leftType, rightType str
 }
 
 func ObjectIsNotCallable(objectName, typeName string) error {
+	if objectName != "" {
+		objectName = fmt.Sprintf(" '%s'", objectName)
+	}
+
 	return RuntimeError(
 		fmt.Sprintf(
-			"неможливо застосувати оператор виклику до об'єкта '%s' з типом '%s'", objectName, typeName,
+			"неможливо застосувати оператор виклику до об'єкта%s з типом '%s'", objectName, typeName,
 		),
 	)
 }

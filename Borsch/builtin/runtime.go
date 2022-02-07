@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/std"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/cli/build"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/types"
 )
 
 var (
@@ -42,7 +42,7 @@ func initRuntime() {
 				IsNullable: true,
 			},
 		},
-		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			return types.NewNilInstance(), Print(state, *args...)
 		},
 		[]types.FunctionReturnType{
@@ -66,7 +66,7 @@ func initRuntime() {
 				IsNullable: true,
 			},
 		},
-		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			return types.NewNilInstance(), Print(state, append(*args, types.StringInstance{Value: "\n"})...)
 		},
 		[]types.FunctionReturnType{
@@ -90,7 +90,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			return Input(state, *args...)
 		},
 		[]types.FunctionReturnType{
@@ -114,7 +114,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			self := (*args)[0]
 			msg, err := self.String(state)
 			if err != nil {
@@ -144,7 +144,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			argStr, err := (*args)[0].String(state)
 			if err != nil {
 				return nil, err
@@ -185,7 +185,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			message := ""
 			if len(*args) > 2 {
 				messageArgs := (*args)[2:]
@@ -219,7 +219,7 @@ func initRuntime() {
 	CopyrightFunction = types.NewFunctionInstance(
 		"авторське_право",
 		[]types.FunctionParameter{},
-		func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error) {
+		func(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error) {
 			fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
 			return types.NewNilInstance(), nil
 		},
@@ -237,7 +237,7 @@ func initRuntime() {
 	LicenceFunction = types.NewFunctionInstance(
 		"ліцензія",
 		[]types.FunctionParameter{},
-		func(common.State, *[]common.Type, *map[string]common.Type) (common.Type, error) {
+		func(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error) {
 			fmt.Println(build.License)
 			return types.NewNilInstance(), nil
 		},
@@ -262,7 +262,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			argStr, err := (*args)[0].String(state)
 			if err != nil {
 				return nil, err
@@ -291,7 +291,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			os.Exit(int((*args)[0].(types.IntegerInstance).Value))
 			return types.NewNilInstance(), nil
 		},
@@ -316,7 +316,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			return state.GetInterpreter().Import(
 				state,
 				(*args)[0].(types.StringInstance).Value,
@@ -344,7 +344,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			sequence := (*args)[0]
 			if !sequence.HasAttribute(common.LengthOperatorName) {
 				return nil, errors.New(fmt.Sprintf("об'єкт типу '%s' не має довжини", sequence.GetTypeName()))
@@ -379,7 +379,7 @@ func initRuntime() {
 				IsNullable: true,
 			},
 		},
-		func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			list := (*args)[0].(types.ListInstance)
 			values := (*args)[1:]
 			for _, value := range values {
@@ -409,7 +409,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			return deepCopy((*args)[0])
 		},
 		[]types.FunctionReturnType{
@@ -433,7 +433,7 @@ func initRuntime() {
 				IsNullable: false,
 			},
 		},
-		func(_ common.State, args *[]common.Type, _ *map[string]common.Type) (common.Type, error) {
+		func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			return types.GetTypeOfInstance((*args)[0])
 		},
 		[]types.FunctionReturnType{
