@@ -39,14 +39,21 @@ func Init() {
 	Real = newRealClass()
 	String = newStringClass()
 
-	TypeClass.InitAttributes()
-	Nil.InitAttributes()
-	Bool.InitAttributes()
-	Dictionary.InitAttributes()
-	Function.InitAttributes()
-	Integer.InitAttributes()
-	List.InitAttributes()
-	Package.InitAttributes()
-	Real.InitAttributes()
-	String.InitAttributes()
+	initClass(TypeClass)
+	initClass(Nil)
+	initClass(Bool)
+	initClass(Dictionary)
+	initClass(Function)
+	initClass(Integer)
+	initClass(List)
+	initClass(Package)
+	initClass(Real)
+	initClass(String)
+}
+
+func initClass(cls *Class) {
+	cls.Setup()
+	if !cls.IsValid() {
+		panic("class is not valid")
+	}
 }

@@ -319,13 +319,14 @@ func newBoolClass() *Class {
 		)
 	}
 
-	return NewClass(
-		common.BoolTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		func() (common.Value, error) {
+	return &Class{
+		Name:            common.BoolTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewBoolInstance(false), nil
 		},
-	)
+	}
 }

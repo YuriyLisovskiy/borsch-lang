@@ -165,13 +165,14 @@ func newListClass() *Class {
 		)
 	}
 
-	return NewClass(
-		common.ListTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		func() (common.Value, error) {
+	return &Class{
+		Name:            common.ListTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewListInstance(), nil
 		},
-	)
+	}
 }

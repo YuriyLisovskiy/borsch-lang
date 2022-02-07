@@ -356,13 +356,14 @@ func newIntegerClass() *Class {
 		)
 	}
 
-	return NewClass(
-		common.IntegerTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		func() (common.Value, error) {
+	return &Class{
+		Name:            common.IntegerTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewIntegerInstance(0), nil
 		},
-	)
+	}
 }

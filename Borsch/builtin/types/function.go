@@ -207,11 +207,14 @@ func newFunctionClass() *Class {
 		)
 	}
 
-	return NewClass(
-		common.FunctionTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		nil, // CAUTION: segfault may be thrown when using without nil check!
-	)
+	return &Class{
+		Name:            common.FunctionTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
+			panic("unreachable")
+		},
+	}
 }

@@ -231,13 +231,14 @@ func newRealClass() *Class {
 		)
 	}
 
-	return NewClass(
-		common.RealTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		func() (common.Value, error) {
+	return &Class{
+		Name:            common.RealTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewRealInstance(0), nil
 		},
-	)
+	}
 }

@@ -8,65 +8,114 @@ import (
 )
 
 type Class struct {
-	name       string
+	Name       string
 	attributes map[string]common.Value
 
-	class *Class
-	bases []*Class
+	IsFinal bool
 
-	parent common.Value
+	Class *Class
+	Bases []*Class
 
-	attrInitializer  func(*map[string]common.Value)
+	Parent common.Value
+
+	AttrInitializer  func(*map[string]common.Value)
 	GetEmptyInstance func() (common.Value, error)
 }
 
-func NewClass(
-	name string,
-	bases []*Class,
-	parent common.Value,
-	attrInitializer func(*map[string]common.Value),
-	getEmptyInstanceFunc func() (common.Value, error),
-) *Class {
-	class := &Class{
-		name:             name,
-		attributes:       map[string]common.Value{},
-		class:            TypeClass,
-		bases:            bases,
-		parent:           parent,
-		attrInitializer:  attrInitializer,
-		GetEmptyInstance: getEmptyInstanceFunc,
-	}
-	if len(class.bases) == 0 {
-		// TODO: set object as a base class
-	}
+// func NewClass(
+// 	Name string,
+// 	Bases []*Class,
+// 	Parent common.Value,
+// 	AttrInitializer func(*map[string]common.Value),
+// 	getEmptyInstanceFunc func() (common.Value, error),
+// ) *Class {
+// 	Class := &Class{
+// 		Name:             Name,
+// 		attributes:       map[string]common.Value{},
+// 		Class:            TypeClass,
+// 		Bases:            Bases,
+// 		Parent:           Parent,
+// 		AttrInitializer:  AttrInitializer,
+// 		GetEmptyInstance: getEmptyInstanceFunc,
+// 	}
+// 	if len(Class.Bases) == 0 {
+// 		// TODO: set object as a base Class
+// 	}
+//
+// 	if Class.GetEmptyInstance == nil {
+// 		Class.GetEmptyInstance = func() (common.Value, error) {
+// 			return NewClassInstance(Class, map[string]common.Value{}), nil
+// 		}
+// 	}
+//
+// 	return Class
+// }
 
-	if class.GetEmptyInstance == nil {
-		class.GetEmptyInstance = func() (common.Value, error) {
-			return NewClassInstance(class, map[string]common.Value{}), nil
+func (c *Class) Setup() {
+	c.Class = TypeClass
+	if c.GetEmptyInstance == nil {
+		c.GetEmptyInstance = func() (common.Value, error) {
+			return NewClassInstance(c, map[string]common.Value{}), nil
 		}
 	}
 
-	return class
+	if len(c.Bases) == 0 {
+		// TODO: set object as a base Class
+		c.Bases = []*Class{}
+	}
+
+	c.initializeAttributes()
+	if c.attributes == nil {
+		c.attributes = map[string]common.Value{}
+	}
+}
+
+func (c *Class) IsValid() bool {
+	if len(c.Name) == 0 {
+		return false
+	}
+
+	if c.attributes == nil {
+		return false
+	}
+
+	if c.Class == nil {
+		return false
+	}
+
+	if c.Parent == nil {
+		return false
+	}
+
+	if c.GetEmptyInstance == nil {
+		return false
+	}
+
+	return true
 }
 
 func (c *Class) GetName() string {
-	return c.name
+	return c.Name
 }
 
 func (c *Class) GetTypeName() string {
 	if c.isType() {
-		return c.name
+		return c.Name
 	}
 
 	return c.GetClass().GetTypeName()
 }
 
+func (c *Class) IsFinalClass() bool {
+	return c.IsFinal
+}
+
 func (c *Class) GetClass() *Class {
-	if c.class == nil {
-		panic("Class: class is nil")
+	if c.Class == nil {
+		panic("class is nil")
 	}
 
-	return c.class
+	return c.Class
 }
 
 func (c *Class) GetAddress() string {
@@ -106,9 +155,9 @@ func (c *Class) GetAttribute(name string) (common.Value, error) {
 		}
 	}
 
-	basesLastIdx := len(c.bases) - 1
+	basesLastIdx := len(c.Bases) - 1
 	for i := basesLastIdx; i >= 0; i-- {
-		if attr, err := c.bases[i].GetAttribute(name); err == nil {
+		if attr, err := c.Bases[i].GetAttribute(name); err == nil {
 			return attr, nil
 		}
 	}
@@ -170,25 +219,13 @@ func (c *Class) SetAttributes(attrs map[string]common.Value) {
 	}
 }
 
-func (c *Class) InitAttributes() {
-	if c.attrInitializer != nil {
-		c.attrInitializer(&c.attributes)
-		c.attrInitializer = nil
-	}
-
-	if _, ok := c.attributes[common.ConstructorName]; !ok {
-		// TODO: add doc
-		c.attributes[common.ConstructorName] = getDefaultConstructor(c, "")
-	}
-}
-
 func (c *Class) EqualsTo(other common.Value) bool {
 	cls, ok := other.(*Class)
 	return ok && cls == c
 }
 
 func (c *Class) HasBase(cls *Class) bool {
-	for _, base := range c.bases {
+	for _, base := range c.Bases {
 		if cls == base {
 			return true
 		}
@@ -207,7 +244,19 @@ func (c *Class) Call(state common.State, args *[]common.Value, kwargs *map[strin
 	return CallAttribute(state, c, operator, common.ConstructorName, args, kwargs, true)
 }
 
-// isType checks if address of current class is equal to TypeClass.
+// isType checks if address of current Class is equal to TypeClass.
 func (c *Class) isType() bool {
-	return c.class == c
+	return c.Class == c
+}
+
+func (c *Class) initializeAttributes() {
+	if c.AttrInitializer != nil {
+		c.AttrInitializer(&c.attributes)
+		c.AttrInitializer = nil
+	}
+
+	if _, ok := c.attributes[common.ConstructorName]; !ok {
+		// TODO: add doc
+		c.attributes[common.ConstructorName] = getDefaultConstructor(c, "")
+	}
 }

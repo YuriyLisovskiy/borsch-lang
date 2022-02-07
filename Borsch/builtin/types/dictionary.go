@@ -187,13 +187,14 @@ func newDictionaryClass() *Class {
 		)
 	}
 
-	return NewClass(
-		common.DictionaryTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		func() (common.Value, error) {
+	return &Class{
+		Name:            common.DictionaryTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewDictionaryInstance(), nil
 		},
-	)
+	}
 }

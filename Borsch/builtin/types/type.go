@@ -80,15 +80,17 @@ func newTypeClass() *Class {
 		}
 	}
 
-	typeClass := NewClass(
-		common.TypeTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		func() (common.Value, error) {
+	typeClass := &Class{
+		Name:            common.TypeTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			panic("unreachable")
 		},
-	)
-	typeClass.class = typeClass
+	}
+
+	typeClass.Class = typeClass
 	return typeClass
 }

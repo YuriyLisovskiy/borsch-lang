@@ -138,13 +138,14 @@ func newErrorClass() *types.Class {
 		)
 	}
 
-	return types.NewClass(
-		common.ErrorTypeName,
-		nil,
-		types.BuiltinPackage,
-		initAttributes,
-		func() (common.Value, error) {
+	return &types.Class{
+		Name:            common.ErrorTypeName,
+		IsFinal:         false,
+		Bases:           []*types.Class{},
+		Parent:          types.BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewErrorInstance(""), nil
 		},
-	)
+	}
 }

@@ -77,5 +77,14 @@ func NewPackageClass() *Class {
 		)
 	}
 
-	return NewClass(common.PackageTypeName, nil, BuiltinPackage, initAttributes, nil)
+	return &Class{
+		Name:            common.PackageTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
+			panic("unreachable")
+		},
+	}
 }

@@ -6,6 +6,8 @@ var ErrorClass *types.Class = nil
 
 func Init() {
 	ErrorClass = newErrorClass()
-
-	ErrorClass.InitAttributes()
+	ErrorClass.Setup()
+	if !ErrorClass.IsValid() {
+		panic("ErrorClass is not valid")
+	}
 }

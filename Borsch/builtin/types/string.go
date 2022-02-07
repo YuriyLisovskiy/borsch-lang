@@ -178,13 +178,14 @@ func newStringClass() *Class {
 		)
 	}
 
-	return NewClass(
-		common.StringTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		func() (common.Value, error) {
+	return &Class{
+		Name:            common.StringTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewStringInstance(""), nil
 		},
-	)
+	}
 }

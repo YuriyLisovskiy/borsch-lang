@@ -77,13 +77,14 @@ func newNilClass() *Class {
 		)
 	}
 
-	return NewClass(
-		common.NilTypeName,
-		nil,
-		BuiltinPackage,
-		initAttributes,
-		func() (common.Value, error) {
+	return &Class{
+		Name:            common.NilTypeName,
+		IsFinal:         true,
+		Bases:           []*Class{},
+		Parent:          BuiltinPackage,
+		AttrInitializer: initAttributes,
+		GetEmptyInstance: func() (common.Value, error) {
 			return NewNilInstance(), nil
 		},
-	)
+	}
 }

@@ -39,7 +39,7 @@ package cmd
 // 		}
 // 	case types.PackageInstance:
 // 		keywords = append(keywords, name)
-// 		for attrName, attrValue := range v.ObjectBase.Attributes {
+// 		for attrName, attrValue := range v.ObjectBase.attributes {
 // 			pushKeywords(name, attrName, attrValue)
 // 		}
 // 	}
