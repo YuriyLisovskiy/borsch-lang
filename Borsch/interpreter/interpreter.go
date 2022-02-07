@@ -3,6 +3,7 @@ package interpreter
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -58,7 +59,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 		currPackage = currPackage.Parent
 	}
 
-	packageCode, err := util.ReadFile(fullPackagePath)
+	packageCode, err := readFile(fullPackagePath)
 	if err != nil {
 		return nil, err
 	}
@@ -139,4 +140,14 @@ func getFullPath(packagePath string, parentPackage *types.PackageInstance) (stri
 	}
 
 	return packagePath, nil
+}
+
+func readFile(filePath string) (content []byte, err error) {
+	if _, err = os.Stat(filePath); os.IsNotExist(err) {
+		err = util.RuntimeError(fmt.Sprintf("файл з ім'ям '%s' не існує", filePath))
+		return
+	}
+
+	content, err = ioutil.ReadFile(filePath)
+	return
 }
