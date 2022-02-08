@@ -2,7 +2,6 @@ package types
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
@@ -39,27 +38,6 @@ func boolToFloat64(v bool) float64 {
 	}
 
 	return 0.0
-}
-
-func getAttributes(attributes map[string]common.Value) (DictionaryInstance, error) {
-	dict := NewDictionaryInstance()
-	for key, val := range attributes {
-		err := dict.SetElement(NewStringInstance(key), val)
-		if err != nil {
-			return DictionaryInstance{}, err
-		}
-	}
-
-	return dict, nil
-}
-
-func getLength(state common.State, sequence common.Value) (int64, error) {
-	switch self := sequence.(type) {
-	case common.SequentialType:
-		return self.Length(state), nil
-	}
-
-	return 0, errors.New(fmt.Sprint("invalid type in length operator: ", sequence.GetTypeName()))
 }
 
 func MergeAttributes(a map[string]common.Value, b ...map[string]common.Value) map[string]common.Value {

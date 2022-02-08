@@ -15,7 +15,18 @@ func RuntimeError(text string) error {
 }
 
 func InternalError(text string) error {
-	return errors.New(fmt.Sprintf("Внутрішня помилка: %s", text))
+	return errors.New(fmt.Sprintf("InternalError: %s", text))
+}
+
+func InvalidUseOfOperator(operator common.Operator, left, right common.Value) error {
+	return InternalError(
+		fmt.Sprintf(
+			"invalid use of operator '%s' for '%s' and '%s' types",
+			operator.Sign(),
+			left.GetTypeName(),
+			right.GetTypeName(),
+		),
+	)
 }
 
 func ParseError(pos lexer.Position, unexpected string, err string) error {
@@ -34,6 +45,10 @@ func ParseError(pos lexer.Position, unexpected string, err string) error {
 
 func AttributeNotFoundError(objTypeName, attrName string) error {
 	return RuntimeError(fmt.Sprintf("об'єкт типу '%s' не містить атрибута з назвою '%s'", objTypeName, attrName))
+}
+
+func BadOperandForUnaryOperatorError(operator common.Operator) error {
+	return RuntimeError(fmt.Sprintf("некоректний тип операнда для унарного оператора %s", operator.Sign()))
 }
 
 func OperatorNotFoundError(objTypeName, opName string) error {
@@ -60,11 +75,20 @@ func AttributeIsReadOnlyError(objTypeName, attrName string) error {
 	)
 }
 
-func OperatorNotSupportedError(operator common.Operator, leftType, rightType string) error {
+func OperatorNotSupportedError(operator common.Operator, left, right common.Value) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
-			operator.Sign(), leftType, rightType,
+			operator.Sign(), left.GetTypeName(), right.GetTypeName(),
+		),
+	)
+}
+
+func UnaryOperatorNotSupportedError(operator common.Operator, value common.Value) error {
+	return RuntimeError(
+		fmt.Sprintf(
+			"неможливо застосувати оператор '%s' до значення з типом '%s'",
+			operator.Sign(), value.GetTypeName(),
 		),
 	)
 }
@@ -100,4 +124,8 @@ func (e InterpreterError) Error() string {
 
 func IncorrectUseOfFunctionError(functionName string) error {
 	return InterpreterError{message: fmt.Sprintf("incorrect use of '%s' func", functionName)}
+}
+
+func InternalOperatorError(operator common.Operator) InterpreterError {
+	return InterpreterError{message: fmt.Sprintf("fatal: invalid operator '%s'", operator.Sign())}
 }

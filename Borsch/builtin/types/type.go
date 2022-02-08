@@ -27,51 +27,51 @@ func compareTypes(_ common.State, _ common.Operator, self, other common.Value) (
 	return -2, nil
 }
 
-func newTypeClass() *Class {
-	getTypeFunc := func(args ...common.Value) (common.Value, error) {
-		return GetTypeOfInstance(args[0])
-	}
+func typeOperator_Call() common.Value {
+	return NewFunctionInstance(
+		common.CallOperatorName,
+		[]FunctionParameter{
+			{
+				Type:       TypeClass,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+			{
+				Type:       Any,
+				Name:       "обєкт",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+		},
+		func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+			return GetTypeOfInstance((*args)[1])
+		},
+		[]FunctionReturnType{
+			{
+				Type:       Any,
+				IsNullable: false,
+			},
+		},
+		true,
+		nil,
+		"", // TODO: add doc
+	)
+}
 
+func newTypeClass() *Class {
 	// TODO: add required operators and methods
 	initAttributes := func(attrs *map[string]common.Value) {
 		*attrs = map[string]common.Value{
 			// TODO: add doc
-			common.CallOperatorName: NewFunctionInstance(
-				common.CallOperatorName,
-				[]FunctionParameter{
-					{
-						Type:       TypeClass,
-						Name:       "я",
-						IsVariadic: false,
-						IsNullable: false,
-					},
-					{
-						Type:       Any,
-						Name:       "обєкт",
-						IsVariadic: false,
-						IsNullable: false,
-					},
-				},
-				func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-					return getTypeFunc((*args)[1])
-				},
-				[]FunctionReturnType{
-					{
-						Type:       Any,
-						IsNullable: true,
-					},
-				},
-				true,
-				nil,
-				"", // TODO: add doc
-			),
-			common.EqualsOp.Name(): NewComparisonOperator(
+			common.CallOperatorName: typeOperator_Call(),
+			common.EqualsOp.Name(): MakeComparisonOperator(
 				// TODO: add doc
 				common.EqualsOp, TypeClass, "", compareTypes, func(res int) bool {
 					return res == 0
 				},
 			),
-			common.NotEqualsOp.Name(): NewComparisonOperator(
+			common.NotEqualsOp.Name(): MakeComparisonOperator(
 				// TODO: add doc
 				common.NotEqualsOp, TypeClass, "", compareTypes, func(res int) bool {
 					return res != 0

@@ -157,62 +157,64 @@ func (i *FunctionInstance) IsLambda() bool {
 	return i.Name == common.LambdaSignature
 }
 
-func newFunctionClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			map[string]common.Value{
-				common.CallOperatorName: NewFunctionInstance(
-					common.CallOperatorName,
-					[]FunctionParameter{
-						{
-							Type:       Function,
-							Name:       "я",
-							IsVariadic: false,
-							IsNullable: false,
-						},
-						{
-							Type:       nil,
-							Name:       "значення",
-							IsVariadic: true,
-							IsNullable: true,
-						},
-					},
-					func(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (
-						common.Value,
-						error,
-					) {
-						function := (*args)[0].(*FunctionInstance)
-						slicedArgs := (*args)[1:]
-						slicedKwargs := *kwargs
-						delete(slicedKwargs, "я")
-						if err := CheckFunctionArguments(function, &slicedArgs, &slicedKwargs); err != nil {
-							return nil, err
-						}
-
-						return function.Call(state, &slicedArgs, &slicedKwargs)
-					},
-					[]FunctionReturnType{
-						{
-							Type:       Any,
-							IsNullable: true,
-						},
-					},
-					true,
-					nil,
-					"", // TODO: add doc
-				),
+func functionOperator_Call(name string) common.Value {
+	return NewFunctionInstance(
+		name,
+		[]FunctionParameter{
+			{
+				Type:       Function,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
 			},
-			MakeLogicalOperators(Function),
-			MakeCommonOperators(Function),
-		)
-	}
+			{
+				Type:       Any,
+				Name:       "значення",
+				IsVariadic: true,
+				IsNullable: true,
+			},
+		},
+		func(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (
+			common.Value,
+			error,
+		) {
+			function := (*args)[0].(*FunctionInstance)
+			functionArgs := (*args)[1:]
+			functionKwargs := *kwargs
+			delete(functionKwargs, "я")
+			if err := CheckFunctionArguments(function, &functionArgs, &functionKwargs); err != nil {
+				return nil, err
+			}
 
+			return function.Call(state, &functionArgs, &functionKwargs)
+		},
+		[]FunctionReturnType{
+			{
+				Type:       Any,
+				IsNullable: false,
+			},
+		},
+		true,
+		nil,
+		"", // TODO: add doc
+	)
+}
+
+func newFunctionClass() *Class {
 	return &Class{
-		Name:            common.FunctionTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
+		Name:    common.FunctionTypeName,
+		IsFinal: true,
+		Bases:   []*Class{},
+		Parent:  BuiltinPackage,
+		AttrInitializer: func(attrs *map[string]common.Value) {
+			*attrs = MergeAttributes(
+				map[string]common.Value{
+					common.CallOperatorName: functionOperator_Call(common.CallOperatorName),
+				},
+				MakeLogicalOperators(Function),
+				MakeCommonOperators(Function),
+			)
+		},
 		GetEmptyInstance: func() (common.Value, error) {
 			panic("unreachable")
 		},

@@ -1,10 +1,13 @@
 package types
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func newBinaryMethod(
+func MakeBinaryMethod(
 	name string,
 	selfType *Class,
 	returnType *Class,
@@ -42,7 +45,7 @@ func newBinaryMethod(
 	)
 }
 
-func newUnaryMethod(
+func MakeUnaryMethod(
 	name string,
 	selfType *Class,
 	returnType *Class,
@@ -74,14 +77,14 @@ func newUnaryMethod(
 	)
 }
 
-func NewComparisonOperator(
+func MakeComparisonOperator(
 	operator common.Operator,
 	itemType *Class,
 	doc string,
 	comparator func(common.State, common.Operator, common.Value, common.Value) (int, error),
 	checker func(res int) bool,
 ) *FunctionInstance {
-	return newBinaryMethod(
+	return MakeBinaryMethod(
 		operator.Name(),
 		itemType,
 		Bool,
@@ -102,37 +105,37 @@ func MakeComparisonOperators(
 	comparator func(common.State, common.Operator, common.Value, common.Value) (int, error),
 ) map[string]common.Value {
 	return map[string]common.Value{
-		common.EqualsOp.Name(): NewComparisonOperator(
+		common.EqualsOp.Name(): MakeComparisonOperator(
 			// TODO: add doc
 			common.EqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0
 			},
 		),
-		common.NotEqualsOp.Name(): NewComparisonOperator(
+		common.NotEqualsOp.Name(): MakeComparisonOperator(
 			// TODO: add doc
 			common.NotEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res != 0
 			},
 		),
-		common.GreaterOp.Name(): NewComparisonOperator(
+		common.GreaterOp.Name(): MakeComparisonOperator(
 			// TODO: add doc
 			common.GreaterOp, itemType, "", comparator, func(res int) bool {
 				return res == 1
 			},
 		),
-		common.GreaterOrEqualsOp.Name(): NewComparisonOperator(
+		common.GreaterOrEqualsOp.Name(): MakeComparisonOperator(
 			// TODO: add doc
 			common.GreaterOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == 1
 			},
 		),
-		common.LessOp.Name(): NewComparisonOperator(
+		common.LessOp.Name(): MakeComparisonOperator(
 			// TODO: add doc
 			common.LessOp, itemType, "", comparator, func(res int) bool {
 				return res == -1
 			},
 		),
-		common.LessOrEqualsOp.Name(): NewComparisonOperator(
+		common.LessOrEqualsOp.Name(): MakeComparisonOperator(
 			// TODO: add doc
 			common.LessOrEqualsOp, itemType, "", comparator, func(res int) bool {
 				return res == 0 || res == -1
@@ -143,7 +146,7 @@ func MakeComparisonOperators(
 
 func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 	return map[string]common.Value{
-		common.NotOp.Name(): newUnaryMethod(
+		common.NotOp.Name(): MakeUnaryMethod(
 			// TODO: add doc
 			common.NotOp.Name(),
 			itemType,
@@ -158,7 +161,7 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 				return NewBoolInstance(!selfBool), nil
 			},
 		),
-		common.AndOp.Name(): newBinaryMethod(
+		common.AndOp.Name(): MakeBinaryMethod(
 			// TODO: add doc
 			common.AndOp.Name(),
 			itemType,
@@ -178,7 +181,7 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 				return NewBoolInstance(selfBool && otherBool), nil
 			},
 		),
-		common.OrOp.Name(): newBinaryMethod(
+		common.OrOp.Name(): MakeBinaryMethod(
 			// TODO: add doc
 			common.OrOp.Name(),
 			itemType,
@@ -204,7 +207,7 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 func MakeCommonOperators(itemType *Class) map[string]common.Value {
 	return map[string]common.Value{
 		// TODO: add doc
-		common.BoolOperatorName: newUnaryMethod(
+		common.BoolOperatorName: MakeUnaryMethod(
 			common.BoolOperatorName, itemType, Bool, "",
 			func(state common.State, self common.Value) (common.Value, error) {
 				boolVal, err := self.AsBool(state)
@@ -218,9 +221,44 @@ func MakeCommonOperators(itemType *Class) map[string]common.Value {
 	}
 }
 
-func newBuiltinConstructor(
+func MakeUnaryOperators(
+	selfClass, returnClass *Class,
+	handler func(common.State, common.Operator, common.Value) (common.Value, error),
+) map[string]common.Value {
+	return map[string]common.Value{
+		common.UnaryPlus.Name(): MakeUnaryMethod(
+			common.UnaryPlus.Name(),
+			selfClass,
+			returnClass,
+			"",
+			func(state common.State, value common.Value) (common.Value, error) {
+				return handler(state, common.UnaryPlus, value)
+			},
+		),
+		common.UnaryMinus.Name(): MakeUnaryMethod(
+			common.UnaryMinus.Name(),
+			selfClass,
+			returnClass,
+			"",
+			func(state common.State, value common.Value) (common.Value, error) {
+				return handler(state, common.UnaryMinus, value)
+			},
+		),
+		common.UnaryBitwiseNotOp.Name(): MakeUnaryMethod(
+			common.UnaryBitwiseNotOp.Name(),
+			selfClass,
+			returnClass,
+			"",
+			func(state common.State, value common.Value) (common.Value, error) {
+				return handler(state, common.UnaryBitwiseNotOp, value)
+			},
+		),
+	}
+}
+
+func makeVariadicConstructor(
 	itemType *Class,
-	handler func(common.State, ...common.Value) (common.Value, error),
+	converter func(common.State, ...common.Value) (common.Value, error),
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
@@ -240,7 +278,7 @@ func newBuiltinConstructor(
 			},
 		},
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			self, err := handler(state, (*args)[1:]...)
+			self, err := converter(state, (*args)[1:]...)
 			if err != nil {
 				return nil, err
 			}
@@ -260,9 +298,8 @@ func newBuiltinConstructor(
 	)
 }
 
-func newLengthOperator(
+func makeLengthOperator(
 	itemType *Class,
-	handler func(common.State, common.Value) (int64, error),
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
@@ -276,12 +313,13 @@ func newLengthOperator(
 			},
 		},
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			length, err := handler(state, (*args)[0])
-			if err != nil {
-				return nil, err
+			sequence := (*args)[0]
+			switch self := sequence.(type) {
+			case common.SequentialType:
+				return NewIntegerInstance(self.Length(state)), nil
 			}
 
-			return NewIntegerInstance(length), nil
+			return nil, errors.New(fmt.Sprint("invalid type in length operator: ", sequence.GetTypeName()))
 		},
 		[]FunctionReturnType{
 			{
@@ -295,9 +333,9 @@ func newLengthOperator(
 	)
 }
 
-func getDefaultConstructor(cls *Class, doc string) *FunctionInstance {
+func makeDefaultConstructor(cls *Class, doc string) *FunctionInstance {
 	if cls == nil {
-		panic("getDefaultConstructor: cls is nil")
+		panic("makeDefaultConstructor: cls is nil")
 	}
 
 	return NewFunctionInstance(

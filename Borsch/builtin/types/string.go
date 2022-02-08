@@ -111,31 +111,74 @@ func compareStrings(_ common.State, op common.Operator, self, other common.Value
 
 		return 1, nil
 	default:
-		return 0, util.OperatorNotSupportedError(op, left.GetTypeName(), right.GetTypeName())
+		return 0, util.OperatorNotSupportedError(op, left, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
 	return -2, nil
 }
 
-func newStringBinaryOperator(
-	name string,
-	doc string,
-	handler func(StringInstance, common.Value) (common.Value, error),
-) *FunctionInstance {
-	return newBinaryMethod(
-		name,
-		String,
-		Any,
-		doc,
-		func(_ common.State, left common.Value, right common.Value) (common.Value, error) {
-			if leftInstance, ok := left.(StringInstance); ok {
-				return handler(leftInstance, right)
+func stringBinaryOperator(
+	operator common.Operator,
+	handler func(common.State, StringInstance, common.Value) (common.Value, error),
+) common.Value {
+	return NewFunctionInstance(
+		operator.Name(),
+		[]FunctionParameter{
+			{
+				Type:       String,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+			{
+				Type:       Any,
+				Name:       "інший",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+		},
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+			left, ok := (*args)[0].(StringInstance)
+			if !ok {
+				return nil, util.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
 
-			return nil, util.IncorrectUseOfFunctionError(name)
+			return handler(state, left, (*args)[1])
 		},
+		[]FunctionReturnType{
+			{
+				Type:       Any,
+				IsNullable: false,
+			},
+		},
+		true,
+		nil,
+		"", // TODO: add doc
 	)
+}
+
+func stringOperator_Mul(_ common.State, left StringInstance, right common.Value) (common.Value, error) {
+	switch other := right.(type) {
+	case IntegerInstance:
+		count := int(other.Value)
+		if count < 0 {
+			return NewStringInstance(""), nil
+		}
+
+		return NewStringInstance(strings.Repeat(left.Value, count)), nil
+	default:
+		return nil, nil
+	}
+}
+
+func stringOperator_Add(_ common.State, left StringInstance, right common.Value) (common.Value, error) {
+	switch other := right.(type) {
+	case StringInstance:
+		return NewStringInstance(left.Value + other.Value), nil
+	default:
+		return nil, nil
+	}
 }
 
 func newStringClass() *Class {
@@ -143,34 +186,9 @@ func newStringClass() *Class {
 		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
-				common.ConstructorName: newBuiltinConstructor(String, ToString, ""),
-				common.MulOp.Name(): newStringBinaryOperator(
-					// TODO: add doc
-					common.MulOp.Name(), "", func(self StringInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case IntegerInstance:
-							count := int(o.Value)
-							if count < 0 {
-								return NewStringInstance(""), nil
-							}
-
-							return NewStringInstance(strings.Repeat(self.Value, count)), nil
-						default:
-							return nil, nil
-						}
-					},
-				),
-				common.AddOp.Name(): newStringBinaryOperator(
-					// TODO: add doc
-					common.AddOp.Name(), "", func(self StringInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case StringInstance:
-							return NewStringInstance(self.Value + o.Value), nil
-						default:
-							return nil, nil
-						}
-					},
-				),
+				common.ConstructorName: makeVariadicConstructor(String, ToString, ""),
+				common.MulOp.Name():    stringBinaryOperator(common.MulOp, stringOperator_Mul),
+				common.AddOp.Name():    stringBinaryOperator(common.AddOp, stringOperator_Add),
 			},
 			MakeLogicalOperators(String),
 			MakeComparisonOperators(String, compareStrings),

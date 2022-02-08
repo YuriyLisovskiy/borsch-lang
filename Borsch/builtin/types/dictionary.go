@@ -123,76 +123,130 @@ func (t *DictionaryInstance) RemoveElement(state common.State, key common.Value)
 	return value.Value, nil
 }
 
+func toDictionary(state common.State, args ...common.Value) (common.Value, error) {
+	dict := NewDictionaryInstance()
+	if len(args) == 0 {
+		return dict, nil
+	}
+
+	if len(args) != 2 {
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"функція 'словник()' приймає два аргументи, або жодного (отримано %d)", len(args),
+			),
+		)
+	}
+
+	switch keys := args[0].(type) {
+	case ListInstance:
+		switch values := args[1].(type) {
+		case ListInstance:
+			if keys.Length(state) != values.Length(state) {
+				return nil, util.RuntimeError(
+					fmt.Sprintf(
+						"довжина списку ключів має співпадати з довжиною списку значень",
+					),
+				)
+			}
+
+			length := keys.Length(state)
+			for i := int64(0); i < length; i++ {
+				err := dict.SetElement(keys.Values[i], values.Values[i])
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			return dict, nil
+		default:
+			return nil, util.RuntimeError(
+				fmt.Sprintf(
+					"функція 'словник()' другим аргументом приймає список значень",
+				),
+			)
+		}
+	default:
+		return nil, util.RuntimeError(
+			fmt.Sprintf(
+				"функція 'словник()' першим аргументом приймає список ключів",
+			),
+		)
+	}
+}
+
 func compareDictionaries(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case *DictionaryInstance, DictionaryInstance:
 		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	default:
-		return -2, util.OperatorNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
+		return -2, util.OperatorNotSupportedError(op, self, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
 	return -2, nil
 }
 
-func newDictionaryClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			map[string]common.Value{
-				// TODO: add doc
-				common.ConstructorName: newBuiltinConstructor(Dictionary, ToDictionary, ""),
-
-				// TODO: add doc
-				common.LengthOperatorName: newLengthOperator(List, getLength, ""),
-				"вилучити": NewFunctionInstance(
-					"вилучити",
-					[]FunctionParameter{
-						{
-							Type:       Dictionary,
-							Name:       "я",
-							IsVariadic: false,
-							IsNullable: false,
-						},
-						{
-							Type:       nil,
-							Name:       "ключ",
-							IsVariadic: false,
-							IsNullable: true,
-						},
-					},
-					func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-						dict := (*args)[0].(DictionaryInstance)
-						value, err := dict.RemoveElement(state, (*args)[1])
-						if err != nil {
-							return nil, util.RuntimeError(err.Error())
-						}
-
-						return value, nil
-					},
-					[]FunctionReturnType{
-						{
-							Type:       Any,
-							IsNullable: false,
-						},
-					},
-					true,
-					nil,
-					"", // TODO: add doc
-				),
+func dictionaryMethod_Remove(name string) common.Value {
+	return NewFunctionInstance(
+		name,
+		[]FunctionParameter{
+			{
+				Type:       Dictionary,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
 			},
-			MakeLogicalOperators(Dictionary),
-			MakeComparisonOperators(Dictionary, compareDictionaries),
-			MakeCommonOperators(Dictionary),
-		)
-	}
+			{
+				Type:       Any,
+				Name:       "ключ",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+		},
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+			dict := (*args)[0].(DictionaryInstance)
+			_, err := dict.RemoveElement(state, (*args)[1])
+			if err != nil {
+				return nil, util.RuntimeError(err.Error())
+			}
 
+			return nil, nil
+		},
+		[]FunctionReturnType{
+			{
+				Type:       Nil,
+				IsNullable: false,
+			},
+		},
+		true,
+		nil,
+		"", // TODO: add doc
+	)
+}
+
+func newDictionaryClass() *Class {
 	return &Class{
-		Name:            common.DictionaryTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
+		Name:    common.DictionaryTypeName,
+		IsFinal: true,
+		Bases:   []*Class{},
+		Parent:  BuiltinPackage,
+		AttrInitializer: func(attrs *map[string]common.Value) {
+			*attrs = MergeAttributes(
+				map[string]common.Value{
+					// TODO: add doc
+					common.ConstructorName: makeVariadicConstructor(Dictionary, toDictionary, ""),
+
+					// TODO: add doc
+					common.LengthOperatorName: makeLengthOperator(List, ""),
+
+					"вилучити": dictionaryMethod_Remove("вилучити"),
+				},
+				MakeLogicalOperators(Dictionary),
+				MakeComparisonOperators(Dictionary, compareDictionaries),
+				MakeCommonOperators(Dictionary),
+			)
+		},
 		GetEmptyInstance: func() (common.Value, error) {
 			return NewDictionaryInstance(), nil
 		},

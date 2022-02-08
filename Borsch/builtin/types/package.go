@@ -61,7 +61,7 @@ func comparePackages(_ common.State, op common.Operator, self common.Value, othe
 	case *PackageInstance:
 		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	default:
-		return -2, util.OperatorNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
+		return -2, util.OperatorNotSupportedError(op, self, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -69,20 +69,18 @@ func comparePackages(_ common.State, op common.Operator, self common.Value, othe
 }
 
 func NewPackageClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			MakeLogicalOperators(Package),
-			MakeComparisonOperators(Package, comparePackages),
-			MakeCommonOperators(Package),
-		)
-	}
-
 	return &Class{
-		Name:            common.PackageTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
+		Name:    common.PackageTypeName,
+		IsFinal: true,
+		Bases:   []*Class{},
+		Parent:  BuiltinPackage,
+		AttrInitializer: func(attrs *map[string]common.Value) {
+			*attrs = MergeAttributes(
+				MakeLogicalOperators(Package),
+				MakeComparisonOperators(Package, comparePackages),
+				MakeCommonOperators(Package),
+			)
+		},
 		GetEmptyInstance: func() (common.Value, error) {
 			panic("unreachable")
 		},

@@ -42,98 +42,102 @@ func compareErrors(_ common.State, _ common.Operator, self common.Value, other c
 	return -2, nil
 }
 
+func errorOperator_Constructor() common.Value {
+	return types.NewFunctionInstance(
+		common.ConstructorName,
+		[]types.FunctionParameter{
+			{
+				Type:       ErrorClass,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+			{
+				Type:       types.String,
+				Name:       "повідомлення",
+				IsVariadic: true,
+				IsNullable: false,
+			},
+		},
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+			rawParts := (*args)[1:]
+			self := (*args)[0].(*ErrorInstance)
+			for _, rawPart := range rawParts {
+				part, err := rawPart.String(state)
+				if err != nil {
+					return nil, err
+				}
+
+				self.message += part
+			}
+
+			(*args)[0] = self
+			return types.NewNilInstance(), nil
+		},
+		[]types.FunctionReturnType{
+			{
+				Type:       types.Nil,
+				IsNullable: false,
+			},
+		},
+		true,
+		nil,
+		"",
+	)
+}
+
+func errorMethod_Message(name string) common.Value {
+	return types.NewFunctionInstance(
+		name,
+		[]types.FunctionParameter{
+			{
+				Type:       ErrorClass,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+		},
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+			msg, err := (*args)[0].String(state)
+			if err != nil {
+				return nil, err
+			}
+
+			return types.NewStringInstance(msg), nil
+		},
+		[]types.FunctionReturnType{
+			{
+				Type:       types.String,
+				IsNullable: false,
+			},
+		},
+		true,
+		nil,
+		"",
+	)
+}
+
 func newErrorClass() *types.Class {
 	initAttributes := func(attrs *map[string]common.Value) {
 		*attrs = types.MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
-				common.ConstructorName: types.NewFunctionInstance(
-					common.ConstructorName,
-					[]types.FunctionParameter{
-						{
-							Type:       ErrorClass,
-							Name:       "я",
-							IsVariadic: false,
-							IsNullable: false,
-						},
-						{
-							Type:       types.String,
-							Name:       "повідомлення",
-							IsVariadic: true,
-							IsNullable: false,
-						},
+				common.ConstructorName: errorOperator_Constructor(),
+				"повідомлення":         errorMethod_Message("повідомлення"),
+				common.EqualsOp.Name(): types.MakeComparisonOperator(
+					// TODO: add doc
+					common.EqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
+						return res == 0
 					},
-					func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-						rawParts := (*args)[1:]
-						self := (*args)[0].(*ErrorInstance)
-						for _, rawPart := range rawParts {
-							part, err := rawPart.String(state)
-							if err != nil {
-								return nil, err
-							}
-
-							self.message += part
-						}
-
-						(*args)[0] = self
-						return types.NewNilInstance(), nil
-					},
-					[]types.FunctionReturnType{
-						{
-							Type:       types.Nil,
-							IsNullable: false,
-						},
-					},
-					true,
-					nil,
-					"",
 				),
-				"повідомлення": types.NewFunctionInstance(
-					"повідомлення",
-					[]types.FunctionParameter{
-						{
-							Type:       ErrorClass,
-							Name:       "я",
-							IsVariadic: false,
-							IsNullable: false,
-						},
+				common.NotEqualsOp.Name(): types.MakeComparisonOperator(
+					// TODO: add doc
+					common.NotEqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
+						return res != 0
 					},
-					func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-						msg, err := (*args)[0].String(state)
-						if err != nil {
-							return nil, err
-						}
-
-						return types.NewStringInstance(msg), nil
-					},
-					[]types.FunctionReturnType{
-						{
-							Type:       types.String,
-							IsNullable: false,
-						},
-					},
-					true,
-					nil,
-					"",
 				),
 			},
 			types.MakeLogicalOperators(ErrorClass),
-			types.MergeAttributes(
-				map[string]common.Value{
-					common.EqualsOp.Name(): types.NewComparisonOperator(
-						// TODO: add doc
-						common.EqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
-							return res == 0
-						},
-					),
-					common.NotEqualsOp.Name(): types.NewComparisonOperator(
-						// TODO: add doc
-						common.NotEqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
-							return res != 0
-						},
-					),
-				},
-			),
 			types.MakeCommonOperators(ErrorClass),
 		)
 	}

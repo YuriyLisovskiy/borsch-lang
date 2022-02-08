@@ -257,6 +257,6 @@ func (c *Class) initializeAttributes() {
 
 	if _, ok := c.attributes[common.ConstructorName]; !ok {
 		// TODO: add doc
-		c.attributes[common.ConstructorName] = getDefaultConstructor(c, "")
+		c.attributes[common.ConstructorName] = makeDefaultConstructor(c, "")
 	}
 }

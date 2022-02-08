@@ -42,47 +42,48 @@ func compareNils(_ common.State, _ common.Operator, _ common.Value, other common
 	}
 }
 
-func newNilClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			map[string]common.Value{
-				// TODO: add doc
-				common.ConstructorName: NewFunctionInstance(
-					common.ConstructorName,
-					[]FunctionParameter{
-						{
-							Type:       Nil,
-							Name:       "я",
-							IsVariadic: false,
-							IsNullable: false,
-						},
-					},
-					func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-						return (*args)[0], nil
-					},
-					[]FunctionReturnType{
-						{
-							Type:       Nil,
-							IsNullable: false,
-						},
-					},
-					true,
-					nil,
-					"",
-				),
+func nilMethod_Constructor() common.Value {
+	return NewFunctionInstance(
+		common.ConstructorName,
+		[]FunctionParameter{
+			{
+				Type:       Nil,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
 			},
-			MakeLogicalOperators(Nil),
-			MakeComparisonOperators(Nil, compareNils),
-			MakeCommonOperators(Nil),
-		)
-	}
+		},
+		func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+			return (*args)[0], nil
+		},
+		[]FunctionReturnType{
+			{
+				Type:       Nil,
+				IsNullable: false,
+			},
+		},
+		true,
+		nil,
+		"", // TODO: add doc
+	)
+}
 
+func newNilClass() *Class {
 	return &Class{
-		Name:            common.NilTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
+		Name:    common.NilTypeName,
+		IsFinal: true,
+		Bases:   []*Class{},
+		Parent:  BuiltinPackage,
+		AttrInitializer: func(attrs *map[string]common.Value) {
+			*attrs = MergeAttributes(
+				map[string]common.Value{
+					common.ConstructorName: nilMethod_Constructor(),
+				},
+				MakeLogicalOperators(Nil),
+				MakeComparisonOperators(Nil, compareNils),
+				MakeCommonOperators(Nil),
+			)
+		},
 		GetEmptyInstance: func() (common.Value, error) {
 			return NewNilInstance(), nil
 		},

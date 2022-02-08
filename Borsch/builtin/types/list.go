@@ -84,93 +84,122 @@ func (t ListInstance) Slice(state common.State, from, to int64) (common.Value, e
 	return listInstance, nil
 }
 
+func toList(_ common.State, args ...common.Value) (common.Value, error) {
+	list := NewListInstance()
+	if len(args) == 0 {
+		return list, nil
+	}
+
+	for _, arg := range args {
+		list.Values = append(list.Values, arg)
+	}
+
+	return list, nil
+}
+
 func compareLists(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case ListInstance:
 		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	default:
-		return -2, util.OperatorNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
+		return -2, util.OperatorNotSupportedError(op, self, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
 	return -2, nil
 }
 
-func newListBinaryOperator(
-	name string,
-	doc string,
-	handler func(ListInstance, common.Value) (common.Value, error),
-) *FunctionInstance {
-	return newBinaryMethod(
-		name,
-		List,
-		Any,
-		doc,
-		func(_ common.State, left common.Value, right common.Value) (common.Value, error) {
-			if leftInstance, ok := left.(ListInstance); ok {
-				return handler(leftInstance, right)
+func listOperator(
+	operator common.Operator,
+	handler func(common.State, ListInstance, common.Value) (common.Value, error),
+) common.Value {
+	return NewFunctionInstance(
+		operator.Name(),
+		[]FunctionParameter{
+			{
+				Type:       List,
+				Name:       "я",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+			{
+				Type:       Any,
+				Name:       "інший",
+				IsVariadic: false,
+				IsNullable: false,
+			},
+		},
+		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+			left, ok := (*args)[0].(ListInstance)
+			if !ok {
+				return nil, util.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
 
-			return nil, util.IncorrectUseOfFunctionError(name)
+			return handler(state, left, (*args)[1])
 		},
+		[]FunctionReturnType{
+			{
+				Type:       List,
+				IsNullable: false,
+			},
+		},
+		true,
+		nil,
+		"", // TODO: add doc
 	)
 }
 
-func newListClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			map[string]common.Value{
-				// TODO: add doc
-				common.ConstructorName: newBuiltinConstructor(List, ToList, ""),
+func listOperator_Mul(_ common.State, left ListInstance, right common.Value) (common.Value, error) {
+	switch other := right.(type) {
+	case IntegerInstance:
+		count := int(other.Value)
+		list := NewListInstance()
+		if count > 0 {
+			for c := 0; c < count; c++ {
+				list.Values = append(list.Values, left.Values...)
+			}
+		}
 
-				// TODO: add doc
-				common.LengthOperatorName: newLengthOperator(List, getLength, ""),
-
-				common.MulOp.Name(): newListBinaryOperator(
-					// TODO: add doc
-					common.MulOp.Name(), "", func(self ListInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case IntegerInstance:
-							count := int(o.Value)
-							list := NewListInstance()
-							if count > 0 {
-								for c := 0; c < count; c++ {
-									list.Values = append(list.Values, self.Values...)
-								}
-							}
-
-							return list, nil
-						default:
-							return nil, nil
-						}
-					},
-				),
-				common.AddOp.Name(): newListBinaryOperator(
-					// TODO: add doc
-					common.AddOp.Name(), "", func(self ListInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case ListInstance:
-							self.Values = append(self.Values, o.Values...)
-							return self, nil
-						default:
-							return nil, nil
-						}
-					},
-				),
-			},
-			MakeLogicalOperators(List),
-			MakeComparisonOperators(List, compareLists),
-			MakeCommonOperators(List),
-		)
+		return list, nil
+	default:
+		return nil, nil
 	}
+}
 
+func listOperator_Add(_ common.State, left ListInstance, right common.Value) (common.Value, error) {
+	switch other := right.(type) {
+	case ListInstance:
+		left.Values = append(left.Values, other.Values...)
+		return left, nil
+	default:
+		return nil, nil
+	}
+}
+
+func newListClass() *Class {
 	return &Class{
-		Name:            common.ListTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
+		Name:    common.ListTypeName,
+		IsFinal: true,
+		Bases:   []*Class{},
+		Parent:  BuiltinPackage,
+		AttrInitializer: func(attrs *map[string]common.Value) {
+			*attrs = MergeAttributes(
+				map[string]common.Value{
+					// TODO: add doc
+					common.ConstructorName: makeVariadicConstructor(List, toList, ""),
+
+					// TODO: add doc
+					common.LengthOperatorName: makeLengthOperator(List, ""),
+
+					common.MulOp.Name(): listOperator(common.MulOp, listOperator_Mul),
+					common.AddOp.Name(): listOperator(common.AddOp, listOperator_Add),
+				},
+				MakeLogicalOperators(List),
+				MakeComparisonOperators(List, compareLists),
+				MakeCommonOperators(List),
+			)
+		},
 		GetEmptyInstance: func() (common.Value, error) {
 			return NewListInstance(), nil
 		},
