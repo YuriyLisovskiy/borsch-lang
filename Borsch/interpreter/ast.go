@@ -26,6 +26,7 @@ type LoopStmt struct {
 // RangeBasedLoop is a loop with two bounds to
 // iterate over.
 //
+// Example:
 //   цикл (і : 1 .. 7)
 //   {
 //   }
@@ -38,6 +39,12 @@ type RangeBasedLoop struct {
 	RightBound *Expression `@@`
 }
 
+// ConditionalLoop
+//
+// Example:
+//   цикл (логічна_умова)
+//   {
+//   }
 type ConditionalLoop struct {
 	Pos lexer.Position
 

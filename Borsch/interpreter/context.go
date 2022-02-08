@@ -9,8 +9,7 @@ import (
 )
 
 type ContextImpl struct {
-	scopes []map[string]common.Value
-	// package_      *types.PackageInstance
+	scopes        []map[string]common.Value
 	classContext  common.Context
 	parentContext common.Context
 	interpreter   common.Interpreter
@@ -43,8 +42,6 @@ func (c *ContextImpl) GetVar(name string) (common.Value, error) {
 	switch name {
 	case "нуль":
 		return types.NewNilInstance(), nil
-	case "нульовий":
-		return types.Nil, nil
 	}
 
 	lastScopeIdx := len(c.scopes) - 1
@@ -62,9 +59,17 @@ func (c *ContextImpl) GetVar(name string) (common.Value, error) {
 }
 
 func (c *ContextImpl) SetVar(name string, value common.Value) error {
-	switch name {
-	case "нуль", "нульовий":
-		return util.RuntimeError(fmt.Sprintf("неможливо записати значення у '%s'", name))
+	if isKeyword(name) {
+		return util.RuntimeError(fmt.Sprintf("неможливо записати значення у '%s', оскільки це ключове слово", name))
+	}
+
+	if isBuiltin(name) {
+		return util.RuntimeError(
+			fmt.Sprintf(
+				"неможливо записати значення у '%s', оскільки це вбудований ідентифікатор",
+				name,
+			),
+		)
 	}
 
 	scopesLen := len(c.scopes)
