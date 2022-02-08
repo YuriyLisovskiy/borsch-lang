@@ -4,9 +4,9 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (s *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
-	if s.Condition != nil {
-		condition, err := s.Condition.Evaluate(state, nil)
+func (node *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+	if node.Condition != nil {
+		condition, err := node.Condition.Evaluate(state, nil)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
@@ -16,10 +16,10 @@ func (s *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResul
 		if err != nil {
 			return StmtResult{Err: err}
 		}
-		
+
 		if conditionValue {
 			ctx.PushScope(Scope{})
-			result := s.Body.Evaluate(state, inFunction, inLoop)
+			result := node.Body.Evaluate(state, inFunction, inLoop)
 			if err != nil {
 				return result
 			}
@@ -28,14 +28,13 @@ func (s *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResul
 			return result
 		}
 
-		if len(s.ElseIfStmts) != 0 {
+		if len(node.ElseIfStmts) != 0 {
 			gotResult := false
 			var result StmtResult
-			var err error = nil
-			for _, stmt := range s.ElseIfStmts {
+			for _, stmt := range node.ElseIfStmts {
 				ctx.PushScope(Scope{})
 				gotResult, result = stmt.Evaluate(state, inFunction, inLoop)
-				if err != nil {
+				if result.Err != nil {
 					return result
 				}
 
@@ -55,9 +54,9 @@ func (s *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResul
 			}
 		}
 
-		if s.Else != nil {
+		if node.Else != nil {
 			ctx.PushScope(Scope{})
-			result := s.Else.Evaluate(state, inFunction, inLoop)
+			result := node.Else.Evaluate(state, inFunction, inLoop)
 			if result.Err != nil {
 				return result
 			}
@@ -72,8 +71,8 @@ func (s *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResul
 	panic("unreachable")
 }
 
-func (s *ElseIfStmt) Evaluate(state common.State, inFunction, inLoop bool) (bool, StmtResult) {
-	condition, err := s.Condition.Evaluate(state, nil)
+func (node *ElseIfStmt) Evaluate(state common.State, inFunction, inLoop bool) (bool, StmtResult) {
+	condition, err := node.Condition.Evaluate(state, nil)
 	if err != nil {
 		return false, StmtResult{Err: err}
 	}
@@ -86,7 +85,7 @@ func (s *ElseIfStmt) Evaluate(state common.State, inFunction, inLoop bool) (bool
 	if conditionValue {
 		ctx := state.GetContext()
 		ctx.PushScope(Scope{})
-		result := s.Body.Evaluate(state, inFunction, inLoop)
+		result := node.Body.Evaluate(state, inFunction, inLoop)
 		if result.Err != nil {
 			return false, result
 		}

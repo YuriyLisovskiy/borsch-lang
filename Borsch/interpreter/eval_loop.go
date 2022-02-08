@@ -7,32 +7,34 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (l *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
-	if l.Body == nil {
+func (node *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+	if node.Body == nil {
 		panic("unreachable")
 	}
 
-	if l.RangeBasedLoop != nil {
-		return l.RangeBasedLoop.Evaluate(state, l.Body, inFunction, inLoop)
+	if node.RangeBasedLoop != nil {
+		return node.RangeBasedLoop.Evaluate(state, node.Body, inFunction, inLoop)
+	} else if node.ConditionalLoop != nil {
+		return node.ConditionalLoop.Evaluate(state, node.Body, inFunction, inLoop)
 	}
 
-	return l.ConditionalLoop.Evaluate(state, l.Body, inFunction, inLoop)
+	panic("unreachable")
 }
 
-func (l *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFunction, inLoop bool) StmtResult {
-	leftBound, err := getBound(state, l.LeftBound, "ліва")
+func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFunction, inLoop bool) StmtResult {
+	leftBound, err := getBound(state, node.LeftBound, "ліва")
 	if err != nil {
 		return StmtResult{Err: err}
 	}
 
-	rightBound, err := getBound(state, l.RightBound, "права")
+	rightBound, err := getBound(state, node.RightBound, "права")
 	if err != nil {
 		return StmtResult{Err: err}
 	}
 
 	ctx := state.GetContext()
 	for leftBound < rightBound {
-		ctx.PushScope(Scope{l.Variable: types.NewIntegerInstance(leftBound)})
+		ctx.PushScope(Scope{node.Variable: types.NewIntegerInstance(leftBound)})
 		result := body.Evaluate(state, inFunction, true)
 		if result.Err != nil {
 			return result
@@ -53,10 +55,10 @@ func (l *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFuncti
 	return StmtResult{}
 }
 
-func (l *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFunction, inLoop bool) StmtResult {
+func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFunction, inLoop bool) StmtResult {
 	ctx := state.GetContext()
 	for {
-		condition, err := l.Condition.Evaluate(state, nil)
+		condition, err := node.Condition.Evaluate(state, nil)
 		if err != nil {
 			return StmtResult{Err: err}
 		}

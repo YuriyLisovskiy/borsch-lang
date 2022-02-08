@@ -34,7 +34,7 @@ type RangeBasedLoop struct {
 
 	Variable   string      `@Ident ":"`
 	LeftBound  *Expression `@@`
-	SS         string      `@("."".")`
+	Separator  string      `@("."".")`
 	RightBound *Expression `@@`
 }
 

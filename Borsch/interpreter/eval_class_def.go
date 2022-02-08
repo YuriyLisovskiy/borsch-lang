@@ -8,18 +8,18 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (c *ClassDef) Evaluate(state common.State) (common.Value, error) {
+func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	ctx := state.GetContext()
 
 	// TODO: add doc
 	cls := &types.Class{
-		Name:    c.Name,
-		IsFinal: c.IsFinal,
+		Name:    node.Name,
+		IsFinal: node.IsFinal,
 		Class:   nil,
 		Parent:  state.GetCurrentPackage(),
 	}
 
-	for _, name := range c.Bases {
+	for _, name := range node.Bases {
 		base, err := ctx.GetClass(name)
 		if err != nil {
 			return nil, err
@@ -42,7 +42,7 @@ func (c *ClassDef) Evaluate(state common.State) (common.Value, error) {
 		return types.NewClassInstance(cls, map[string]common.Value{}), nil
 	}
 
-	err := ctx.SetVar(c.Name, cls)
+	err := ctx.SetVar(node.Name, cls)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (c *ClassDef) Evaluate(state common.State) (common.Value, error) {
 		classContext: ctx,
 	}
 
-	for _, classMember := range c.Members {
+	for _, classMember := range node.Members {
 		_, err := classMember.Evaluate(state.WithContext(&classContext), cls)
 		if err != nil {
 			return nil, err

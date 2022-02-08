@@ -6,7 +6,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
-func (a *Call) Evaluate(
+func (node *Call) Evaluate(
 	state common.State,
 	variable common.Value,
 	selfInstance common.Value,
@@ -20,7 +20,7 @@ func (a *Call) Evaluate(
 			return nil, err
 		}
 
-		_, err = a.evalFunctionByName(state, instance, common.ConstructorName, &args, nil, true)
+		_, err = node.evalFunctionByName(state, instance, common.ConstructorName, &args, nil, true)
 		if err != nil {
 			return nil, err
 		}
@@ -38,16 +38,16 @@ func (a *Call) Evaluate(
 		}
 
 		*isLambda = object.IsLambda()
-		return a.evalFunction(state, object, &args, nil)
+		return node.evalFunction(state, object, &args, nil)
 	case types.ObjectInstance:
 		args := []common.Value{variable}
-		return a.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
+		return node.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
 	default:
-		return nil, util.ObjectIsNotCallable(a.Ident, object.GetTypeName())
+		return nil, util.ObjectIsNotCallable(node.Ident, object.GetTypeName())
 	}
 }
 
-func (a *Call) evalFunctionByName(
+func (node *Call) evalFunctionByName(
 	state common.State,
 	object common.Value,
 	functionName string,
@@ -55,20 +55,20 @@ func (a *Call) evalFunctionByName(
 	kwargs *map[string]common.Value,
 	isMethod bool,
 ) (common.Value, error) {
-	if err := updateArgs(state, a.Arguments, args); err != nil {
+	if err := updateArgs(state, node.Arguments, args); err != nil {
 		return nil, err
 	}
 
 	return types.CallByName(state, object, functionName, args, kwargs, isMethod)
 }
 
-func (a *Call) evalFunction(
+func (node *Call) evalFunction(
 	state common.State,
 	function *types.FunctionInstance,
 	args *[]common.Value,
 	kwargs *map[string]common.Value,
 ) (common.Value, error) {
-	if err := updateArgs(state, a.Arguments, args); err != nil {
+	if err := updateArgs(state, node.Arguments, args); err != nil {
 		return nil, err
 	}
 
