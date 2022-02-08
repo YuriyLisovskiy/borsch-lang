@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type DictionaryEntry struct {
@@ -130,7 +130,7 @@ func toDictionary(state common.State, args ...common.Value) (common.Value, error
 	}
 
 	if len(args) != 2 {
-		return nil, util.RuntimeError(
+		return nil, utilities.RuntimeError(
 			fmt.Sprintf(
 				"функція 'словник()' приймає два аргументи, або жодного (отримано %d)", len(args),
 			),
@@ -142,7 +142,7 @@ func toDictionary(state common.State, args ...common.Value) (common.Value, error
 		switch values := args[1].(type) {
 		case ListInstance:
 			if keys.Length(state) != values.Length(state) {
-				return nil, util.RuntimeError(
+				return nil, utilities.RuntimeError(
 					fmt.Sprintf(
 						"довжина списку ключів має співпадати з довжиною списку значень",
 					),
@@ -159,14 +159,14 @@ func toDictionary(state common.State, args ...common.Value) (common.Value, error
 
 			return dict, nil
 		default:
-			return nil, util.RuntimeError(
+			return nil, utilities.RuntimeError(
 				fmt.Sprintf(
 					"функція 'словник()' другим аргументом приймає список значень",
 				),
 			)
 		}
 	default:
-		return nil, util.RuntimeError(
+		return nil, utilities.RuntimeError(
 			fmt.Sprintf(
 				"функція 'словник()' першим аргументом приймає список ключів",
 			),
@@ -178,9 +178,9 @@ func compareDictionaries(_ common.State, op common.Operator, self common.Value, 
 	switch right := other.(type) {
 	case NilInstance:
 	case *DictionaryInstance, DictionaryInstance:
-		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
+		return -2, utilities.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	default:
-		return -2, util.OperatorNotSupportedError(op, self, right)
+		return -2, utilities.OperatorNotSupportedError(op, self, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -208,7 +208,7 @@ func dictionaryMethod_Remove(name string) common.Value {
 			dict := (*args)[0].(DictionaryInstance)
 			_, err := dict.RemoveElement(state, (*args)[1])
 			if err != nil {
-				return nil, util.RuntimeError(err.Error())
+				return nil, utilities.RuntimeError(err.Error())
 			}
 
 			return nil, nil

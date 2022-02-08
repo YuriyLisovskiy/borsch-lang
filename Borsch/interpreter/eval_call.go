@@ -3,7 +3,7 @@ package interpreter
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func (node *Call) Evaluate(
@@ -43,7 +43,7 @@ func (node *Call) Evaluate(
 		args := []common.Value{variable}
 		return node.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
 	default:
-		return nil, util.ObjectIsNotCallable(node.Ident, object.GetTypeName())
+		return nil, utilities.ObjectIsNotCallable(node.Ident, object.GetTypeName())
 	}
 }
 

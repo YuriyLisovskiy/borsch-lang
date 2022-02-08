@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type RealInstance struct {
@@ -42,7 +42,7 @@ func (t RealInstance) AsBool(common.State) (bool, error) {
 func compareReals(_ common.State, op common.Operator, self, other common.Value) (int, error) {
 	left, ok := self.(RealInstance)
 	if !ok {
-		return 0, util.IncorrectUseOfFunctionError("compareReals")
+		return 0, utilities.IncorrectUseOfFunctionError("compareReals")
 	}
 
 	switch right := other.(type) {
@@ -80,7 +80,7 @@ func compareReals(_ common.State, op common.Operator, self, other common.Value) 
 
 		return 1, nil
 	default:
-		return 0, util.OperatorNotSupportedError(op, left, right)
+		return 0, utilities.OperatorNotSupportedError(op, left, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -110,7 +110,7 @@ func realBinaryOperator(
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			left, ok := (*args)[0].(RealInstance)
 			if !ok {
-				return nil, util.InvalidUseOfOperator(operator, left, (*args)[1])
+				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
 
 			return handler(state, left, (*args)[1])
@@ -144,7 +144,7 @@ func realUnaryOperator(
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			left, ok := (*args)[0].(RealInstance)
 			if !ok {
-				return nil, util.InvalidUseOfOperator(operator, left, (*args)[1])
+				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
 
 			return handler(state, left)

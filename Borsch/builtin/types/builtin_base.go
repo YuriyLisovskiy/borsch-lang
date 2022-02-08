@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 // BuiltinInstance is non-callable instance where setting an
@@ -15,12 +15,12 @@ type BuiltinInstance struct {
 
 func (i BuiltinInstance) SetAttribute(name string, _ common.Value) error {
 	if i.HasAttribute(name) {
-		return util.AttributeIsReadOnlyError(i.GetTypeName(), name)
+		return utilities.AttributeIsReadOnlyError(i.GetTypeName(), name)
 	}
 
-	return util.AttributeNotFoundError(i.GetTypeName(), name)
+	return utilities.AttributeNotFoundError(i.GetTypeName(), name)
 }
 
 func (i BuiltinInstance) Call(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error) {
-	return nil, util.ObjectIsNotCallable("", i.GetTypeName())
+	return nil, utilities.ObjectIsNotCallable("", i.GetTypeName())
 }

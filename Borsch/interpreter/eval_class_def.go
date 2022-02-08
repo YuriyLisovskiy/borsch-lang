@@ -5,7 +5,7 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
@@ -27,7 +27,7 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 
 		baseClass := base.(*types.Class)
 		if baseClass.IsFinalClass() {
-			return nil, util.RuntimeError(
+			return nil, utilities.RuntimeError(
 				fmt.Sprintf(
 					"клас '%s' є закритим для розширення, не наслідуйте цей клас",
 					name,
@@ -101,11 +101,11 @@ func (m *ClassMember) Evaluate(state common.State, class *types.Class) (common.V
 func checkMethod(class *types.Class, args []types.FunctionParameter, _ []types.FunctionReturnType) error {
 	if len(args) == 0 {
 		// TODO: ukr error text!
-		return util.RuntimeError("not enough args, self required")
+		return utilities.RuntimeError("not enough args, self required")
 	}
 
 	if args[0].Type != class {
-		return util.RuntimeError(
+		return utilities.RuntimeError(
 			fmt.Sprintf(
 				"перший параметер метода має бути типу '%s' отримано '%s'",
 				class.GetTypeName(),
@@ -123,10 +123,10 @@ func checkConstructor(_ []types.FunctionParameter, returnTypes []types.FunctionR
 		// skip
 	case 1:
 		if returnTypes[0].Type != types.Nil {
-			return util.RuntimeError("конструктор має повертати 'нуль'")
+			return utilities.RuntimeError("конструктор має повертати 'нуль'")
 		}
 	default:
-		return util.RuntimeError("ERROR")
+		return utilities.RuntimeError("ERROR")
 	}
 
 	return nil

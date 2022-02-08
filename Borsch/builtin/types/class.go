@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type Class struct {
@@ -142,7 +142,7 @@ func (c *Class) GetOperator(name string) (common.Value, error) {
 			}
 		}
 
-		return nil, util.AttributeNotFoundError(c.GetTypeName(), name)
+		return nil, utilities.AttributeNotFoundError(c.GetTypeName(), name)
 	}
 
 	return c.GetClass().GetAttribute(name)
@@ -168,16 +168,16 @@ func (c *Class) GetAttribute(name string) (common.Value, error) {
 		}
 	}
 
-	return nil, util.AttributeNotFoundError(c.GetName(), name)
+	return nil, utilities.AttributeNotFoundError(c.GetName(), name)
 }
 
 func (c *Class) SetAttribute(name string, newValue common.Value) error {
 	if c.isType() {
 		if c.HasAttribute(name) {
-			return util.AttributeIsReadOnlyError(c.GetTypeName(), name)
+			return utilities.AttributeIsReadOnlyError(c.GetTypeName(), name)
 		}
 
-		return util.AttributeNotFoundError(c.GetTypeName(), name)
+		return utilities.AttributeNotFoundError(c.GetTypeName(), name)
 	}
 
 	if oldValue, ok := c.attributes[name]; ok {
@@ -188,7 +188,7 @@ func (c *Class) SetAttribute(name string, newValue common.Value) error {
 			return nil
 		}
 
-		return util.RuntimeError(
+		return utilities.RuntimeError(
 			fmt.Sprintf(
 				"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
 				newValue.GetTypeName(), name, oldValue.GetTypeName(),
@@ -238,7 +238,7 @@ func (c *Class) HasBase(cls *Class) bool {
 func (c *Class) Call(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
 	operator, err := c.GetOperator(common.ConstructorName)
 	if err != nil {
-		return nil, util.ObjectIsNotCallable(c.GetName(), c.GetTypeName())
+		return nil, utilities.ObjectIsNotCallable(c.GetName(), c.GetTypeName())
 	}
 
 	return CallAttribute(state, c, operator, common.ConstructorName, args, kwargs, true)

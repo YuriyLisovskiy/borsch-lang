@@ -5,18 +5,8 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
-
-func deepCopy(object common.Value) (common.Value, error) {
-	switch value := object.(type) {
-	case *types.ClassInstance:
-		copied := value.Copy()
-		return copied, nil
-	default:
-		return value, nil
-	}
-}
 
 func runUnaryOperator(state common.State, name string, object common.Value, expectedType *types.Class) (
 	common.Value,
@@ -29,7 +19,7 @@ func runUnaryOperator(state common.State, name string, object common.Value, expe
 	}
 
 	if result.(types.ObjectInstance).GetClass() != expectedType {
-		return nil, util.RuntimeError(
+		return nil, utilities.RuntimeError(
 			fmt.Sprintf(
 				"'%s' має повертати значення з типом '%s', отримано '%s'",
 				name, expectedType.GetTypeName(),
@@ -41,7 +31,7 @@ func runUnaryOperator(state common.State, name string, object common.Value, expe
 	return result, nil
 }
 
-func MustBool(value common.Value, errFunc func(common.Value) error) (bool, error) {
+func mustBool(value common.Value, errFunc func(common.Value) error) (bool, error) {
 	switch integer := value.(type) {
 	case types.BoolInstance:
 		return integer.Value, nil

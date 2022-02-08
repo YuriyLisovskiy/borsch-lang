@@ -28,6 +28,7 @@ var BuiltinPackage *PackageInstance
 func Init() {
 	BuiltinPackage = NewPackageInstance(nil, "вбудований", nil, map[string]common.Value{})
 
+	// def
 	TypeClass = newTypeClass()
 	Nil = newNilClass()
 	Bool = newBoolClass()
@@ -39,19 +40,20 @@ func Init() {
 	Real = newRealClass()
 	String = newStringClass()
 
-	initClass(TypeClass)
-	initClass(Nil)
-	initClass(Bool)
-	initClass(Dictionary)
-	initClass(Function)
-	initClass(Integer)
-	initClass(List)
-	initClass(Package)
-	initClass(Real)
-	initClass(String)
+	// init
+	InitClass(TypeClass)
+	InitClass(Nil)
+	InitClass(Bool)
+	InitClass(Dictionary)
+	InitClass(Function)
+	InitClass(Integer)
+	InitClass(List)
+	InitClass(Package)
+	InitClass(Real)
+	InitClass(String)
 }
 
-func initClass(cls *Class) {
+func InitClass(cls *Class) {
 	cls.Setup()
 	if !cls.IsValid() {
 		panic("class is not valid")

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type IntegerInstance struct {
@@ -47,7 +47,7 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 	}
 
 	if len(args) != 1 {
-		return nil, util.RuntimeError(
+		return nil, utilities.RuntimeError(
 			fmt.Sprintf(
 				"'цілий()' приймає лише один аргумент (отримано %d)", len(args),
 			),
@@ -62,7 +62,7 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 	case StringInstance:
 		intVal, err := strconv.ParseInt(vt.Value, 10, 64)
 		if err != nil {
-			return nil, util.RuntimeError(
+			return nil, utilities.RuntimeError(
 				fmt.Sprintf(
 					"некоректний літерал для функції 'цілий()' з основою 10: '%s'", vt.Value,
 				),
@@ -77,7 +77,7 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 
 		return NewIntegerInstance(0), nil
 	default:
-		return nil, util.RuntimeError(
+		return nil, utilities.RuntimeError(
 			fmt.Sprintf(
 				"'%s' неможливо інтерпретувати як ціле число", args[0].GetTypeName(),
 			),
@@ -95,17 +95,17 @@ func evalUnaryOperatorWithIntegers(_ common.State, operator common.Operator, val
 		case common.UnaryBitwiseNotOp:
 			return NewIntegerInstance(^self.Value), nil
 		default:
-			return nil, util.InternalOperatorError(operator)
+			return nil, utilities.InternalOperatorError(operator)
 		}
 	}
 
-	return nil, util.BadOperandForUnaryOperatorError(operator)
+	return nil, utilities.BadOperandForUnaryOperatorError(operator)
 }
 
 func compareIntegers(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
 	left, ok := self.(IntegerInstance)
 	if !ok {
-		return 0, util.IncorrectUseOfFunctionError("compareIntegers")
+		return 0, utilities.IncorrectUseOfFunctionError("compareIntegers")
 	}
 
 	switch right := other.(type) {
@@ -143,7 +143,7 @@ func compareIntegers(_ common.State, op common.Operator, self common.Value, othe
 
 		return 1, nil
 	default:
-		return 0, util.OperatorNotSupportedError(op, left, right)
+		return 0, utilities.OperatorNotSupportedError(op, left, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -173,7 +173,7 @@ func intOperator(
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			left, ok := (*args)[0].(IntegerInstance)
 			if !ok {
-				return nil, util.InvalidUseOfOperator(operator, left, (*args)[1])
+				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
 
 			return handler(state, left, (*args)[1])

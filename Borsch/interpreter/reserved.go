@@ -52,7 +52,7 @@ func init() {
 		sort.Strings(keywords)
 	}
 
-	for key := range builtin.BuiltinScope {
+	for key := range builtin.GlobalScope {
 		builtinIds = append(builtinIds, key)
 	}
 

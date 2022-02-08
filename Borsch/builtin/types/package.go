@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type PackageInstance struct {
@@ -59,9 +59,9 @@ func comparePackages(_ common.State, op common.Operator, self common.Value, othe
 	switch right := other.(type) {
 	case NilInstance:
 	case *PackageInstance:
-		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
+		return -2, utilities.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	default:
-		return -2, util.OperatorNotSupportedError(op, self, right)
+		return -2, utilities.OperatorNotSupportedError(op, self, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'

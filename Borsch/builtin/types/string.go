@@ -7,7 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type StringInstance struct {
@@ -95,7 +95,7 @@ func (t StringInstance) Slice(state common.State, from, to int64) (common.Value,
 func compareStrings(_ common.State, op common.Operator, self, other common.Value) (int, error) {
 	left, ok := self.(StringInstance)
 	if !ok {
-		return 0, util.IncorrectUseOfFunctionError("compareStrings")
+		return 0, utilities.IncorrectUseOfFunctionError("compareStrings")
 	}
 
 	switch right := other.(type) {
@@ -111,7 +111,7 @@ func compareStrings(_ common.State, op common.Operator, self, other common.Value
 
 		return 1, nil
 	default:
-		return 0, util.OperatorNotSupportedError(op, left, right)
+		return 0, utilities.OperatorNotSupportedError(op, left, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -141,7 +141,7 @@ func stringBinaryOperator(
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			left, ok := (*args)[0].(StringInstance)
 			if !ok {
-				return nil, util.InvalidUseOfOperator(operator, left, (*args)[1])
+				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
 
 			return handler(state, left, (*args)[1])

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bool) error {
@@ -32,7 +32,7 @@ func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bo
 	}
 
 	if isVariadic {
-		return util.RuntimeError(
+		return utilities.RuntimeError(
 			fmt.Sprintf(
 				"аргумент '%s' очікує набір параметрів з типом '%s' або його похідними, отримано '%s'",
 				parameter.Name, parameter.GetTypeName(), arg.GetTypeName(),
@@ -40,7 +40,7 @@ func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bo
 		)
 	}
 
-	return util.RuntimeError(
+	return utilities.RuntimeError(
 		fmt.Sprintf(
 			"аргумент '%s' очікує параметр з типом '%s' або його похідними, отримано '%s'",
 			parameter.Name, parameter.GetTypeName(), arg.GetTypeName(),
@@ -108,7 +108,7 @@ func CheckResult(state common.State, result common.Value, function *FunctionInst
 				typesGot = append(typesGot, retType.GetTypeName())
 			}
 
-			return util.RuntimeError(
+			return utilities.RuntimeError(
 				fmt.Sprintf(
 					"'%s' повертає значення з типами (%s), отримано (%s)",
 					function.Name,
@@ -130,7 +130,7 @@ func CheckResult(state common.State, result common.Value, function *FunctionInst
 			expectedTypes = append(expectedTypes, retType.String())
 		}
 
-		return util.RuntimeError(
+		return utilities.RuntimeError(
 			fmt.Sprintf(
 				"'%s()' повертає значення з типами '(%s)', отримано '%s'",
 				function.Name,
@@ -156,7 +156,7 @@ func checkSingleResult(
 				return err
 			}
 
-			return util.RuntimeError(
+			return utilities.RuntimeError(
 				fmt.Sprintf(
 					"%s() повертає ненульове значення%s, отримано '%s'",
 					funcName, "%s", resultStr,
@@ -164,7 +164,7 @@ func checkSingleResult(
 			)
 		}
 	} else if returnType.Type != Any && result.(ObjectInstance).GetClass() != returnType.Type {
-		return util.RuntimeError(
+		return utilities.RuntimeError(
 			fmt.Sprintf(
 				"'%s()' повертає значення типу '%s'%s, отримано значення з типом '%s'",
 				funcName, returnType.String(), "%s", result.GetTypeName(),
@@ -189,7 +189,7 @@ func makeArgumentError(argsLen, parametersLen int, params []FunctionParameter, f
 			}
 		}
 
-		return util.RuntimeError(
+		return utilities.RuntimeError(
 			fmt.Sprintf(
 				"при виклику '%s()' відсутн%s %d необхідн%s параметр%s: %s",
 				funcName, end1, diffLen, end2, end3, parametersStr,
@@ -198,7 +198,7 @@ func makeArgumentError(argsLen, parametersLen int, params []FunctionParameter, f
 	}
 
 	_, end1, end2 := getEndings(argsLen)
-	return util.RuntimeError(
+	return utilities.RuntimeError(
 		fmt.Sprintf(
 			"'%s()' приймає %d необхідн%s параметр%s, отримано %d",
 			funcName, argsLen, end1, end2, parametersLen,

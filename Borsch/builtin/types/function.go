@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type FunctionParameter struct {
@@ -142,7 +142,7 @@ func (i FunctionInstance) Call(state common.State, args *[]common.Value, kwargs 
 		return i.callFunc(state, args, kwargs)
 	}
 
-	return nil, util.ObjectIsNotCallable("", i.GetTypeName())
+	return nil, utilities.ObjectIsNotCallable("", i.GetTypeName())
 }
 
 func (i *FunctionInstance) GetContext() common.Context {

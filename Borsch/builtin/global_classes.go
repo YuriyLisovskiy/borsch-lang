@@ -1,13 +1,13 @@
-package std
+package builtin
 
 import "github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 
 var ErrorClass *types.Class = nil
 
-func Init() {
+func initClasses() {
+	// def
 	ErrorClass = newErrorClass()
-	ErrorClass.Setup()
-	if !ErrorClass.IsValid() {
-		panic("ErrorClass is not valid")
-	}
+
+	// init
+	types.InitClass(ErrorClass)
 }

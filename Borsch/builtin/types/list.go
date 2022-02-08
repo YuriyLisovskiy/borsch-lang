@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type ListInstance struct {
@@ -101,9 +101,9 @@ func compareLists(_ common.State, op common.Operator, self common.Value, other c
 	switch right := other.(type) {
 	case NilInstance:
 	case ListInstance:
-		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
+		return -2, utilities.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	default:
-		return -2, util.OperatorNotSupportedError(op, self, right)
+		return -2, utilities.OperatorNotSupportedError(op, self, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -133,7 +133,7 @@ func listOperator(
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			left, ok := (*args)[0].(ListInstance)
 			if !ok {
-				return nil, util.InvalidUseOfOperator(operator, left, (*args)[1])
+				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
 
 			return handler(state, left, (*args)[1])

@@ -5,7 +5,7 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type Scope map[string]common.Value
@@ -328,12 +328,12 @@ func (node *SlicingOrSubscription) Evaluate(
 		var err error = nil
 		rangesLen := len(node.Ranges)
 		if rangesLen != 0 && node.Ranges[rangesLen-1].RightBound != nil {
-			return nil, util.RuntimeError("неможливо присвоїти значення зрізу")
+			return nil, utilities.RuntimeError("неможливо присвоїти значення зрізу")
 		}
 
 		if node.Call != nil {
 			if len(node.Ranges) == 0 {
-				return nil, util.RuntimeError("неможливо присвоїти значення виклику функції")
+				return nil, utilities.RuntimeError("неможливо присвоїти значення виклику функції")
 			}
 
 			variable, err = node.callFunction(state, prevValue)

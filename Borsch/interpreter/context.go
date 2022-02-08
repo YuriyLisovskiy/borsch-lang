@@ -5,7 +5,7 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type ContextImpl struct {
@@ -55,16 +55,21 @@ func (c *ContextImpl) GetVar(name string) (common.Value, error) {
 		return c.parentContext.GetVar(name)
 	}
 
-	return nil, util.RuntimeError(fmt.Sprintf("ідентифікатор '%s' не визначений", name))
+	return nil, utilities.RuntimeError(fmt.Sprintf("ідентифікатор '%s' не визначений", name))
 }
 
 func (c *ContextImpl) SetVar(name string, value common.Value) error {
 	if isKeyword(name) {
-		return util.RuntimeError(fmt.Sprintf("неможливо записати значення у '%s', оскільки це ключове слово", name))
+		return utilities.RuntimeError(
+			fmt.Sprintf(
+				"неможливо записати значення у '%s', оскільки це ключове слово",
+				name,
+			),
+		)
 	}
 
 	if isBuiltin(name) {
-		return util.RuntimeError(
+		return utilities.RuntimeError(
 			fmt.Sprintf(
 				"неможливо записати значення у '%s', оскільки це вбудований ідентифікатор",
 				name,
@@ -78,7 +83,7 @@ func (c *ContextImpl) SetVar(name string, value common.Value) error {
 			oldValuePrototype := oldValue.(types.ObjectInstance).GetClass()
 			if oldValuePrototype != value.(types.ObjectInstance).GetClass() && oldValuePrototype != types.Nil {
 				if idx == scopesLen-1 {
-					return util.RuntimeError(
+					return utilities.RuntimeError(
 						fmt.Sprintf(
 							"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
 							value.GetTypeName(), name, oldValue.GetTypeName(),
@@ -124,7 +129,7 @@ func (c *ContextImpl) GetClass(name string) (common.Value, error) {
 		return c.parentContext.GetClass(name)
 	}
 
-	return nil, util.RuntimeError(fmt.Sprintf("невідомий тип '%s'", name))
+	return nil, utilities.RuntimeError(fmt.Sprintf("невідомий тип '%s'", name))
 }
 
 func (c *ContextImpl) GetChild() common.Context {

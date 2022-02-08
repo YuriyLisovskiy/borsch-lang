@@ -1,4 +1,4 @@
-package std
+package builtin
 
 import (
 	"fmt"
@@ -42,7 +42,32 @@ func compareErrors(_ common.State, _ common.Operator, self common.Value, other c
 	return -2, nil
 }
 
-func errorOperator_Constructor() common.Value {
+func errorEvalConstructor(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+	rawParts := (*args)[1:]
+	self := (*args)[0].(*ErrorInstance)
+	for _, rawPart := range rawParts {
+		part, err := rawPart.String(state)
+		if err != nil {
+			return nil, err
+		}
+
+		self.message += part
+	}
+
+	(*args)[0] = self
+	return types.NewNilInstance(), nil
+}
+
+func errorEvalMessage(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+	msg, err := (*args)[0].String(state)
+	if err != nil {
+		return nil, err
+	}
+
+	return types.NewStringInstance(msg), nil
+}
+
+func makeErrorOperator_Constructor() common.Value {
 	return types.NewFunctionInstance(
 		common.ConstructorName,
 		[]types.FunctionParameter{
@@ -59,21 +84,7 @@ func errorOperator_Constructor() common.Value {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			rawParts := (*args)[1:]
-			self := (*args)[0].(*ErrorInstance)
-			for _, rawPart := range rawParts {
-				part, err := rawPart.String(state)
-				if err != nil {
-					return nil, err
-				}
-
-				self.message += part
-			}
-
-			(*args)[0] = self
-			return types.NewNilInstance(), nil
-		},
+		errorEvalConstructor,
 		[]types.FunctionReturnType{
 			{
 				Type:       types.Nil,
@@ -86,7 +97,7 @@ func errorOperator_Constructor() common.Value {
 	)
 }
 
-func errorMethod_Message(name string) common.Value {
+func makeErrorMethod_Message(name string) common.Value {
 	return types.NewFunctionInstance(
 		name,
 		[]types.FunctionParameter{
@@ -97,14 +108,7 @@ func errorMethod_Message(name string) common.Value {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			msg, err := (*args)[0].String(state)
-			if err != nil {
-				return nil, err
-			}
-
-			return types.NewStringInstance(msg), nil
-		},
+		errorEvalMessage,
 		[]types.FunctionReturnType{
 			{
 				Type:       types.String,
@@ -118,36 +122,34 @@ func errorMethod_Message(name string) common.Value {
 }
 
 func newErrorClass() *types.Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = types.MergeAttributes(
-			map[string]common.Value{
-				// TODO: add doc
-				common.ConstructorName: errorOperator_Constructor(),
-				"повідомлення":         errorMethod_Message("повідомлення"),
-				common.EqualsOp.Name(): types.MakeComparisonOperator(
-					// TODO: add doc
-					common.EqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
-						return res == 0
-					},
-				),
-				common.NotEqualsOp.Name(): types.MakeComparisonOperator(
-					// TODO: add doc
-					common.NotEqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
-						return res != 0
-					},
-				),
-			},
-			types.MakeLogicalOperators(ErrorClass),
-			types.MakeCommonOperators(ErrorClass),
-		)
-	}
-
 	return &types.Class{
-		Name:            common.ErrorTypeName,
-		IsFinal:         false,
-		Bases:           []*types.Class{},
-		Parent:          types.BuiltinPackage,
-		AttrInitializer: initAttributes,
+		Name:    common.ErrorTypeName,
+		IsFinal: false,
+		Bases:   []*types.Class{},
+		Parent:  types.BuiltinPackage,
+		AttrInitializer: func(attrs *map[string]common.Value) {
+			*attrs = types.MergeAttributes(
+				map[string]common.Value{
+					// TODO: add doc
+					common.ConstructorName: makeErrorOperator_Constructor(),
+					"повідомлення":         makeErrorMethod_Message("повідомлення"),
+					common.EqualsOp.Name(): types.MakeComparisonOperator(
+						// TODO: add doc
+						common.EqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
+							return res == 0
+						},
+					),
+					common.NotEqualsOp.Name(): types.MakeComparisonOperator(
+						// TODO: add doc
+						common.NotEqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
+							return res != 0
+						},
+					),
+				},
+				types.MakeLogicalOperators(ErrorClass),
+				types.MakeCommonOperators(ErrorClass),
+			)
+		},
 		GetEmptyInstance: func() (common.Value, error) {
 			return NewErrorInstance(""), nil
 		},

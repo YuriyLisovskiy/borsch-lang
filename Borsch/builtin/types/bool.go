@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type BoolInstance struct {
@@ -45,7 +45,7 @@ func toBool(state common.State, args ...common.Value) (common.Value, error) {
 	}
 
 	if len(args) != 1 {
-		return nil, util.RuntimeError(
+		return nil, utilities.RuntimeError(
 			fmt.Sprintf(
 				"функція 'логічний()' приймає лише один аргумент (отримано %d)", len(args),
 			),
@@ -63,7 +63,7 @@ func toBool(state common.State, args ...common.Value) (common.Value, error) {
 func compareBooleans(state common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
 	left, ok := self.(BoolInstance)
 	if !ok {
-		return 0, util.IncorrectUseOfFunctionError("compareBooleans")
+		return 0, utilities.IncorrectUseOfFunctionError("compareBooleans")
 	}
 
 	switch right := other.(type) {
@@ -82,7 +82,7 @@ func compareBooleans(state common.State, op common.Operator, self common.Value, 
 			return 0, nil
 		}
 	default:
-		return 0, util.OperatorNotSupportedError(op, left, right)
+		return 0, utilities.OperatorNotSupportedError(op, left, right)
 	}
 
 	// -2 is something other than -1, 0 or 1 and means 'not equals'
@@ -99,11 +99,11 @@ func evalUnaryOperatorWithBooleans(_ common.State, operator common.Operator, val
 		case common.UnaryBitwiseNotOp:
 			return NewIntegerInstance(^boolToInt64(self.Value)), nil
 		default:
-			return nil, util.InternalOperatorError(operator)
+			return nil, utilities.InternalOperatorError(operator)
 		}
 	}
 
-	return nil, util.BadOperandForUnaryOperatorError(operator)
+	return nil, utilities.BadOperandForUnaryOperatorError(operator)
 }
 
 func boolOperator(
@@ -129,7 +129,7 @@ func boolOperator(
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			left, ok := (*args)[0].(BoolInstance)
 			if !ok {
-				return nil, util.InvalidUseOfOperator(operator, left, (*args)[1])
+				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
 
 			return handler(state, left, (*args)[1])

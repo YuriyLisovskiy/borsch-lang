@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type ClassInstance struct {
@@ -78,7 +78,7 @@ func (i ClassInstance) GetOperator(name string) (common.Value, error) {
 		}
 	}
 
-	return nil, util.OperatorNotFoundError(i.GetTypeName(), name)
+	return nil, utilities.OperatorNotFoundError(i.GetTypeName(), name)
 }
 
 func (i ClassInstance) GetAttribute(name string) (common.Value, error) {
@@ -90,7 +90,7 @@ func (i ClassInstance) GetAttribute(name string) (common.Value, error) {
 		return attr, nil
 	}
 
-	return nil, util.AttributeNotFoundError(i.GetTypeName(), name)
+	return nil, utilities.AttributeNotFoundError(i.GetTypeName(), name)
 }
 
 func (i ClassInstance) SetAttribute(name string, newValue common.Value) error {
@@ -102,7 +102,7 @@ func (i ClassInstance) SetAttribute(name string, newValue common.Value) error {
 			return nil
 		}
 
-		return util.RuntimeError(
+		return utilities.RuntimeError(
 			fmt.Sprintf(
 				"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
 				newValue.GetTypeName(), name, oldValue.GetTypeName(),
@@ -128,7 +128,7 @@ func (i ClassInstance) Call(state common.State, args *[]common.Value, kwargs *ma
 ) {
 	operator, err := i.GetOperator(common.CallOperatorName)
 	if err != nil {
-		return nil, util.ObjectIsNotCallable("", i.GetTypeName())
+		return nil, utilities.ObjectIsNotCallable("", i.GetTypeName())
 	}
 
 	return CallAttribute(state, i, operator, common.CallOperatorName, args, kwargs, true)

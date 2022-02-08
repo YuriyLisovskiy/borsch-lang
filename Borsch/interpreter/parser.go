@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 	"github.com/alecthomas/participle/v2"
 )
 
@@ -43,7 +43,7 @@ func (p *ParserImpl) Parse(filename string, code string) (common.Evaluatable, er
 	if err != nil {
 		switch parseError := err.(type) {
 		case participle.UnexpectedTokenError:
-			err := util.ParseError(parseError.Position(), parseError.Unexpected.Value, parseError.Message())
+			err := utilities.ParseError(parseError.Position(), parseError.Unexpected.Value, parseError.Message())
 			return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err))
 		default:
 			return nil, err

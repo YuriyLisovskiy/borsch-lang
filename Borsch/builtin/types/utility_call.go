@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func Call(
@@ -77,7 +77,7 @@ func CallAttribute(
 
 		return Call(state, function, args, kwargs)
 	default:
-		return nil, util.ObjectIsNotCallable(attributeName, attribute.GetTypeName())
+		return nil, utilities.ObjectIsNotCallable(attributeName, attribute.GetTypeName())
 	}
 }
 

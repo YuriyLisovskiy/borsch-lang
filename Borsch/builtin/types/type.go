@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func GetTypeOfInstance(object common.Value) (common.Value, error) {
@@ -16,7 +16,7 @@ func GetTypeOfInstance(object common.Value) (common.Value, error) {
 func compareTypes(_ common.State, _ common.Operator, self, other common.Value) (int, error) {
 	left, ok := self.(*Class)
 	if !ok {
-		return 0, util.IncorrectUseOfFunctionError("compareTypes")
+		return 0, utilities.IncorrectUseOfFunctionError("compareTypes")
 	}
 
 	if left.EqualsTo(other) {

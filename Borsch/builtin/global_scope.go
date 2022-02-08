@@ -1,16 +1,18 @@
 package builtin
 
 import (
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/std"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-var BuiltinScope map[string]common.Value
+var GlobalScope map[string]common.Value
 
 func init() {
-	initRuntime()
-	BuiltinScope = map[string]common.Value{
+	types.Init()
+	initFunctions()
+	initClasses()
+
+	GlobalScope = map[string]common.Value{
 
 		// I/O
 		PrintFunction.Name:     PrintFunction,
@@ -46,8 +48,8 @@ func init() {
 		"тип":       TypeFunction,
 
 		// Classes
-		std.ErrorClass.GetTypeName(): std.ErrorClass,
+		ErrorClass.GetTypeName(): ErrorClass,
 	}
 
-	types.BuiltinPackage.SetAttributes(BuiltinScope)
+	types.BuiltinPackage.SetAttributes(GlobalScope)
 }
