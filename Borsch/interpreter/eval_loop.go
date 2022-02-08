@@ -13,15 +13,15 @@ func (node *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) Stmt
 	}
 
 	if node.RangeBasedLoop != nil {
-		return node.RangeBasedLoop.Evaluate(state, node.Body, inFunction, inLoop)
+		return node.RangeBasedLoop.Evaluate(state, node.Body, inFunction)
 	} else if node.ConditionalLoop != nil {
-		return node.ConditionalLoop.Evaluate(state, node.Body, inFunction, inLoop)
+		return node.ConditionalLoop.Evaluate(state, node.Body, inFunction)
 	}
 
-	panic("unreachable")
+	return evalInfiniteLoop(state, node.Body, inFunction)
 }
 
-func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFunction, inLoop bool) StmtResult {
+func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFunction bool) StmtResult {
 	leftBound, err := getBound(state, node.LeftBound, "ліва")
 	if err != nil {
 		return StmtResult{Err: err}
@@ -55,7 +55,7 @@ func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFun
 	return StmtResult{}
 }
 
-func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFunction, inLoop bool) StmtResult {
+func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFunction bool) StmtResult {
 	ctx := state.GetContext()
 	for {
 		condition, err := node.Condition.Evaluate(state, nil)
@@ -97,4 +97,24 @@ func getBound(state common.State, bound *Expression, boundName string) (int64, e
 			return fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.GetTypeName())
 		},
 	)
+}
+
+func evalInfiniteLoop(state common.State, body *BlockStmts, inFunction bool) StmtResult {
+	ctx := state.GetContext()
+	for {
+		ctx.PushScope(Scope{})
+		result := body.Evaluate(state, inFunction, true)
+		if result.Err != nil {
+			return result
+		}
+
+		ctx.PopScope()
+		switch result.State {
+		case StmtForceReturn:
+			return result
+		case StmtBreak:
+			result.State = StmtNone
+			return result
+		}
+	}
 }

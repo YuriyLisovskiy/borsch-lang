@@ -18,8 +18,8 @@ type LoopStmt struct {
 	Pos lexer.Position
 
 	Keyword         string           `"цикл"`
-	RangeBasedLoop  *RangeBasedLoop  `"(" (@@ `
-	ConditionalLoop *ConditionalLoop `|    @@) ")"`
+	RangeBasedLoop  *RangeBasedLoop  `["(" (@@ `
+	ConditionalLoop *ConditionalLoop `|    @@) ")"]`
 	Body            *BlockStmts      `"{" @@ "}"`
 }
 
