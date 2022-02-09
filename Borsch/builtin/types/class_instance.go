@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
@@ -99,7 +100,7 @@ func (i ClassInstance) SetAttribute(name string, newValue common.Value) error {
 			return nil
 		}
 
-		return utilities.RuntimeError(
+		return errors.New(
 			fmt.Sprintf(
 				"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
 				newValue.GetTypeName(), name, oldValue.GetTypeName(),

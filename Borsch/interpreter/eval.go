@@ -5,7 +5,6 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type Scope map[string]common.Value
@@ -16,7 +15,7 @@ func (node *Package) Evaluate(state common.State) (common.Value, error) {
 		stmtState := stmt.Evaluate(state, false, false)
 		if stmtState.Err != nil {
 			err := stmtState.Err
-			state.GetInterpreter().Trace(stmt.Pos, "<пакет>", stmt.String("    "))
+			state.GetInterpreter().Trace(stmt.Pos, "<пакет>", stmt.String())
 			return nil, err
 		}
 	}
@@ -325,7 +324,7 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet common.Value, p
 		var err error = nil
 		if node.Call != nil {
 			if node.SlicingOrSubscription == nil {
-				return nil, utilities.RuntimeError("неможливо присвоїти значення виклику функції")
+				return nil, errors.New("неможливо присвоїти значення виклику функції")
 			}
 
 			variable, err = node.callFunction(state, prevValue)
@@ -415,7 +414,7 @@ func (node *SlicingOrSubscription) Evaluate(
 		// set
 		rangesLen := len(node.Ranges)
 		if rangesLen != 0 && node.Ranges[rangesLen-1].RightBound != nil {
-			return nil, utilities.RuntimeError("неможливо присвоїти значення зрізу")
+			return nil, errors.New("неможливо присвоїти значення зрізу")
 		}
 
 		if len(node.Ranges) != 0 {
@@ -444,12 +443,12 @@ func (node *SlicingOrSubscription) Evaluate(
 // 		var err error = nil
 // 		rangesLen := len(node.Ranges)
 // 		if rangesLen != 0 && node.Ranges[rangesLen-1].RightBound != nil {
-// 			return nil, utilities.RuntimeError("неможливо присвоїти значення зрізу")
+// 			return nil, errors.New("неможливо присвоїти значення зрізу")
 // 		}
 //
 // 		if node.Call != nil {
 // 			if len(node.Ranges) == 0 {
-// 				return nil, utilities.RuntimeError("неможливо присвоїти значення виклику функції")
+// 				return nil, errors.New("неможливо присвоїти значення виклику функції")
 // 			}
 //
 // 			variable, err = node.callFunction(state, prevValue)

@@ -3,28 +3,23 @@ package utilities
 import (
 	"errors"
 
-	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
-
-type ErrorStatement interface {
-	String() string
-	Position() lexer.Position
-}
 
 type RuntimeStatementError struct {
 	err       error
-	statement ErrorStatement
+	statement common.Statement
 }
 
 func (e RuntimeStatementError) Error() string {
 	return e.err.Error()
 }
 
-func (e RuntimeStatementError) Statement() ErrorStatement {
+func (e RuntimeStatementError) Statement() common.Statement {
 	return e.statement
 }
 
-func NewRuntimeStatementError(message string, statement ErrorStatement) RuntimeStatementError {
+func NewRuntimeStatementError(message string, statement common.Statement) RuntimeStatementError {
 	return RuntimeStatementError{
 		err:       errors.New(message),
 		statement: statement,

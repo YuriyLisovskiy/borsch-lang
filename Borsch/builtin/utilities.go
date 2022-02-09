@@ -1,11 +1,11 @@
 package builtin
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func runUnaryOperator(state common.State, name string, object common.Value, expectedType *types.Class) (
@@ -19,7 +19,7 @@ func runUnaryOperator(state common.State, name string, object common.Value, expe
 	}
 
 	if result.(types.ObjectInstance).GetClass() != expectedType {
-		return nil, utilities.RuntimeError(
+		return nil, errors.New(
 			fmt.Sprintf(
 				"'%s' має повертати значення з типом '%s', отримано '%s'",
 				name, expectedType.GetTypeName(),

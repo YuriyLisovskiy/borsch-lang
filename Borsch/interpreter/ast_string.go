@@ -12,16 +12,16 @@ func (node *Package) String() string {
 }
 
 func (node *BlockStmts) String() string {
-	return node.Stmts[node.stmtPos].String("    ")
+	return node.GetCurrentStmt().String()
 }
 
-func (node *Stmt) String(indent string) string {
+func (node *Stmt) String() string {
 	if node.Throw != nil {
 		return node.Throw.String()
 	} else if node.Unsafe != nil {
 		return node.Unsafe.String()
 	} else if node.IfStmt != nil {
-		return node.IfStmt.String(indent)
+		return node.IfStmt.String("")
 	} else if node.LoopStmt != nil {
 		return node.LoopStmt.String()
 	} else if node.Block != nil {
@@ -360,6 +360,22 @@ func (node *ClassDef) String() string {
 	}
 
 	return fmt.Sprintf("клас %s %s%s", node.Name, basesStr, final)
+}
+
+func (node *ClassMember) String() string {
+	if node.Variable != nil {
+		return node.Variable.String()
+	}
+
+	if node.Method != nil {
+		return node.Method.String()
+	}
+
+	if node.Class != nil {
+		return node.Class.String()
+	}
+
+	panic("unreachable")
 }
 
 func nextOrEmpty(op string, next fmt.Stringer) string {

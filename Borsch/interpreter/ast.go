@@ -29,6 +29,10 @@ type Catch struct {
 	Stmts     *BlockStmts      `"{" @@ "}"`
 }
 
+func (node *Catch) Position() lexer.Position {
+	return node.Pos
+}
+
 type ReturnStmt struct {
 	Pos lexer.Position
 
@@ -94,6 +98,10 @@ type BlockStmts struct {
 	stmtPos int
 }
 
+func (node *BlockStmts) GetCurrentStmt() *Stmt {
+	return node.Stmts[node.stmtPos]
+}
+
 type Stmt struct {
 	Pos lexer.Position
 
@@ -108,6 +116,10 @@ type Stmt struct {
 	BreakStmt   bool         `| @"перервати"`
 	Assignment  *Assignment  `| (@@ ";")`
 	Empty       bool         `| @";"`
+}
+
+func (node *Stmt) Position() lexer.Position {
+	return node.Pos
 }
 
 type FunctionBody struct {
@@ -155,12 +167,20 @@ type ClassDef struct {
 	Members []*ClassMember `"{" @@* "}"`
 }
 
+func (node *ClassDef) Position() lexer.Position {
+	return node.Pos
+}
+
 type ClassMember struct {
 	Pos lexer.Position
 
 	Variable *Assignment  ` (@@ ";")`
 	Method   *FunctionDef `| @@`
 	Class    *ClassDef    `| @@`
+}
+
+func (node *ClassMember) Position() lexer.Position {
+	return node.Pos
 }
 
 type Assignment struct {

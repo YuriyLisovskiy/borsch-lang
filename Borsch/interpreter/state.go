@@ -1,6 +1,9 @@
 package interpreter
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
@@ -77,4 +80,12 @@ func (s *StateImpl) WithPackage(pkg common.Value) common.State {
 		context:        s.context,
 		currentPackage: pkg,
 	}
+}
+
+func (s *StateImpl) RuntimeError(message string, statement common.Statement) error {
+	if statement != nil {
+		s.interpreter.Trace(statement.Position(), "", statement.String())
+	}
+
+	return errors.New(fmt.Sprintf("Помилка виконання: %s", message))
 }
