@@ -130,7 +130,12 @@ func evalSlicingOperation(
 			}
 		}
 
-		return evalSlicingOperation(state, element, ranges_[1:], valueToSet)
+		element, err = evalSlicingOperation(state, element, ranges_[1:], valueToSet)
+		if err != nil {
+			return nil, err
+		}
+
+		return iterable.SetElement(state, leftIdx, element)
 	default:
 		operatorDescription := ""
 		if ranges_[0].IsSlicing {

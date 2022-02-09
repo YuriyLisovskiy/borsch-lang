@@ -24,9 +24,9 @@ type Unsafe struct {
 type Catch struct {
 	Pos lexer.Position
 
-	ErrorVar  string      `"піймати" "(" @Ident`
-	ErrorType string      `":" @Ident ")"`
-	Stmts     *BlockStmts `"{" @@ "}"`
+	ErrorVar  string           `"піймати" "(" @Ident`
+	ErrorType *AttributeAccess `":" @@ ")"`
+	Stmts     *BlockStmts      `"{" @@ "}"`
 }
 
 type ReturnStmt struct {
@@ -90,13 +90,15 @@ type BlockStmts struct {
 	Pos lexer.Position
 
 	Stmts []*Stmt `@@*`
+
+	stmtPos int
 }
 
 type Stmt struct {
 	Pos lexer.Position
 
 	Throw       *Throw       `  @@`
-	Try         *Unsafe      `| @@`
+	Unsafe      *Unsafe      `| @@`
 	IfStmt      *IfStmt      `| @@`
 	LoopStmt    *LoopStmt    `| @@`
 	Block       *BlockStmts  `| "{" @@ "}"`
@@ -320,16 +322,24 @@ type LambdaDef struct {
 type AttributeAccess struct {
 	Pos lexer.Position
 
-	SlicingOrSubscription *SlicingOrSubscription `@@`
-	AttributeAccess       *AttributeAccess       `("." @@)?`
+	SlicingOrSubscription *IdentOrCall     `@@`
+	AttributeAccess       *AttributeAccess `("." @@)?`
+}
+
+type IdentOrCall struct {
+	Pos lexer.Position
+
+	Call                  *Call                  `( @@`
+	Ident                 *string                `| @Ident)`
+	SlicingOrSubscription *SlicingOrSubscription `@@?`
 }
 
 type SlicingOrSubscription struct {
 	Pos lexer.Position
 
-	Call   *Call    `( @@`
-	Ident  *string  `| @Ident)`
-	Ranges []*Range `@@*`
+	// Call   *Call    `( @@`
+	// Ident  *string  `| @Ident)`
+	Ranges []*Range `@@+`
 }
 
 type Range struct {

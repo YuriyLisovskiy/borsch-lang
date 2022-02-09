@@ -78,9 +78,18 @@ func (node *Unsafe) trace(state common.State, result *StmtResult) {
 }
 
 func (node *Catch) Evaluate(state common.State, exception common.Value, inFunction, inLoop bool) (StmtResult, bool) {
-	errorClass, err := state.GetContext().GetClass(node.ErrorType)
+	errorClass, err := node.ErrorType.Evaluate(state, nil, nil)
 	if err != nil {
 		return StmtResult{Err: err}, false
+	}
+
+	if _, ok := errorClass.(*types.Class); !ok {
+		str, err := errorClass.String(state)
+		if err != nil {
+			return StmtResult{Err: err}, false
+		}
+
+		return StmtResult{Err: utilities.RuntimeError(fmt.Sprintf("об'єкт '%s' не є класом", str))}, false
 	}
 
 	targetErrorClass := exception.(types.ObjectInstance).GetClass()
@@ -96,5 +105,13 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 		return result, true
 	}
 
-	return StmtResult{}, false
+	state.GetInterpreter().Trace(node.Pos, "", node.String())
+	return StmtResult{
+		Err: utilities.RuntimeError(
+			fmt.Sprintf(
+				"перехоплення помилок, які не наслідують клас '%s' заборонено",
+				builtin.ErrorClass.Name,
+			),
+		),
+	}, false
 }

@@ -12,14 +12,14 @@ func (node *Package) String() string {
 }
 
 func (node *BlockStmts) String() string {
-	panic("unreachable")
+	return node.Stmts[node.stmtPos].String("    ")
 }
 
 func (node *Stmt) String(indent string) string {
 	if node.Throw != nil {
 		return node.Throw.String()
-	} else if node.Try != nil {
-		return node.Try.String()
+	} else if node.Unsafe != nil {
+		return node.Unsafe.String()
 	} else if node.IfStmt != nil {
 		return node.IfStmt.String(indent)
 	} else if node.LoopStmt != nil {
@@ -51,8 +51,8 @@ func (node *Unsafe) String() string {
 	return "небезпечно"
 }
 
-func (node *Catch) String(indent string) string {
-	panic("unreachable")
+func (node *Catch) String() string {
+	return fmt.Sprintf("піймати (%s: %s)", node.ErrorVar, node.ErrorType.String())
 }
 
 func (node *Assignment) String() string {
@@ -200,7 +200,7 @@ func (node *AttributeAccess) String() string {
 	return str
 }
 
-func (node *SlicingOrSubscription) String() string {
+func (node *IdentOrCall) String() string {
 	str := ""
 	if node.Call != nil {
 		str = node.Call.String()
@@ -208,6 +208,15 @@ func (node *SlicingOrSubscription) String() string {
 		str = *node.Ident
 	}
 
+	if node.SlicingOrSubscription != nil {
+		str += node.SlicingOrSubscription.String()
+	}
+
+	return str
+}
+
+func (node *SlicingOrSubscription) String() string {
+	str := ""
 	if len(node.Ranges) != 0 {
 		for _, rng := range node.Ranges {
 			str += rng.String()

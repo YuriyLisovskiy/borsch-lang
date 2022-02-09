@@ -58,8 +58,8 @@ func (node *Stmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResu
 	switch {
 	case node.Throw != nil:
 		return node.Throw.Evaluate(state)
-	case node.Try != nil:
-		return node.Try.Evaluate(state, inFunction, inLoop)
+	case node.Unsafe != nil:
+		return node.Unsafe.Evaluate(state, inFunction, inLoop)
 	case node.IfStmt != nil:
 		return node.IfStmt.Evaluate(state, inFunction, inLoop)
 	case node.LoopStmt != nil:
