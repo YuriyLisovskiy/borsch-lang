@@ -20,7 +20,7 @@ func init() {
 		InputFunction.Name:     InputFunction,
 
 		// Common
-		PanicFunction.Name:     PanicFunction,
+		// PanicFunction.Name:     PanicFunction,
 		EnvFunction.Name:       EnvFunction,
 		AssertFunction.Name:    AssertFunction,
 		CopyrightFunction.Name: CopyrightFunction,
@@ -48,7 +48,7 @@ func init() {
 		"тип":       TypeFunction,
 
 		// Classes
-		ErrorClass.GetTypeName(): ErrorClass,
+		ErrorClass.GetName(): ErrorClass,
 	}
 
 	types.BuiltinPackage.SetAttributes(GlobalScope)

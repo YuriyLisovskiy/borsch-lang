@@ -16,7 +16,7 @@ func (node *Package) Evaluate(state common.State) (common.Value, error) {
 		stmtState := stmt.Evaluate(state, false, false)
 		if stmtState.Err != nil {
 			err := stmtState.Err
-			state.GetInterpreter().Trace(node.Pos, "<пакет>", stmt.String("    "))
+			state.GetInterpreter().Trace(stmt.Pos, "<пакет>", stmt.String("    "))
 			return nil, err
 		}
 	}

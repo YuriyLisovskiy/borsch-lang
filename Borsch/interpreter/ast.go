@@ -8,6 +8,27 @@ type Package struct {
 	Stmts []*Stmt `@@*`
 }
 
+type Throw struct {
+	Pos lexer.Position
+
+	Expression *Expression `"панікувати" @@`
+}
+
+type Try struct {
+	Pos lexer.Position
+
+	Stmts       *BlockStmts `"небезпечно" "{" @@ "}"`
+	CatchBlocks []*Catch    `@@ (@@)*`
+}
+
+type Catch struct {
+	Pos lexer.Position
+
+	ErrorVar  string      `"виняток" "(" @Ident`
+	ErrorType string      `":" @Ident ")"`
+	Stmts     *BlockStmts `"{" @@ "}"`
+}
+
 type ReturnStmt struct {
 	Pos lexer.Position
 
@@ -74,7 +95,9 @@ type BlockStmts struct {
 type Stmt struct {
 	Pos lexer.Position
 
-	IfStmt      *IfStmt      `  @@`
+	Throw       *Throw       `  @@`
+	Try         *Try         `| @@`
+	IfStmt      *IfStmt      `| @@`
 	LoopStmt    *LoopStmt    `| @@`
 	Block       *BlockStmts  `| "{" @@ "}"`
 	FunctionDef *FunctionDef `| @@`

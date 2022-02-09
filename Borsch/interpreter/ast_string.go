@@ -16,7 +16,11 @@ func (node *BlockStmts) String() string {
 }
 
 func (node *Stmt) String(indent string) string {
-	if node.IfStmt != nil {
+	if node.Throw != nil {
+		return node.Throw.String()
+	} else if node.Try != nil {
+		return node.Try.String(indent)
+	} else if node.IfStmt != nil {
 		return node.IfStmt.String(indent)
 	} else if node.LoopStmt != nil {
 		return node.LoopStmt.String()
@@ -36,6 +40,18 @@ func (node *Stmt) String(indent string) string {
 		return ";"
 	}
 
+	panic("unreachable")
+}
+
+func (node *Throw) String() string {
+	return fmt.Sprintf("панікувати %s", node.Expression.String())
+}
+
+func (node *Try) String(indent string) string {
+	return "небезпечно"
+}
+
+func (node *Catch) String(indent string) string {
 	panic("unreachable")
 }
 

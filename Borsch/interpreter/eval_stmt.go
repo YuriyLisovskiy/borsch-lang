@@ -13,6 +13,7 @@ const (
 	StmtNone StmtState = iota
 	StmtBreak
 	StmtForceReturn
+	StmtThrown
 )
 
 type StmtResult struct {
@@ -25,6 +26,10 @@ type StmtResult struct {
 // Returns (result value, force stop flag, error)
 func (node *Stmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
 	switch {
+	case node.Throw != nil:
+		return node.Throw.Evaluate(state, inFunction, inLoop)
+	case node.Try != nil:
+		return node.Try.Evaluate(state, inFunction, inLoop)
 	case node.IfStmt != nil:
 		return node.IfStmt.Evaluate(state, inFunction, inLoop)
 	case node.LoopStmt != nil:
