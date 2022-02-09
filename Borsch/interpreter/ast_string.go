@@ -19,7 +19,7 @@ func (node *Stmt) String(indent string) string {
 	if node.Throw != nil {
 		return node.Throw.String()
 	} else if node.Try != nil {
-		return node.Try.String(indent)
+		return node.Try.String()
 	} else if node.IfStmt != nil {
 		return node.IfStmt.String(indent)
 	} else if node.LoopStmt != nil {
@@ -47,7 +47,7 @@ func (node *Throw) String() string {
 	return fmt.Sprintf("панікувати %s", node.Expression.String())
 }
 
-func (node *Try) String(indent string) string {
+func (node *Unsafe) String() string {
 	return "небезпечно"
 }
 

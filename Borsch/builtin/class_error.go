@@ -22,7 +22,19 @@ func NewErrorInstance(message string) (*ErrorInstance, error) {
 }
 
 func (t ErrorInstance) String(state common.State) (string, error) {
-	messageAttr, err := t.GetAttribute("_повідомлення")
+	return errorInstance_EvalString(state, t)
+}
+
+func (t ErrorInstance) Representation(state common.State) (string, error) {
+	return errorInstance_EvalRepresentation(state, t)
+}
+
+func (t ErrorInstance) AsBool(common.State) (bool, error) {
+	return true, nil
+}
+
+func errorInstance_EvalString(state common.State, value common.Value) (string, error) {
+	messageAttr, err := value.GetAttribute("_повідомлення")
 	if err != nil {
 		return "", err
 	}
@@ -32,20 +44,17 @@ func (t ErrorInstance) String(state common.State) (string, error) {
 		return "", err
 	}
 
-	return message, nil
+	return fmt.Sprintf("%s: %s", value.GetTypeName(), message), nil
 }
 
-func (t ErrorInstance) Representation(state common.State) (string, error) {
-	message, err := t.String(state)
+func errorInstance_EvalRepresentation(state common.State, value common.Value) (string, error) {
+	message, err := value.String(state)
 	if err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("%s(\"%s\")", t.GetTypeName(), message), nil
-}
-
-func (t ErrorInstance) AsBool(common.State) (bool, error) {
-	return true, nil
+	typeName := value.GetTypeName()
+	return fmt.Sprintf("%s(\"%s\")", typeName, message[len(typeName)+2:]), nil
 }
 
 func compareErrors(_ common.State, _ common.Operator, self common.Value, other common.Value) (int, error) {
@@ -171,12 +180,18 @@ func newErrorClass() *types.Class {
 					common.StringOperatorName: types.MakeUnaryMethod(
 						common.StringOperatorName, ErrorClass, types.String, "",
 						func(state common.State, value common.Value) (common.Value, error) {
-							messageAttr, err := value.GetAttribute("_повідомлення")
+							message, err := errorInstance_EvalString(state, value)
 							if err != nil {
 								return nil, err
 							}
 
-							message, err := messageAttr.String(state)
+							return types.NewStringInstance(message), nil
+						},
+					),
+					common.RepresentationOperatorName: types.MakeUnaryMethod(
+						common.RepresentationOperatorName, ErrorClass, types.String, "",
+						func(state common.State, value common.Value) (common.Value, error) {
+							message, err := errorInstance_EvalRepresentation(state, value)
 							if err != nil {
 								return nil, err
 							}

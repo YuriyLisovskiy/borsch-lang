@@ -14,7 +14,7 @@ type Throw struct {
 	Expression *Expression `"панікувати" @@`
 }
 
-type Try struct {
+type Unsafe struct {
 	Pos lexer.Position
 
 	Stmts       *BlockStmts `"небезпечно" "{" @@ "}"`
@@ -24,7 +24,7 @@ type Try struct {
 type Catch struct {
 	Pos lexer.Position
 
-	ErrorVar  string      `"виняток" "(" @Ident`
+	ErrorVar  string      `"піймати" "(" @Ident`
 	ErrorType string      `":" @Ident ")"`
 	Stmts     *BlockStmts `"{" @@ "}"`
 }
@@ -96,7 +96,7 @@ type Stmt struct {
 	Pos lexer.Position
 
 	Throw       *Throw       `  @@`
-	Try         *Try         `| @@`
+	Try         *Unsafe      `| @@`
 	IfStmt      *IfStmt      `| @@`
 	LoopStmt    *LoopStmt    `| @@`
 	Block       *BlockStmts  `| "{" @@ "}"`

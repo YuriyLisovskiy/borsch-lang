@@ -36,16 +36,12 @@ func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFun
 	for leftBound < rightBound {
 		ctx.PushScope(Scope{node.Variable: types.NewIntegerInstance(leftBound)})
 		result := body.Evaluate(state, inFunction, true)
-		if result.Err != nil {
-			return result
-		}
-
 		ctx.PopScope()
-		switch result.State {
-		case StmtForceReturn:
-			return result
-		case StmtBreak:
-			result.State = StmtNone
+		if result.Interrupt() {
+			if result.State == StmtBreak {
+				result.State = StmtNone
+			}
+
 			return result
 		}
 
@@ -74,16 +70,12 @@ func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFu
 
 		ctx.PushScope(Scope{})
 		result := body.Evaluate(state, inFunction, true)
-		if result.Err != nil {
-			return result
-		}
-
 		ctx.PopScope()
-		switch result.State {
-		case StmtForceReturn:
-			return result
-		case StmtBreak:
-			result.State = StmtNone
+		if result.Interrupt() {
+			if result.State == StmtBreak {
+				result.State = StmtNone
+			}
+
 			return result
 		}
 	}
@@ -104,16 +96,12 @@ func evalInfiniteLoop(state common.State, body *BlockStmts, inFunction bool) Stm
 	for {
 		ctx.PushScope(Scope{})
 		result := body.Evaluate(state, inFunction, true)
-		if result.Err != nil {
-			return result
-		}
-
 		ctx.PopScope()
-		switch result.State {
-		case StmtForceReturn:
-			return result
-		case StmtBreak:
-			result.State = StmtNone
+		if result.Interrupt() {
+			if result.State == StmtBreak {
+				result.State = StmtNone
+			}
+
 			return result
 		}
 	}

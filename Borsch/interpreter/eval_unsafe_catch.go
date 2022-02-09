@@ -1,16 +1,20 @@
 package interpreter
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
+	"github.com/alecthomas/participle/v2/lexer"
 )
 
-func (node *Throw) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *Throw) Position() lexer.Position {
+	return node.Pos
+}
+
+func (node *Throw) Evaluate(state common.State) StmtResult {
 	expression, err := node.Expression.Evaluate(state, nil)
 	if err != nil {
 		return StmtResult{Err: err}
@@ -23,7 +27,7 @@ func (node *Throw) Evaluate(state common.State, inFunction, inLoop bool) StmtRes
 			return StmtResult{Err: err}
 		}
 
-		return StmtResult{State: StmtThrown, Value: expression, Err: errors.New(message)}
+		return StmtResult{State: StmtThrow, Value: expression, Err: utilities.NewRuntimeStatementError(message, node)}
 	}
 
 	return StmtResult{
@@ -36,32 +40,41 @@ func (node *Throw) Evaluate(state common.State, inFunction, inLoop bool) StmtRes
 	}
 }
 
-func (node *Try) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *Unsafe) Position() lexer.Position {
+	return node.Pos
+}
+
+func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
-	if result.Err != nil {
-		if result.State != StmtThrown {
-			return StmtResult{Err: result.Err}
+	if result.State != StmtThrow {
+		return result
+	}
+
+	for _, catchBlock := range node.CatchBlocks {
+		blockResult, caught := catchBlock.Evaluate(state, result.Value, inFunction, inLoop)
+		if blockResult.Interrupt() {
+			if blockResult.State == StmtThrow {
+				node.trace(state, &blockResult)
+			}
+
+			return blockResult
 		}
 
-		for _, catch := range node.CatchBlocks {
-			blockResult, caught := catch.Evaluate(state, result.Value, inFunction, inLoop)
-			if blockResult.Err != nil {
-				return blockResult
-			}
-
-			switch blockResult.State {
-			case StmtForceReturn, StmtBreak:
-				return blockResult
-			}
-
-			if caught {
-				result.Err = nil
-				return result
-			}
+		if caught {
+			return blockResult
 		}
 	}
 
 	return result
+}
+
+func (node *Unsafe) trace(state common.State, result *StmtResult) {
+	var stmt utilities.ErrorStatement = node
+	if err, ok := result.Err.(utilities.RuntimeStatementError); ok {
+		stmt = err.Statement()
+	}
+
+	state.GetInterpreter().Trace(stmt.Position(), "", stmt.String())
 }
 
 func (node *Catch) Evaluate(state common.State, exception common.Value, inFunction, inLoop bool) (StmtResult, bool) {

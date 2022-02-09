@@ -34,13 +34,8 @@ func (node *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 			for _, stmt := range node.ElseIfStmts {
 				ctx.PushScope(Scope{})
 				gotResult, result = stmt.Evaluate(state, inFunction, inLoop)
-				if result.Err != nil {
-					return result
-				}
-
 				ctx.PopScope()
-				switch result.State {
-				case StmtForceReturn, StmtBreak:
+				if result.Interrupt() {
 					return result
 				}
 

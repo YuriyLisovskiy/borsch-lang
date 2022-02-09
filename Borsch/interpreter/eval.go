@@ -29,12 +29,7 @@ func (node *Package) Evaluate(state common.State) (common.Value, error) {
 func (node *BlockStmts) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
 	for _, stmt := range node.Stmts {
 		result := stmt.Evaluate(state, inFunction, inLoop)
-		if result.Err != nil {
-			return result
-		}
-
-		switch result.State {
-		case StmtForceReturn, StmtBreak:
+		if result.Interrupt() {
 			return result
 		}
 	}
