@@ -275,7 +275,7 @@ func (node *DictionaryEntry) Evaluate(state common.State) (common.Value, common.
 }
 
 func (node *AttributeAccess) Evaluate(state common.State, valueToSet, prevValue common.Value) (common.Value, error) {
-	if node.SlicingOrSubscription == nil {
+	if node.IdentOrCall == nil {
 		panic("unreachable")
 	}
 
@@ -284,14 +284,14 @@ func (node *AttributeAccess) Evaluate(state common.State, valueToSet, prevValue 
 		var currentValue common.Value
 		var err error
 		if node.AttributeAccess != nil {
-			currentValue, err = node.SlicingOrSubscription.Evaluate(state, nil, prevValue)
+			currentValue, err = node.IdentOrCall.Evaluate(state, nil, prevValue)
 			if err != nil {
 				return nil, err
 			}
 
 			currentValue, err = node.AttributeAccess.Evaluate(state, valueToSet, currentValue)
 		} else {
-			currentValue, err = node.SlicingOrSubscription.Evaluate(state, valueToSet, prevValue)
+			currentValue, err = node.IdentOrCall.Evaluate(state, valueToSet, prevValue)
 		}
 
 		if err != nil {
@@ -302,7 +302,7 @@ func (node *AttributeAccess) Evaluate(state common.State, valueToSet, prevValue 
 	}
 
 	// get
-	currentValue, err := node.SlicingOrSubscription.Evaluate(state, valueToSet, prevValue)
+	currentValue, err := node.IdentOrCall.Evaluate(state, valueToSet, prevValue)
 	if err != nil {
 		return nil, err
 	}

@@ -29,10 +29,6 @@ type Catch struct {
 	Stmts     *BlockStmts      `"{" @@ "}"`
 }
 
-func (node *Catch) Position() lexer.Position {
-	return node.Pos
-}
-
 type ReturnStmt struct {
 	Pos lexer.Position
 
@@ -118,10 +114,6 @@ type Stmt struct {
 	Empty       bool         `| @";"`
 }
 
-func (node *Stmt) Position() lexer.Position {
-	return node.Pos
-}
-
 type FunctionBody struct {
 	Pos lexer.Position
 
@@ -167,20 +159,12 @@ type ClassDef struct {
 	Members []*ClassMember `"{" @@* "}"`
 }
 
-func (node *ClassDef) Position() lexer.Position {
-	return node.Pos
-}
-
 type ClassMember struct {
 	Pos lexer.Position
 
 	Variable *Assignment  ` (@@ ";")`
 	Method   *FunctionDef `| @@`
 	Class    *ClassDef    `| @@`
-}
-
-func (node *ClassMember) Position() lexer.Position {
-	return node.Pos
 }
 
 type Assignment struct {
@@ -342,8 +326,8 @@ type LambdaDef struct {
 type AttributeAccess struct {
 	Pos lexer.Position
 
-	SlicingOrSubscription *IdentOrCall     `@@`
-	AttributeAccess       *AttributeAccess `("." @@)?`
+	IdentOrCall     *IdentOrCall     `@@`
+	AttributeAccess *AttributeAccess `("." @@)?`
 }
 
 type IdentOrCall struct {

@@ -192,7 +192,7 @@ func (node *LambdaDef) String() string {
 }
 
 func (node *AttributeAccess) String() string {
-	str := node.SlicingOrSubscription.String()
+	str := node.IdentOrCall.String()
 	if node.AttributeAccess != nil {
 		str += "." + node.AttributeAccess.String()
 	}

@@ -32,7 +32,8 @@ type State interface {
 	GetCurrentPackageOrNil() Value
 	WithContext(Context) State
 	WithPackage(Value) State
-	RuntimeError(string, Statement) error
+	RuntimeError(message string, statement Statement) error
+	Trace(statement Statement, place string)
 }
 
 type Statement interface {

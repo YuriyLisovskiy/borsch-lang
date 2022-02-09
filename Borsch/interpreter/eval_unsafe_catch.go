@@ -7,12 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
-	"github.com/alecthomas/participle/v2/lexer"
 )
-
-func (node *Throw) Position() lexer.Position {
-	return node.Pos
-}
 
 func (node *Throw) Evaluate(state common.State) StmtResult {
 	expression, err := node.Expression.Evaluate(state, nil)
@@ -41,10 +36,6 @@ func (node *Throw) Evaluate(state common.State) StmtResult {
 	}
 }
 
-func (node *Unsafe) Position() lexer.Position {
-	return node.Pos
-}
-
 func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.State != StmtThrow {
@@ -56,7 +47,7 @@ func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 		if blockResult.Interrupt() {
 			if blockResult.State == StmtThrow {
 				err := blockResult.Err.(utilities.RuntimeStatementError)
-				blockResult.Err = state.RuntimeError(err.Error(), err.Statement())
+				state.Trace(err.Statement(), "")
 			}
 
 			return blockResult
@@ -67,7 +58,7 @@ func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 		}
 	}
 
-	result.Err = state.RuntimeError(result.Err.Error(), node.Stmts.GetCurrentStmt())
+	state.Trace(node.Stmts.GetCurrentStmt(), "")
 	return result
 }
 
@@ -87,19 +78,12 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 	}
 
 	generatedErrorClass := exception.(types.ObjectInstance).GetClass()
-	if generatedErrorClass == errorToCatch || generatedErrorClass.HasBase(errorToCatch.(*types.Class)) {
-		ctx := state.GetContext()
-		ctx.PushScope(Scope{node.ErrorVar: exception})
-		result := node.Stmts.Evaluate(state, inFunction, inLoop)
-		if result.Err != nil {
-			return result, false
-		}
-
-		ctx.PopScope()
-		return result, true
+	errorToCatchClass := errorToCatch.(*types.Class)
+	if shouldCatch(generatedErrorClass, errorToCatchClass) {
+		return node.catch(state, exception, inFunction, inLoop)
 	}
 
-	if !errorToCatch.(*types.Class).HasBase(builtin.ErrorClass) {
+	if !errorToCatchClass.HasBase(builtin.ErrorClass) {
 		return StmtResult{
 			Err: state.RuntimeError(
 				fmt.Sprintf(
@@ -112,4 +96,20 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 	}
 
 	return StmtResult{}, false
+}
+
+func (node *Catch) catch(state common.State, err common.Value, inFunction, inLoop bool) (StmtResult, bool) {
+	ctx := state.GetContext()
+	ctx.PushScope(Scope{node.ErrorVar: err})
+	result := node.Stmts.Evaluate(state, inFunction, inLoop)
+	if result.Err != nil {
+		return result, false
+	}
+
+	ctx.PopScope()
+	return result, true
+}
+
+func shouldCatch(generated, toCatch *types.Class) bool {
+	return generated == toCatch || generated.HasBase(toCatch)
 }

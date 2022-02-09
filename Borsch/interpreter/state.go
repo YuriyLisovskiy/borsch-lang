@@ -84,8 +84,12 @@ func (s *StateImpl) WithPackage(pkg common.Value) common.State {
 
 func (s *StateImpl) RuntimeError(message string, statement common.Statement) error {
 	if statement != nil {
-		s.interpreter.Trace(statement.Position(), "", statement.String())
+		s.Trace(statement, "")
 	}
 
 	return errors.New(fmt.Sprintf("Помилка виконання: %s", message))
+}
+
+func (s *StateImpl) Trace(statement common.Statement, place string) {
+	s.interpreter.Trace(statement.Position(), place, statement.String())
 }
