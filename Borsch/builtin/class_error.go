@@ -12,23 +12,49 @@ type ErrorInstance struct {
 	message string
 }
 
-func NewErrorInstance(message string) *ErrorInstance {
-	return &ErrorInstance{
+func NewErrorInstance(message string) (*ErrorInstance, error) {
+	err := &ErrorInstance{
 		ClassInstance: *types.NewClassInstance(ErrorClass, nil),
 		message:       message,
 	}
+
+	return err, err.SetAttribute("_повідомлення", types.NewStringInstance(message))
 }
 
-func (t ErrorInstance) String(common.State) (string, error) {
-	return t.message, nil
+func (t ErrorInstance) String(state common.State) (string, error) {
+	return errorInstance_EvalString(state, t)
 }
 
-func (t ErrorInstance) Representation(common.State) (string, error) {
-	return fmt.Sprintf("%s(\"%s\")", t.GetTypeName(), t.message), nil
+func (t ErrorInstance) Representation(state common.State) (string, error) {
+	return errorInstance_EvalRepresentation(state, t)
 }
 
 func (t ErrorInstance) AsBool(common.State) (bool, error) {
 	return true, nil
+}
+
+func errorInstance_EvalString(state common.State, value common.Value) (string, error) {
+	messageAttr, err := value.GetAttribute("_повідомлення")
+	if err != nil {
+		return "", err
+	}
+
+	message, err := messageAttr.String(state)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s: %s", value.GetTypeName(), message), nil
+}
+
+func errorInstance_EvalRepresentation(state common.State, value common.Value) (string, error) {
+	message, err := value.String(state)
+	if err != nil {
+		return "", err
+	}
+
+	typeName := value.GetTypeName()
+	return fmt.Sprintf("%s(\"%s\")", typeName, message[len(typeName)+2:]), nil
 }
 
 func compareErrors(_ common.State, _ common.Operator, self common.Value, other common.Value) (int, error) {
@@ -44,14 +70,20 @@ func compareErrors(_ common.State, _ common.Operator, self common.Value, other c
 
 func errorEvalConstructor(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 	rawParts := (*args)[1:]
-	self := (*args)[0].(*ErrorInstance)
+	message := ""
 	for _, rawPart := range rawParts {
 		part, err := rawPart.String(state)
 		if err != nil {
 			return nil, err
 		}
 
-		self.message += part
+		message += part
+	}
+
+	self := (*args)[0]
+	err := self.SetAttribute("_повідомлення", types.NewStringInstance(message))
+	if err != nil {
+		return nil, err
 	}
 
 	(*args)[0] = self
@@ -145,13 +177,35 @@ func newErrorClass() *types.Class {
 							return res != 0
 						},
 					),
+					common.StringOperatorName: types.MakeUnaryMethod(
+						common.StringOperatorName, ErrorClass, types.String, "",
+						func(state common.State, value common.Value) (common.Value, error) {
+							message, err := errorInstance_EvalString(state, value)
+							if err != nil {
+								return nil, err
+							}
+
+							return types.NewStringInstance(message), nil
+						},
+					),
+					common.RepresentationOperatorName: types.MakeUnaryMethod(
+						common.RepresentationOperatorName, ErrorClass, types.String, "",
+						func(state common.State, value common.Value) (common.Value, error) {
+							message, err := errorInstance_EvalRepresentation(state, value)
+							if err != nil {
+								return nil, err
+							}
+
+							return types.NewStringInstance(message), nil
+						},
+					),
 				},
 				types.MakeLogicalOperators(ErrorClass),
 				types.MakeCommonOperators(ErrorClass),
 			)
 		},
 		GetEmptyInstance: func() (common.Value, error) {
-			return NewErrorInstance(""), nil
+			return NewErrorInstance("")
 		},
 	}
 }

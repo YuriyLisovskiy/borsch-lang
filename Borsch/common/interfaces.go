@@ -1,6 +1,8 @@
 package common
 
-import "github.com/alecthomas/participle/v2/lexer"
+import (
+	"github.com/alecthomas/participle/v2/lexer"
+)
 
 type Parser interface {
 	Parse(filename string, code string) (Evaluatable, error)
@@ -29,7 +31,14 @@ type State interface {
 	GetCurrentPackage() Value
 	GetCurrentPackageOrNil() Value
 	WithContext(Context) State
-	WithPackage(p Value) State
+	WithPackage(Value) State
+	RuntimeError(message string, statement Statement) error
+	Trace(statement Statement, place string)
+}
+
+type Statement interface {
+	String() string
+	Position() lexer.Position
 }
 
 type Evaluatable interface {

@@ -49,6 +49,11 @@ var rootCmd = &cobra.Command{
 
 			i := interpreter.NewInterpreter()
 			parser, err := interpreter.NewParser()
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
 			state := interpreter.NewState(parser, i, nil, nil)
 			_, err = i.Import(state, filePath)
 			if err != nil {

@@ -47,7 +47,7 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 	}
 
 	if len(args) != 1 {
-		return nil, utilities.RuntimeError(
+		return nil, errors.New(
 			fmt.Sprintf(
 				"'цілий()' приймає лише один аргумент (отримано %d)", len(args),
 			),
@@ -62,7 +62,7 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 	case StringInstance:
 		intVal, err := strconv.ParseInt(vt.Value, 10, 64)
 		if err != nil {
-			return nil, utilities.RuntimeError(
+			return nil, errors.New(
 				fmt.Sprintf(
 					"некоректний літерал для функції 'цілий()' з основою 10: '%s'", vt.Value,
 				),
@@ -77,7 +77,7 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 
 		return NewIntegerInstance(0), nil
 	default:
-		return nil, utilities.RuntimeError(
+		return nil, errors.New(
 			fmt.Sprintf(
 				"'%s' неможливо інтерпретувати як ціле число", args[0].GetTypeName(),
 			),

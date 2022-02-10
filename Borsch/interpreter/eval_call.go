@@ -27,17 +27,19 @@ func (node *Call) Evaluate(
 
 		return args[0], nil
 	case *types.FunctionInstance:
+		*isLambda = object.IsLambda()
 		var args []common.Value
 		if selfInstance != nil {
 			switch selfInstance.(type) {
 			case *types.Class, *types.PackageInstance:
 				// ignore
 			case types.ObjectInstance:
-				args = append(args, selfInstance)
+				if !*isLambda {
+					args = append(args, selfInstance)
+				}
 			}
 		}
 
-		*isLambda = object.IsLambda()
 		return node.evalFunction(state, object, &args, nil)
 	case types.ObjectInstance:
 		args := []common.Value{variable}

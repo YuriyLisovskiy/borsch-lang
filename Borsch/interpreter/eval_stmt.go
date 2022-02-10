@@ -9,10 +9,26 @@ import (
 
 type StmtState uint8
 
+func (s StmtState) String() string {
+	switch s {
+	case StmtNone:
+		return "StmtNone"
+	case StmtBreak:
+		return "StmtBreak"
+	case StmtForceReturn:
+		return "StmtForceReturn"
+	case StmtThrow:
+		return "StmtThrown"
+	default:
+		return ""
+	}
+}
+
 const (
 	StmtNone StmtState = iota
 	StmtBreak
 	StmtForceReturn
+	StmtThrow
 )
 
 type StmtResult struct {
@@ -21,10 +37,29 @@ type StmtResult struct {
 	Err   error
 }
 
+// Interrupt returns true when statement result contains
+// and error, or has StmtForceReturn or StmtBreak state.
+func (r StmtResult) Interrupt() bool {
+	if r.Err != nil {
+		return true
+	}
+
+	switch r.State {
+	case StmtForceReturn, StmtBreak:
+		return true
+	}
+
+	return false
+}
+
 // Evaluate executes statement.
 // Returns (result value, force stop flag, error)
 func (node *Stmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
 	switch {
+	case node.Throw != nil:
+		return node.Throw.Evaluate(state)
+	case node.Unsafe != nil:
+		return node.Unsafe.Evaluate(state, inFunction, inLoop)
 	case node.IfStmt != nil:
 		return node.IfStmt.Evaluate(state, inFunction, inLoop)
 	case node.LoopStmt != nil:

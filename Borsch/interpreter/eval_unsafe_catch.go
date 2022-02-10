@@ -1,0 +1,115 @@
+package interpreter
+
+import (
+	"fmt"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
+)
+
+func (node *Throw) Evaluate(state common.State) StmtResult {
+	expression, err := node.Expression.Evaluate(state, nil)
+	if err != nil {
+		return StmtResult{Err: err}
+	}
+
+	expressionClass := expression.(types.ObjectInstance).GetClass()
+	if expressionClass == builtin.ErrorClass || expressionClass.HasBase(builtin.ErrorClass) {
+		message, err := expression.String(state)
+		if err != nil {
+			return StmtResult{Err: err}
+		}
+
+		return StmtResult{State: StmtThrow, Value: expression, Err: utilities.NewRuntimeStatementError(message, node)}
+	}
+
+	return StmtResult{
+		Err: state.RuntimeError(
+			fmt.Sprintf(
+				"помилки мають наслідувати клас '%s'",
+				builtin.ErrorClass.Name,
+			),
+			node,
+		),
+	}
+}
+
+func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+	result := node.Stmts.Evaluate(state, inFunction, inLoop)
+	if result.State != StmtThrow {
+		return result
+	}
+
+	for _, catchBlock := range node.CatchBlocks {
+		blockResult, caught := catchBlock.Evaluate(state, result.Value, inFunction, inLoop)
+		if blockResult.Interrupt() {
+			if blockResult.State == StmtThrow {
+				err := blockResult.Err.(utilities.RuntimeStatementError)
+				state.Trace(err.Statement(), "")
+			}
+
+			return blockResult
+		}
+
+		if caught {
+			return blockResult
+		}
+	}
+
+	state.Trace(node.Stmts.GetCurrentStmt(), "")
+	return result
+}
+
+func (node *Catch) Evaluate(state common.State, exception common.Value, inFunction, inLoop bool) (StmtResult, bool) {
+	errorToCatch, err := node.ErrorType.Evaluate(state, nil, nil)
+	if err != nil {
+		return StmtResult{Err: err}, false
+	}
+
+	if _, ok := errorToCatch.(*types.Class); !ok {
+		str, err := errorToCatch.String(state)
+		if err != nil {
+			return StmtResult{Err: err}, false
+		}
+
+		return StmtResult{Err: state.RuntimeError(fmt.Sprintf("об'єкт '%s' не є класом", str), node)}, false
+	}
+
+	generatedErrorClass := exception.(types.ObjectInstance).GetClass()
+	errorToCatchClass := errorToCatch.(*types.Class)
+	if shouldCatch(generatedErrorClass, errorToCatchClass) {
+		return node.catch(state, exception, inFunction, inLoop)
+	}
+
+	if !errorToCatchClass.HasBase(builtin.ErrorClass) {
+		return StmtResult{
+			Err: state.RuntimeError(
+				fmt.Sprintf(
+					"перехоплення помилок, які не наслідують клас '%s' заборонено",
+					builtin.ErrorClass.Name,
+				),
+				node,
+			),
+		}, false
+	}
+
+	return StmtResult{}, false
+}
+
+func (node *Catch) catch(state common.State, err common.Value, inFunction, inLoop bool) (StmtResult, bool) {
+	ctx := state.GetContext()
+	ctx.PushScope(Scope{node.ErrorVar: err})
+	result := node.Stmts.Evaluate(state, inFunction, inLoop)
+	if result.Err != nil {
+		return result, false
+	}
+
+	ctx.PopScope()
+	return result, true
+}
+
+func shouldCatch(generated, toCatch *types.Class) bool {
+	return generated == toCatch || generated.HasBase(toCatch)
+}

@@ -89,7 +89,7 @@ func (t StringInstance) Slice(state common.State, from, to int64) (common.Value,
 		return nil, errors.New("індекс рядка за межами послідовності")
 	}
 
-	return NewStringInstance(t.Value[fromIdx:toIdx]), nil
+	return NewStringInstance(string([]rune(t.Value)[fromIdx:toIdx])), nil
 }
 
 func compareStrings(_ common.State, op common.Operator, self, other common.Value) (int, error) {

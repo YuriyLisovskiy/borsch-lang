@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
@@ -71,11 +72,8 @@ func (i ClassInstance) AsBool(common.State) (bool, error) {
 }
 
 func (i ClassInstance) GetOperator(name string) (common.Value, error) {
-	cls := i.GetClass()
-	if cls.attributes != nil {
-		if val, ok := cls.attributes[name]; ok {
-			return val, nil
-		}
+	if attr, err := i.GetClass().getAttribute(name); err == nil {
+		return attr, nil
 	}
 
 	return nil, utilities.OperatorNotFoundError(i.GetTypeName(), name)
@@ -86,7 +84,7 @@ func (i ClassInstance) GetAttribute(name string) (common.Value, error) {
 		return val, nil
 	}
 
-	if attr, err := i.GetClass().GetAttribute(name); err == nil {
+	if attr, err := i.GetClass().getAttribute(name); err == nil {
 		return attr, nil
 	}
 
@@ -102,7 +100,7 @@ func (i ClassInstance) SetAttribute(name string, newValue common.Value) error {
 			return nil
 		}
 
-		return utilities.RuntimeError(
+		return errors.New(
 			fmt.Sprintf(
 				"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
 				newValue.GetTypeName(), name, oldValue.GetTypeName(),

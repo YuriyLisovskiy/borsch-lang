@@ -45,7 +45,7 @@ func toBool(state common.State, args ...common.Value) (common.Value, error) {
 	}
 
 	if len(args) != 1 {
-		return nil, utilities.RuntimeError(
+		return nil, errors.New(
 			fmt.Sprintf(
 				"функція 'логічний()' приймає лише один аргумент (отримано %d)", len(args),
 			),

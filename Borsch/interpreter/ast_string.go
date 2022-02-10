@@ -12,12 +12,16 @@ func (node *Package) String() string {
 }
 
 func (node *BlockStmts) String() string {
-	panic("unreachable")
+	return node.GetCurrentStmt().String()
 }
 
-func (node *Stmt) String(indent string) string {
-	if node.IfStmt != nil {
-		return node.IfStmt.String(indent)
+func (node *Stmt) String() string {
+	if node.Throw != nil {
+		return node.Throw.String()
+	} else if node.Unsafe != nil {
+		return node.Unsafe.String()
+	} else if node.IfStmt != nil {
+		return node.IfStmt.String("")
 	} else if node.LoopStmt != nil {
 		return node.LoopStmt.String()
 	} else if node.Block != nil {
@@ -37,6 +41,18 @@ func (node *Stmt) String(indent string) string {
 	}
 
 	panic("unreachable")
+}
+
+func (node *Throw) String() string {
+	return fmt.Sprintf("панікувати %s", node.Expression.String())
+}
+
+func (node *Unsafe) String() string {
+	return "небезпечно"
+}
+
+func (node *Catch) String() string {
+	return fmt.Sprintf("піймати (%s: %s)", node.ErrorVar, node.ErrorType.String())
 }
 
 func (node *Assignment) String() string {
@@ -176,7 +192,7 @@ func (node *LambdaDef) String() string {
 }
 
 func (node *AttributeAccess) String() string {
-	str := node.SlicingOrSubscription.String()
+	str := node.IdentOrCall.String()
 	if node.AttributeAccess != nil {
 		str += "." + node.AttributeAccess.String()
 	}
@@ -184,7 +200,7 @@ func (node *AttributeAccess) String() string {
 	return str
 }
 
-func (node *SlicingOrSubscription) String() string {
+func (node *IdentOrCall) String() string {
 	str := ""
 	if node.Call != nil {
 		str = node.Call.String()
@@ -192,6 +208,15 @@ func (node *SlicingOrSubscription) String() string {
 		str = *node.Ident
 	}
 
+	if node.SlicingOrSubscription != nil {
+		str += node.SlicingOrSubscription.String()
+	}
+
+	return str
+}
+
+func (node *SlicingOrSubscription) String() string {
+	str := ""
 	if len(node.Ranges) != 0 {
 		for _, rng := range node.Ranges {
 			str += rng.String()
@@ -335,6 +360,22 @@ func (node *ClassDef) String() string {
 	}
 
 	return fmt.Sprintf("клас %s %s%s", node.Name, basesStr, final)
+}
+
+func (node *ClassMember) String() string {
+	if node.Variable != nil {
+		return node.Variable.String()
+	}
+
+	if node.Method != nil {
+		return node.Method.String()
+	}
+
+	if node.Class != nil {
+		return node.Class.String()
+	}
+
+	panic("unreachable")
 }
 
 func nextOrEmpty(op string, next fmt.Stringer) string {

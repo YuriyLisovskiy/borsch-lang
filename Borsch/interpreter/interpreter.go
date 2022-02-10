@@ -12,7 +12,6 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
@@ -53,7 +52,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	currPackage := parentPackageInstance
 	for currPackage != nil {
 		if currPackage.Name == fullPackagePath {
-			return nil, utilities.RuntimeError("циклічний імпорт заборонений")
+			return nil, errors.New("циклічний імпорт заборонений")
 		}
 
 		currPackage = currPackage.Parent
@@ -144,7 +143,7 @@ func getFullPath(packagePath string, parentPackage *types.PackageInstance) (stri
 
 func readFile(filePath string) (content []byte, err error) {
 	if _, err = os.Stat(filePath); os.IsNotExist(err) {
-		err = utilities.RuntimeError(fmt.Sprintf("файл з ім'ям '%s' не існує", filePath))
+		err = errors.New(fmt.Sprintf("файл з ім'ям '%s' не існує", filePath))
 		return
 	}
 

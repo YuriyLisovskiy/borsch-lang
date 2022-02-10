@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
@@ -21,35 +22,6 @@ type Class struct {
 	AttrInitializer  func(*map[string]common.Value)
 	GetEmptyInstance func() (common.Value, error)
 }
-
-// func NewClass(
-// 	Name string,
-// 	Bases []*Class,
-// 	Parent common.Value,
-// 	AttrInitializer func(*map[string]common.Value),
-// 	getEmptyInstanceFunc func() (common.Value, error),
-// ) *Class {
-// 	Class := &Class{
-// 		Name:             Name,
-// 		attributes:       map[string]common.Value{},
-// 		Class:            TypeClass,
-// 		Bases:            Bases,
-// 		Parent:           Parent,
-// 		AttrInitializer:  AttrInitializer,
-// 		GetEmptyInstance: getEmptyInstanceFunc,
-// 	}
-// 	if len(Class.Bases) == 0 {
-// 		// TODO: set object as a base Class
-// 	}
-//
-// 	if Class.GetEmptyInstance == nil {
-// 		Class.GetEmptyInstance = func() (common.Value, error) {
-// 			return NewClassInstance(Class, map[string]common.Value{}), nil
-// 		}
-// 	}
-//
-// 	return Class
-// }
 
 func (c *Class) Setup() {
 	c.Class = TypeClass
@@ -148,18 +120,11 @@ func (c *Class) GetOperator(name string) (common.Value, error) {
 	return c.GetClass().GetAttribute(name)
 }
 
+// GetAttribute uses getAttribute and in case of failure, searches for
+// an attribute in TypeClass.
 func (c *Class) GetAttribute(name string) (common.Value, error) {
-	if c.attributes != nil {
-		if val, ok := c.attributes[name]; ok {
-			return val, nil
-		}
-	}
-
-	basesLastIdx := len(c.Bases) - 1
-	for i := basesLastIdx; i >= 0; i-- {
-		if attr, err := c.Bases[i].GetAttribute(name); err == nil {
-			return attr, nil
-		}
+	if val, err := c.getAttribute(name); err == nil {
+		return val, nil
 	}
 
 	if !c.isType() {
@@ -188,7 +153,7 @@ func (c *Class) SetAttribute(name string, newValue common.Value) error {
 			return nil
 		}
 
-		return utilities.RuntimeError(
+		return errors.New(
 			fmt.Sprintf(
 				"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
 				newValue.GetTypeName(), name, oldValue.GetTypeName(),
@@ -242,6 +207,25 @@ func (c *Class) Call(state common.State, args *[]common.Value, kwargs *map[strin
 	}
 
 	return CallAttribute(state, c, operator, common.ConstructorName, args, kwargs, true)
+}
+
+// getAttribute searches for attribute only in current attributes and
+// in Bases.
+func (c *Class) getAttribute(name string) (common.Value, error) {
+	if c.attributes != nil {
+		if val, ok := c.attributes[name]; ok {
+			return val, nil
+		}
+	}
+
+	basesLastIdx := len(c.Bases) - 1
+	for i := basesLastIdx; i >= 0; i-- {
+		if attr, err := c.Bases[i].getAttribute(name); err == nil {
+			return attr, nil
+		}
+	}
+
+	return nil, utilities.AttributeNotFoundError(c.GetName(), name)
 }
 
 // isType checks if address of current Class is equal to TypeClass.

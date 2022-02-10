@@ -1,12 +1,12 @@
 package interpreter
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func evalBinaryOperator(
@@ -130,7 +130,12 @@ func evalSlicingOperation(
 			}
 		}
 
-		return evalSlicingOperation(state, element, ranges_[1:], valueToSet)
+		element, err = evalSlicingOperation(state, element, ranges_[1:], valueToSet)
+		if err != nil {
+			return nil, err
+		}
+
+		return iterable.SetElement(state, leftIdx, element)
 	default:
 		operatorDescription := ""
 		if ranges_[0].IsSlicing {
@@ -139,7 +144,7 @@ func evalSlicingOperation(
 			operatorDescription = "довільного доступу"
 		}
 
-		return nil, utilities.RuntimeError(
+		return nil, errors.New(
 			fmt.Sprintf(
 				"неможливо застосувати оператор %s до об'єкта з типом '%s'",
 				operatorDescription, variable.GetTypeName(),
@@ -158,7 +163,7 @@ func mustInt(state common.State, expression *Expression, errFunc func(common.Val
 	case types.IntegerInstance:
 		return integer.Value, nil
 	default:
-		return 0, utilities.RuntimeError(errFunc(value))
+		return 0, errors.New(errFunc(value))
 	}
 }
 
@@ -351,7 +356,7 @@ func setCurrentValue(ctx common.Context, prevValue common.Value, ident string, v
 func checkForNilAttribute(ident string) error {
 	switch ident {
 	case "нуль", "нульовий":
-		return utilities.RuntimeError(fmt.Sprintf("'%s' не є атрибутом", ident))
+		return errors.New(fmt.Sprintf("'%s' не є атрибутом", ident))
 	}
 
 	return nil

@@ -8,6 +8,27 @@ type Package struct {
 	Stmts []*Stmt `@@*`
 }
 
+type Throw struct {
+	Pos lexer.Position
+
+	Expression *Expression `"панікувати" @@`
+}
+
+type Unsafe struct {
+	Pos lexer.Position
+
+	Stmts       *BlockStmts `"небезпечно" "{" @@ "}"`
+	CatchBlocks []*Catch    `@@ (@@)*`
+}
+
+type Catch struct {
+	Pos lexer.Position
+
+	ErrorVar  string           `"піймати" "(" @Ident`
+	ErrorType *AttributeAccess `":" @@ ")"`
+	Stmts     *BlockStmts      `"{" @@ "}"`
+}
+
 type ReturnStmt struct {
 	Pos lexer.Position
 
@@ -69,12 +90,20 @@ type BlockStmts struct {
 	Pos lexer.Position
 
 	Stmts []*Stmt `@@*`
+
+	stmtPos int
+}
+
+func (node *BlockStmts) GetCurrentStmt() *Stmt {
+	return node.Stmts[node.stmtPos]
 }
 
 type Stmt struct {
 	Pos lexer.Position
 
-	IfStmt      *IfStmt      `  @@`
+	Throw       *Throw       `  @@`
+	Unsafe      *Unsafe      `| @@`
+	IfStmt      *IfStmt      `| @@`
 	LoopStmt    *LoopStmt    `| @@`
 	Block       *BlockStmts  `| "{" @@ "}"`
 	FunctionDef *FunctionDef `| @@`
@@ -297,16 +326,24 @@ type LambdaDef struct {
 type AttributeAccess struct {
 	Pos lexer.Position
 
-	SlicingOrSubscription *SlicingOrSubscription `@@`
-	AttributeAccess       *AttributeAccess       `("." @@)?`
+	IdentOrCall     *IdentOrCall     `@@`
+	AttributeAccess *AttributeAccess `("." @@)?`
+}
+
+type IdentOrCall struct {
+	Pos lexer.Position
+
+	Call                  *Call                  `( @@`
+	Ident                 *string                `| @Ident)`
+	SlicingOrSubscription *SlicingOrSubscription `@@?`
 }
 
 type SlicingOrSubscription struct {
 	Pos lexer.Position
 
-	Call   *Call    `( @@`
-	Ident  *string  `| @Ident)`
-	Ranges []*Range `@@*`
+	// Call   *Call    `( @@`
+	// Ident  *string  `| @Ident)`
+	Ranges []*Range `@@+`
 }
 
 type Range struct {

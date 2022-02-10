@@ -6,7 +6,6 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func assert(state common.State, expected common.Value, actual common.Value, errorTemplate string) error {
@@ -51,7 +50,7 @@ func assert(state common.State, expected common.Value, actual common.Value, erro
 		return err
 	}
 
-	return utilities.RuntimeError(fmt.Sprintf(errMsg, expectedStr, actualStr))
+	return errors.New(fmt.Sprintf(errMsg, expectedStr, actualStr))
 }
 
 func buildAssertMessage(state common.State, args *[]common.Value) (string, error) {
