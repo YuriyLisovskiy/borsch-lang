@@ -18,7 +18,7 @@ func NewParser() (*ParserImpl, error) {
 	parser, err := participle.Build(
 		&Package{},
 		participle.UseLookahead(2),
-		participle.Unquote("String", "Char"),
+		participle.Unquote("String", "RawString", "Char"),
 		participle.Map(identMapper, "Ident"),
 	)
 	if err != nil {

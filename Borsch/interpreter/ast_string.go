@@ -159,6 +159,8 @@ func (node *Constant) String() string {
 		return "хиба"
 	case node.StringValue != nil:
 		return fmt.Sprintf("\"%s\"", *node.StringValue)
+	case node.MultilineString != nil:
+		return fmt.Sprintf("`%s`", *node.MultilineString)
 	case node.List != nil:
 		var values []string
 		for _, expr := range node.List {

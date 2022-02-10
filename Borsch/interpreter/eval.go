@@ -219,6 +219,10 @@ func (node *Constant) Evaluate(state common.State) (common.Value, error) {
 		return types.NewStringInstance(*node.StringValue), nil
 	}
 
+	if node.MultilineString != nil {
+		return types.NewStringInstance(*node.MultilineString), nil
+	}
+
 	if node.List != nil {
 		list := types.NewListInstance()
 		for _, expr := range node.List {

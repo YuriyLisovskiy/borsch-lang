@@ -293,6 +293,7 @@ type Constant struct {
 	Real            *float64           `| @Float`
 	Bool            *Boolean           `| @("істина" | "хиба")`
 	StringValue     *string            `| @String`
+	MultilineString *string            `| @RawString`
 	List            []*Expression      `| "[" @@ ("," @@)* "]"`
 	EmptyList       bool               `| @("[""]")`
 	Dictionary      []*DictionaryEntry `| "{" @@ ("," @@)* "}"`
