@@ -10,7 +10,6 @@ type Parser interface {
 
 type Interpreter interface {
 	Import(state State, packageName string) (Value, error)
-	Trace(pos lexer.Position, place string, statement string)
 	StackTrace() *StackTrace
 }
 
@@ -34,6 +33,7 @@ type State interface {
 	WithPackage(Value) State
 	RuntimeError(message string, statement Statement) error
 	Trace(statement Statement, place string)
+	PopTrace()
 }
 
 type Statement interface {

@@ -18,6 +18,14 @@ func (node *Stmt) Position() lexer.Position {
 	return node.Pos
 }
 
+func (node *BlockStmts) Position() lexer.Position {
+	return node.Pos
+}
+
+func (node *FunctionBody) Position() lexer.Position {
+	return node.Pos
+}
+
 func (node *ClassDef) Position() lexer.Position {
 	return node.Pos
 }
@@ -26,12 +34,10 @@ func (node *ClassMember) Position() lexer.Position {
 	return node.Pos
 }
 
-/*
-func (node *VariablesDefinitions) Position() lexer.Position {
+func (node *Assignment) Position() lexer.Position {
 	return node.Pos
 }
 
-func (node *VariableDef) Position() lexer.Position {
+func (node *IdentOrCall) Position() lexer.Position {
 	return node.Pos
 }
-*/

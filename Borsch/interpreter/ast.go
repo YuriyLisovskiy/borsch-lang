@@ -8,7 +8,7 @@ import (
 type Package struct {
 	Pos lexer.Position
 
-	Stmts []*Stmt `@@*`
+	Stmts *BlockStmts `@@`
 }
 
 type Throw struct {
@@ -310,7 +310,7 @@ type Primary struct {
 type Literal struct {
 	Pos lexer.Position
 
-	Nil             bool               `  "нуль"`
+	Nil             bool               `  @"нуль"`
 	Integer         *int64             `| @Int`
 	Real            *float64           `| @Float`
 	Bool            *Boolean           `| @("істина" | "хиба")`

@@ -69,8 +69,8 @@ func (node *Parameter) Evaluate(ctx common.Context) (*types.FunctionParameter, e
 	}, nil
 }
 
-func (b *FunctionBody) Evaluate(state common.State) (common.Value, error) {
-	result := b.Stmts.Evaluate(state, true, false)
+func (node *FunctionBody) Evaluate(state common.State) (common.Value, error) {
+	result := node.Stmts.Evaluate(state, true, false)
 	return result.Value, result.Err
 }
 

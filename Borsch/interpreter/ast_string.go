@@ -313,6 +313,10 @@ func (node *FunctionDef) String() string {
 	return fmt.Sprintf("функція %s(%s)%s", node.Name, node.ParametersSet.String(), returnTypesStr)
 }
 
+func (node *FunctionBody) String() string {
+	return node.Stmts.String()
+}
+
 func (node *ParametersSet) String() string {
 	var parameters []string
 	for _, parameter := range node.Parameters {

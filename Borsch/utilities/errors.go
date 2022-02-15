@@ -133,3 +133,27 @@ func IncorrectUseOfFunctionError(functionName string) error {
 func InternalOperatorError(operator common.Operator) InterpreterError {
 	return InterpreterError{message: fmt.Sprintf("fatal: invalid operator '%s'", operator.Sign())}
 }
+
+type CallError struct {
+	err      error
+	funcName string
+}
+
+func NewCallError(err error, funcName string) error {
+	return CallError{
+		err:      err,
+		funcName: funcName,
+	}
+}
+
+func (e CallError) Error() string {
+	return e.err.Error()
+}
+
+func (e CallError) Original() error {
+	return e.err
+}
+
+func (e CallError) Function() string {
+	return e.funcName
+}

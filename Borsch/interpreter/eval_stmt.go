@@ -104,9 +104,6 @@ func (node *Stmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResu
 	case node.Assignment != nil:
 		result, err := node.Assignment.Evaluate(state)
 		return StmtResult{Value: result, Err: err}
-	// case node.VariablesDefinitions != nil:
-	// 	err := node.VariablesDefinitions.Evaluate(state)
-	// 	return StmtResult{Err: err}
 	case node.Empty:
 		return StmtResult{}
 	default:

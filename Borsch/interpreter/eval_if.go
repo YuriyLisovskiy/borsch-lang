@@ -20,7 +20,7 @@ func (node *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 		if conditionValue {
 			ctx.PushScope(Scope{})
 			result := node.Body.Evaluate(state, inFunction, inLoop)
-			if err != nil {
+			if result.Err != nil {
 				return result
 			}
 

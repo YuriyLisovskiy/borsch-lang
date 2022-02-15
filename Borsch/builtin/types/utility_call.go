@@ -32,13 +32,11 @@ func Call(
 		ctx = state.GetContext()
 	}
 
-	// TODO: remove
-	// ctx = ctx.Derive()
 	ctx.PushScope(*kwargs)
 	funcState := state.WithContext(ctx)
 	result, err := function.Call(funcState, args, kwargs)
 	if err != nil {
-		return nil, err
+		return nil, utilities.NewCallError(err, function.Name)
 	}
 
 	if err := CheckResult(funcState, result, function); err != nil {

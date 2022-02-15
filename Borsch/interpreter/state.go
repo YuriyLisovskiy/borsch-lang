@@ -91,5 +91,9 @@ func (s *StateImpl) RuntimeError(message string, statement common.Statement) err
 }
 
 func (s *StateImpl) Trace(statement common.Statement, place string) {
-	s.interpreter.Trace(statement.Position(), place, statement.String())
+	s.interpreter.StackTrace().Push(common.NewTraceRow(statement.Position(), statement.String(), place))
+}
+
+func (s *StateImpl) PopTrace() {
+	s.interpreter.StackTrace().Pop()
 }
