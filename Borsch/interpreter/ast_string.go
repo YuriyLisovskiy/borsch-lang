@@ -57,30 +57,6 @@ func (node *Catch) String() string {
 	return fmt.Sprintf("піймати (%s: %s)", node.ErrorVar, node.ErrorType.String())
 }
 
-/*
-func (node *VariablesDefinitions) String() string {
-	var lhs []string
-	var rhs []string
-	lhsLen := len(node.Variables)
-	rhsLen := len(node.Values)
-	i := 0
-	for i = 0; i < lhsLen && i < rhsLen; i++ {
-		lhs = append(lhs, node.Variables[i].String())
-		rhs = append(rhs, node.Values[i].String())
-	}
-
-	for ; i < lhsLen; i++ {
-		lhs = append(lhs, node.Variables[i].String())
-	}
-
-	return fmt.Sprintf("%s = %s", strings.Join(lhs, ", "), strings.Join(rhs, ", "))
-}
-
-func (node *VariableDef) String() string {
-	return fmt.Sprintf("%s: %s", node.Name, node.Type)
-}
-*/
-
 func (node *Assignment) String() string {
 	var lhs []string
 	for _, expr := range node.Expressions {
@@ -235,7 +211,7 @@ func (node *IdentOrCall) String() string {
 	if node.Call != nil {
 		str = node.Call.String()
 	} else {
-		str = *node.Ident
+		str = node.Ident.String()
 	}
 
 	if node.SlicingOrSubscription != nil {
@@ -264,7 +240,7 @@ func (node *Call) String() string {
 		}
 	}
 
-	return node.Ident + "(" + strings.Join(args, ", ") + ")"
+	return node.Ident.String() + "(" + strings.Join(args, ", ") + ")"
 }
 
 func (node *Range) String() string {
@@ -347,7 +323,7 @@ func (node *ParametersSet) String() string {
 }
 
 func (node *Parameter) String() string {
-	result := fmt.Sprintf("%s: %s", node.Name, node.Type)
+	result := fmt.Sprintf("%s: %s", node.Name, node.TypeName)
 	if node.IsNullable {
 		result += "?"
 	}
@@ -361,7 +337,7 @@ func (node *ReturnType) String() string {
 		result += "?"
 	}
 
-	return result
+	return result.String()
 }
 
 func (node *ReturnStmt) String() string {
@@ -376,7 +352,7 @@ func (node *ReturnStmt) String() string {
 func (node *ClassDef) String() string {
 	var bases []string
 	for _, base := range node.Bases {
-		bases = append(bases, base)
+		bases = append(bases, base.String())
 	}
 
 	basesStr := ""

@@ -100,7 +100,7 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 
 func (node *Catch) catch(state common.State, err common.Value, inFunction, inLoop bool) (StmtResult, bool) {
 	ctx := state.GetContext()
-	ctx.PushScope(Scope{node.ErrorVar: err})
+	ctx.PushScope(Scope{node.ErrorVar.String(): err})
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.Err != nil {
 		return result, false

@@ -340,9 +340,9 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet common.Value, p
 			}
 		} else if node.Ident != nil {
 			if node.SlicingOrSubscription != nil {
-				variable, err = getCurrentValue(state.GetContext(), prevValue, *node.Ident)
+				variable, err = getCurrentValue(state.GetContext(), prevValue, node.Ident.String())
 			} else {
-				variable, err = setCurrentValue(state.GetContext(), prevValue, *node.Ident, valueToSet)
+				variable, err = setCurrentValue(state.GetContext(), prevValue, node.Ident.String(), valueToSet)
 			}
 
 			if err != nil {
@@ -359,7 +359,7 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet common.Value, p
 			}
 
 			if node.Ident != nil {
-				return setCurrentValue(state.GetContext(), prevValue, *node.Ident, variable)
+				return setCurrentValue(state.GetContext(), prevValue, node.Ident.String(), variable)
 			}
 		}
 
@@ -375,7 +375,7 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet common.Value, p
 			return nil, err
 		}
 	} else if node.Ident != nil {
-		variable, err = getCurrentValue(state.GetContext(), prevValue, *node.Ident)
+		variable, err = getCurrentValue(state.GetContext(), prevValue, node.Ident.String())
 		if err != nil {
 			return nil, err
 		}
@@ -392,7 +392,7 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet common.Value, p
 
 func (node *IdentOrCall) callFunction(state common.State, prevValue common.Value) (common.Value, error) {
 	ctx := state.GetContext()
-	variable, err := getCurrentValue(ctx, prevValue, node.Call.Ident)
+	variable, err := getCurrentValue(ctx, prevValue, node.Call.Ident.String())
 	if err != nil {
 		return nil, err
 	}
@@ -400,9 +400,11 @@ func (node *IdentOrCall) callFunction(state common.State, prevValue common.Value
 	isLambda := false
 	variable, err = node.Call.Evaluate(state, variable, prevValue, &isLambda)
 	if err != nil {
-		funcName := node.Call.Ident
+		var funcName string
 		if isLambda {
 			funcName = common.LambdaSignature
+		} else {
+			funcName = node.Call.Ident.String()
 		}
 
 		state.GetInterpreter().Trace(node.Call.Pos, funcName, node.Call.String())

@@ -1,6 +1,9 @@
 package interpreter
 
-import "github.com/alecthomas/participle/v2/lexer"
+import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
+	"github.com/alecthomas/participle/v2/lexer"
+)
 
 type Package struct {
 	Pos lexer.Position
@@ -17,16 +20,34 @@ type Throw struct {
 type Unsafe struct {
 	Pos lexer.Position
 
-	Stmts       *BlockStmts `"небезпечно" "{" @@ "}"`
-	CatchBlocks []*Catch    `@@ (@@)*`
+	Stmts       *BlockStmts `"небезпечно" @@`
+	CatchBlocks []*Catch    `@@ (@@)* "кінець"`
+}
+
+// Ident TODO: remove Ident
+type Ident string
+
+func (i *Ident) Capture(values []string) error {
+	ident := values[0]
+	if ident == "кінець" {
+		// TODO: write ukr error!
+		return utilities.SyntaxError("unexpected token 'кінець'")
+	}
+
+	*i = Ident(ident)
+	return nil
+}
+
+func (i Ident) String() string {
+	return string(i)
 }
 
 type Catch struct {
 	Pos lexer.Position
 
-	ErrorVar  string           `"піймати" "(" @Ident`
+	ErrorVar  Ident            `"піймати" "(" @Ident`
 	ErrorType *AttributeAccess `":" @@ ")"`
-	Stmts     *BlockStmts      `"{" @@ "}"`
+	Stmts     *BlockStmts      `@@`
 }
 
 type ReturnStmt struct {
@@ -41,7 +62,7 @@ type LoopStmt struct {
 	Keyword         string           `"цикл"`
 	RangeBasedLoop  *RangeBasedLoop  `["(" (@@ `
 	ConditionalLoop *ConditionalLoop `|    @@) ")"]`
-	Body            *BlockStmts      `"{" @@ "}"`
+	Body            *BlockStmts      `@@ "кінець"`
 }
 
 // RangeBasedLoop is a loop with two bounds to
@@ -54,7 +75,7 @@ type LoopStmt struct {
 type RangeBasedLoop struct {
 	Pos lexer.Position
 
-	Variable   string      `@Ident ":"`
+	Variable   Ident       `@Ident ":"`
 	LeftBound  *Expression `@@`
 	Separator  string      `@("."".")`
 	RightBound *Expression `@@`
@@ -76,14 +97,14 @@ type IfStmt struct {
 	Pos lexer.Position
 
 	Condition   *Expression   `"якщо" "(" @@ ")"`
-	Body        *BlockStmts   `"{" @@ "}"`
-	ElseIfStmts []*ElseIfStmt `(@@ (@@)* )?`
-	Else        *BlockStmts   `("інакше" "{" @@ "}")?`
+	Body        *BlockStmts   `@@`
+	ElseIfStmts []*ElseIfStmt `(@@ (@@)*)?`
+	Else        *BlockStmts   `("інакше" @@)? "кінець"`
 }
 
 type ElseIfStmt struct {
 	Condition *Expression `"інакше" "якщо" "(" @@ ")"`
-	Body      *BlockStmts `"{" @@ "}"`
+	Body      *BlockStmts `@@`
 }
 
 type BlockStmts struct {
@@ -101,17 +122,17 @@ func (node *BlockStmts) GetCurrentStmt() *Stmt {
 type Stmt struct {
 	Pos lexer.Position
 
-	Throw       *Throw       `  @@`
-	Unsafe      *Unsafe      `| @@`
-	IfStmt      *IfStmt      `| @@`
-	LoopStmt    *LoopStmt    `| @@`
-	Block       *BlockStmts  `| "{" @@ "}"`
-	FunctionDef *FunctionDef `| @@`
-	ClassDef    *ClassDef    `| @@`
+	Throw       *Throw       ` (?!("піймати" | "інакше" | "кінець")) (@@`
+	Unsafe      *Unsafe      `| (@@ ";")`
+	IfStmt      *IfStmt      `| (@@ ";")`
+	LoopStmt    *LoopStmt    `| (@@ ";")`
+	Block       *BlockStmts  `| ("блок" @@ "кінець" ";")`
+	FunctionDef *FunctionDef `| (@@ ";")`
+	ClassDef    *ClassDef    `| (@@ ";")`
 	ReturnStmt  *ReturnStmt  `| @@`
 	BreakStmt   bool         `| @"перервати"`
 	Assignment  *Assignment  `| (@@ ";")`
-	Empty       bool         `| @";"`
+	Empty       bool         `| @";")`
 }
 
 type FunctionBody struct {
@@ -123,10 +144,10 @@ type FunctionBody struct {
 type FunctionDef struct {
 	Pos lexer.Position
 
-	Name          string         `"функція" @Ident`
+	Name          Ident          `"функція" @Ident`
 	ParametersSet *ParametersSet `@@`
 	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body          *FunctionBody  `"{" @@ "}"`
+	Body          *FunctionBody  `@@ "кінець"`
 }
 
 type ParametersSet struct {
@@ -138,33 +159,33 @@ type ParametersSet struct {
 type Parameter struct {
 	Pos lexer.Position
 
-	Name       string `@Ident ":"`
-	Type       string `@Ident`
-	IsNullable bool   `@"?"?`
+	Name       Ident `@Ident ":"`
+	TypeName   Ident `@Ident`
+	IsNullable bool  `@"?"?`
 }
 
 type ReturnType struct {
 	Pos lexer.Position
 
-	Name       string `@Ident`
-	IsNullable bool   `@"?"?`
+	Name       Ident `@Ident`
+	IsNullable bool  `@"?"?`
 }
 
 type ClassDef struct {
 	Pos lexer.Position
 
-	Name    string         `"клас" @Ident`
+	Name    Ident          `"клас" @Ident`
 	IsFinal bool           `@"заключний"?`
-	Bases   []string       `[":" (@Ident)+]`
-	Members []*ClassMember `"{" @@* "}"`
+	Bases   []Ident        `(":" @Ident ("," @Ident)*)?`
+	Members []*ClassMember `(@@ ";")* "кінець"`
 }
 
 type ClassMember struct {
 	Pos lexer.Position
 
-	Variable *Assignment  ` (@@ ";")`
-	Method   *FunctionDef `| @@`
+	Method   *FunctionDef `  @@`
 	Class    *ClassDef    `| @@`
+	Variable *Assignment  `| @@`
 }
 
 type Assignment struct {
@@ -318,9 +339,9 @@ type DictionaryEntry struct {
 type LambdaDef struct {
 	Pos lexer.Position
 
-	ParametersSet        *ParametersSet `@@`
+	ParametersSet        *ParametersSet `"лямбда" @@`
 	ReturnTypes          []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body                 *FunctionBody  `"="">" "{" @@ "}"`
+	Body                 *FunctionBody  `@@ "кінець"`
 	InstantCall          bool           `[ @"("`
 	InstantCallArguments []*Expression  `[(@@ ("," @@)*)?] ")"]`
 }
@@ -336,15 +357,13 @@ type IdentOrCall struct {
 	Pos lexer.Position
 
 	Call                  *Call                  `( @@`
-	Ident                 *string                `| @Ident)`
+	Ident                 *Ident                 `| @Ident)`
 	SlicingOrSubscription *SlicingOrSubscription `@@?`
 }
 
 type SlicingOrSubscription struct {
 	Pos lexer.Position
 
-	// Call   *Call    `( @@`
-	// Ident  *string  `| @Ident)`
 	Ranges []*Range `@@+`
 }
 
@@ -359,6 +378,6 @@ type Range struct {
 type Call struct {
 	Pos lexer.Position
 
-	Ident     string        `@Ident`
+	Ident     Ident         `@Ident`
 	Arguments []*Expression `"(" (@@ ("," @@)*)? ")"`
 }
