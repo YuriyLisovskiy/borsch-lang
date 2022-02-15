@@ -36,6 +36,8 @@ func (node *Stmt) String() string {
 		return "перервати"
 	} else if node.Assignment != nil {
 		return node.Assignment.String() + ";"
+		// } else if node.VariablesDefinitions != nil {
+		// 	return node.VariablesDefinitions.String() + ";"
 	} else if node.Empty {
 		return ";"
 	}
@@ -54,6 +56,30 @@ func (node *Unsafe) String() string {
 func (node *Catch) String() string {
 	return fmt.Sprintf("піймати (%s: %s)", node.ErrorVar, node.ErrorType.String())
 }
+
+/*
+func (node *VariablesDefinitions) String() string {
+	var lhs []string
+	var rhs []string
+	lhsLen := len(node.Variables)
+	rhsLen := len(node.Values)
+	i := 0
+	for i = 0; i < lhsLen && i < rhsLen; i++ {
+		lhs = append(lhs, node.Variables[i].String())
+		rhs = append(rhs, node.Values[i].String())
+	}
+
+	for ; i < lhsLen; i++ {
+		lhs = append(lhs, node.Variables[i].String())
+	}
+
+	return fmt.Sprintf("%s = %s", strings.Join(lhs, ", "), strings.Join(rhs, ", "))
+}
+
+func (node *VariableDef) String() string {
+	return fmt.Sprintf("%s: %s", node.Name, node.Type)
+}
+*/
 
 func (node *Assignment) String() string {
 	var lhs []string
@@ -132,8 +158,8 @@ func (node *Exponent) String() string {
 
 func (node *Primary) String() string {
 	switch {
-	case node.Constant != nil:
-		return node.Constant.String()
+	case node.Literal != nil:
+		return node.Literal.String()
 	case node.LambdaDef != nil:
 		return node.LambdaDef.String()
 	case node.AttributeAccess != nil:
@@ -145,8 +171,10 @@ func (node *Primary) String() string {
 	}
 }
 
-func (node *Constant) String() string {
+func (node *Literal) String() string {
 	switch {
+	case node.Nil:
+		return "нуль"
 	case node.Integer != nil:
 		return fmt.Sprintf("%d", *node.Integer)
 	case node.Real != nil:

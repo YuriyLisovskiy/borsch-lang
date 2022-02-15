@@ -10,7 +10,11 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
-func RuntimeError1(text string) error {
+func SyntaxError(text string) error {
+	return errors.New(fmt.Sprintf("Синтаксична помилка: %s", text))
+}
+
+func RuntimeError(text string) error {
 	return errors.New(fmt.Sprintf("Помилка виконання: %s", text))
 }
 
@@ -44,15 +48,15 @@ func ParseError(pos lexer.Position, unexpected string, err string) error {
 }
 
 func AttributeNotFoundError(objTypeName, attrName string) error {
-	return RuntimeError1(fmt.Sprintf("об'єкт типу '%s' не містить атрибута з назвою '%s'", objTypeName, attrName))
+	return RuntimeError(fmt.Sprintf("об'єкт типу '%s' не містить атрибута з назвою '%s'", objTypeName, attrName))
 }
 
 func BadOperandForUnaryOperatorError(operator common.Operator) error {
-	return RuntimeError1(fmt.Sprintf("некоректний тип операнда для унарного оператора %s", operator.Sign()))
+	return RuntimeError(fmt.Sprintf("некоректний тип операнда для унарного оператора %s", operator.Sign()))
 }
 
 func OperatorNotFoundError(objTypeName, opName string) error {
-	return RuntimeError1(
+	return RuntimeError(
 		fmt.Sprintf(
 			"об'єкт типу '%s' не містить оператора з назвою '%s'", objTypeName, opName,
 		),
@@ -60,7 +64,7 @@ func OperatorNotFoundError(objTypeName, opName string) error {
 }
 
 func CantSetAttributeOfBuiltinTypeError(objTypeName string) error {
-	return RuntimeError1(
+	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо встановлювати атрибути для вбудованого типу '%s'", objTypeName,
 		),
@@ -68,7 +72,7 @@ func CantSetAttributeOfBuiltinTypeError(objTypeName string) error {
 }
 
 func AttributeIsReadOnlyError(objTypeName, attrName string) error {
-	return RuntimeError1(
+	return RuntimeError(
 		fmt.Sprintf(
 			"атрибут '%s' об'єкта типу '%s' призначений лише для читання", attrName, objTypeName,
 		),
@@ -76,7 +80,7 @@ func AttributeIsReadOnlyError(objTypeName, attrName string) error {
 }
 
 func OperatorNotSupportedError(operator common.Operator, left, right common.Value) error {
-	return RuntimeError1(
+	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
 			operator.Sign(), left.GetTypeName(), right.GetTypeName(),
@@ -85,7 +89,7 @@ func OperatorNotSupportedError(operator common.Operator, left, right common.Valu
 }
 
 func UnaryOperatorNotSupportedError(operator common.Operator, value common.Value) error {
-	return RuntimeError1(
+	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор '%s' до значення з типом '%s'",
 			operator.Sign(), value.GetTypeName(),
@@ -94,7 +98,7 @@ func UnaryOperatorNotSupportedError(operator common.Operator, value common.Value
 }
 
 func OperandsNotSupportedError(operator common.Operator, leftType, rightType string) error {
-	return RuntimeError1(
+	return RuntimeError(
 		fmt.Sprintf(
 			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
 			operator.Sign(), leftType, rightType,
@@ -107,7 +111,7 @@ func ObjectIsNotCallable(objectName, typeName string) error {
 		objectName = fmt.Sprintf(" '%s'", objectName)
 	}
 
-	return RuntimeError1(
+	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор виклику до об'єкта%s з типом '%s'", objectName, typeName,
 		),

@@ -25,3 +25,13 @@ func (node *ClassDef) Position() lexer.Position {
 func (node *ClassMember) Position() lexer.Position {
 	return node.Pos
 }
+
+/*
+func (node *VariablesDefinitions) Position() lexer.Position {
+	return node.Pos
+}
+
+func (node *VariableDef) Position() lexer.Position {
+	return node.Pos
+}
+*/

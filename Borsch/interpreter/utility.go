@@ -22,7 +22,7 @@ func evalBinaryOperator(
 	}
 
 	if !reflect.ValueOf(next).IsNil() {
-		right, err := next.Evaluate(state, nil)
+		right, err := next.Evaluate(state, valueToSet)
 		if err != nil {
 			return nil, err
 		}

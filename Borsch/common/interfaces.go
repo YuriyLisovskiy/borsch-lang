@@ -21,7 +21,7 @@ type Context interface {
 	GetVar(name string) (Value, error)
 	SetVar(name string, value Value) error
 	GetClass(name string) (Value, error)
-	GetChild() Context
+	Derive() Context
 }
 
 type State interface {

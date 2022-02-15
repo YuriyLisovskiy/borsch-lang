@@ -5,12 +5,13 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type Scope map[string]common.Value
 
 func (node *Package) Evaluate(state common.State) (common.Value, error) {
-	state.GetContext().PushScope(Scope{})
+	state.GetContext().PushScope(map[string]common.Value{})
 	for _, stmt := range node.Stmts {
 		stmtState := stmt.Evaluate(state, false, false)
 		if stmtState.Err != nil {
@@ -175,20 +176,18 @@ func (node *Exponent) Evaluate(state common.State, valueToSet common.Value) (com
 func (node *Primary) Evaluate(state common.State, valueToSet common.Value) (common.Value, error) {
 	if node.SubExpression != nil {
 		if valueToSet != nil {
-			// TODO: change to normal description
-			return nil, errors.New("unable to set to subexpression evaluation")
+			return nil, utilities.SyntaxError("неможливо записати значення у вираз")
 		}
 
 		return node.SubExpression.Evaluate(state, valueToSet)
 	}
 
-	if node.Constant != nil {
+	if node.Literal != nil {
 		if valueToSet != nil {
-			// TODO: change to normal description
-			return nil, errors.New("unable to set to constant")
+			return nil, utilities.SyntaxError("неможливо встановити значення у літерал")
 		}
 
-		return node.Constant.Evaluate(state)
+		return node.Literal.Evaluate(state)
 	}
 
 	if node.AttributeAccess != nil {
@@ -202,7 +201,11 @@ func (node *Primary) Evaluate(state common.State, valueToSet common.Value) (comm
 	panic("unreachable")
 }
 
-func (node *Constant) Evaluate(state common.State) (common.Value, error) {
+func (node *Literal) Evaluate(state common.State) (common.Value, error) {
+	if node.Nil {
+		return types.NewNilInstance(), nil
+	}
+
 	if node.Integer != nil {
 		return types.NewIntegerInstance(*node.Integer), nil
 	}
@@ -436,96 +439,6 @@ func (node *SlicingOrSubscription) Evaluate(
 	return variable, nil
 }
 
-// func (node *SlicingOrSubscription) Evaluate(
-// 	state common.State,
-// 	valueToSet common.Value,
-// 	prevValue common.Value,
-// ) (common.Value, error) {
-// 	if valueToSet != nil {
-// 		// set
-// 		var variable common.Value
-// 		var err error = nil
-// 		rangesLen := len(node.Ranges)
-// 		if rangesLen != 0 && node.Ranges[rangesLen-1].RightBound != nil {
-// 			return nil, errors.New("неможливо присвоїти значення зрізу")
-// 		}
-//
-// 		if node.Call != nil {
-// 			if len(node.Ranges) == 0 {
-// 				return nil, errors.New("неможливо присвоїти значення виклику функції")
-// 			}
-//
-// 			variable, err = node.callFunction(state, prevValue)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 		} else if node.Ident != nil {
-// 			if len(node.Ranges) != 0 {
-// 				variable, err = getCurrentValue(state.GetContext(), prevValue, *node.Ident)
-// 			} else {
-// 				variable, err = setCurrentValue(state.GetContext(), prevValue, *node.Ident, valueToSet)
-// 			}
-//
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 		} else {
-// 			panic("unreachable")
-// 		}
-//
-// 		if len(node.Ranges) != 0 {
-// 			return evalSlicingOperation(state, variable, node.Ranges, valueToSet)
-// 		}
-//
-// 		return variable, nil
-// 	}
-//
-// 	// get
-// 	var variable common.Value
-// 	var err error = nil
-// 	if node.Call != nil {
-// 		variable, err = node.callFunction(state, prevValue)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	} else if node.Ident != nil {
-// 		variable, err = getCurrentValue(state.GetContext(), prevValue, *node.Ident)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	} else {
-// 		panic("unreachable")
-// 	}
-//
-// 	if len(node.Ranges) != 0 {
-// 		return evalSlicingOperation(state, variable, node.Ranges, nil)
-// 	}
-//
-// 	return variable, nil
-// }
-
-// func (node *SlicingOrSubscription) callFunction(state common.State, prevValue common.Value) (common.Value, error) {
-// 	ctx := state.GetContext()
-// 	variable, err := getCurrentValue(ctx, prevValue, node.Call.Ident)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	isLambda := false
-// 	variable, err = node.Call.Evaluate(state, variable, prevValue, &isLambda)
-// 	if err != nil {
-// 		funcName := node.Call.Ident
-// 		if isLambda {
-// 			funcName = common.LambdaSignature
-// 		}
-//
-// 		state.GetInterpreter().Trace(node.Call.Pos, funcName, node.Call.String())
-// 		return nil, err
-// 	}
-//
-// 	return variable, nil
-// }
-
 func (node *LambdaDef) Evaluate(state common.State) (common.Value, error) {
 	arguments, err := node.ParametersSet.Evaluate(state)
 	if err != nil {
@@ -546,7 +459,7 @@ func (node *LambdaDef) Evaluate(state common.State) (common.Value, error) {
 		returnTypes,
 		false,
 		state.GetCurrentPackage().(*types.PackageInstance),
-		"", // TODO: add doc
+		"",
 	)
 
 	if node.InstantCall {

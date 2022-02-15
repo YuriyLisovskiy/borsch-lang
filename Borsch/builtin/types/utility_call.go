@@ -32,7 +32,8 @@ func Call(
 		ctx = state.GetContext()
 	}
 
-	ctx = ctx.GetChild()
+	// TODO: remove
+	// ctx = ctx.Derive()
 	ctx.PushScope(*kwargs)
 	funcState := state.WithContext(ctx)
 	result, err := function.Call(funcState, args, kwargs)
@@ -44,6 +45,7 @@ func Call(
 		return nil, err
 	}
 
+	ctx.PopScope()
 	return result, nil
 }
 

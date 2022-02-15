@@ -176,7 +176,17 @@ func intOperator(
 				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
 
-			return handler(state, left, (*args)[1])
+			right := (*args)[1]
+			result, err := handler(state, left, right)
+			if err != nil {
+				return nil, err
+			}
+
+			if result == nil {
+				return nil, utilities.OperatorNotSupportedError(operator, left, right)
+			}
+
+			return result, nil
 		},
 		[]FunctionReturnType{
 			{

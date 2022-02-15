@@ -48,13 +48,10 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 		return nil, err
 	}
 
-	classContext := ContextImpl{
-		scopes:       []map[string]common.Value{{}},
-		classContext: ctx,
-	}
-
+	classContext := ctx.Derive()
+	classContext.PushScope(map[string]common.Value{})
 	for _, classMember := range node.Members {
-		_, err := classMember.Evaluate(state.WithContext(&classContext), cls)
+		_, err := classMember.Evaluate(state.WithContext(classContext), cls)
 		if err != nil {
 			return nil, err
 		}

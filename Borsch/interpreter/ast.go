@@ -280,16 +280,17 @@ type Exponent struct {
 type Primary struct {
 	Pos lexer.Position
 
-	Constant        *Constant        `  @@`
+	Literal         *Literal         `  @@`
 	LambdaDef       *LambdaDef       `| @@`
 	AttributeAccess *AttributeAccess `| @@`
 	SubExpression   *Expression      `| "(" @@ ")"`
 }
 
-type Constant struct {
+type Literal struct {
 	Pos lexer.Position
 
-	Integer         *int64             `  @Int`
+	Nil             bool               `  "нуль"`
+	Integer         *int64             `| @Int`
 	Real            *float64           `| @Float`
 	Bool            *Boolean           `| @("істина" | "хиба")`
 	StringValue     *string            `| @String`

@@ -28,9 +28,7 @@ func NewInterpreter() *Interpreter {
 
 	i.rootContext = &ContextImpl{
 		scopes:        []map[string]common.Value{builtin.GlobalScope},
-		classContext:  nil,
 		parentContext: nil,
-		interpreter:   i,
 	}
 	return i
 }
@@ -69,7 +67,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	}
 
 	pkg := types.NewPackageInstance(
-		i.rootContext.GetChild(),
+		i.rootContext.Derive(),
 		fullPackagePath,
 		parentPackageInstance,
 		nil,
