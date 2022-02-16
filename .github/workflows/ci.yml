@@ -53,8 +53,8 @@ jobs:
       - name: Compose build
         run: |
           mkdir build
-          cp ./bin ./build
-          cp ./Lib ./build
+          cp -r ./bin ./build
+          cp -r ./Lib ./build
           cp ./scripts/install.sh ./build
       - name: Upload build to artifacts
         uses: actions/upload-artifact@v2
