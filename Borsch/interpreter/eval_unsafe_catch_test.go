@@ -7,10 +7,9 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/alecthomas/participle/v2/lexer"
 )
 
-func makeThrowStmt(name *string) *Throw {
+func makeThrowStmt(name *Ident) *Throw {
 	return &Throw{
 		Expression: &Expression{
 			LogicalAnd: &LogicalAnd{
@@ -51,20 +50,18 @@ func makeThrowStmt(name *string) *Throw {
 type testInterpreter struct {
 }
 
-func (i *testInterpreter) Import(state common.State, packageName string) (common.Value, error) {
+func (i *testInterpreter) Import(common.State, string) (common.Value, error) {
 	return nil, nil
 }
 
-func (i *testInterpreter) Trace(pos lexer.Position, place string, statement string) {
-
-}
-
 func (i *testInterpreter) StackTrace() *common.StackTrace {
-	return nil
+	st := &common.StackTrace{}
+	st.Push(&common.TraceRow{})
+	return st
 }
 
 func TestThrow_EvaluateSuccess(t *testing.T) {
-	errorIdent := "err"
+	errorIdent := Ident("err")
 	throwNode := makeThrowStmt(&errorIdent)
 	errMessage := "This is an error"
 	exc, _ := builtin.NewErrorInstance(errMessage)
@@ -72,7 +69,7 @@ func TestThrow_EvaluateSuccess(t *testing.T) {
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
 			scopes: []map[string]common.Value{
-				{errorIdent: exc},
+				{errorIdent.String(): exc},
 			},
 		},
 	}
@@ -93,14 +90,14 @@ func TestThrow_EvaluateSuccess(t *testing.T) {
 }
 
 func TestThrow_EvaluateFail_NotAnErrorInstance(t *testing.T) {
-	errorIdent := "err"
+	errorIdent := Ident("err")
 	throwNode := makeThrowStmt(&errorIdent)
 	errMessage := "This is an error"
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
 			scopes: []map[string]common.Value{
-				{errorIdent: types.NewStringInstance(errMessage)},
+				{errorIdent.String(): types.NewStringInstance(errMessage)},
 			},
 		},
 	}
@@ -120,7 +117,7 @@ func TestThrow_EvaluateFail_NotAnErrorInstance(t *testing.T) {
 }
 
 func TestUnsafe_EvaluateNoThrow(t *testing.T) {
-	errorIdent := "Error"
+	errorIdent := Ident("Error")
 	unsafe := &Unsafe{
 		Stmts: &BlockStmts{
 			Stmts:   []*Stmt{},
@@ -148,7 +145,7 @@ func TestUnsafe_EvaluateNoThrow(t *testing.T) {
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
 			scopes: []map[string]common.Value{
-				{errorIdent: err},
+				{errorIdent.String(): err},
 			},
 		},
 	}
@@ -172,7 +169,8 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 		Class: types.TypeClass,
 		Bases: []*types.Class{builtin.ErrorClass},
 	}
-	errorIdent := "Error"
+	errorClassName := Ident(errorClass.Name)
+	errorIdent := Ident("Error")
 	unsafe := &Unsafe{
 		Stmts: &BlockStmts{
 			Stmts:   []*Stmt{{Throw: makeThrowStmt(&errorIdent)}},
@@ -183,7 +181,7 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 				ErrorVar: "e",
 				ErrorType: &AttributeAccess{
 					IdentOrCall: &IdentOrCall{
-						Ident: &errorClass.Name,
+						Ident: &errorClassName,
 					},
 				},
 				Stmts: &BlockStmts{
@@ -201,7 +199,7 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 		context: &ContextImpl{
 			scopes: []map[string]common.Value{
 				{errorClass.Name: &errorClass},
-				{errorIdent: err},
+				{errorIdent.String(): err},
 			},
 		},
 	}
@@ -233,7 +231,8 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 }
 
 func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
-	errorIdent := "Error"
+	errorIdent := Ident("Error")
+	errorClassName := Ident(builtin.ErrorClass.Name)
 	unsafe := &Unsafe{
 		Stmts: &BlockStmts{
 			Stmts:   []*Stmt{{Throw: makeThrowStmt(&errorIdent)}},
@@ -244,7 +243,7 @@ func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 				ErrorVar: "e",
 				ErrorType: &AttributeAccess{
 					IdentOrCall: &IdentOrCall{
-						Ident: &builtin.ErrorClass.Name,
+						Ident: &errorClassName,
 					},
 				},
 				Stmts: &BlockStmts{
@@ -262,7 +261,7 @@ func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 		context: &ContextImpl{
 			scopes: []map[string]common.Value{
 				{builtin.ErrorClass.Name: builtin.ErrorClass},
-				{errorIdent: err},
+				{errorIdent.String(): err},
 			},
 		},
 	}
@@ -290,8 +289,9 @@ func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
 		Class: types.TypeClass,
 		Bases: []*types.Class{builtin.ErrorClass},
 	}
-	errorIdent := "Error"
-	eIdent := "e"
+	errorIdent := Ident("Error")
+	eIdent := Ident("e")
+	errorClassName := Ident(errorClass.Name)
 	unsafe := &Unsafe{
 		Stmts: &BlockStmts{
 			Stmts:   []*Stmt{{Throw: makeThrowStmt(&errorIdent)}},
@@ -302,7 +302,7 @@ func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
 				ErrorVar: eIdent,
 				ErrorType: &AttributeAccess{
 					IdentOrCall: &IdentOrCall{
-						Ident: &errorClass.Name,
+						Ident: &errorClassName,
 					},
 				},
 				Stmts: &BlockStmts{
@@ -320,7 +320,7 @@ func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
 		context: &ContextImpl{
 			scopes: []map[string]common.Value{
 				{errorClass.Name: &errorClass},
-				{errorIdent: err},
+				{errorIdent.String(): err},
 			},
 		},
 	}
