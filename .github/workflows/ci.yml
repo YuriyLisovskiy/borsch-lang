@@ -1,0 +1,70 @@
+name: CI
+on:
+  push:
+    branches:
+      - dev
+      - master
+  pull_request:
+jobs:
+  interpreter-test:
+    runs-on: ${{ matrix.system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        system:
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - name: Test
+        run: go test -v ./...
+  build:
+    needs:
+      - interpreter-test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - name: Build
+        run: make GOOS=${{ matrix.platform.os }} GOARCH=${{ platform.arch }} build
+      - name: Set app version
+        id: app_version
+        run: |
+          echo $(./bin/borsch version) | cut -d' ' -f 2 >> $GITHUB_ENV
+      - name: Upload the interpreter to artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: borsch-${{ matrix.platform.os }}-${{ platform.arch }}-${{ env.app_version }}
+          path: ./bin
+          retention-days: 60
+      - name: Upload the standard library to artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: borsch-${{ matrix.platform.os }}-${{ platform.arch }}-${{ env.app_version }}
+          path: ./Lib
+          retention-days: 60
+      - name: Upload an installation script to artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: borsch-${{ matrix.platform.os }}-${{ platform.arch }}-${{ env.app_version }}
+          path: ./scripts/install.sh
+          retention-days: 60
