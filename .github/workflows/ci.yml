@@ -49,7 +49,7 @@ jobs:
       - name: Set app version
         id: app_version
         run: |
-          echo $(./bin/borsch version) | cut -d' ' -f 2 >> $GITHUB_ENV
+          echo "app_version=$(./bin/borsch version | cut -d' ' -f 2)" >> $GITHUB_ENV
       - name: Upload the interpreter to artifacts
         uses: actions/upload-artifact@v2
         with:
