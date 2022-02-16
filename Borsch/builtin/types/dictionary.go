@@ -207,7 +207,7 @@ func dictionaryMethod_Remove(name string) common.Value {
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
 			dict := (*args)[0].(DictionaryInstance)
 			_, err := dict.RemoveElement(state, (*args)[1])
-			return nil, err
+			return NewNilInstance(), err
 		},
 		[]FunctionReturnType{
 			{

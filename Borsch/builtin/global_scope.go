@@ -40,6 +40,7 @@ func init() {
 		// "функція": types.Function,
 		"цілий":     types.Integer,
 		"довільний": types.Any,
+		"нульовий":  types.Nil,
 
 		// Utilities
 		"довжина":   LengthFunction,
