@@ -45,7 +45,7 @@ func (node *Call) Evaluate(
 		args := []common.Value{variable}
 		return node.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
 	default:
-		return nil, utilities.ObjectIsNotCallable(node.Ident, object.GetTypeName())
+		return nil, utilities.ObjectIsNotCallable(node.Ident.String(), object.GetTypeName())
 	}
 }
 

@@ -13,14 +13,14 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 
 	// TODO: add doc
 	cls := &types.Class{
-		Name:    node.Name,
+		Name:    node.Name.String(),
 		IsFinal: node.IsFinal,
 		Class:   nil,
 		Parent:  state.GetCurrentPackage(),
 	}
 
 	for _, name := range node.Bases {
-		base, err := ctx.GetClass(name)
+		base, err := ctx.GetClass(name.String())
 		if err != nil {
 			return nil, err
 		}
@@ -43,7 +43,7 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 		return types.NewClassInstance(cls, map[string]common.Value{}), nil
 	}
 
-	err := ctx.SetVar(node.Name, cls)
+	err := ctx.SetVar(node.Name.String(), cls)
 	if err != nil {
 		return nil, err
 	}

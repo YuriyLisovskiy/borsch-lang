@@ -12,7 +12,6 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/alecthomas/participle/v2/lexer"
 )
 
 type Interpreter struct {
@@ -74,8 +73,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	)
 	ctx := pkg.GetContext()
 	if _, err = ast.Evaluate(state.WithContext(ctx).WithPackage(pkg)); err != nil {
-		stackTrace := state.GetInterpreter().StackTrace()
-		return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", stackTrace.String(err)))
+		return nil, err
 	}
 
 	scope := ctx.TopScope()
@@ -104,10 +102,6 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	pkg.SetAttributes(attrs)
 	i.packages[fullPackagePath] = pkg
 	return pkg, nil
-}
-
-func (i *Interpreter) Trace(pos lexer.Position, place string, statement string) {
-	i.stacktrace.Push(common.NewTraceRow(pos, statement, place))
 }
 
 func (i *Interpreter) StackTrace() *common.StackTrace {

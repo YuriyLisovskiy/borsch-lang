@@ -41,6 +41,15 @@ func (st *StackTrace) Push(row *TraceRow) {
 	*st = append(*st, row)
 }
 
+func (st *StackTrace) Pop() {
+	stLen := len(*st)
+	if stLen == 0 {
+		panic("stack trace is empty")
+	}
+
+	*st = (*st)[:stLen-1]
+}
+
 func (st StackTrace) String(err error) string {
 	traceLen := len(st)
 	var rows []string

@@ -22,6 +22,7 @@ func (node *Throw) Evaluate(state common.State) StmtResult {
 			return StmtResult{Err: err}
 		}
 
+		state.Trace(node, "")
 		return StmtResult{State: StmtThrow, Value: expression, Err: utilities.NewRuntimeStatementError(message, node)}
 	}
 
@@ -45,11 +46,6 @@ func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 	for _, catchBlock := range node.CatchBlocks {
 		blockResult, caught := catchBlock.Evaluate(state, result.Value, inFunction, inLoop)
 		if blockResult.Interrupt() {
-			if blockResult.State == StmtThrow {
-				err := blockResult.Err.(utilities.RuntimeStatementError)
-				state.Trace(err.Statement(), "")
-			}
-
 			return blockResult
 		}
 
@@ -80,6 +76,7 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 	generatedErrorClass := exception.(types.ObjectInstance).GetClass()
 	errorToCatchClass := errorToCatch.(*types.Class)
 	if shouldCatch(generatedErrorClass, errorToCatchClass) {
+		state.PopTrace()
 		return node.catch(state, exception, inFunction, inLoop)
 	}
 
@@ -100,7 +97,7 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 
 func (node *Catch) catch(state common.State, err common.Value, inFunction, inLoop bool) (StmtResult, bool) {
 	ctx := state.GetContext()
-	ctx.PushScope(Scope{node.ErrorVar: err})
+	ctx.PushScope(Scope{node.ErrorVar.String(): err})
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.Err != nil {
 		return result, false

@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
+	"github.com/alecthomas/participle/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -57,7 +60,13 @@ var rootCmd = &cobra.Command{
 			state := interpreter.NewState(parser, i, nil, nil)
 			_, err = i.Import(state, filePath)
 			if err != nil {
-				fmt.Println(err.Error())
+				stackTrace := state.GetInterpreter().StackTrace()
+				if pErr, ok := err.(participle.UnexpectedTokenError); ok {
+					text := processParseError(pErr.Message())
+					err = utilities.ParseError(pErr.Position(), pErr.Unexpected.Value, text)
+				}
+
+				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", stackTrace.String(err)))
 				return
 			}
 		} else {
@@ -82,4 +91,18 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func processParseError(text string) string {
+	return strings.Replace(
+		strings.Replace(
+			text,
+			"unexpected token",
+			"неочікуваний токен",
+			1,
+		),
+		"expected",
+		"очікуваний",
+		1,
+	)
 }

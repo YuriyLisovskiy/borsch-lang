@@ -12,16 +12,12 @@ type Scope map[string]common.Value
 
 func (node *Package) Evaluate(state common.State) (common.Value, error) {
 	state.GetContext().PushScope(map[string]common.Value{})
-	for _, stmt := range node.Stmts {
-		stmtState := stmt.Evaluate(state, false, false)
-		if stmtState.Err != nil {
-			err := stmtState.Err
-			state.GetInterpreter().Trace(stmt.Pos, "<пакет>", stmt.String())
-			return nil, err
-		}
+	result := node.Stmts.Evaluate(state, false, false)
+	if result.Err != nil {
+		state.Trace(node.Stmts, "<пакет>")
 	}
 
-	return nil, nil
+	return result.Value, result.Err
 }
 
 // Evaluate executes block of statements.
@@ -31,6 +27,11 @@ func (node *BlockStmts) Evaluate(state common.State, inFunction, inLoop bool) St
 	for _, stmt := range node.Stmts {
 		result := stmt.Evaluate(state, inFunction, inLoop)
 		if result.Interrupt() {
+			if callErr, ok := result.Err.(utilities.CallError); ok {
+				state.Trace(stmt, callErr.Function())
+				result.Err = callErr.Original()
+			}
+
 			return result
 		}
 
@@ -53,7 +54,16 @@ func (node *Assignment) Evaluate(state common.State) (common.Value, error) {
 		return node.Expressions[0].Evaluate(state, nil)
 	}
 
-	return unpack(state, node.Expressions, node.Next)
+	value, err := unpack(state, node.Expressions, node.Next)
+	if err != nil {
+		if _, ok := err.(utilities.CallError); !ok {
+			state.Trace(node, "")
+		}
+
+		return nil, err
+	}
+
+	return value, nil
 }
 
 // Evaluate executes LogicalAnd operation.
@@ -340,9 +350,9 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet common.Value, p
 			}
 		} else if node.Ident != nil {
 			if node.SlicingOrSubscription != nil {
-				variable, err = getCurrentValue(state.GetContext(), prevValue, *node.Ident)
+				variable, err = getCurrentValue(state.GetContext(), prevValue, node.Ident.String())
 			} else {
-				variable, err = setCurrentValue(state.GetContext(), prevValue, *node.Ident, valueToSet)
+				variable, err = setCurrentValue(state.GetContext(), prevValue, node.Ident.String(), valueToSet)
 			}
 
 			if err != nil {
@@ -359,7 +369,7 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet common.Value, p
 			}
 
 			if node.Ident != nil {
-				return setCurrentValue(state.GetContext(), prevValue, *node.Ident, variable)
+				return setCurrentValue(state.GetContext(), prevValue, node.Ident.String(), variable)
 			}
 		}
 
@@ -375,7 +385,7 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet common.Value, p
 			return nil, err
 		}
 	} else if node.Ident != nil {
-		variable, err = getCurrentValue(state.GetContext(), prevValue, *node.Ident)
+		variable, err = getCurrentValue(state.GetContext(), prevValue, node.Ident.String())
 		if err != nil {
 			return nil, err
 		}
@@ -392,7 +402,7 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet common.Value, p
 
 func (node *IdentOrCall) callFunction(state common.State, prevValue common.Value) (common.Value, error) {
 	ctx := state.GetContext()
-	variable, err := getCurrentValue(ctx, prevValue, node.Call.Ident)
+	variable, err := getCurrentValue(ctx, prevValue, node.Call.Ident.String())
 	if err != nil {
 		return nil, err
 	}
@@ -400,12 +410,6 @@ func (node *IdentOrCall) callFunction(state common.State, prevValue common.Value
 	isLambda := false
 	variable, err = node.Call.Evaluate(state, variable, prevValue, &isLambda)
 	if err != nil {
-		funcName := node.Call.Ident
-		if isLambda {
-			funcName = common.LambdaSignature
-		}
-
-		state.GetInterpreter().Trace(node.Call.Pos, funcName, node.Call.String())
 		return nil, err
 	}
 

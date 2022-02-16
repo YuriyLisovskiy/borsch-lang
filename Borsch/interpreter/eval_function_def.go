@@ -27,7 +27,7 @@ func (node *FunctionDef) Evaluate(
 	}
 
 	function := types.NewFunctionInstance(
-		node.Name,
+		node.Name.String(),
 		arguments,
 		func(state common.State, _ *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
 			return node.Body.Evaluate(state)
@@ -37,7 +37,7 @@ func (node *FunctionDef) Evaluate(
 		parentPackage,
 		"", // TODO: add doc
 	)
-	return function, state.GetContext().SetVar(node.Name, function)
+	return function, state.GetContext().SetVar(node.Name.String(), function)
 }
 
 func (node *ParametersSet) Evaluate(state common.State) ([]types.FunctionParameter, error) {
@@ -56,26 +56,26 @@ func (node *ParametersSet) Evaluate(state common.State) ([]types.FunctionParamet
 }
 
 func (node *Parameter) Evaluate(ctx common.Context) (*types.FunctionParameter, error) {
-	class, err := ctx.GetClass(node.Type)
+	class, err := ctx.GetClass(node.TypeName.String())
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.FunctionParameter{
 		Type:       class.(*types.Class),
-		Name:       node.Name,
+		Name:       node.Name.String(),
 		IsVariadic: false,
 		IsNullable: node.IsNullable,
 	}, nil
 }
 
-func (b *FunctionBody) Evaluate(state common.State) (common.Value, error) {
-	result := b.Stmts.Evaluate(state, true, false)
+func (node *FunctionBody) Evaluate(state common.State) (common.Value, error) {
+	result := node.Stmts.Evaluate(state, true, false)
 	return result.Value, result.Err
 }
 
 func (node *ReturnType) Evaluate(ctx common.Context) (*types.FunctionReturnType, error) {
-	class, err := ctx.GetClass(node.Name)
+	class, err := ctx.GetClass(node.Name.String())
 	if err != nil {
 		return nil, err
 	}

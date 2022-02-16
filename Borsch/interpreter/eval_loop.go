@@ -34,7 +34,7 @@ func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFun
 
 	ctx := state.GetContext()
 	for leftBound < rightBound {
-		ctx.PushScope(Scope{node.Variable: types.NewIntegerInstance(leftBound)})
+		ctx.PushScope(Scope{node.Variable.String(): types.NewIntegerInstance(leftBound)})
 		result := body.Evaluate(state, inFunction, true)
 		ctx.PopScope()
 		if result.Interrupt() {

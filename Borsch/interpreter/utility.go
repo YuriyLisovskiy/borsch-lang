@@ -300,7 +300,7 @@ func unpackList(state common.State, lhs []*Expression, rhs *Expression) (common.
 	}
 
 	// TODO: return error
-	panic(fmt.Sprintf("unable to unpack %s", element.GetTypeName()))
+	return nil, errors.New(fmt.Sprintf("unable to unpack %s", element.GetTypeName()))
 }
 
 func evalReturnTypes(state common.State, returnTypes []*ReturnType) ([]types.FunctionReturnType, error) {
