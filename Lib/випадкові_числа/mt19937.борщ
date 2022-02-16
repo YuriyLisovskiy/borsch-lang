@@ -1,0 +1,151 @@
+/**
+ * Портований алгоритм MT19937 із С -> Borsch, оригінальна ліцензія
+ * подано нижче.
+
+ *  A C-program for MT19937: Real number version
+ *    genrand() generates one pseudorandom real number (double)
+ *  which is uniformly distributed on [0,1]-interval, for each
+ *  call. sgenrand(seed) set initial values to the working area
+ *  of 624 words. Before genrand(), sgenrand(seed) must be
+ *  called once. (seed is any 32-bit integer except for 0).
+ *  Integer generator is obtained by modifying two lines.
+ *    Coded by Takuji Nishimura, considering the suggestions by
+ *  Topher Cooper and Marc Rieffel in July-Aug. 1997.
+
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Library General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2 of the License, or (at your option) any later
+ *  version.
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  See the GNU Library General Public License for more details.
+ *  You should have received a copy of the GNU Library General
+ *  Public License along with this library; if not, write to the
+ *  Free Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+ *  02111-1307  USA
+
+ *  Copyright (C) 1997 Makoto Matsumoto and Takuji Nishimura.
+ *  Any feedback is very welcome. For any question, comments,
+ *  see http://www.math.keio.ac.jp/matumoto/emt.html or email
+ *  matumoto@math.keio.ac.jp
+ */
+
+__експортовані__ = [
+    "насіння",
+    "ціле32",
+    "ціле31",
+    "дійсне1",
+    "дійсне2",
+    "дійсне3",
+    "дійсне_розширене53"
+];
+
+// Параметри періоду
+Н = 624;
+М = 397;
+МАТРИЦЯ_А = 0x9908b0df;    // константний вектор А
+ВЕРХНЯ_МАСКА = 0x80000000; // найбільш значимі біти w-r
+НИЖНЯ_МАСКА = 0x7fffffff;  // найменш значимі біти r
+
+_мт = [];     // список станів
+_мті = Н + 1; // _мті == Н + 1 означає, що _мт[Н] не ініціалізовано
+
+/**
+ * Ініціалізує список із ненульовим насінням.
+ */
+функція насіння(н: цілий)
+    // [KNUTH 1981, The Art of Computer Programming Vol. 2 (2nd Ed.), pp102]
+
+    _мт = [];
+    _мт = додати(_мт, н & 0xffffffff);
+    _мті = 1;
+    цикл (_мті < Н)
+        // Див. Knuth TAOCP Vol2. 3rd Ed. P.106 для множника.
+        // 2002/01/09 modified by Makoto Matsumoto.
+        _мт = додати(_мт, (1812433253 * (_мт[_мті - 1] ^ (_мт[_мті - 1] >> 30)) + _мті) & 0xffffffff);
+        _мті = _мті + 1;
+    кінець
+кінець
+
+/**
+ * Генерує випадкове число в інтервалі [0,0xffffffff].
+ */
+функція ціле32(): цілий
+    маг01 = [0x0, МАТРИЦЯ_А];
+    // маг01[x] = х * МАТРИЦЯ_А  для х=0,1
+
+    у = 0;
+    якщо (_мті >= Н)         // згенерувати Н чисел за один раз
+        якщо (_мті == Н + 1) // якщо насіння не встановлене
+            насіння(5489);   // встановити насіння за замовчуванням
+        кінець
+
+        кк = 0;
+        цикл (кк < Н - М)
+            у = (_мт[кк] & ВЕРХНЯ_МАСКА) | (_мт[кк + 1] & НИЖНЯ_МАСКА);
+            _мт[кк] = _мт[кк + М] ^ (у >> 1) ^ маг01[у & 0x1];
+            кк = кк + 1;
+        кінець
+
+        цикл (кк < Н - 1)
+            у = (_мт[кк] & ВЕРХНЯ_МАСКА) | (_мт[кк + 1] & НИЖНЯ_МАСКА);
+            _мт[кк] = _мт[кк + (М - Н)] ^ (у >> 1) ^ маг01[у & 0x1];
+            кк = кк + 1;
+        кінець
+
+        у = (_мт[Н - 1] & ВЕРХНЯ_МАСКА) | (_мт[0] & НИЖНЯ_МАСКА);
+        _мт[Н - 1] = _мт[М - 1] ^ (у >> 1) ^ маг01[у & 0x1];
+        _мті = 0;
+    кінець
+
+    у = _мт[_мті];
+    _мті = _мті + 1;
+    у = у ^ (у >> 11);
+    у = у ^ ((у << 7) & 0x9d2c5680);
+    у = у ^ ((у << 15) & 0xefc60000);
+    у = у ^ (у >> 18);
+
+    повернути у;
+кінець
+
+/**
+ * Генерує випадкове число в інтервалі [0,0x7fffffff].
+ */
+функція ціле31(): цілий
+    повернути ціле32() >> 1;
+кінець
+
+/**
+ * Генерує випадкове число на дійсному інтервалі [0,1].
+ */
+функція дійсне1(): дійсний
+    повернути ціле32() * (1.0 / 4294967295.0);
+    /* поділене на 2^32-1 */
+кінець
+
+/**
+ * Генерує випадкове число на дійсному інтервалі [0,1).
+ */
+функція дійсне2(): дійсний
+    повернути ціле32() * (1.0 / 4294967296.0);
+    /* поділене на 2^32 */
+кінець
+
+/**
+ * Генерує випадкове число на дійсному інтервалі (0,1).
+ */
+функція дійсне3(): дійсний
+    повернути (ціле32() + 0.5) * (1.0 / 4294967296.0);
+    /* поділене на 2^32 */
+кінець
+
+/**
+ * Генерує випадкове число в інтервалі [0,1) із розширенням 53-біти.
+ */
+функція дійне_розширене53(): дійсний
+    а = ціле32() >> 5;
+    б = ціле32() >> 6;
+    повернути (а * 67108864.0 + б) * (1.0 / 9007199254740992.0);
+кінець

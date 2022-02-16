@@ -55,7 +55,7 @@ func (r *FunctionReturnType) String() string {
 
 func (r *FunctionReturnType) GetTypeName() string {
 	if r.Type != Any {
-		return r.Type.GetTypeName()
+		return r.Type.GetName()
 	}
 
 	return common.AnyTypeName

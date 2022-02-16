@@ -8,10 +8,6 @@ import (
 )
 
 func (node *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
-	if node.Body == nil {
-		panic("unreachable")
-	}
-
 	if node.RangeBasedLoop != nil {
 		return node.RangeBasedLoop.Evaluate(state, node.Body, inFunction)
 	} else if node.ConditionalLoop != nil {

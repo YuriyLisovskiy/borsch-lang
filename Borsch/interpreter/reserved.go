@@ -7,11 +7,17 @@ import (
 )
 
 var keywords = []string{
+	"блок",
 	"заключний",
 	"клас",
+	"кінець",
+	"лямбда",
+	"небезпечно",
 	"нуль",
+	"панікувати",
 	"перервати",
 	"повернути",
+	"піймати",
 	"функція",
 	"хиба",
 	"цикл",
@@ -41,10 +47,6 @@ func binSearchString(arr []string, low, high int, item string) int {
 
 func isKeyword(word string) bool {
 	return binSearchString(keywords, 0, len(keywords)-1, word) != -1
-}
-
-func isBuiltin(name string) bool {
-	return binSearchString(builtinIds, 0, len(builtinIds)-1, name) != -1
 }
 
 func init() {
