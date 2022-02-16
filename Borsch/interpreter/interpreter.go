@@ -73,8 +73,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	)
 	ctx := pkg.GetContext()
 	if _, err = ast.Evaluate(state.WithContext(ctx).WithPackage(pkg)); err != nil {
-		stackTrace := state.GetInterpreter().StackTrace()
-		return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", stackTrace.String(err)))
+		return nil, err
 	}
 
 	scope := ctx.TopScope()

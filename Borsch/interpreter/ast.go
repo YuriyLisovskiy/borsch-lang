@@ -122,13 +122,13 @@ func (node *BlockStmts) GetCurrentStmt() *Stmt {
 type Stmt struct {
 	Pos lexer.Position
 
-	Throw       *Throw       ` (?!("піймати" | "інакше" | "кінець")) (@@`
-	Unsafe      *Unsafe      `| (@@ ";")`
-	IfStmt      *IfStmt      `| (@@ ";")`
-	LoopStmt    *LoopStmt    `| (@@ ";")`
-	Block       *BlockStmts  `| ("блок" @@ "кінець" ";")`
-	FunctionDef *FunctionDef `| (@@ ";")`
-	ClassDef    *ClassDef    `| (@@ ";")`
+	Throw       *Throw       `(?!("піймати" | "інакше" | "кінець")) (@@`
+	Unsafe      *Unsafe      `| @@`
+	IfStmt      *IfStmt      `| @@`
+	LoopStmt    *LoopStmt    `| @@`
+	Block       *BlockStmts  `| ("блок" @@ "кінець")`
+	FunctionDef *FunctionDef `| @@`
+	ClassDef    *ClassDef    `| @@`
 	ReturnStmt  *ReturnStmt  `| @@`
 	BreakStmt   bool         `| @"перервати"`
 	Assignment  *Assignment  `| (@@ ";")`

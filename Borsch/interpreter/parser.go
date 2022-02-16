@@ -1,11 +1,7 @@
 package interpreter
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -32,11 +28,6 @@ func (p *ParserImpl) Parse(filename string, code string) (common.Evaluatable, er
 	ast := &Package{}
 	err := p.parser.ParseString(filename, code, ast)
 	if err != nil {
-		if pErr, ok := err.(participle.UnexpectedTokenError); ok {
-			err := utilities.ParseError(pErr.Position(), pErr.Unexpected.Value, pErr.Message())
-			return nil, errors.New(fmt.Sprintf("Відстеження (стек викликів):\n%s", err))
-		}
-
 		return nil, err
 	}
 
