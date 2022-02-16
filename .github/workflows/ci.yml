@@ -50,21 +50,15 @@ jobs:
         id: app_version
         run: |
           echo "app_version=$(cat ./version.txt)" >> $GITHUB_ENV
-      - name: Upload the interpreter to artifacts
+      - name: Compose build
+        run: |
+          mkdir build
+          cp ./bin ./build
+          cp ./Lib ./build
+          cp ./scripts/install.sh ./build
+      - name: Upload build to artifacts
         uses: actions/upload-artifact@v2
         with:
           name: borsch-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ env.app_version }}
-          path: ./bin
-          retention-days: 60
-      - name: Upload the standard library to artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: borsch-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ env.app_version }}
-          path: ./Lib
-          retention-days: 60
-      - name: Upload an installation script to artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: borsch-${{ matrix.platform.os }}-${{ matrix.platform.arch }}-${{ env.app_version }}
-          path: ./scripts/install.sh
+          path: ./build
           retention-days: 60
