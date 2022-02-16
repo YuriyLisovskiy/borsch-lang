@@ -22,29 +22,29 @@ var keywords = []string{
 
 var builtinIds []string
 
-func binSearchString(arr []string, start, end int, item string) int {
-	if end < start {
+func binSearchString(arr []string, low, high int, item string) int {
+	if high < low {
 		return -1
 	}
 
-	mid := start + (end-start)/2
+	mid := low + (high-low)/2
 	if arr[mid] == item {
 		return mid
 	}
 
 	if item < arr[mid] {
-		return binSearchString(arr, start, mid-1, item)
+		return binSearchString(arr, low, mid-1, item)
 	}
 
-	return binSearchString(arr, mid+1, end, item)
+	return binSearchString(arr, mid+1, high, item)
 }
 
 func isKeyword(word string) bool {
-	return binSearchString(keywords, 0, len(keywords), word) != -1
+	return binSearchString(keywords, 0, len(keywords)-1, word) != -1
 }
 
 func isBuiltin(name string) bool {
-	return binSearchString(builtinIds, 0, len(builtinIds), name) != -1
+	return binSearchString(builtinIds, 0, len(builtinIds)-1, name) != -1
 }
 
 func init() {
