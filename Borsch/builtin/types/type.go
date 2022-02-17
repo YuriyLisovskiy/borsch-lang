@@ -5,7 +5,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-func GetTypeOfInstance(object common.Value) (common.Value, error) {
+func GetTypeOfInstance(object common.Object) (common.Object, error) {
 	if instance, ok := object.(ObjectInstance); ok {
 		return instance.GetClass(), nil
 	}
@@ -13,7 +13,7 @@ func GetTypeOfInstance(object common.Value) (common.Value, error) {
 	panic("unreachable")
 }
 
-func compareTypes(_ common.State, _ common.Operator, self, other common.Value) (int, error) {
+func compareTypes(_ common.State, _ common.Operator, self, other common.Object) (int, error) {
 	left, ok := self.(*Class)
 	if !ok {
 		return 0, utilities.IncorrectUseOfFunctionError("compareTypes")
@@ -27,7 +27,7 @@ func compareTypes(_ common.State, _ common.Operator, self, other common.Value) (
 	return -2, nil
 }
 
-func typeOperator_Call() common.Value {
+func typeOperator_Call() common.Object {
 	return NewFunctionInstance(
 		common.CallOperatorName,
 		[]FunctionParameter{
@@ -38,18 +38,18 @@ func typeOperator_Call() common.Value {
 				IsNullable: false,
 			},
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				Name:       "обєкт",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 		},
-		func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(_ common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			return GetTypeOfInstance((*args)[1])
 		},
 		[]FunctionReturnType{
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				IsNullable: false,
 			},
 		},
@@ -61,8 +61,8 @@ func typeOperator_Call() common.Value {
 
 func newTypeClass() *Class {
 	// TODO: add required operators and methods
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = map[string]common.Value{
+	initAttributes := func(attrs *map[string]common.Object) {
+		*attrs = map[string]common.Object{
 			// TODO: add doc
 			common.CallOperatorName: typeOperator_Call(),
 			common.EqualsOp.Name(): MakeComparisonOperator(
@@ -86,7 +86,7 @@ func newTypeClass() *Class {
 		Bases:           []*Class{},
 		Parent:          BuiltinPackage,
 		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
+		GetEmptyInstance: func() (common.Object, error) {
 			panic("unreachable")
 		},
 	}

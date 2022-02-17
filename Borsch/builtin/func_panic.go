@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalPanic(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalPanic(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	self := (*args)[0]
 	msg, err := self.String(state)
 	if err != nil {
@@ -32,7 +32,7 @@ func makePanicFunction() *types.FunctionInstance {
 		evalPanic,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Nil,
+				Type:       types.NilClass,
 				IsNullable: true,
 			},
 		},

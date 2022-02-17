@@ -5,7 +5,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalImport(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalImport(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	return state.GetInterpreter().Import(state, (*args)[0].(types.StringInstance).Value)
 }
 
@@ -14,7 +14,7 @@ func makeImportFunction() *types.FunctionInstance {
 		"імпорт",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "шлях",
 				IsVariadic: false,
 				IsNullable: false,
@@ -23,7 +23,7 @@ func makeImportFunction() *types.FunctionInstance {
 		evalImport,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Package,
+				Type:       types.PackageClass,
 				IsNullable: false,
 			},
 		},

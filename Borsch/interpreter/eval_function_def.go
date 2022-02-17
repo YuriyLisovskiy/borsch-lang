@@ -9,7 +9,7 @@ func (node *FunctionDef) Evaluate(
 	state common.State,
 	parentPackage *types.PackageInstance,
 	check func([]types.FunctionParameter, []types.FunctionReturnType) error,
-) (common.Value, error) {
+) (common.Object, error) {
 	arguments, err := node.ParametersSet.Evaluate(state)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func (node *FunctionDef) Evaluate(
 	function := types.NewFunctionInstance(
 		node.Name.String(),
 		arguments,
-		func(state common.State, _ *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
+		func(state common.State, _ *[]common.Object, kwargs *map[string]common.Object) (common.Object, error) {
 			return node.Body.Evaluate(state)
 		},
 		returnTypes,
@@ -69,7 +69,7 @@ func (node *Parameter) Evaluate(ctx common.Context) (*types.FunctionParameter, e
 	}, nil
 }
 
-func (node *FunctionBody) Evaluate(state common.State) (common.Value, error) {
+func (node *FunctionBody) Evaluate(state common.State) (common.Object, error) {
 	result := node.Stmts.Evaluate(state, true, false)
 	return result.Value, result.Err
 }
@@ -86,7 +86,7 @@ func (node *ReturnType) Evaluate(ctx common.Context) (*types.FunctionReturnType,
 	}, nil
 }
 
-func (node *ReturnStmt) Evaluate(state common.State) (common.Value, error) {
+func (node *ReturnStmt) Evaluate(state common.State) (common.Object, error) {
 	resultCount := len(node.Expressions)
 	switch {
 	case resultCount == 1:

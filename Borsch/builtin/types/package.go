@@ -19,10 +19,10 @@ func NewPackageInstance(
 	ctx common.Context,
 	name string,
 	parent *PackageInstance,
-	attributes map[string]common.Value,
+	attributes map[string]common.Object,
 ) *PackageInstance {
 	instance := &PackageInstance{
-		ClassInstance: *NewClassInstance(Package, attributes),
+		ClassInstance: *NewClassInstance(PackageClass, attributes),
 		Name:          name,
 		Parent:        parent,
 		ctx:           ctx,
@@ -48,14 +48,14 @@ func (p *PackageInstance) SetContext(ctx common.Context) {
 	p.ctx = ctx
 }
 
-func (p *PackageInstance) SetAttributes(attrs map[string]common.Value) {
+func (p *PackageInstance) SetAttributes(attrs map[string]common.Object) {
 	p.attributes = attrs
 	if p.attributes == nil {
-		p.attributes = map[string]common.Value{}
+		p.attributes = map[string]common.Object{}
 	}
 }
 
-func comparePackages(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
+func comparePackages(_ common.State, op common.Operator, self common.Object, other common.Object) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
 	case *PackageInstance:
@@ -74,14 +74,14 @@ func NewPackageClass() *Class {
 		IsFinal: true,
 		Bases:   []*Class{},
 		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
+		AttrInitializer: func(attrs *map[string]common.Object) {
 			*attrs = MergeAttributes(
-				MakeLogicalOperators(Package),
-				MakeComparisonOperators(Package, comparePackages),
-				MakeCommonOperators(Package),
+				MakeLogicalOperators(PackageClass),
+				MakeComparisonOperators(PackageClass, comparePackages),
+				MakeCommonOperators(PackageClass),
 			)
 		},
-		GetEmptyInstance: func() (common.Value, error) {
+		GetEmptyInstance: func() (common.Object, error) {
 			panic("unreachable")
 		},
 	}

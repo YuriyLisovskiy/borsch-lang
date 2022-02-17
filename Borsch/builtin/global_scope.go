@@ -5,14 +5,14 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-var GlobalScope map[string]common.Value
+var GlobalScope map[string]common.Object
 
 func init() {
 	types.Init()
 	initFunctions()
 	initClasses()
 
-	GlobalScope = map[string]common.Value{
+	GlobalScope = map[string]common.Object{
 
 		// I/O
 		PrintFunction.Name:     PrintFunction,
@@ -31,16 +31,16 @@ func init() {
 		ExitFunction.Name: ExitFunction,
 
 		// Conversion
-		"дійсний":           types.Real,
-		"логічний":          types.Bool,
+		"дійсний":           types.RealClass,
+		"логічний":          types.BoolClass,
 		ImportFunction.Name: ImportFunction,
-		"рядок":             types.String,
-		"словник":           types.Dictionary,
-		"список":            types.List,
-		// "функція": types.Function,
-		"цілий":     types.Integer,
-		"довільний": types.Any,
-		"нульовий":  types.Nil,
+		"рядок":             types.StringClass,
+		"словник":           types.DictClass,
+		"список":            types.ListClass,
+		// "функція": types.FunctionClass,
+		"цілий":     types.IntClass,
+		"довільний": types.AnyClass,
+		"нульовий":  types.NilClass,
 
 		// Utilities
 		"довжина":   LengthFunction,

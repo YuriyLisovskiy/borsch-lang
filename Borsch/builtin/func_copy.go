@@ -5,7 +5,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func deepCopy(object common.Value) (common.Value, error) {
+func deepCopy(object common.Object) (common.Object, error) {
 	switch value := object.(type) {
 	case *types.ClassInstance:
 		copied := value.Copy()
@@ -15,7 +15,7 @@ func deepCopy(object common.Value) (common.Value, error) {
 	}
 }
 
-func evalDeepCopy(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalDeepCopy(_ common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	return deepCopy((*args)[0])
 }
 
@@ -24,7 +24,7 @@ func makeDeepCopyFunction() *types.FunctionInstance {
 		"копіювати",
 		[]types.FunctionParameter{
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				Name:       "значення",
 				IsVariadic: false,
 				IsNullable: false,
@@ -33,7 +33,7 @@ func makeDeepCopyFunction() *types.FunctionInstance {
 		evalDeepCopy,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				IsNullable: false,
 			},
 		},

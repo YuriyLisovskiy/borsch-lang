@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bool) error {
+func checkArgument(parameter *FunctionParameter, arg Object, isVariadic bool) error {
 	if parameter == nil {
 		return errors.New("checkArgument: parameter is nil")
 	}
@@ -17,12 +17,12 @@ func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bo
 		return errors.New("checkArgument: arg is nil")
 	}
 
-	if parameter.Type == Any {
+	if parameter.Type == AnyClass {
 		return nil
 	}
 
 	argPrototype := arg.(ObjectInstance).GetClass()
-	if argPrototype == Nil && parameter.IsNullable {
+	if argPrototype == NilClass && parameter.IsNullable {
 		return nil
 	}
 
@@ -34,7 +34,7 @@ func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bo
 		return errors.New(
 			fmt.Sprintf(
 				"аргумент '%s' очікує набір параметрів з типом '%s' або його похідними, отримано '%s'",
-				parameter.Name, parameter.GetTypeName(), arg.GetTypeName(),
+				parameter.Name, parameter.GetTypeName(), arg.Class().Name,
 			),
 		)
 	}
@@ -42,13 +42,13 @@ func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bo
 	return errors.New(
 		fmt.Sprintf(
 			"аргумент '%s' очікує параметр з типом '%s' або його похідними, отримано '%s'",
-			parameter.Name, parameter.GetTypeName(), arg.GetTypeName(),
+			parameter.Name, parameter.GetTypeName(), arg.Class().Name,
 		),
 	)
 }
 
-func CheckFunctionArguments(function *FunctionInstance, args *[]common.Value, _ *map[string]common.Value) error {
-	parametersLen := len(*args)
+func CheckFunctionArguments(function *FunctionInstance, args Tuple) error {
+	parametersLen := len(args)
 	argsLen := len(function.Parameters)
 	if argsLen > 0 && function.Parameters[argsLen-1].IsVariadic {
 		argsLen--
@@ -63,17 +63,17 @@ func CheckFunctionArguments(function *FunctionInstance, args *[]common.Value, _ 
 
 	var c int
 	for c = 0; c < argsLen; c++ {
-		if err := checkArgument(&function.Parameters[c], (*args)[c], false); err != nil {
+		if err := checkArgument(&function.Parameters[c], args[c], false); err != nil {
 			return err
 		}
 	}
 
 	if len(function.Parameters) > 0 {
 		if lastArgument := function.Parameters[len(function.Parameters)-1]; lastArgument.IsVariadic {
-			if len(*args)-parametersLen > 0 {
-				parametersLen = len(*args)
+			if len(args)-parametersLen > 0 {
+				parametersLen = len(args)
 				for k := c; k < parametersLen; k++ {
-					if err := checkArgument(&lastArgument, (*args)[k], true); err != nil {
+					if err := checkArgument(&lastArgument, args[k], true); err != nil {
 						return err
 					}
 				}
@@ -84,7 +84,7 @@ func CheckFunctionArguments(function *FunctionInstance, args *[]common.Value, _ 
 	return nil
 }
 
-func CheckResult(state common.State, result common.Value, function *FunctionInstance) error {
+func CheckResult(state common.State, result common.Object, function *FunctionInstance) error {
 	if len(function.ReturnTypes) == 1 {
 		err := checkSingleResult(state, result, function.ReturnTypes[0], function.Name)
 		if err != nil {
@@ -95,7 +95,7 @@ func CheckResult(state common.State, result common.Value, function *FunctionInst
 	}
 
 	switch value := result.(type) {
-	case ListInstance:
+	case *List:
 		if int64(len(function.ReturnTypes)) != value.Length(state) {
 			var expectedTypes []string
 			for _, retType := range function.ReturnTypes {
@@ -144,12 +144,12 @@ func CheckResult(state common.State, result common.Value, function *FunctionInst
 
 func checkSingleResult(
 	state common.State,
-	result common.Value,
+	result common.Object,
 	returnType FunctionReturnType,
 	funcName string,
 ) error {
-	if result.(ObjectInstance).GetClass() == Nil {
-		if returnType.Type != Nil && !returnType.IsNullable {
+	if result.(ObjectInstance).GetClass() == NilClass {
+		if returnType.Type != NilClass && !returnType.IsNullable {
 			resultStr, err := result.String(state)
 			if err != nil {
 				return err
@@ -162,7 +162,7 @@ func checkSingleResult(
 				),
 			)
 		}
-	} else if returnType.Type != Any && result.(ObjectInstance).GetClass() != returnType.Type {
+	} else if returnType.Type != AnyClass && result.(ObjectInstance).GetClass() != returnType.Type {
 		return errors.New(
 			fmt.Sprintf(
 				"'%s()' повертає значення типу '%s'%s, отримано значення з типом '%s'",

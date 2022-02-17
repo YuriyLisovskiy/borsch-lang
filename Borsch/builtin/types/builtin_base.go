@@ -13,7 +13,7 @@ type BuiltinInstance struct {
 	ClassInstance
 }
 
-func (i BuiltinInstance) SetAttribute(name string, _ common.Value) error {
+func (i BuiltinInstance) SetAttribute(name string, _ common.Object) error {
 	if i.HasAttribute(name) {
 		return utilities.AttributeIsReadOnlyError(i.GetTypeName(), name)
 	}
@@ -21,6 +21,6 @@ func (i BuiltinInstance) SetAttribute(name string, _ common.Value) error {
 	return utilities.AttributeNotFoundError(i.GetTypeName(), name)
 }
 
-func (i BuiltinInstance) Call(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error) {
+func (i BuiltinInstance) Call(common.State, *[]common.Object, *map[string]common.Object) (common.Object, error) {
 	return nil, utilities.ObjectIsNotCallable("", i.GetTypeName())
 }

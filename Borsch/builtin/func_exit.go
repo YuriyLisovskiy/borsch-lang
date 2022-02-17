@@ -7,7 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalExit(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalExit(_ common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	os.Exit(int((*args)[0].(types.IntegerInstance).Value))
 	return types.NewNilInstance(), nil
 }
@@ -17,7 +17,7 @@ func makeExitFunction() *types.FunctionInstance {
 		"вихід",
 		[]types.FunctionParameter{
 			{
-				Type:       types.Integer,
+				Type:       types.IntClass,
 				Name:       "код",
 				IsVariadic: false,
 				IsNullable: false,
@@ -26,7 +26,7 @@ func makeExitFunction() *types.FunctionInstance {
 		evalExit,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Nil,
+				Type:       types.NilClass,
 				IsNullable: true,
 			},
 		},

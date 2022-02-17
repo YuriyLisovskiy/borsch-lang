@@ -9,15 +9,15 @@ import (
 )
 
 type ContextImpl struct {
-	scopes        []map[string]common.Value
+	scopes        []map[string]common.Object
 	parentContext common.Context
 }
 
-func (c *ContextImpl) PushScope(scope map[string]common.Value) {
+func (c *ContextImpl) PushScope(scope map[string]common.Object) {
 	c.scopes = append(c.scopes, scope)
 }
 
-func (c *ContextImpl) PopScope() map[string]common.Value {
+func (c *ContextImpl) PopScope() map[string]common.Object {
 	if len(c.scopes) == 0 {
 		panic("fatal: not enough scopes")
 	}
@@ -28,7 +28,7 @@ func (c *ContextImpl) PopScope() map[string]common.Value {
 	return scope
 }
 
-func (c *ContextImpl) TopScope() map[string]common.Value {
+func (c *ContextImpl) TopScope() map[string]common.Object {
 	if len(c.scopes) == 0 {
 		panic("fatal: not enough scopes")
 	}
@@ -36,7 +36,7 @@ func (c *ContextImpl) TopScope() map[string]common.Value {
 	return c.scopes[len(c.scopes)-1]
 }
 
-func (c *ContextImpl) GetVar(name string) (common.Value, error) {
+func (c *ContextImpl) GetVar(name string) (common.Object, error) {
 	lastScopeIdx := len(c.scopes) - 1
 	for i := lastScopeIdx; i >= 0; i-- {
 		if val, ok := c.scopes[i][name]; ok {
@@ -51,7 +51,7 @@ func (c *ContextImpl) GetVar(name string) (common.Value, error) {
 	return nil, errors.New(fmt.Sprintf("ідентифікатор '%s' не визначений", name))
 }
 
-func (c *ContextImpl) SetVar(name string, value common.Value) error {
+func (c *ContextImpl) SetVar(name string, value common.Object) error {
 	if isKeyword(name) {
 		return errors.New(
 			fmt.Sprintf(
@@ -65,7 +65,7 @@ func (c *ContextImpl) SetVar(name string, value common.Value) error {
 	for i := 0; i < size; i++ {
 		if old, found := c.scopes[i][name]; found {
 			oldClass := old.(types.ObjectInstance).GetClass()
-			if oldClass != value.(types.ObjectInstance).GetClass() && oldClass != types.Nil {
+			if oldClass != value.(types.ObjectInstance).GetClass() && oldClass != types.NilClass {
 				if i == size-1 {
 					return errors.New(
 						fmt.Sprintf(
@@ -87,7 +87,7 @@ func (c *ContextImpl) SetVar(name string, value common.Value) error {
 	return nil
 }
 
-func (c *ContextImpl) GetClass(name string) (common.Value, error) {
+func (c *ContextImpl) GetClass(name string) (common.Object, error) {
 	if variable, err := c.GetVar(name); err == nil {
 		if _, ok := variable.(*types.Class); ok {
 			return variable, nil
@@ -101,7 +101,7 @@ func (c *ContextImpl) GetClass(name string) (common.Value, error) {
 
 func (c *ContextImpl) Derive() common.Context {
 	return &ContextImpl{
-		scopes:        []map[string]common.Value{},
+		scopes:        []map[string]common.Object{},
 		parentContext: c,
 	}
 }

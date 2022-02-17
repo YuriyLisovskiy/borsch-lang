@@ -8,13 +8,13 @@ import (
 
 func (node *Call) Evaluate(
 	state common.State,
-	variable common.Value,
-	selfInstance common.Value,
+	variable common.Object,
+	selfInstance common.Object,
 	isLambda *bool,
-) (common.Value, error) {
+) (common.Object, error) {
 	switch object := variable.(type) {
 	case *types.Class:
-		var args []common.Value
+		var args []common.Object
 		instance, err := object.GetEmptyInstance()
 		if err != nil {
 			return nil, err
@@ -28,7 +28,7 @@ func (node *Call) Evaluate(
 		return args[0], nil
 	case *types.FunctionInstance:
 		*isLambda = object.IsLambda()
-		var args []common.Value
+		var args []common.Object
 		if selfInstance != nil {
 			switch selfInstance.(type) {
 			case *types.Class, *types.PackageInstance:
@@ -42,7 +42,7 @@ func (node *Call) Evaluate(
 
 		return node.evalFunction(state, object, &args, nil)
 	case types.ObjectInstance:
-		args := []common.Value{variable}
+		args := []common.Object{variable}
 		return node.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
 	default:
 		return nil, utilities.ObjectIsNotCallable(node.Ident.String(), object.GetTypeName())
@@ -51,12 +51,12 @@ func (node *Call) Evaluate(
 
 func (node *Call) evalFunctionByName(
 	state common.State,
-	object common.Value,
+	object common.Object,
 	functionName string,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
+	args *[]common.Object,
+	kwargs *map[string]common.Object,
 	isMethod bool,
-) (common.Value, error) {
+) (common.Object, error) {
 	if err := updateArgs(state, node.Arguments, args); err != nil {
 		return nil, err
 	}
@@ -67,9 +67,9 @@ func (node *Call) evalFunctionByName(
 func (node *Call) evalFunction(
 	state common.State,
 	function *types.FunctionInstance,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
-) (common.Value, error) {
+	args *[]common.Object,
+	kwargs *map[string]common.Object,
+) (common.Object, error) {
 	if err := updateArgs(state, node.Arguments, args); err != nil {
 		return nil, err
 	}

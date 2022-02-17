@@ -20,8 +20,8 @@ func NewIntegerInstance(value int64) IntegerInstance {
 	return IntegerInstance{
 		BuiltinInstance: BuiltinInstance{
 			ClassInstance{
-				class:      Integer,
-				attributes: map[string]common.Value{},
+				class:      IntClass,
+				attributes: map[string]common.Object{},
 				address:    "",
 			},
 		},
@@ -41,7 +41,7 @@ func (t IntegerInstance) AsBool(common.State) (bool, error) {
 	return t.Value != 0, nil
 }
 
-func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
+func toInteger(_ common.State, args ...common.Object) (common.Object, error) {
 	if len(args) == 0 {
 		return NewIntegerInstance(0), nil
 	}
@@ -85,7 +85,10 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 	}
 }
 
-func evalUnaryOperatorWithIntegers(_ common.State, operator common.Operator, value common.Value) (common.Value, error) {
+func evalUnaryOperatorWithIntegers(_ common.State, operator common.Operator, value common.Object) (
+	common.Object,
+	error,
+) {
 	if self, ok := value.(IntegerInstance); ok {
 		switch operator {
 		case common.UnaryPlus:
@@ -102,7 +105,7 @@ func evalUnaryOperatorWithIntegers(_ common.State, operator common.Operator, val
 	return nil, utilities.BadOperandForUnaryOperatorError(operator)
 }
 
-func compareIntegers(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
+func compareIntegers(_ common.State, op common.Operator, self common.Object, other common.Object) (int, error) {
 	left, ok := self.(IntegerInstance)
 	if !ok {
 		return 0, utilities.IncorrectUseOfFunctionError("compareIntegers")
@@ -152,25 +155,25 @@ func compareIntegers(_ common.State, op common.Operator, self common.Value, othe
 
 func intOperator(
 	operator common.Operator,
-	handler func(common.State, IntegerInstance, common.Value) (common.Value, error),
-) common.Value {
+	handler func(common.State, IntegerInstance, common.Object) (common.Object, error),
+) common.Object {
 	return NewFunctionInstance(
 		operator.Name(),
 		[]FunctionParameter{
 			{
-				Type:       Integer,
+				Type:       IntClass,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				Name:       "інший",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			left, ok := (*args)[0].(IntegerInstance)
 			if !ok {
 				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
@@ -190,7 +193,7 @@ func intOperator(
 		},
 		[]FunctionReturnType{
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				IsNullable: false,
 			},
 		},
@@ -200,7 +203,7 @@ func intOperator(
 	)
 }
 
-func intOperator_Pow(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Pow(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case RealInstance:
 		return NewRealInstance(math.Pow(float64(left.Value), other.Value)), nil
@@ -213,7 +216,7 @@ func intOperator_Pow(_ common.State, left IntegerInstance, right common.Value) (
 	}
 }
 
-func intOperator_Mul(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Mul(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewIntegerInstance(left.Value * boolToInt64(other.Value)), nil
@@ -228,7 +231,7 @@ func intOperator_Mul(_ common.State, left IntegerInstance, right common.Value) (
 		}
 
 		return NewStringInstance(strings.Repeat(other.Value, count)), nil
-	case ListInstance:
+	case List:
 		count := int(left.Value)
 		list := NewListInstance()
 		if count > 0 {
@@ -243,7 +246,7 @@ func intOperator_Mul(_ common.State, left IntegerInstance, right common.Value) (
 	}
 }
 
-func intOperator_Div(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Div(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		if other.Value {
@@ -264,7 +267,7 @@ func intOperator_Div(_ common.State, left IntegerInstance, right common.Value) (
 	return nil, errors.New("ділення на нуль")
 }
 
-func intOperator_Modulo(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Modulo(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		if other.Value {
@@ -281,7 +284,7 @@ func intOperator_Modulo(_ common.State, left IntegerInstance, right common.Value
 	return nil, errors.New("ділення за модулем на нуль")
 }
 
-func intOperator_Add(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Add(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewIntegerInstance(left.Value + boolToInt64(other.Value)), nil
@@ -294,7 +297,7 @@ func intOperator_Add(_ common.State, left IntegerInstance, right common.Value) (
 	}
 }
 
-func intOperator_Sub(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Sub(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewIntegerInstance(left.Value - boolToInt64(other.Value)), nil
@@ -307,7 +310,7 @@ func intOperator_Sub(_ common.State, left IntegerInstance, right common.Value) (
 	}
 }
 
-func intOperator_BitwiseLeftShift(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseLeftShift(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewIntegerInstance(left.Value << boolToInt64(other.Value)), nil
@@ -318,7 +321,7 @@ func intOperator_BitwiseLeftShift(_ common.State, left IntegerInstance, right co
 	}
 }
 
-func intOperator_BitwiseRightShift(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseRightShift(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewIntegerInstance(left.Value >> boolToInt64(other.Value)), nil
@@ -329,7 +332,7 @@ func intOperator_BitwiseRightShift(_ common.State, left IntegerInstance, right c
 	}
 }
 
-func intOperator_BitwiseAnd(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseAnd(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewIntegerInstance(left.Value & boolToInt64(other.Value)), nil
@@ -340,7 +343,7 @@ func intOperator_BitwiseAnd(_ common.State, left IntegerInstance, right common.V
 	}
 }
 
-func intOperator_BitwiseXor(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseXor(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewIntegerInstance(left.Value ^ boolToInt64(other.Value)), nil
@@ -351,7 +354,7 @@ func intOperator_BitwiseXor(_ common.State, left IntegerInstance, right common.V
 	}
 }
 
-func intOperator_BitwiseOr(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseOr(_ common.State, left IntegerInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewIntegerInstance(left.Value | boolToInt64(other.Value)), nil
@@ -368,11 +371,11 @@ func newIntegerClass() *Class {
 		IsFinal: true,
 		Bases:   []*Class{},
 		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
+		AttrInitializer: func(attrs *map[string]common.Object) {
 			*attrs = MergeAttributes(
-				map[string]common.Value{
+				map[string]common.Object{
 					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(Integer, toInteger, ""),
+					common.ConstructorName: makeVariadicConstructor(IntClass, toInteger, ""),
 
 					common.PowOp.Name():    intOperator(common.PowOp, intOperator_Pow),
 					common.MulOp.Name():    intOperator(common.MulOp, intOperator_Mul),
@@ -392,13 +395,13 @@ func newIntegerClass() *Class {
 					common.BitwiseXorOp.Name(): intOperator(common.BitwiseXorOp, intOperator_BitwiseXor),
 					common.BitwiseOrOp.Name():  intOperator(common.BitwiseOrOp, intOperator_BitwiseOr),
 				},
-				MakeUnaryOperators(Integer, Integer, evalUnaryOperatorWithIntegers),
-				MakeLogicalOperators(Integer),
-				MakeComparisonOperators(Integer, compareIntegers),
-				MakeCommonOperators(Integer),
+				MakeUnaryOperators(IntClass, IntClass, evalUnaryOperatorWithIntegers),
+				MakeLogicalOperators(IntClass),
+				MakeComparisonOperators(IntClass, compareIntegers),
+				MakeCommonOperators(IntClass),
 			)
 		},
-		GetEmptyInstance: func() (common.Value, error) {
+		GetEmptyInstance: func() (common.Object, error) {
 			return NewIntegerInstance(0), nil
 		},
 	}

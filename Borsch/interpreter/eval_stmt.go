@@ -33,7 +33,7 @@ const (
 
 type StmtResult struct {
 	State StmtState
-	Value common.Value
+	Value common.Object
 	Err   error
 }
 

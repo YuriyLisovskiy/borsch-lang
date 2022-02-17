@@ -58,7 +58,7 @@ func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 	return result
 }
 
-func (node *Catch) Evaluate(state common.State, exception common.Value, inFunction, inLoop bool) (StmtResult, bool) {
+func (node *Catch) Evaluate(state common.State, exception common.Object, inFunction, inLoop bool) (StmtResult, bool) {
 	errorToCatch, err := node.ErrorType.Evaluate(state, nil, nil)
 	if err != nil {
 		return StmtResult{Err: err}, false
@@ -95,7 +95,7 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 	return StmtResult{}, false
 }
 
-func (node *Catch) catch(state common.State, err common.Value, inFunction, inLoop bool) (StmtResult, bool) {
+func (node *Catch) catch(state common.State, err common.Object, inFunction, inLoop bool) (StmtResult, bool) {
 	ctx := state.GetContext()
 	ctx.PushScope(Scope{node.ErrorVar.String(): err})
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)

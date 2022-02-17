@@ -11,14 +11,14 @@ type StateImpl struct {
 	parser         common.Parser
 	interpreter    common.Interpreter
 	context        common.Context
-	currentPackage common.Value
+	currentPackage common.Object
 }
 
 func NewState(
 	parser common.Parser,
 	interpreter common.Interpreter,
 	context common.Context,
-	currentPackage common.Value,
+	currentPackage common.Object,
 ) *StateImpl {
 	return &StateImpl{
 		parser:         parser,
@@ -52,7 +52,7 @@ func (s *StateImpl) GetContext() common.Context {
 	panic("state: context is nil")
 }
 
-func (s *StateImpl) GetCurrentPackage() common.Value {
+func (s *StateImpl) GetCurrentPackage() common.Object {
 	if s.currentPackage != nil {
 		return s.currentPackage
 	}
@@ -60,7 +60,7 @@ func (s *StateImpl) GetCurrentPackage() common.Value {
 	panic("state: current package is nil")
 }
 
-func (s *StateImpl) GetCurrentPackageOrNil() common.Value {
+func (s *StateImpl) GetCurrentPackageOrNil() common.Object {
 	return s.currentPackage
 }
 
@@ -73,7 +73,7 @@ func (s *StateImpl) WithContext(ctx common.Context) common.State {
 	}
 }
 
-func (s *StateImpl) WithPackage(pkg common.Value) common.State {
+func (s *StateImpl) WithPackage(pkg common.Object) common.State {
 	return &StateImpl{
 		parser:         s.parser,
 		interpreter:    s.interpreter,

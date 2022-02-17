@@ -10,13 +10,13 @@ import (
 
 type ClassInstance struct {
 	class      *Class
-	attributes map[string]common.Value
+	attributes map[string]common.Object
 	address    string
 }
 
-func NewClassInstance(class *Class, attributes map[string]common.Value) *ClassInstance {
+func NewClassInstance(class *Class, attributes map[string]common.Object) *ClassInstance {
 	if attributes == nil {
-		attributes = map[string]common.Value{}
+		attributes = map[string]common.Object{}
 	}
 
 	instance := &ClassInstance{
@@ -71,7 +71,7 @@ func (i ClassInstance) AsBool(common.State) (bool, error) {
 	return true, nil
 }
 
-func (i ClassInstance) GetOperator(name string) (common.Value, error) {
+func (i ClassInstance) GetOperator(name string) (common.Object, error) {
 	if attr, err := i.GetClass().getAttribute(name); err == nil {
 		return attr, nil
 	}
@@ -79,7 +79,7 @@ func (i ClassInstance) GetOperator(name string) (common.Value, error) {
 	return nil, utilities.OperatorNotFoundError(i.GetTypeName(), name)
 }
 
-func (i ClassInstance) GetAttribute(name string) (common.Value, error) {
+func (i ClassInstance) GetAttribute(name string) (common.Object, error) {
 	if val, ok := i.attributes[name]; ok {
 		return val, nil
 	}
@@ -91,7 +91,7 @@ func (i ClassInstance) GetAttribute(name string) (common.Value, error) {
 	return nil, utilities.AttributeNotFoundError(i.GetTypeName(), name)
 }
 
-func (i ClassInstance) SetAttribute(name string, newValue common.Value) error {
+func (i ClassInstance) SetAttribute(name string, newValue common.Object) error {
 	if oldValue, ok := i.attributes[name]; ok {
 		oldValueClass := oldValue.(ObjectInstance).GetClass()
 		newValueClass := newValue.(ObjectInstance).GetClass()
@@ -120,8 +120,8 @@ func (i ClassInstance) HasAttribute(name string) bool {
 	return i.GetClass().HasAttribute(name)
 }
 
-func (i ClassInstance) Call(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (
-	common.Value,
+func (i ClassInstance) Call(state common.State, args *[]common.Object, kwargs *map[string]common.Object) (
+	common.Object,
 	error,
 ) {
 	operator, err := i.GetOperator(common.CallOperatorName)
@@ -135,7 +135,7 @@ func (i ClassInstance) Call(state common.State, args *[]common.Value, kwargs *ma
 func (i ClassInstance) Copy() *ClassInstance {
 	instance := &ClassInstance{
 		class:      i.class,
-		attributes: map[string]common.Value{},
+		attributes: map[string]common.Object{},
 		address:    "",
 	}
 

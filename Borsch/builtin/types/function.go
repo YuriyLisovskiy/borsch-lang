@@ -26,7 +26,7 @@ func (fa *FunctionParameter) String() string {
 
 func (fa FunctionParameter) GetTypeName() string {
 	res := ""
-	if fa.Type != Any {
+	if fa.Type != AnyClass {
 		res = fa.Type.GetTypeName()
 	} else {
 		res = common.AnyTypeName
@@ -54,7 +54,7 @@ func (r *FunctionReturnType) String() string {
 }
 
 func (r *FunctionReturnType) GetTypeName() string {
-	if r.Type != Any {
+	if r.Type != AnyClass {
 		return r.Type.GetName()
 	}
 
@@ -69,19 +69,19 @@ type FunctionInstance struct {
 	Parameters  []FunctionParameter
 	ReturnTypes []FunctionReturnType
 	IsMethod    bool
-	callFunc    func(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error)
+	callFunc    func(common.State, *[]common.Object, *map[string]common.Object) (common.Object, error)
 }
 
 func NewFunctionInstance(
 	name string,
 	arguments []FunctionParameter,
-	handler func(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error),
+	handler func(common.State, *[]common.Object, *map[string]common.Object) (common.Object, error),
 	returnTypes []FunctionReturnType,
 	isMethod bool,
 	package_ *PackageInstance,
 	doc string,
 ) *FunctionInstance {
-	attributes := map[string]common.Value{}
+	attributes := map[string]common.Object{}
 	if package_ != nil {
 		attributes[common.PackageAttributeName] = package_
 	}
@@ -92,8 +92,8 @@ func NewFunctionInstance(
 
 	function := &FunctionInstance{
 		ClassInstance: ClassInstance{
-			class:      Function,
-			attributes: map[string]common.Value{},
+			class:      FunctionClass,
+			attributes: map[string]common.Object{},
 			address:    "",
 		},
 		package_:    package_,
@@ -134,12 +134,12 @@ func (i FunctionInstance) AsBool(common.State) (bool, error) {
 	return true, nil
 }
 
-func (i FunctionInstance) Call(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (
-	common.Value,
+func (i FunctionInstance) Call(state common.State, args Tuple) (
+	common.Object,
 	error,
 ) {
 	if i.callFunc != nil {
-		return i.callFunc(state, args, kwargs)
+		return i.callFunc(state, args)
 	}
 
 	return nil, utilities.ObjectIsNotCallable("", i.GetTypeName())
@@ -157,25 +157,25 @@ func (i *FunctionInstance) IsLambda() bool {
 	return i.Name == common.LambdaSignature
 }
 
-func functionOperator_Call(name string) common.Value {
+func functionOperator_Call(name string) common.Object {
 	return NewFunctionInstance(
 		name,
 		[]FunctionParameter{
 			{
-				Type:       Function,
+				Type:       FunctionClass,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				Name:       "значення",
 				IsVariadic: true,
 				IsNullable: true,
 			},
 		},
-		func(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (
-			common.Value,
+		func(state common.State, args *[]common.Object, kwargs *map[string]common.Object) (
+			common.Object,
 			error,
 		) {
 			function := (*args)[0].(*FunctionInstance)
@@ -190,7 +190,7 @@ func functionOperator_Call(name string) common.Value {
 		},
 		[]FunctionReturnType{
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				IsNullable: false,
 			},
 		},
@@ -206,16 +206,16 @@ func newFunctionClass() *Class {
 		IsFinal: true,
 		Bases:   []*Class{},
 		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
+		AttrInitializer: func(attrs *map[string]common.Object) {
 			*attrs = MergeAttributes(
-				map[string]common.Value{
+				map[string]common.Object{
 					common.CallOperatorName: functionOperator_Call(common.CallOperatorName),
 				},
-				MakeLogicalOperators(Function),
-				MakeCommonOperators(Function),
+				MakeLogicalOperators(FunctionClass),
+				MakeCommonOperators(FunctionClass),
 			)
 		},
-		GetEmptyInstance: func() (common.Value, error) {
+		GetEmptyInstance: func() (common.Object, error) {
 			panic("unreachable")
 		},
 	}

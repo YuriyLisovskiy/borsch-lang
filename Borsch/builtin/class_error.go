@@ -33,7 +33,7 @@ func (t ErrorInstance) AsBool(common.State) (bool, error) {
 	return true, nil
 }
 
-func errorInstance_EvalString(state common.State, value common.Value) (string, error) {
+func errorInstance_EvalString(state common.State, value common.Object) (string, error) {
 	messageAttr, err := value.GetAttribute("_повідомлення")
 	if err != nil {
 		return "", err
@@ -47,7 +47,7 @@ func errorInstance_EvalString(state common.State, value common.Value) (string, e
 	return fmt.Sprintf("%s: %s", value.GetTypeName(), message), nil
 }
 
-func errorInstance_EvalRepresentation(state common.State, value common.Value) (string, error) {
+func errorInstance_EvalRepresentation(state common.State, value common.Object) (string, error) {
 	message, err := value.String(state)
 	if err != nil {
 		return "", err
@@ -57,7 +57,7 @@ func errorInstance_EvalRepresentation(state common.State, value common.Value) (s
 	return fmt.Sprintf("%s(\"%s\")", typeName, message[len(typeName)+2:]), nil
 }
 
-func compareErrors(_ common.State, _ common.Operator, self common.Value, other common.Value) (int, error) {
+func compareErrors(_ common.State, _ common.Operator, self common.Object, other common.Object) (int, error) {
 	if _, ok := other.(*ErrorInstance); ok {
 		if self == other {
 			return 0, nil
@@ -68,7 +68,10 @@ func compareErrors(_ common.State, _ common.Operator, self common.Value, other c
 	return -2, nil
 }
 
-func errorEvalConstructor(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func errorEvalConstructor(state common.State, args *[]common.Object, _ *map[string]common.Object) (
+	common.Object,
+	error,
+) {
 	rawParts := (*args)[1:]
 	message := ""
 	for _, rawPart := range rawParts {
@@ -90,7 +93,7 @@ func errorEvalConstructor(state common.State, args *[]common.Value, _ *map[strin
 	return types.NewNilInstance(), nil
 }
 
-func errorEvalMessage(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func errorEvalMessage(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	msg, err := (*args)[0].String(state)
 	if err != nil {
 		return nil, err
@@ -99,7 +102,7 @@ func errorEvalMessage(state common.State, args *[]common.Value, _ *map[string]co
 	return types.NewStringInstance(msg), nil
 }
 
-func makeErrorOperator_Constructor() common.Value {
+func makeErrorOperator_Constructor() common.Object {
 	return types.NewFunctionInstance(
 		common.ConstructorName,
 		[]types.FunctionParameter{
@@ -110,7 +113,7 @@ func makeErrorOperator_Constructor() common.Value {
 				IsNullable: false,
 			},
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "повідомлення",
 				IsVariadic: true,
 				IsNullable: false,
@@ -119,7 +122,7 @@ func makeErrorOperator_Constructor() common.Value {
 		errorEvalConstructor,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Nil,
+				Type:       types.NilClass,
 				IsNullable: false,
 			},
 		},
@@ -129,7 +132,7 @@ func makeErrorOperator_Constructor() common.Value {
 	)
 }
 
-func makeErrorMethod_Message(name string) common.Value {
+func makeErrorMethod_Message(name string) common.Object {
 	return types.NewFunctionInstance(
 		name,
 		[]types.FunctionParameter{
@@ -143,7 +146,7 @@ func makeErrorMethod_Message(name string) common.Value {
 		errorEvalMessage,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				IsNullable: false,
 			},
 		},
@@ -159,9 +162,9 @@ func newErrorClass() *types.Class {
 		IsFinal: false,
 		Bases:   []*types.Class{},
 		Parent:  types.BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
+		AttrInitializer: func(attrs *map[string]common.Object) {
 			*attrs = types.MergeAttributes(
-				map[string]common.Value{
+				map[string]common.Object{
 					// TODO: add doc
 					common.ConstructorName: makeErrorOperator_Constructor(),
 					"повідомлення":         makeErrorMethod_Message("повідомлення"),
@@ -178,8 +181,8 @@ func newErrorClass() *types.Class {
 						},
 					),
 					common.StringOperatorName: types.MakeUnaryMethod(
-						common.StringOperatorName, ErrorClass, types.String, "",
-						func(state common.State, value common.Value) (common.Value, error) {
+						common.StringOperatorName, ErrorClass, types.StringClass, "",
+						func(state common.State, value common.Object) (common.Object, error) {
 							message, err := errorInstance_EvalString(state, value)
 							if err != nil {
 								return nil, err
@@ -189,8 +192,8 @@ func newErrorClass() *types.Class {
 						},
 					),
 					common.RepresentationOperatorName: types.MakeUnaryMethod(
-						common.RepresentationOperatorName, ErrorClass, types.String, "",
-						func(state common.State, value common.Value) (common.Value, error) {
+						common.RepresentationOperatorName, ErrorClass, types.StringClass, "",
+						func(state common.State, value common.Object) (common.Object, error) {
 							message, err := errorInstance_EvalRepresentation(state, value)
 							if err != nil {
 								return nil, err
@@ -204,7 +207,7 @@ func newErrorClass() *types.Class {
 				types.MakeCommonOperators(ErrorClass),
 			)
 		},
-		GetEmptyInstance: func() (common.Value, error) {
+		GetEmptyInstance: func() (common.Object, error) {
 			return NewErrorInstance("")
 		},
 	}

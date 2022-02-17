@@ -11,11 +11,11 @@ import (
 func Call(
 	state common.State,
 	function *FunctionInstance,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
-) (common.Value, error) {
+	args Tuple,
+	kwargs *map[string]common.Object,
+) (common.Object, error) {
 	if args == nil {
-		args = &[]common.Value{}
+		args = Tuple{}
 	}
 
 	if err := CheckFunctionArguments(function, args, nil); err != nil {
@@ -23,10 +23,10 @@ func Call(
 	}
 
 	if kwargs == nil {
-		kwargs = &map[string]common.Value{}
+		kwargs = &map[string]common.Object{}
 	}
 
-	updateKwargs(*args, kwargs, function.Parameters)
+	updateKwargs(&args, kwargs, function.Parameters)
 	ctx := function.GetContext()
 	if ctx == nil {
 		ctx = state.GetContext()
@@ -49,13 +49,13 @@ func Call(
 
 func CallAttribute(
 	state common.State,
-	object common.Value,
-	attribute common.Value,
+	object common.Object,
+	attribute common.Object,
 	attributeName string,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
+	args *[]common.Object,
+	kwargs *map[string]common.Object,
 	isMethod bool,
-) (common.Value, error) {
+) (common.Object, error) {
 	switch function := attribute.(type) {
 	case *FunctionInstance:
 		if isMethod {
@@ -69,10 +69,10 @@ func CallAttribute(
 			}
 
 			if args == nil {
-				args = &[]common.Value{}
+				args = &[]common.Object{}
 			}
 
-			*args = append([]common.Value{object}, *args...)
+			*args = append([]common.Object{object}, *args...)
 		}
 
 		return Call(state, function, args, kwargs)
@@ -83,12 +83,12 @@ func CallAttribute(
 
 func CallByName(
 	state common.State,
-	object common.Value,
+	object common.Object,
 	funcName string,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
+	args *[]common.Object,
+	kwargs *map[string]common.Object,
 	isMethod bool,
-) (common.Value, error) {
+) (common.Object, error) {
 	attribute, err := object.GetAttribute(funcName)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func CallByName(
 	return CallAttribute(state, object, attribute, funcName, args, kwargs, isMethod)
 }
 
-func updateKwargs(args []common.Value, kwargs *map[string]common.Value, funcArgs []FunctionParameter) {
+func updateKwargs(args []common.Object, kwargs *map[string]common.Object, funcArgs []FunctionParameter) {
 	argsLen := len(args)
 	var i int
 	for i = 0; i < argsLen && !funcArgs[i].IsVariadic; i++ {

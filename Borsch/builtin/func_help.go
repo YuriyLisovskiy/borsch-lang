@@ -7,7 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalHelp(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalHelp(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	argStr, err := (*args)[0].String(state)
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func makeHelpFunction() *types.FunctionInstance {
 		"допомога",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "слово",
 				IsVariadic: false,
 				IsNullable: false,
@@ -31,7 +31,7 @@ func makeHelpFunction() *types.FunctionInstance {
 		evalHelp,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Nil,
+				Type:       types.NilClass,
 				IsNullable: true,
 			},
 		},

@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalLicense(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error) {
+func evalLicense(common.State, *[]common.Object, *map[string]common.Object) (common.Object, error) {
 	fmt.Println(build.License)
 	return types.NewNilInstance(), nil
 }
@@ -20,7 +20,7 @@ func makeLicenseFunction() *types.FunctionInstance {
 		evalLicense,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Nil,
+				Type:       types.NilClass,
 				IsNullable: true,
 			},
 		},

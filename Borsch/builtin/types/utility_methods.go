@@ -12,7 +12,7 @@ func MakeBinaryMethod(
 	selfType *Class,
 	returnType *Class,
 	doc string,
-	handler func(common.State, common.Value, common.Value) (common.Value, error),
+	handler func(common.State, common.Object, common.Object) (common.Object, error),
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		name,
@@ -24,13 +24,13 @@ func MakeBinaryMethod(
 				IsNullable: false,
 			},
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				Name:       "інший",
 				IsVariadic: false,
 				IsNullable: true,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			return handler(state, (*args)[0], (*args)[1])
 		},
 		[]FunctionReturnType{
@@ -50,7 +50,7 @@ func MakeUnaryMethod(
 	selfType *Class,
 	returnType *Class,
 	doc string,
-	handler func(common.State, common.Value) (common.Value, error),
+	handler func(common.State, common.Object) (common.Object, error),
 ) *FunctionInstance {
 	return NewFunctionInstance(
 		name,
@@ -62,7 +62,7 @@ func MakeUnaryMethod(
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			return handler(state, (*args)[0])
 		},
 		[]FunctionReturnType{
@@ -81,15 +81,15 @@ func MakeComparisonOperator(
 	operator common.Operator,
 	itemType *Class,
 	doc string,
-	comparator func(common.State, common.Operator, common.Value, common.Value) (int, error),
+	comparator func(common.State, common.Operator, common.Object, common.Object) (int, error),
 	checker func(res int) bool,
 ) *FunctionInstance {
 	return MakeBinaryMethod(
 		operator.Name(),
 		itemType,
-		Bool,
+		BoolClass,
 		doc,
-		func(state common.State, self common.Value, other common.Value) (common.Value, error) {
+		func(state common.State, self common.Object, other common.Object) (common.Object, error) {
 			res, err := comparator(state, operator, self, other)
 			if err != nil {
 				return nil, err
@@ -102,9 +102,9 @@ func MakeComparisonOperator(
 
 func MakeComparisonOperators(
 	itemType *Class,
-	comparator func(common.State, common.Operator, common.Value, common.Value) (int, error),
-) map[string]common.Value {
-	return map[string]common.Value{
+	comparator func(common.State, common.Operator, common.Object, common.Object) (int, error),
+) map[string]common.Object {
+	return map[string]common.Object{
 		common.EqualsOp.Name(): MakeComparisonOperator(
 			// TODO: add doc
 			common.EqualsOp, itemType, "", comparator, func(res int) bool {
@@ -144,15 +144,15 @@ func MakeComparisonOperators(
 	}
 }
 
-func MakeLogicalOperators(itemType *Class) map[string]common.Value {
-	return map[string]common.Value{
+func MakeLogicalOperators(itemType *Class) map[string]common.Object {
+	return map[string]common.Object{
 		common.NotOp.Name(): MakeUnaryMethod(
 			// TODO: add doc
 			common.NotOp.Name(),
 			itemType,
-			Bool,
+			BoolClass,
 			"",
-			func(state common.State, self common.Value) (common.Value, error) {
+			func(state common.State, self common.Object) (common.Object, error) {
 				selfBool, err := self.AsBool(state)
 				if err != nil {
 					return nil, err
@@ -165,9 +165,9 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 			// TODO: add doc
 			common.AndOp.Name(),
 			itemType,
-			Bool,
+			BoolClass,
 			"",
-			func(state common.State, self common.Value, other common.Value) (common.Value, error) {
+			func(state common.State, self common.Object, other common.Object) (common.Object, error) {
 				selfBool, err := self.AsBool(state)
 				if err != nil {
 					return nil, err
@@ -185,9 +185,9 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 			// TODO: add doc
 			common.OrOp.Name(),
 			itemType,
-			Bool,
+			BoolClass,
 			"",
-			func(state common.State, self common.Value, other common.Value) (common.Value, error) {
+			func(state common.State, self common.Object, other common.Object) (common.Object, error) {
 				selfBool, err := self.AsBool(state)
 				if err != nil {
 					return nil, err
@@ -204,12 +204,12 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 	}
 }
 
-func MakeCommonOperators(itemType *Class) map[string]common.Value {
-	return map[string]common.Value{
+func MakeCommonOperators(itemType *Class) map[string]common.Object {
+	return map[string]common.Object{
 		// TODO: add doc
 		common.BoolOperatorName: MakeUnaryMethod(
-			common.BoolOperatorName, itemType, Bool, "",
-			func(state common.State, self common.Value) (common.Value, error) {
+			common.BoolOperatorName, itemType, BoolClass, "",
+			func(state common.State, self common.Object) (common.Object, error) {
 				boolVal, err := self.AsBool(state)
 				if err != nil {
 					return nil, err
@@ -223,15 +223,15 @@ func MakeCommonOperators(itemType *Class) map[string]common.Value {
 
 func MakeUnaryOperators(
 	selfClass, returnClass *Class,
-	handler func(common.State, common.Operator, common.Value) (common.Value, error),
-) map[string]common.Value {
-	return map[string]common.Value{
+	handler func(common.State, common.Operator, common.Object) (common.Object, error),
+) map[string]common.Object {
+	return map[string]common.Object{
 		common.UnaryPlus.Name(): MakeUnaryMethod(
 			common.UnaryPlus.Name(),
 			selfClass,
 			returnClass,
 			"",
-			func(state common.State, value common.Value) (common.Value, error) {
+			func(state common.State, value common.Object) (common.Object, error) {
 				return handler(state, common.UnaryPlus, value)
 			},
 		),
@@ -240,7 +240,7 @@ func MakeUnaryOperators(
 			selfClass,
 			returnClass,
 			"",
-			func(state common.State, value common.Value) (common.Value, error) {
+			func(state common.State, value common.Object) (common.Object, error) {
 				return handler(state, common.UnaryMinus, value)
 			},
 		),
@@ -249,7 +249,7 @@ func MakeUnaryOperators(
 			selfClass,
 			returnClass,
 			"",
-			func(state common.State, value common.Value) (common.Value, error) {
+			func(state common.State, value common.Object) (common.Object, error) {
 				return handler(state, common.UnaryBitwiseNotOp, value)
 			},
 		),
@@ -258,7 +258,7 @@ func MakeUnaryOperators(
 
 func makeVariadicConstructor(
 	itemType *Class,
-	converter func(common.State, ...common.Value) (common.Value, error),
+	converter func(common.State, ...common.Object) (common.Object, error),
 	doc string,
 ) *FunctionInstance {
 	return NewFunctionInstance(
@@ -271,13 +271,13 @@ func makeVariadicConstructor(
 				IsNullable: false,
 			},
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				Name:       "значення",
 				IsVariadic: true,
 				IsNullable: true,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			self, err := converter(state, (*args)[1:]...)
 			if err != nil {
 				return nil, err
@@ -288,7 +288,7 @@ func makeVariadicConstructor(
 		},
 		[]FunctionReturnType{
 			{
-				Type:       Nil,
+				Type:       NilClass,
 				IsNullable: false,
 			},
 		},
@@ -312,7 +312,7 @@ func makeLengthOperator(
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			sequence := (*args)[0]
 			switch self := sequence.(type) {
 			case common.SequentialType:
@@ -323,7 +323,7 @@ func makeLengthOperator(
 		},
 		[]FunctionReturnType{
 			{
-				Type:       Integer,
+				Type:       IntClass,
 				IsNullable: false,
 			},
 		},
@@ -348,7 +348,7 @@ func makeDefaultConstructor(cls *Class, doc string) *FunctionInstance {
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			instance, err := cls.GetEmptyInstance()
 			if err != nil {
 				return nil, err
@@ -359,7 +359,7 @@ func makeDefaultConstructor(cls *Class, doc string) *FunctionInstance {
 		},
 		[]FunctionReturnType{
 			{
-				Type:       Nil,
+				Type:       NilClass,
 				IsNullable: false,
 			},
 		},

@@ -7,7 +7,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalEnv(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalEnv(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	argStr, err := (*args)[0].String(state)
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func makeEnvFunction() *types.FunctionInstance {
 		"середовище",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "ключ",
 				IsVariadic: false,
 				IsNullable: false,
@@ -30,7 +30,7 @@ func makeEnvFunction() *types.FunctionInstance {
 		evalEnv,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				IsNullable: false,
 			},
 		},

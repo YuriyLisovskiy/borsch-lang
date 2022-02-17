@@ -5,7 +5,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalType(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalType(_ common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	return types.GetTypeOfInstance((*args)[0])
 }
 
@@ -14,7 +14,7 @@ func makeTypeFunction() *types.FunctionInstance {
 		"тип",
 		[]types.FunctionParameter{
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				Name:       "значення",
 				IsVariadic: false,
 				IsNullable: false,
@@ -23,7 +23,7 @@ func makeTypeFunction() *types.FunctionInstance {
 		evalType,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				IsNullable: false,
 			},
 		},

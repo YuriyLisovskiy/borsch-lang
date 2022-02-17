@@ -18,8 +18,8 @@ func NewRealInstance(value float64) RealInstance {
 	return RealInstance{
 		BuiltinInstance: BuiltinInstance{
 			ClassInstance: ClassInstance{
-				class:      Real,
-				attributes: map[string]common.Value{},
+				class:      RealClass,
+				attributes: map[string]common.Object{},
 				address:    "",
 			},
 		},
@@ -39,7 +39,7 @@ func (t RealInstance) AsBool(common.State) (bool, error) {
 	return t.Value != 0.0, nil
 }
 
-func compareReals(_ common.State, op common.Operator, self, other common.Value) (int, error) {
+func compareReals(_ common.State, op common.Operator, self, other common.Object) (int, error) {
 	left, ok := self.(RealInstance)
 	if !ok {
 		return 0, utilities.IncorrectUseOfFunctionError("compareReals")
@@ -89,25 +89,25 @@ func compareReals(_ common.State, op common.Operator, self, other common.Value) 
 
 func realBinaryOperator(
 	operator common.Operator,
-	handler func(common.State, RealInstance, common.Value) (common.Value, error),
-) common.Value {
+	handler func(common.State, RealInstance, common.Object) (common.Object, error),
+) common.Object {
 	return NewFunctionInstance(
 		operator.Name(),
 		[]FunctionParameter{
 			{
-				Type:       Real,
+				Type:       RealClass,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				Name:       "інший",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			left, ok := (*args)[0].(RealInstance)
 			if !ok {
 				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
@@ -127,7 +127,7 @@ func realBinaryOperator(
 		},
 		[]FunctionReturnType{
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				IsNullable: false,
 			},
 		},
@@ -139,19 +139,19 @@ func realBinaryOperator(
 
 func realUnaryOperator(
 	operator common.Operator,
-	handler func(common.State, RealInstance) (common.Value, error),
-) common.Value {
+	handler func(common.State, RealInstance) (common.Object, error),
+) common.Object {
 	return NewFunctionInstance(
 		operator.Name(),
 		[]FunctionParameter{
 			{
-				Type:       Real,
+				Type:       RealClass,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			left, ok := (*args)[0].(RealInstance)
 			if !ok {
 				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
@@ -161,7 +161,7 @@ func realUnaryOperator(
 		},
 		[]FunctionReturnType{
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				IsNullable: false,
 			},
 		},
@@ -171,7 +171,7 @@ func realUnaryOperator(
 	)
 }
 
-func realOperator_Pow(_ common.State, left RealInstance, right common.Value) (common.Value, error) {
+func realOperator_Pow(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case RealInstance:
 		return NewRealInstance(math.Pow(left.Value, other.Value)), nil
@@ -184,15 +184,15 @@ func realOperator_Pow(_ common.State, left RealInstance, right common.Value) (co
 	}
 }
 
-func realOperator_UnaryPlus(_ common.State, self RealInstance) (common.Value, error) {
+func realOperator_UnaryPlus(_ common.State, self RealInstance) (common.Object, error) {
 	return self, nil
 }
 
-func realOperator_UnaryMinus(_ common.State, self RealInstance) (common.Value, error) {
+func realOperator_UnaryMinus(_ common.State, self RealInstance) (common.Object, error) {
 	return NewRealInstance(-self.Value), nil
 }
 
-func realOperator_Mul(_ common.State, left RealInstance, right common.Value) (common.Value, error) {
+func realOperator_Mul(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewRealInstance(left.Value * boolToFloat64(other.Value)), nil
@@ -205,7 +205,7 @@ func realOperator_Mul(_ common.State, left RealInstance, right common.Value) (co
 	}
 }
 
-func realOperator_Div(_ common.State, left RealInstance, right common.Value) (common.Value, error) {
+func realOperator_Div(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		if other.Value {
@@ -226,7 +226,7 @@ func realOperator_Div(_ common.State, left RealInstance, right common.Value) (co
 	return nil, errors.New("ділення на нуль")
 }
 
-func realOperator_Add(_ common.State, left RealInstance, right common.Value) (common.Value, error) {
+func realOperator_Add(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewRealInstance(left.Value + boolToFloat64(other.Value)), nil
@@ -239,7 +239,7 @@ func realOperator_Add(_ common.State, left RealInstance, right common.Value) (co
 	}
 }
 
-func realOperator_Sub(_ common.State, left RealInstance, right common.Value) (common.Value, error) {
+func realOperator_Sub(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case BoolInstance:
 		return NewRealInstance(left.Value - boolToFloat64(other.Value)), nil
@@ -253,11 +253,11 @@ func realOperator_Sub(_ common.State, left RealInstance, right common.Value) (co
 }
 
 func newRealClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
+	initAttributes := func(attrs *map[string]common.Object) {
 		*attrs = MergeAttributes(
-			map[string]common.Value{
+			map[string]common.Object{
 				// TODO: add doc
-				common.ConstructorName:   makeVariadicConstructor(Real, ToReal, ""),
+				common.ConstructorName:   makeVariadicConstructor(RealClass, ToReal, ""),
 				common.PowOp.Name():      realBinaryOperator(common.PowOp, realOperator_Pow),
 				common.UnaryPlus.Name():  realUnaryOperator(common.UnaryPlus, realOperator_UnaryPlus),
 				common.UnaryMinus.Name(): realUnaryOperator(common.UnaryMinus, realOperator_UnaryMinus),
@@ -266,9 +266,9 @@ func newRealClass() *Class {
 				common.AddOp.Name():      realBinaryOperator(common.AddOp, realOperator_Add),
 				common.SubOp.Name():      realBinaryOperator(common.SubOp, realOperator_Sub),
 			},
-			MakeLogicalOperators(Real),
-			MakeComparisonOperators(Real, compareReals),
-			MakeCommonOperators(Real),
+			MakeLogicalOperators(RealClass),
+			MakeComparisonOperators(RealClass, compareReals),
+			MakeCommonOperators(RealClass),
 		)
 	}
 
@@ -278,7 +278,7 @@ func newRealClass() *Class {
 		Bases:           []*Class{},
 		Parent:          BuiltinPackage,
 		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
+		GetEmptyInstance: func() (common.Object, error) {
 			return NewRealInstance(0), nil
 		},
 	}

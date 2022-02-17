@@ -3,113 +3,165 @@ package types
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
+type NewFunc func(cls *Class, args List, state common.State) (common.Object, error)
+
+type ConstructFunc func(self common.Object, args List, state common.State) error
+
+const (
+	// TPFLAGS_BASETYPE is set if the type allows subclassing.
+	TPFLAGS_BASETYPE uint = 1 << 10
+
+	// TPFLAGS_READY is set if the type is 'ready' -- fully initialized.
+	TPFLAGS_READY uint = 1 << 12
+
+	// TPFLAGS_READYING is set while the type is being 'readied', to prevent
+	// recursive ready calls.
+	TPFLAGS_READYING uint = 1 << 13
+)
+
 type Class struct {
-	Name       string
-	attributes map[string]common.Value
+	Name string
+	Doc  string
+	Dict map[string]common.Object
 
 	IsFinal bool
 
-	Class *Class
-	Bases []*Class
+	ObjectClass *Class
+	Bases       *List
 
-	Parent common.Value
-
-	AttrInitializer  func(*map[string]common.Value)
-	GetEmptyInstance func() (common.Value, error)
+	New       NewFunc
+	Construct ConstructFunc
+	Flags     uint
 }
 
-func (c *Class) Setup() {
-	c.Class = TypeClass
-	if c.GetEmptyInstance == nil {
-		c.GetEmptyInstance = func() (common.Value, error) {
-			return NewClassInstance(c, map[string]common.Value{}), nil
+var TypeClass = &Class{
+	Name: "тип",
+	Doc:  "тип(об_єкт) -> тип об'єкта\nтип(назва, бази, атрибути) -> новий тип",
+	Dict: StringDict{},
+}
+
+var ObjectClass = &Class{
+	Name: "об_єкт",
+	Doc:  "Базовий тип",
+	Dict: StringDict{},
+}
+
+func init() {
+	// Initialised like this to avoid initialisation loops
+	TypeClass.New = TypeNew
+	TypeClass.Construct = TypeInit
+	TypeClass.ObjectClass = TypeClass
+	ObjectClass.New = ObjectNew
+	ObjectClass.Construct = ObjectConstruct
+	ObjectClass.ObjectClass = TypeClass
+	err := TypeClass.Ready()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ObjectClass.Ready()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (c *Class) Ready() error {
+	if c.Flags&TPFLAGS_READY != 0 {
+		if c.Dict == nil {
+			return ErrorNewf(SystemError, "Type.Ready is Ready but Dict is nil")
+		}
+
+		return nil
+	}
+
+	if c.Flags&TPFLAGS_READYING != 0 {
+		return ErrorNewf(SystemError, "Type.Ready already readying")
+	}
+
+	c.Flags |= TPFLAGS_READYING
+
+	// Now the only way base can still be nil is if type is
+	// ObjectType.
+
+	// Initialize Bases
+	if c.Bases == nil {
+		c.Bases = &List{}
+	}
+
+	// Initialize tp_dict
+	dict := c.Dict
+	if dict == nil {
+		dict = NewStringDict()
+		c.Dict = dict
+	}
+
+	if _, ok := c.Dict[common.DocAttributeName]; ok {
+		if c.Doc != "" {
+			c.Dict[common.DocAttributeName] = String(c.Doc)
+		} else {
+			c.Dict[common.DocAttributeName] = Nil
 		}
 	}
 
-	if len(c.Bases) == 0 {
-		// TODO: set object as a base Class
-		c.Bases = []*Class{}
+	// TODO: Link into each base class's list of subclasses
+	// bases := c.Bases
+	// for i := range bases {
+	// }
+
+	// All done -- set the ready flag
+	if c.Dict == nil {
+		panic("Type.Ready Dict is nil")
 	}
 
-	c.initializeAttributes()
-	if c.attributes == nil {
-		c.attributes = map[string]common.Value{}
-	}
+	c.Flags = (c.Flags &^ TPFLAGS_READYING) | TPFLAGS_READY
+	return nil
 }
 
-func (c *Class) IsValid() bool {
-	if len(c.Name) == 0 {
-		return false
-	}
+func (c *Class) Class() *Class {
 
-	if c.attributes == nil {
-		return false
-	}
-
-	if c.Class == nil {
-		return false
-	}
-
-	if c.Parent == nil {
-		return false
-	}
-
-	if c.GetEmptyInstance == nil {
-		return false
-	}
-
-	return true
 }
 
-func (c *Class) GetName() string {
-	return c.Name
+func (c *Class) __str__() (common.Object, error) {
+	if res, ok, err := c.CallMethod(common.StringOperator, Tuple{t}, nil); ok {
+		return res, err
+	}
+
+	return c.__represent__()
 }
 
-func (c *Class) GetTypeName() string {
+func (c *Class) __represent__() (common.Object, error) {
+	if res, ok, err := c.CallMethod(common.RepresentOperator, List{c}, nil); ok {
+		return res, err
+	}
+
+	if c.Name == "" {
+		// FIXME: not a good way to tell objects from classes!
+		return String(fmt.Sprintf("<об'єкт %s з адресою %p>", c.Type().Name, c)), nil
+	}
+
+	return String(fmt.Sprintf("<клас '%s'>", c.Name)), nil
+}
+
+func (c *Class) CallMethod(name string, args Tuple, state common.State) (Object, bool, error) {
+	fn := c.GetAttrOrNil(name)
+	if fn == nil {
+		return nil, false, nil
+	}
+
+	res, err := Call(state, fn, args, nil)
+	return res, true, err
+}
+
+func (c *Class) GetOperator(name string) (common.Object, error) {
 	if c.isType() {
-		return c.Name
-	}
-
-	return c.GetClass().GetTypeName()
-}
-
-func (c *Class) IsFinalClass() bool {
-	return c.IsFinal
-}
-
-func (c *Class) GetClass() *Class {
-	if c.Class == nil {
-		panic("class is nil")
-	}
-
-	return c.Class
-}
-
-func (c *Class) GetAddress() string {
-	return fmt.Sprintf("%p", c)
-}
-
-func (c *Class) String(common.State) (string, error) {
-	return fmt.Sprintf("<клас '%s'>", c.GetName()), nil
-}
-
-func (c *Class) Representation(state common.State) (string, error) {
-	return c.String(state)
-}
-
-func (c *Class) AsBool(common.State) (bool, error) {
-	return true, nil
-}
-
-func (c *Class) GetOperator(name string) (common.Value, error) {
-	if c.isType() {
-		if c.attributes != nil {
-			if val, ok := c.attributes[name]; ok {
+		if c.Dict != nil {
+			if val, ok := c.Dict[name]; ok {
 				return val, nil
 			}
 		}
@@ -122,7 +174,7 @@ func (c *Class) GetOperator(name string) (common.Value, error) {
 
 // GetAttribute uses getAttribute and in case of failure, searches for
 // an attribute in TypeClass.
-func (c *Class) GetAttribute(name string) (common.Value, error) {
+func (c *Class) GetAttribute(name string) (common.Object, error) {
 	if val, err := c.getAttribute(name); err == nil {
 		return val, nil
 	}
@@ -136,7 +188,7 @@ func (c *Class) GetAttribute(name string) (common.Value, error) {
 	return nil, utilities.AttributeNotFoundError(c.GetName(), name)
 }
 
-func (c *Class) SetAttribute(name string, newValue common.Value) error {
+func (c *Class) SetAttribute(name string, newValue common.Object) error {
 	if c.isType() {
 		if c.HasAttribute(name) {
 			return utilities.AttributeIsReadOnlyError(c.GetTypeName(), name)
@@ -145,11 +197,11 @@ func (c *Class) SetAttribute(name string, newValue common.Value) error {
 		return utilities.AttributeNotFoundError(c.GetTypeName(), name)
 	}
 
-	if oldValue, ok := c.attributes[name]; ok {
+	if oldValue, ok := c.Dict[name]; ok {
 		oldValueClass := oldValue.(ObjectInstance).GetClass()
 		newValueClass := newValue.(ObjectInstance).GetClass()
 		if oldValueClass == newValueClass || newValueClass.HasBase(oldValueClass) {
-			c.attributes[name] = newValue
+			c.Dict[name] = newValue
 			return nil
 		}
 
@@ -161,12 +213,12 @@ func (c *Class) SetAttribute(name string, newValue common.Value) error {
 		)
 	}
 
-	c.attributes[name] = newValue
+	c.Dict[name] = newValue
 	return nil
 }
 
 func (c *Class) HasAttribute(name string) bool {
-	if _, ok := c.attributes[name]; !ok {
+	if _, ok := c.Dict[name]; !ok {
 		if !c.isType() {
 			return c.GetClass().HasAttribute(name)
 		}
@@ -177,14 +229,14 @@ func (c *Class) HasAttribute(name string) bool {
 	return true
 }
 
-func (c *Class) SetAttributes(attrs map[string]common.Value) {
-	c.attributes = attrs
-	if c.attributes == nil {
-		c.attributes = map[string]common.Value{}
+func (c *Class) SetAttributes(attrs map[string]common.Object) {
+	c.Dict = attrs
+	if c.Dict == nil {
+		c.Dict = map[string]common.Object{}
 	}
 }
 
-func (c *Class) EqualsTo(other common.Value) bool {
+func (c *Class) EqualsTo(other common.Object) bool {
 	cls, ok := other.(*Class)
 	return ok && cls == c
 }
@@ -199,8 +251,11 @@ func (c *Class) HasBase(cls *Class) bool {
 	return false
 }
 
-// Call executes common.ConstructorName operator if it exists in attributes.
-func (c *Class) Call(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
+// Call executes common.ConstructorName operator if it exists in Dict.
+func (c *Class) Call(state common.State, args *[]common.Object, kwargs *map[string]common.Object) (
+	common.Object,
+	error,
+) {
 	operator, err := c.GetOperator(common.ConstructorName)
 	if err != nil {
 		return nil, utilities.ObjectIsNotCallable(c.GetName(), c.GetTypeName())
@@ -209,11 +264,11 @@ func (c *Class) Call(state common.State, args *[]common.Value, kwargs *map[strin
 	return CallAttribute(state, c, operator, common.ConstructorName, args, kwargs, true)
 }
 
-// getAttribute searches for attribute only in current attributes and
+// getAttribute searches for attribute only in current Dict and
 // in Bases.
-func (c *Class) getAttribute(name string) (common.Value, error) {
-	if c.attributes != nil {
-		if val, ok := c.attributes[name]; ok {
+func (c *Class) getAttribute(name string) (common.Object, error) {
+	if c.Dict != nil {
+		if val, ok := c.Dict[name]; ok {
 			return val, nil
 		}
 	}
@@ -235,12 +290,12 @@ func (c *Class) isType() bool {
 
 func (c *Class) initializeAttributes() {
 	if c.AttrInitializer != nil {
-		c.AttrInitializer(&c.attributes)
+		c.AttrInitializer(&c.Dict)
 		c.AttrInitializer = nil
 	}
 
-	if _, ok := c.attributes[common.ConstructorName]; !ok {
+	if _, ok := c.Dict[common.ConstructorName]; !ok {
 		// TODO: add doc
-		c.attributes[common.ConstructorName] = makeDefaultConstructor(c, "")
+		c.Dict[common.ConstructorName] = makeDefaultConstructor(c, "")
 	}
 }

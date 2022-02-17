@@ -81,7 +81,7 @@ func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFu
 
 func getBound(state common.State, bound *Expression, boundName string) (int64, error) {
 	return mustInt(
-		state, bound, func(t common.Value) string {
+		state, bound, func(t common.Object) string {
 			return fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.GetTypeName())
 		},
 	)

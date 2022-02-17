@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalCopyright(common.State, *[]common.Value, *map[string]common.Value) (common.Value, error) {
+func evalCopyright(common.State, *[]common.Object, *map[string]common.Object) (common.Object, error) {
 	fmt.Printf("Copyright (c) %s %s.\nAll Rights Reserved.\n", build.Years, build.Author)
 	return types.NewNilInstance(), nil
 }
@@ -20,7 +20,7 @@ func makeCopyrightFunction() *types.FunctionInstance {
 		evalCopyright,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Nil,
+				Type:       types.NilClass,
 				IsNullable: true,
 			},
 		},

@@ -8,13 +8,13 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalLength(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalLength(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	sequence := (*args)[0]
 	if !sequence.HasAttribute(common.LengthOperatorName) {
 		return nil, errors.New(fmt.Sprintf("об'єкт типу '%s' не має довжини", sequence.GetTypeName()))
 	}
 
-	return runUnaryOperator(state, common.LengthOperatorName, sequence, types.Integer)
+	return runUnaryOperator(state, common.LengthOperatorName, sequence, types.IntClass)
 }
 
 func makeLengthFunction() *types.FunctionInstance {
@@ -22,7 +22,7 @@ func makeLengthFunction() *types.FunctionInstance {
 		"довжина",
 		[]types.FunctionParameter{
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				Name:       "послідовність",
 				IsVariadic: false,
 				IsNullable: false,
@@ -31,7 +31,7 @@ func makeLengthFunction() *types.FunctionInstance {
 		evalLength,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Integer,
+				Type:       types.IntClass,
 				IsNullable: false,
 			},
 		},

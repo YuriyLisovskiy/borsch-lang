@@ -40,7 +40,7 @@ func boolToFloat64(v bool) float64 {
 	return 0.0
 }
 
-func MergeAttributes(a map[string]common.Value, b ...map[string]common.Value) map[string]common.Value {
+func MergeAttributes(a map[string]common.Object, b ...map[string]common.Object) map[string]common.Object {
 	for _, m := range b {
 		for key, val := range m {
 			a[key] = val

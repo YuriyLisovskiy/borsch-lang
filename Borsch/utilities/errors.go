@@ -22,7 +22,7 @@ func InternalError(text string) error {
 	return errors.New(fmt.Sprintf("InternalError: %s", text))
 }
 
-func InvalidUseOfOperator(operator common.Operator, left, right common.Value) error {
+func InvalidUseOfOperator(operator common.Operator, left, right common.Object) error {
 	return InternalError(
 		fmt.Sprintf(
 			"invalid use of operator '%s' for '%s' and '%s' types",
@@ -79,7 +79,7 @@ func AttributeIsReadOnlyError(objTypeName, attrName string) error {
 	)
 }
 
-func OperatorNotSupportedError(operator common.Operator, left, right common.Value) error {
+func OperatorNotSupportedError(operator common.Operator, left, right common.Object) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
@@ -88,7 +88,7 @@ func OperatorNotSupportedError(operator common.Operator, left, right common.Valu
 	)
 }
 
-func UnaryOperatorNotSupportedError(operator common.Operator, value common.Value) error {
+func UnaryOperatorNotSupportedError(operator common.Operator, value common.Object) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор '%s' до значення з типом '%s'",

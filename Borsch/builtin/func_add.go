@@ -5,8 +5,8 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func evalAddToList(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-	list := (*args)[0].(types.ListInstance)
+func evalAddToList(_ common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
+	list := (*args)[0].(types.List)
 	values := (*args)[1:]
 	for _, value := range values {
 		list.Values = append(list.Values, value)
@@ -20,13 +20,13 @@ func makeAddToListFunction() *types.FunctionInstance {
 		"додати",
 		[]types.FunctionParameter{
 			{
-				Type:       types.List,
+				Type:       types.ListClass,
 				Name:       "вхідний_список",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				Name:       "елементи",
 				IsVariadic: true,
 				IsNullable: true,
@@ -35,7 +35,7 @@ func makeAddToListFunction() *types.FunctionInstance {
 		evalAddToList,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.List,
+				Type:       types.ListClass,
 				IsNullable: false,
 			},
 		},

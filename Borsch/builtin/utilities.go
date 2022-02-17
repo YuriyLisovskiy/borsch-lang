@@ -8,11 +8,11 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func runUnaryOperator(state common.State, name string, object common.Value, expectedType *types.Class) (
-	common.Value,
+func runUnaryOperator(state common.State, name string, object common.Object, expectedType *types.Class) (
+	common.Object,
 	error,
 ) {
-	var args []common.Value
+	var args []common.Object
 	result, err := types.CallByName(state, object, name, &args, nil, true)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func runUnaryOperator(state common.State, name string, object common.Value, expe
 	return result, nil
 }
 
-func mustBool(value common.Value, errFunc func(common.Value) error) (bool, error) {
+func mustBool(value common.Object, errFunc func(common.Object) error) (bool, error) {
 	switch integer := value.(type) {
 	case types.BoolInstance:
 		return integer.Value, nil

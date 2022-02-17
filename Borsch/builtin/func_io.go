@@ -11,7 +11,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-func evalPrint(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalPrint(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	parts := *args
 	var strArgs []string
 	for _, arg := range parts {
@@ -36,12 +36,12 @@ func evalPrint(state common.State, args *[]common.Value, _ *map[string]common.Va
 	return types.NewNilInstance(), nil
 }
 
-func evalPrintLine(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
+func evalPrintLine(state common.State, args *[]common.Object, kwargs *map[string]common.Object) (common.Object, error) {
 	*args = append(*args, types.NewStringInstance("\n"))
 	return evalPrint(state, args, kwargs)
 }
 
-func evalInput(state common.State, args *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
+func evalInput(state common.State, args *[]common.Object, kwargs *map[string]common.Object) (common.Object, error) {
 	_, err := evalPrint(state, args, kwargs)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func makePrintFunction() *types.FunctionInstance {
 		"друк",
 		[]types.FunctionParameter{
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				Name:       "х",
 				IsVariadic: true,
 				IsNullable: true,
@@ -70,7 +70,7 @@ func makePrintFunction() *types.FunctionInstance {
 		evalPrint,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Nil,
+				Type:       types.NilClass,
 				IsNullable: true,
 			},
 		},
@@ -85,7 +85,7 @@ func makePrintLnFunction() *types.FunctionInstance {
 		"друкр",
 		[]types.FunctionParameter{
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				Name:       "а",
 				IsVariadic: true,
 				IsNullable: true,
@@ -94,7 +94,7 @@ func makePrintLnFunction() *types.FunctionInstance {
 		evalPrintLine,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Nil,
+				Type:       types.NilClass,
 				IsNullable: true,
 			},
 		},
@@ -109,7 +109,7 @@ func makeInputFunction() *types.FunctionInstance {
 		"ввід",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "повідомлення",
 				IsVariadic: true,
 				IsNullable: false,
@@ -118,7 +118,7 @@ func makeInputFunction() *types.FunctionInstance {
 		evalInput,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				IsNullable: false,
 			},
 		},

@@ -19,8 +19,8 @@ func NewStringInstance(value string) StringInstance {
 	return StringInstance{
 		BuiltinInstance: BuiltinInstance{
 			ClassInstance: ClassInstance{
-				class:      String,
-				attributes: map[string]common.Value{},
+				class:      StringClass,
+				attributes: map[string]common.Object{},
 				address:    "",
 			},
 		},
@@ -49,7 +49,7 @@ func (t StringInstance) Length(_ common.State) int64 {
 	return int64(utf8.RuneCountInString(t.Value))
 }
 
-func (t StringInstance) GetElement(state common.State, index int64) (common.Value, error) {
+func (t StringInstance) GetElement(state common.State, index int64) (common.Object, error) {
 	idx, err := getIndex(index, t.Length(state))
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (t StringInstance) GetElement(state common.State, index int64) (common.Valu
 	return NewStringInstance(string([]rune(t.Value)[idx])), nil
 }
 
-func (t StringInstance) SetElement(state common.State, index int64, value common.Value) (common.Value, error) {
+func (t StringInstance) SetElement(state common.State, index int64, value common.Object) (common.Object, error) {
 	switch v := value.(type) {
 	case StringInstance:
 		idx, err := getIndex(index, t.Length(state))
@@ -81,7 +81,7 @@ func (t StringInstance) SetElement(state common.State, index int64, value common
 	return t, nil
 }
 
-func (t StringInstance) Slice(state common.State, from, to int64) (common.Value, error) {
+func (t StringInstance) Slice(state common.State, from, to int64) (common.Object, error) {
 	length := t.Length(state)
 	fromIdx := normalizeBound(from, length)
 	toIdx := normalizeBound(to, length)
@@ -92,7 +92,7 @@ func (t StringInstance) Slice(state common.State, from, to int64) (common.Value,
 	return NewStringInstance(string([]rune(t.Value)[fromIdx:toIdx])), nil
 }
 
-func compareStrings(_ common.State, op common.Operator, self, other common.Value) (int, error) {
+func compareStrings(_ common.State, op common.Operator, self, other common.Object) (int, error) {
 	left, ok := self.(StringInstance)
 	if !ok {
 		return 0, utilities.IncorrectUseOfFunctionError("compareStrings")
@@ -120,25 +120,25 @@ func compareStrings(_ common.State, op common.Operator, self, other common.Value
 
 func stringBinaryOperator(
 	operator common.Operator,
-	handler func(common.State, StringInstance, common.Value) (common.Value, error),
-) common.Value {
+	handler func(common.State, StringInstance, common.Object) (common.Object, error),
+) common.Object {
 	return NewFunctionInstance(
 		operator.Name(),
 		[]FunctionParameter{
 			{
-				Type:       String,
+				Type:       StringClass,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				Name:       "інший",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 			left, ok := (*args)[0].(StringInstance)
 			if !ok {
 				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
@@ -158,7 +158,7 @@ func stringBinaryOperator(
 		},
 		[]FunctionReturnType{
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				IsNullable: false,
 			},
 		},
@@ -168,7 +168,7 @@ func stringBinaryOperator(
 	)
 }
 
-func stringOperator_Mul(_ common.State, left StringInstance, right common.Value) (common.Value, error) {
+func stringOperator_Mul(_ common.State, left StringInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case IntegerInstance:
 		count := int(other.Value)
@@ -182,7 +182,7 @@ func stringOperator_Mul(_ common.State, left StringInstance, right common.Value)
 	}
 }
 
-func stringOperator_Add(_ common.State, left StringInstance, right common.Value) (common.Value, error) {
+func stringOperator_Add(_ common.State, left StringInstance, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case StringInstance:
 		return NewStringInstance(left.Value + other.Value), nil
@@ -192,17 +192,17 @@ func stringOperator_Add(_ common.State, left StringInstance, right common.Value)
 }
 
 func newStringClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
+	initAttributes := func(attrs *map[string]common.Object) {
 		*attrs = MergeAttributes(
-			map[string]common.Value{
+			map[string]common.Object{
 				// TODO: add doc
-				common.ConstructorName: makeVariadicConstructor(String, ToString, ""),
+				common.ConstructorName: makeVariadicConstructor(StringClass, ToString, ""),
 				common.MulOp.Name():    stringBinaryOperator(common.MulOp, stringOperator_Mul),
 				common.AddOp.Name():    stringBinaryOperator(common.AddOp, stringOperator_Add),
 			},
-			MakeLogicalOperators(String),
-			MakeComparisonOperators(String, compareStrings),
-			MakeCommonOperators(String),
+			MakeLogicalOperators(StringClass),
+			MakeComparisonOperators(StringClass, compareStrings),
+			MakeCommonOperators(StringClass),
 		)
 	}
 
@@ -212,7 +212,7 @@ func newStringClass() *Class {
 		Bases:           []*Class{},
 		Parent:          BuiltinPackage,
 		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
+		GetEmptyInstance: func() (common.Object, error) {
 			return NewStringInstance(""), nil
 		},
 	}

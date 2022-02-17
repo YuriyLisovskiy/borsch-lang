@@ -26,14 +26,14 @@ func NewInterpreter() *Interpreter {
 	}
 
 	i.rootContext = &ContextImpl{
-		scopes:        []map[string]common.Value{builtin.GlobalScope},
+		scopes:        []map[string]common.Object{builtin.GlobalScope},
 		parentContext: nil,
 	}
 	return i
 }
 
 func (i *Interpreter) Import(state common.State, newPackagePath string) (
-	common.Value,
+	common.Object,
 	error,
 ) {
 	parentPackageInstance, _ := state.GetCurrentPackageOrNil().(*types.PackageInstance)
@@ -77,10 +77,10 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	}
 
 	scope := ctx.TopScope()
-	attrs := map[string]common.Value{}
+	attrs := map[string]common.Object{}
 	if toExport, err := ctx.GetVar(common.ExportedAttributeName); err == nil {
 		switch exported := toExport.(type) {
-		case types.ListInstance:
+		case types.List:
 			for _, value := range exported.Values {
 				if name, ok := value.(types.StringInstance); ok {
 					if attr, ok := scope[name.Value]; ok {

@@ -8,15 +8,15 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func assert(state common.State, expected common.Value, actual common.Value, errorTemplate string) error {
-	args := []common.Value{actual}
+func assert(state common.State, expected common.Object, actual common.Object, errorTemplate string) error {
+	args := []common.Object{actual}
 	result, err := types.CallByName(state, expected, common.EqualsOp.Name(), &args, nil, true)
 	if err != nil {
 		return err
 	}
 
 	success, err := mustBool(
-		result, func(t common.Value) error {
+		result, func(t common.Object) error {
 			return errors.New(
 				fmt.Sprintf(
 					"результат порівняння має бути логічного типу, отримано %s",
@@ -53,7 +53,7 @@ func assert(state common.State, expected common.Value, actual common.Value, erro
 	return errors.New(fmt.Sprintf(errMsg, expectedStr, actualStr))
 }
 
-func buildAssertMessage(state common.State, args *[]common.Value) (string, error) {
+func buildAssertMessage(state common.State, args *[]common.Object) (string, error) {
 	message := ""
 	if len(*args) > 2 {
 		messageArgs := (*args)[2:]
@@ -74,7 +74,7 @@ func buildAssertMessage(state common.State, args *[]common.Value) (string, error
 	return message, nil
 }
 
-func evalAssert(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
+func evalAssert(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
 	message, err := buildAssertMessage(state, args)
 	if err != nil {
 		return nil, err
@@ -88,19 +88,19 @@ func makeAssertFunction() *types.FunctionInstance {
 		"підтвердити",
 		[]types.FunctionParameter{
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				Name:       "очікуване",
 				IsVariadic: false,
 				IsNullable: true,
 			},
 			{
-				Type:       types.Any,
+				Type:       types.AnyClass,
 				Name:       "фактичне",
 				IsVariadic: false,
 				IsNullable: true,
 			},
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "повідомлення_про_помилку",
 				IsVariadic: true,
 				IsNullable: false,
@@ -109,7 +109,7 @@ func makeAssertFunction() *types.FunctionInstance {
 		evalAssert,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.Nil,
+				Type:       types.NilClass,
 				IsNullable: true,
 			},
 		},

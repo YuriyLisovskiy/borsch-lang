@@ -8,15 +8,15 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
+func (node *ClassDef) Evaluate(state common.State) (common.Object, error) {
 	ctx := state.GetContext()
 
 	// TODO: add doc
 	cls := &types.Class{
-		Name:    node.Name.String(),
-		IsFinal: node.IsFinal,
-		Class:   nil,
-		Parent:  state.GetCurrentPackage(),
+		Name:        node.Name.String(),
+		IsFinal:     node.IsFinal,
+		ObjectClass: nil,
+		Parent:      state.GetCurrentPackage(),
 	}
 
 	for _, name := range node.Bases {
@@ -39,8 +39,8 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 		cls.Bases = append(cls.Bases, baseClass)
 	}
 
-	cls.GetEmptyInstance = func() (common.Value, error) {
-		return types.NewClassInstance(cls, map[string]common.Value{}), nil
+	cls.GetEmptyInstance = func() (common.Object, error) {
+		return types.NewClassInstance(cls, map[string]common.Object{}), nil
 	}
 
 	err := ctx.SetVar(node.Name.String(), cls)
@@ -49,7 +49,7 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	}
 
 	classContext := ctx.Derive()
-	classContext.PushScope(map[string]common.Value{})
+	classContext.PushScope(map[string]common.Object{})
 	for _, classMember := range node.Members {
 		_, err := classMember.Evaluate(state.WithContext(classContext), cls)
 		if err != nil {
@@ -66,7 +66,7 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	return cls, nil
 }
 
-func (node *ClassMember) Evaluate(state common.State, class *types.Class) (common.Value, error) {
+func (node *ClassMember) Evaluate(state common.State, class *types.Class) (common.Object, error) {
 	if node.Variable != nil {
 		return node.Variable.Evaluate(state)
 	}
@@ -123,7 +123,7 @@ func checkConstructor(_ []types.FunctionParameter, returnTypes []types.FunctionR
 	case 0:
 		// skip
 	case 1:
-		if returnTypes[0].Type != types.Nil {
+		if returnTypes[0].Type != types.NilClass {
 			return errors.New("конструктор має повертати 'нуль'")
 		}
 	default:

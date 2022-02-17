@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func ToReal(_ common.State, args ...common.Value) (common.Value, error) {
+func ToReal(_ common.State, args ...common.Object) (common.Object, error) {
 	if len(args) == 0 {
 		return NewRealInstance(0.0), nil
 	}
@@ -52,7 +52,7 @@ func ToReal(_ common.State, args ...common.Value) (common.Value, error) {
 	}
 }
 
-func ToString(state common.State, args ...common.Value) (common.Value, error) {
+func ToString(state common.State, args ...common.Object) (common.Object, error) {
 	if len(args) == 0 {
 		return NewStringInstance(""), nil
 	}

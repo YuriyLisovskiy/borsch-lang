@@ -50,7 +50,7 @@ func makeThrowStmt(name *Ident) *Throw {
 type testInterpreter struct {
 }
 
-func (i *testInterpreter) Import(common.State, string) (common.Value, error) {
+func (i *testInterpreter) Import(common.State, string) (common.Object, error) {
 	return nil, nil
 }
 
@@ -68,7 +68,7 @@ func TestThrow_EvaluateSuccess(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]common.Object{
 				{errorIdent.String(): exc},
 			},
 		},
@@ -96,7 +96,7 @@ func TestThrow_EvaluateFail_NotAnErrorInstance(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]common.Object{
 				{errorIdent.String(): types.NewStringInstance(errMessage)},
 			},
 		},
@@ -144,7 +144,7 @@ func TestUnsafe_EvaluateNoThrow(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]common.Object{
 				{errorIdent.String(): err},
 			},
 		},
@@ -165,9 +165,9 @@ func TestUnsafe_EvaluateNoThrow(t *testing.T) {
 
 func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 	errorClass := types.Class{
-		Name:  "CustomError",
-		Class: types.TypeClass,
-		Bases: []*types.Class{builtin.ErrorClass},
+		Name:        "CustomError",
+		ObjectClass: types.TypeClass,
+		Bases:       []*types.Class{builtin.ErrorClass},
 	}
 	errorClassName := Ident(errorClass.Name)
 	errorIdent := Ident("Error")
@@ -197,7 +197,7 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]common.Object{
 				{errorClass.Name: &errorClass},
 				{errorIdent.String(): err},
 			},
@@ -259,7 +259,7 @@ func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]common.Object{
 				{builtin.ErrorClass.Name: builtin.ErrorClass},
 				{errorIdent.String(): err},
 			},
@@ -285,9 +285,9 @@ func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 
 func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
 	errorClass := types.Class{
-		Name:  "CustomError",
-		Class: types.TypeClass,
-		Bases: []*types.Class{builtin.ErrorClass},
+		Name:        "CustomError",
+		ObjectClass: types.TypeClass,
+		Bases:       []*types.Class{builtin.ErrorClass},
 	}
 	errorIdent := Ident("Error")
 	eIdent := Ident("e")
@@ -318,7 +318,7 @@ func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]common.Object{
 				{errorClass.Name: &errorClass},
 				{errorIdent.String(): err},
 			},

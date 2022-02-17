@@ -8,29 +8,13 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-type ListInstance struct {
-	BuiltinInstance
-	Values []common.Value
-}
+type List []common.Object
 
-func NewListInstance() ListInstance {
-	return ListInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance{
-				class:      List,
-				attributes: map[string]common.Value{},
-				address:    "",
-			},
-		},
-		Values: []common.Value{},
-	}
-}
-
-func (t ListInstance) String(state common.State) (string, error) {
+func (t List) String(state common.State) (string, error) {
 	return t.Representation(state)
 }
 
-func (t ListInstance) Representation(state common.State) (string, error) {
+func (t List) Representation(state common.State) (string, error) {
 	var strValues []string
 	for _, value := range t.Values {
 		strValue, err := value.Representation(state)
@@ -44,15 +28,15 @@ func (t ListInstance) Representation(state common.State) (string, error) {
 	return "[" + strings.Join(strValues, ", ") + "]", nil
 }
 
-func (t ListInstance) AsBool(state common.State) (bool, error) {
+func (t List) AsBool(state common.State) (bool, error) {
 	return t.Length(state) != 0, nil
 }
 
-func (t ListInstance) Length(common.State) int64 {
+func (t List) Length(common.State) int64 {
 	return int64(len(t.Values))
 }
 
-func (t ListInstance) GetElement(state common.State, index int64) (common.Value, error) {
+func (t List) GetElement(state common.State, index int64) (common.Object, error) {
 	idx, err := getIndex(index, t.Length(state))
 	if err != nil {
 		return nil, err
@@ -61,7 +45,7 @@ func (t ListInstance) GetElement(state common.State, index int64) (common.Value,
 	return t.Values[idx], nil
 }
 
-func (t ListInstance) SetElement(state common.State, index int64, value common.Value) (common.Value, error) {
+func (t List) SetElement(state common.State, index int64, value common.Object) (common.Object, error) {
 	idx, err := getIndex(index, t.Length(state))
 	if err != nil {
 		return nil, err
@@ -71,7 +55,7 @@ func (t ListInstance) SetElement(state common.State, index int64, value common.V
 	return t, nil
 }
 
-func (t ListInstance) Slice(state common.State, from, to int64) (common.Value, error) {
+func (t List) Slice(state common.State, from, to int64) (common.Object, error) {
 	length := t.Length(state)
 	fromIdx := normalizeBound(from, length)
 	toIdx := normalizeBound(to, length)
@@ -84,7 +68,7 @@ func (t ListInstance) Slice(state common.State, from, to int64) (common.Value, e
 	return listInstance, nil
 }
 
-func toList(_ common.State, args ...common.Value) (common.Value, error) {
+func toList(_ common.State, args ...common.Object) (common.Object, error) {
 	list := NewListInstance()
 	if len(args) == 0 {
 		return list, nil
@@ -97,10 +81,10 @@ func toList(_ common.State, args ...common.Value) (common.Value, error) {
 	return list, nil
 }
 
-func compareLists(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
+func compareLists(_ common.State, op common.Operator, self common.Object, other common.Object) (int, error) {
 	switch right := other.(type) {
 	case NilInstance:
-	case ListInstance:
+	case List:
 		return -2, utilities.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
 	default:
 		return -2, utilities.OperatorNotSupportedError(op, self, right)
@@ -112,26 +96,26 @@ func compareLists(_ common.State, op common.Operator, self common.Value, other c
 
 func listOperator(
 	operator common.Operator,
-	handler func(common.State, ListInstance, common.Value) (common.Value, error),
-) common.Value {
+	handler func(common.State, List, common.Object) (common.Object, error),
+) common.Object {
 	return NewFunctionInstance(
 		operator.Name(),
 		[]FunctionParameter{
 			{
-				Type:       List,
+				Type:       ListClass,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 			{
-				Type:       Any,
+				Type:       AnyClass,
 				Name:       "інший",
 				IsVariadic: false,
 				IsNullable: false,
 			},
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			left, ok := (*args)[0].(ListInstance)
+		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
+			left, ok := (*args)[0].(List)
 			if !ok {
 				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
@@ -140,7 +124,7 @@ func listOperator(
 		},
 		[]FunctionReturnType{
 			{
-				Type:       List,
+				Type:       ListClass,
 				IsNullable: false,
 			},
 		},
@@ -150,7 +134,7 @@ func listOperator(
 	)
 }
 
-func listOperator_Mul(_ common.State, left ListInstance, right common.Value) (common.Value, error) {
+func listOperator_Mul(_ common.State, left List, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
 	case IntegerInstance:
 		count := int(other.Value)
@@ -167,9 +151,9 @@ func listOperator_Mul(_ common.State, left ListInstance, right common.Value) (co
 	}
 }
 
-func listOperator_Add(_ common.State, left ListInstance, right common.Value) (common.Value, error) {
+func listOperator_Add(_ common.State, left List, right common.Object) (common.Object, error) {
 	switch other := right.(type) {
-	case ListInstance:
+	case List:
 		left.Values = append(left.Values, other.Values...)
 		return left, nil
 	default:
@@ -183,24 +167,24 @@ func newListClass() *Class {
 		IsFinal: true,
 		Bases:   []*Class{},
 		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
+		AttrInitializer: func(attrs *map[string]common.Object) {
 			*attrs = MergeAttributes(
-				map[string]common.Value{
+				map[string]common.Object{
 					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(List, toList, ""),
+					common.ConstructorName: makeVariadicConstructor(ListClass, toList, ""),
 
 					// TODO: add doc
-					common.LengthOperatorName: makeLengthOperator(List, ""),
+					common.LengthOperatorName: makeLengthOperator(ListClass, ""),
 
 					common.MulOp.Name(): listOperator(common.MulOp, listOperator_Mul),
 					common.AddOp.Name(): listOperator(common.AddOp, listOperator_Add),
 				},
-				MakeLogicalOperators(List),
-				MakeComparisonOperators(List, compareLists),
-				MakeCommonOperators(List),
+				MakeLogicalOperators(ListClass),
+				MakeComparisonOperators(ListClass, compareLists),
+				MakeCommonOperators(ListClass),
 			)
 		},
-		GetEmptyInstance: func() (common.Value, error) {
+		GetEmptyInstance: func() (common.Object, error) {
 			return NewListInstance(), nil
 		},
 	}
