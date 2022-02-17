@@ -1,207 +1,473 @@
+// Copyright 2018 The go-python Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+//
+// Copyright 2022 The Borsch Authors. All rights reserved.
+// Use of this source code is governed by a MIT license
+// that can be found in the LICENSE file.
+
+// List objects.
+
 package types
 
 import (
-	"errors"
-	"strings"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
+	"sort"
 )
 
-type ListInstance struct {
-	BuiltinInstance
-	Values []common.Value
+var ListType = ObjectType.NewType(
+	"список",
+	`список() -> новий порожній список
+список(ітерований_об_єкт) -> новий список, ініціалізований з елементів ітерованого об'єкта'`,
+	ListNew,
+	nil,
+)
+
+type List struct {
+	Items []Object
 }
 
-func NewListInstance() ListInstance {
-	return ListInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance{
-				class:      List,
-				attributes: map[string]common.Value{},
-				address:    "",
-			},
-		},
-		Values: []common.Value{},
-	}
+func init() {
+	// ListType.Dict["append"] = MustNewMethod(
+	// 	"append", func(self Object, args Tuple) (Object, error) {
+	// 		listSelf := self.(*List)
+	// 		if len(args) != 1 {
+	// 			return nil, ErrorNewf(TypeError, "append() takes exactly one argument (%d given)", len(args))
+	// 		}
+	//
+	// 		listSelf.Items = append(listSelf.Items, args[0])
+	// 		return NilType{}, nil
+	// 	}, 0, "append(item)",
+	// )
+	// ListType.Dict["sort"] = MustNewMethod(
+	// 	"sort", func(self Object, args Tuple, kwargs StringDict) (Object, error) {
+	// 		const funcName = "sort"
+	// 		l, isList := self.(*List)
+	// 		if !isList {
+	// 			// method called using `list.sort([], **kwargs)`
+	// 			var o Object
+	// 			err := UnpackTuple(args, nil, funcName, 1, 1, &o)
+	// 			if err != nil {
+	// 				return nil, err
+	// 			}
+	//
+	// 			var ok bool
+	// 			l, ok = o.(*List)
+	// 			if !ok {
+	// 				return nil, ErrorNewf(
+	// 					TypeError,
+	// 					"descriptor 'sort' requires a 'list' object but received a '%s'",
+	// 					o.Type(),
+	// 				)
+	// 			}
+	// 		} else {
+	// 			// method called using `[].sort(**kargs)`
+	// 			err := UnpackTuple(args, nil, funcName, 0, 0)
+	// 			if err != nil {
+	// 				return nil, err
+	// 			}
+	// 		}
+	//
+	// 		err := SortInPlace(l, kwargs, funcName)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	//
+	// 		return NilType{}, nil
+	// 	}, 0, "sort(key=None, reverse=False)",
+	// )
 }
 
-func (t ListInstance) String(state common.State) (string, error) {
-	return t.Representation(state)
+// Type of this List object.
+func (value *List) Type() *Type {
+	return ListType
 }
 
-func (t ListInstance) Representation(state common.State) (string, error) {
-	var strValues []string
-	for _, value := range t.Values {
-		strValue, err := value.Representation(state)
-		if err != nil {
-			return "", err
-		}
-
-		strValues = append(strValues, strValue)
-	}
-
-	return "[" + strings.Join(strValues, ", ") + "]", nil
-}
-
-func (t ListInstance) AsBool(state common.State) (bool, error) {
-	return t.Length(state) != 0, nil
-}
-
-func (t ListInstance) Length(common.State) int64 {
-	return int64(len(t.Values))
-}
-
-func (t ListInstance) GetElement(state common.State, index int64) (common.Value, error) {
-	idx, err := getIndex(index, t.Length(state))
+func ListNew(cls *Type, args Tuple, kwargs StringDict) (res Object, err error) {
+	var iterable Object
+	err = UnpackTuple(args, kwargs, "список", 0, 1, &iterable)
 	if err != nil {
 		return nil, err
 	}
 
-	return t.Values[idx], nil
-}
-
-func (t ListInstance) SetElement(state common.State, index int64, value common.Value) (common.Value, error) {
-	idx, err := getIndex(index, t.Length(state))
-	if err != nil {
-		return nil, err
+	if iterable != nil {
+		return SequenceList(iterable)
 	}
 
-	t.Values[idx] = value
-	return t, nil
+	return NewList(), nil
 }
 
-func (t ListInstance) Slice(state common.State, from, to int64) (common.Value, error) {
-	length := t.Length(state)
-	fromIdx := normalizeBound(from, length)
-	toIdx := normalizeBound(to, length)
-	if fromIdx > toIdx {
-		return nil, errors.New("індекс списку за межами послідовності")
-	}
-
-	listInstance := NewListInstance()
-	listInstance.Values = t.Values[fromIdx:toIdx]
-	return listInstance, nil
+// NewList makes a new empty list.
+func NewList() *List {
+	return &List{}
 }
 
-func toList(_ common.State, args ...common.Value) (common.Value, error) {
-	list := NewListInstance()
-	if len(args) == 0 {
-		return list, nil
+// NewListWithCapacity makes a new empty list with given capacity.
+func NewListWithCapacity(n int) *List {
+	l := &List{}
+	if n != 0 {
+		l.Items = make([]Object, 0, n)
 	}
 
-	for _, arg := range args {
-		list.Values = append(list.Values, arg)
-	}
-
-	return list, nil
+	return l
 }
 
-func compareLists(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
-	switch right := other.(type) {
-	case NilInstance:
-	case ListInstance:
-		return -2, utilities.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
-	default:
-		return -2, utilities.OperatorNotSupportedError(op, self, right)
+// NewListSized makes a list with n nil elements.
+func NewListSized(n int) *List {
+	l := &List{}
+	if n != 0 {
+		l.Items = make([]Object, n)
 	}
 
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
+	return l
 }
 
-func listOperator(
-	operator common.Operator,
-	handler func(common.State, ListInstance, common.Value) (common.Value, error),
-) common.Value {
-	return NewFunctionInstance(
-		operator.Name(),
-		[]FunctionParameter{
-			{
-				Type:       List,
-				Name:       "я",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-			{
-				Type:       Any,
-				Name:       "інший",
-				IsVariadic: false,
-				IsNullable: false,
-			},
+// NewListFromItems makes a new list from an []Object.
+//
+// The []Object is copied into the list.
+func NewListFromItems(items []Object) *List {
+	l := NewListSized(len(items))
+	copy(l.Items, items)
+	return l
+}
+
+// NewListFromStrings makes an argv into a tuple.
+func NewListFromStrings(items []string) *List {
+	l := NewListSized(len(items))
+	for i, v := range items {
+		l.Items[i] = String(v)
+	}
+
+	return l
+}
+
+// Copy a list object.
+func (value *List) Copy() *List {
+	return NewListFromItems(value.Items)
+}
+
+// Append an item.
+func (value *List) Append(item Object) {
+	value.Items = append(value.Items, item)
+}
+
+// Resize the list.
+func (value *List) Resize(newSize int) {
+	value.Items = value.Items[:newSize]
+}
+
+// Extend the list with items
+func (value *List) Extend(items []Object) {
+	value.Items = append(value.Items, items...)
+}
+
+// ExtendWithStrings extends the list with strings.
+func (value *List) ExtendWithStrings(items []string) {
+	for _, item := range items {
+		value.Items = append(value.Items, Object(String(item)))
+	}
+}
+
+// ExtendSequence extends the list with the sequence passed in.
+func (value *List) ExtendSequence(seq Object) error {
+	return Iterate(
+		seq, func(item Object) bool {
+			value.Append(item)
+			return false
 		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			left, ok := (*args)[0].(ListInstance)
-			if !ok {
-				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
-			}
-
-			return handler(state, left, (*args)[1])
-		},
-		[]FunctionReturnType{
-			{
-				Type:       List,
-				IsNullable: false,
-			},
-		},
-		true,
-		nil,
-		"", // TODO: add doc
 	)
 }
 
-func listOperator_Mul(_ common.State, left ListInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case IntegerInstance:
-		count := int(other.Value)
-		list := NewListInstance()
-		if count > 0 {
-			for c := 0; c < count; c++ {
-				list.Values = append(list.Values, left.Values...)
-			}
+// Length of list.
+func (value *List) Length() int {
+	return len(value.Items)
+}
+
+func (value *List) __str__() (Object, error) {
+	return value.__represent__()
+}
+
+func (value *List) __represent__() (Object, error) {
+	return Tuple(value.Items).represent("[", "]")
+}
+
+func (value *List) __length__() (Object, error) {
+	return Int(len(value.Items)), nil
+}
+
+func (value *List) __bool__() (Object, error) {
+	return NewBool(len(value.Items) > 0), nil
+}
+
+func (value *List) __iter__() (Object, error) {
+	return NewIterator(value.Items), nil
+}
+
+func (value *List) __get_item__(key Object) (Object, error) {
+	i, err := IndexIntCheck(key, len(value.Items))
+	if err != nil {
+		return nil, err
+	}
+
+	return value.Items[i], nil
+}
+
+func (value *List) __set_item__(key, item Object) (Object, error) {
+	i, err := IndexIntCheck(key, len(value.Items))
+	if err != nil {
+		return nil, err
+	}
+
+	value.Items[i] = item
+
+	return Nil, nil
+}
+
+// DeleteItem removes the item at i.
+func (value *List) DeleteItem(i int) {
+	value.Items = append(value.Items[:i], value.Items[i+1:]...)
+}
+
+// __delete_item__ removes items from a list.
+func (value *List) __delete_item__(key Object) (Object, error) {
+	i, err := IndexIntCheck(key, len(value.Items))
+	if err != nil {
+		return nil, err
+	}
+
+	value.DeleteItem(i)
+	return Nil, nil
+}
+
+func (value *List) __add__(other Object) (Object, error) {
+	if b, ok := other.(*List); ok {
+		newList := NewListSized(len(value.Items) + len(b.Items))
+		copy(newList.Items, value.Items)
+		copy(newList.Items[len(value.Items):], b.Items)
+		return newList, nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value *List) __reversed_add__(other Object) (Object, error) {
+	if b, ok := other.(*List); ok {
+		return b.__add__(value)
+	}
+
+	return NotImplemented, nil
+}
+
+func (value *List) __in_place_add__(other Object) (Object, error) {
+	if b, ok := other.(*List); ok {
+		value.Extend(b.Items)
+		return value, nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value *List) __mul__(other Object) (Object, error) {
+	if b, ok := convertToInt(other); ok {
+		m := len(value.Items)
+		n := int(b) * m
+		if n < 0 {
+			n = 0
 		}
 
-		return list, nil
-	default:
-		return nil, nil
+		newList := NewListSized(n)
+		for i := 0; i < n; i += m {
+			copy(newList.Items[i:i+m], value.Items)
+		}
+
+		return newList, nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value *List) __reversed_mul__(other Object) (Object, error) {
+	return value.__mul__(other)
+}
+
+func (value *List) __in_place_mul__(other Object) (Object, error) {
+	return value.__mul__(other)
+}
+
+// Check interface is satisfied
+var _ sequenceArithmetic = (*List)(nil)
+var _ I__str__ = (*List)(nil)
+var _ I__represent__ = (*List)(nil)
+var _ I__length__ = (*List)(nil)
+var _ I__bool__ = (*List)(nil)
+var _ I__iter__ = (*List)(nil)
+var _ I__get_item__ = (*List)(nil)
+var _ I__set_item__ = (*List)(nil)
+
+func (value *List) __equal__(other Object) (Object, error) {
+	b, ok := other.(*List)
+	if !ok {
+		return NotImplemented, nil
+	}
+
+	if len(value.Items) != len(b.Items) {
+		return False, nil
+	}
+
+	for i := range value.Items {
+		eq, err := Equal(value.Items[i], b.Items[i])
+		if err != nil {
+			return nil, err
+		}
+
+		if eq == False {
+			return False, nil
+		}
+	}
+
+	return True, nil
+}
+
+func (value *List) __not_equal__(other Object) (Object, error) {
+	b, ok := other.(*List)
+	if !ok {
+		return NotImplemented, nil
+	}
+
+	if len(value.Items) != len(b.Items) {
+		return True, nil
+	}
+
+	for i := range value.Items {
+		eq, err := Equal(value.Items[i], b.Items[i])
+		if err != nil {
+			return nil, err
+		}
+
+		if eq == False {
+			return True, nil
+		}
+	}
+
+	return False, nil
+}
+
+type sortable struct {
+	l        *List
+	keyFunc  Object
+	reverse  bool
+	firstErr error
+}
+
+type ptrSortable struct {
+	s *sortable
+}
+
+func (s ptrSortable) Len() int {
+	return s.s.l.Length()
+}
+
+func (s ptrSortable) Swap(i, j int) {
+	itemI, err := s.s.l.__get_item__(Int(i))
+	if err != nil {
+		if s.s.firstErr == nil {
+			s.s.firstErr = err
+		}
+		return
+	}
+	itemJ, err := s.s.l.__get_item__(Int(j))
+	if err != nil {
+		if s.s.firstErr == nil {
+			s.s.firstErr = err
+		}
+		return
+	}
+	_, err = s.s.l.__set_item__(Int(i), itemJ)
+	if err != nil {
+		if s.s.firstErr == nil {
+			s.s.firstErr = err
+		}
+	}
+	_, err = s.s.l.__set_item__(Int(j), itemI)
+	if err != nil {
+		if s.s.firstErr == nil {
+			s.s.firstErr = err
+		}
 	}
 }
 
-func listOperator_Add(_ common.State, left ListInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case ListInstance:
-		left.Values = append(left.Values, other.Values...)
-		return left, nil
-	default:
-		return nil, nil
+func (s ptrSortable) Less(i, j int) bool {
+	itemI, err := s.s.l.__get_item__(Int(i))
+	if err != nil {
+		if s.s.firstErr == nil {
+			s.s.firstErr = err
+		}
+		return false
 	}
+	itemJ, err := s.s.l.__get_item__(Int(j))
+	if err != nil {
+		if s.s.firstErr == nil {
+			s.s.firstErr = err
+		}
+		return false
+	}
+
+	if s.s.keyFunc != Nil {
+		itemI, err = Call(s.s.keyFunc, Tuple{itemI}, nil)
+		if err != nil {
+			if s.s.firstErr == nil {
+				s.s.firstErr = err
+			}
+			return false
+		}
+		itemJ, err = Call(s.s.keyFunc, Tuple{itemJ}, nil)
+		if err != nil {
+			if s.s.firstErr == nil {
+				s.s.firstErr = err
+			}
+			return false
+		}
+	}
+
+	var cmpResult Object
+	if s.s.reverse {
+		cmpResult, err = LessThan(itemJ, itemI)
+	} else {
+		cmpResult, err = LessThan(itemI, itemJ)
+	}
+
+	if err != nil {
+		if s.s.firstErr == nil {
+			s.s.firstErr = err
+		}
+		return false
+	}
+
+	if boolResult, ok := cmpResult.(Bool); ok {
+		return bool(boolResult)
+	}
+
+	return false
 }
 
-func newListClass() *Class {
-	return &Class{
-		Name:    common.ListTypeName,
-		IsFinal: true,
-		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				map[string]common.Value{
-					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(List, toList, ""),
-
-					// TODO: add doc
-					common.LengthOperatorName: makeLengthOperator(List, ""),
-
-					common.MulOp.Name(): listOperator(common.MulOp, listOperator_Mul),
-					common.AddOp.Name(): listOperator(common.AddOp, listOperator_Add),
-				},
-				MakeLogicalOperators(List),
-				MakeComparisonOperators(List, compareLists),
-				MakeCommonOperators(List),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewListInstance(), nil
-		},
+// SortInPlace sorts the given List in place using a stable sort.
+// kwargs can have the keys "ключ" and "зворотний".
+func SortInPlace(l *List, kwargs StringDict, funcName string) error {
+	var keyFunc Object
+	var reverse Object
+	err := ParseTupleAndKeywords(nil, kwargs, "|$OO:"+funcName, []string{"ключ", "зворотний"}, &keyFunc, &reverse)
+	if err != nil {
+		return err
 	}
+
+	if keyFunc == nil {
+		keyFunc = Nil
+	}
+
+	if reverse == nil {
+		reverse = False
+	}
+
+	s := ptrSortable{&sortable{l, keyFunc, ObjectIsTrue(reverse), nil}}
+	sort.Stable(s)
+	return s.s.firstErr
 }

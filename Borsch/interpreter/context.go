@@ -89,7 +89,7 @@ func (c *ContextImpl) SetVar(name string, value common.Value) error {
 
 func (c *ContextImpl) GetClass(name string) (common.Value, error) {
 	if variable, err := c.GetVar(name); err == nil {
-		if _, ok := variable.(*types.Class); ok {
+		if _, ok := variable.(*types.Type); ok {
 			return variable, nil
 		}
 

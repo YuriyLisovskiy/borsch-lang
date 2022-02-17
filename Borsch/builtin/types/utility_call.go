@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-func Call(
+func Call_(
 	state common.State,
 	function *FunctionInstance,
 	args *[]common.Value,
@@ -75,7 +75,7 @@ func CallAttribute(
 			*args = append([]common.Value{object}, *args...)
 		}
 
-		return Call(state, function, args, kwargs)
+		return Call_(state, function, args, kwargs)
 	default:
 		return nil, utilities.ObjectIsNotCallable(attributeName, attribute.GetTypeName())
 	}

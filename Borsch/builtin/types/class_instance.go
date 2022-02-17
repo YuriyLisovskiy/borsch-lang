@@ -9,12 +9,12 @@ import (
 )
 
 type ClassInstance struct {
-	class      *Class
+	class      *Type
 	attributes map[string]common.Value
 	address    string
 }
 
-func NewClassInstance(class *Class, attributes map[string]common.Value) *ClassInstance {
+func NewClassInstance(class *Type, attributes map[string]common.Value) *ClassInstance {
 	if attributes == nil {
 		attributes = map[string]common.Value{}
 	}
@@ -29,7 +29,7 @@ func NewClassInstance(class *Class, attributes map[string]common.Value) *ClassIn
 	return instance
 }
 
-func (i ClassInstance) GetClass() *Class {
+func (i ClassInstance) GetClass() *Type {
 	return i.class
 }
 
@@ -38,8 +38,8 @@ func (i ClassInstance) GetAddress() string {
 }
 
 func (i ClassInstance) String(state common.State) (string, error) {
-	if operator, err := i.GetOperator(common.StringOperatorName); err == nil {
-		result, err := CallAttribute(state, i, operator, common.StringOperatorName, nil, nil, true)
+	if operator, err := i.GetOperator(common.StringOperator); err == nil {
+		result, err := CallAttribute(state, i, operator, common.StringOperator, nil, nil, true)
 		if err != nil {
 			return "", err
 		}
@@ -51,8 +51,8 @@ func (i ClassInstance) String(state common.State) (string, error) {
 }
 
 func (i ClassInstance) Representation(state common.State) (string, error) {
-	if operator, err := i.GetOperator(common.RepresentationOperatorName); err == nil {
-		result, err := CallAttribute(state, i, operator, common.RepresentationOperatorName, nil, nil, true)
+	if operator, err := i.GetOperator(common.RepresentOperator); err == nil {
+		result, err := CallAttribute(state, i, operator, common.RepresentOperator, nil, nil, true)
 		if err != nil {
 			return "", err
 		}

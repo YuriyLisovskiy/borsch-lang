@@ -312,7 +312,7 @@ type Literal struct {
 
 	Nil             bool               `  @"нуль"`
 	Integer         *int64             `| @Int`
-	Real            *float64           `| @Float`
+	Real            *float64           `| @Real`
 	Bool            *Boolean           `| @("істина" | "хиба")`
 	StringValue     *string            `| @String`
 	MultilineString *string            `| @RawString`

@@ -164,10 +164,10 @@ func TestUnsafe_EvaluateNoThrow(t *testing.T) {
 }
 
 func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
-	errorClass := types.Class{
-		Name:  "CustomError",
-		Class: types.TypeClass,
-		Bases: []*types.Class{builtin.ErrorClass},
+	errorClass := types.Type{
+		Name:       "CustomError",
+		ObjectType: types.TypeClass,
+		Bases:      []*types.Type{builtin.ErrorClass},
 	}
 	errorClassName := Ident(errorClass.Name)
 	errorIdent := Ident("Error")
@@ -284,10 +284,10 @@ func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 }
 
 func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
-	errorClass := types.Class{
-		Name:  "CustomError",
-		Class: types.TypeClass,
-		Bases: []*types.Class{builtin.ErrorClass},
+	errorClass := types.Type{
+		Name:       "CustomError",
+		ObjectType: types.TypeClass,
+		Bases:      []*types.Type{builtin.ErrorClass},
 	}
 	errorIdent := Ident("Error")
 	eIdent := Ident("e")

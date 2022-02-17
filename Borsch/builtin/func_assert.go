@@ -100,7 +100,7 @@ func makeAssertFunction() *types.FunctionInstance {
 				IsNullable: true,
 			},
 			{
-				Type:       types.String,
+				Type:       types.StringType,
 				Name:       "повідомлення_про_помилку",
 				IsVariadic: true,
 				IsNullable: false,

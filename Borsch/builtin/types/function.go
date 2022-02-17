@@ -9,7 +9,7 @@ import (
 
 type FunctionParameter struct {
 	// nil means any type
-	Type       *Class
+	Type       *Type
 	Name       string
 	IsVariadic bool
 	IsNullable bool
@@ -40,7 +40,7 @@ func (fa FunctionParameter) GetTypeName() string {
 }
 
 type FunctionReturnType struct {
-	Type       *Class
+	Type       *Type
 	IsNullable bool
 }
 
@@ -200,13 +200,13 @@ func functionOperator_Call(name string) common.Value {
 	)
 }
 
-func newFunctionClass() *Class {
-	return &Class{
+func newFunctionClass() *Type {
+	return &Type{
 		Name:    common.FunctionTypeName,
 		IsFinal: true,
-		Bases:   []*Class{},
+		Bases:   []*Type{},
 		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
+		Initializer: func(attrs *map[string]common.Value) {
 			*attrs = MergeAttributes(
 				map[string]common.Value{
 					common.CallOperatorName: functionOperator_Call(common.CallOperatorName),
@@ -215,7 +215,7 @@ func newFunctionClass() *Class {
 				MakeCommonOperators(Function),
 			)
 		},
-		GetEmptyInstance: func() (common.Value, error) {
+		Construct: func() (common.Value, error) {
 			panic("unreachable")
 		},
 	}

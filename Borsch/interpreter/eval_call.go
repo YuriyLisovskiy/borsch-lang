@@ -13,9 +13,9 @@ func (node *Call) Evaluate(
 	isLambda *bool,
 ) (common.Value, error) {
 	switch object := variable.(type) {
-	case *types.Class:
+	case *types.Type:
 		var args []common.Value
-		instance, err := object.GetEmptyInstance()
+		instance, err := object.Construct()
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +31,7 @@ func (node *Call) Evaluate(
 		var args []common.Value
 		if selfInstance != nil {
 			switch selfInstance.(type) {
-			case *types.Class, *types.PackageInstance:
+			case *types.Type, *types.PackageInstance:
 				// ignore
 			case types.ObjectInstance:
 				if !*isLambda {

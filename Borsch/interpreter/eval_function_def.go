@@ -62,7 +62,7 @@ func (node *Parameter) Evaluate(ctx common.Context) (*types.FunctionParameter, e
 	}
 
 	return &types.FunctionParameter{
-		Type:       class.(*types.Class),
+		Type:       class.(*types.Type),
 		Name:       node.Name.String(),
 		IsVariadic: false,
 		IsNullable: node.IsNullable,
@@ -81,7 +81,7 @@ func (node *ReturnType) Evaluate(ctx common.Context) (*types.FunctionReturnType,
 	}
 
 	return &types.FunctionReturnType{
-		Type:       class.(*types.Class),
+		Type:       class.(*types.Type),
 		IsNullable: node.IsNullable,
 	}, nil
 }

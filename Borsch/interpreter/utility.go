@@ -160,7 +160,7 @@ func mustInt(state common.State, expression *Expression, errFunc func(common.Val
 	}
 
 	switch integer := value.(type) {
-	case types.IntegerInstance:
+	case types.Int:
 		return integer.Value, nil
 	default:
 		return 0, errors.New(errFunc(value))

@@ -8,7 +8,7 @@ import (
 )
 
 func evalExit(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-	os.Exit(int((*args)[0].(types.IntegerInstance).Value))
+	os.Exit(int((*args)[0].(types.Int).Value))
 	return types.NewNilInstance(), nil
 }
 

@@ -64,7 +64,7 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 		return StmtResult{Err: err}, false
 	}
 
-	if _, ok := errorToCatch.(*types.Class); !ok {
+	if _, ok := errorToCatch.(*types.Type); !ok {
 		str, err := errorToCatch.String(state)
 		if err != nil {
 			return StmtResult{Err: err}, false
@@ -74,7 +74,7 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 	}
 
 	generatedErrorClass := exception.(types.ObjectInstance).GetClass()
-	errorToCatchClass := errorToCatch.(*types.Class)
+	errorToCatchClass := errorToCatch.(*types.Type)
 	if shouldCatch(generatedErrorClass, errorToCatchClass) {
 		state.PopTrace()
 		return node.catch(state, exception, inFunction, inLoop)
@@ -107,6 +107,6 @@ func (node *Catch) catch(state common.State, err common.Value, inFunction, inLoo
 	return result, true
 }
 
-func shouldCatch(generated, toCatch *types.Class) bool {
+func shouldCatch(generated, toCatch *types.Type) bool {
 	return generated == toCatch || generated.HasBase(toCatch)
 }

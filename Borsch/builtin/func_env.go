@@ -21,7 +21,7 @@ func makeEnvFunction() *types.FunctionInstance {
 		"середовище",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringType,
 				Name:       "ключ",
 				IsVariadic: false,
 				IsNullable: false,
@@ -30,7 +30,7 @@ func makeEnvFunction() *types.FunctionInstance {
 		evalEnv,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.String,
+				Type:       types.StringType,
 				IsNullable: false,
 			},
 		},

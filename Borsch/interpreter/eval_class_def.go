@@ -12,11 +12,11 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	ctx := state.GetContext()
 
 	// TODO: add doc
-	cls := &types.Class{
-		Name:    node.Name.String(),
-		IsFinal: node.IsFinal,
-		Class:   nil,
-		Parent:  state.GetCurrentPackage(),
+	cls := &types.Type{
+		Name:       node.Name.String(),
+		IsFinal:    node.IsFinal,
+		ObjectType: nil,
+		Parent:     state.GetCurrentPackage(),
 	}
 
 	for _, name := range node.Bases {
@@ -25,7 +25,7 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 			return nil, err
 		}
 
-		baseClass := base.(*types.Class)
+		baseClass := base.(*types.Type)
 		if baseClass.IsFinalClass() {
 			return nil, state.RuntimeError(
 				fmt.Sprintf(
@@ -39,7 +39,7 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 		cls.Bases = append(cls.Bases, baseClass)
 	}
 
-	cls.GetEmptyInstance = func() (common.Value, error) {
+	cls.Construct = func() (common.Value, error) {
 		return types.NewClassInstance(cls, map[string]common.Value{}), nil
 	}
 
@@ -66,7 +66,7 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	return cls, nil
 }
 
-func (node *ClassMember) Evaluate(state common.State, class *types.Class) (common.Value, error) {
+func (node *ClassMember) Evaluate(state common.State, class *types.Type) (common.Value, error) {
 	if node.Variable != nil {
 		return node.Variable.Evaluate(state)
 	}
@@ -99,7 +99,7 @@ func (node *ClassMember) Evaluate(state common.State, class *types.Class) (commo
 	panic("unreachable")
 }
 
-func checkMethod(class *types.Class, args []types.FunctionParameter, _ []types.FunctionReturnType) error {
+func checkMethod(class *types.Type, args []types.FunctionParameter, _ []types.FunctionReturnType) error {
 	if len(args) == 0 {
 		// TODO: ukr error text!
 		return errors.New("not enough args, self required")

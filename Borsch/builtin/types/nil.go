@@ -1,91 +1,71 @@
+// Copyright 2018 The go-python Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+//
+// Copyright 2022 The Borsch Authors. All rights reserved.
+// Use of this source code is governed by a MIT license
+// that can be found in the LICENSE file.
+
+// Nil objects
+
 package types
 
-import (
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+type NilType struct{}
+
+var (
+	NilTypeType = NewType("нульовий", "")
+
+	Nil = NilType(struct{}{})
 )
 
-type NilInstance struct {
-	BuiltinInstance
+// Type of this object
+func (value NilType) Type() *Type {
+	return NilTypeType
 }
 
-func NewNilInstance() NilInstance {
-	return NilInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance: ClassInstance{
-				class:      Nil,
-				attributes: map[string]common.Value{},
-				address:    "",
-			},
-		},
+func (value NilType) __bool__() (Object, error) {
+	return False, nil
+}
+
+func (value NilType) __str__() (Object, error) {
+	return value.__represent__()
+}
+
+func (value NilType) __represent__() (Object, error) {
+	return String("нуль"), nil
+}
+
+// Convert an Object to an NilType.
+//
+// Returns ok if the conversion worked or not.
+func convertToNilType(other Object) (NilType, bool) {
+	switch b := other.(type) {
+	case NilType:
+		return b, true
 	}
+
+	return Nil, false
 }
 
-func (t NilInstance) String(common.State) (string, error) {
-	return "нуль", nil
-}
-
-func (t NilInstance) Representation(state common.State) (string, error) {
-	return t.String(state)
-}
-
-func (t NilInstance) AsBool(common.State) (bool, error) {
-	return false, nil
-}
-
-func compareNils(_ common.State, _ common.Operator, _ common.Value, other common.Value) (int, error) {
-	switch other.(type) {
-	case NilInstance:
-		return 0, nil
-	default:
-		// -2 is something other than -1, 0 or 1 and means 'not equals'
-		return -2, nil
+func (value NilType) __equal__(other Object) (Object, error) {
+	if _, ok := convertToNilType(other); ok {
+		return True, nil
 	}
+
+	return False, nil
 }
 
-func nilMethod_Constructor() common.Value {
-	return NewFunctionInstance(
-		common.ConstructorName,
-		[]FunctionParameter{
-			{
-				Type:       Nil,
-				Name:       "я",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-		},
-		func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			return (*args)[0], nil
-		},
-		[]FunctionReturnType{
-			{
-				Type:       Nil,
-				IsNullable: false,
-			},
-		},
-		true,
-		nil,
-		"", // TODO: add doc
-	)
-}
-
-func newNilClass() *Class {
-	return &Class{
-		Name:    common.NilTypeName,
-		IsFinal: true,
-		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				map[string]common.Value{
-					common.ConstructorName: nilMethod_Constructor(),
-				},
-				MakeLogicalOperators(Nil),
-				MakeComparisonOperators(Nil, compareNils),
-				MakeCommonOperators(Nil),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewNilInstance(), nil
-		},
+func (value NilType) __not_equal__(other Object) (Object, error) {
+	if _, ok := convertToNilType(other); ok {
+		return False, nil
 	}
+
+	return True, nil
 }
+
+// Check interface is satisfied
+var _ I__bool__ = Nil
+var _ I__str__ = Nil
+var _ I__represent__ = Nil
+var _ I__equal__ = Nil
+var _ I__not_equal__ = Nil

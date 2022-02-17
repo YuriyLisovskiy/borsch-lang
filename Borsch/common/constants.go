@@ -35,10 +35,12 @@ const (
 
 // Special operators
 const (
-	ConstructorName            = "__конструктор__"
-	CallOperatorName           = "__оператор_виклику__"
-	LengthOperatorName         = "__довжина__"
-	BoolOperatorName           = "__логічний__"
-	StringOperatorName         = "__рядок__"
-	RepresentationOperatorName = "__представлення__"
+	ConstructorName    = "__конструктор__"
+	CallOperatorName   = "__оператор_виклику__"
+	LengthOperatorName = "__довжина__"
+	BoolOperatorName   = "__логічний__"
+	StringOperator     = "__рядок__"
+	RepresentOperator  = "__представлення__"
+	IndexOperator      = "__індекс__"
+	NextOperator       = "__наступний__"
 )

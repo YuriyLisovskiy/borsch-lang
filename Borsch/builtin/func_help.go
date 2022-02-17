@@ -22,7 +22,7 @@ func makeHelpFunction() *types.FunctionInstance {
 		"допомога",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringType,
 				Name:       "слово",
 				IsVariadic: false,
 				IsNullable: false,

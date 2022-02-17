@@ -14,7 +14,7 @@ func makeImportFunction() *types.FunctionInstance {
 		"імпорт",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringType,
 				Name:       "шлях",
 				IsVariadic: false,
 				IsNullable: false,

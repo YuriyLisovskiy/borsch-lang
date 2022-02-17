@@ -68,20 +68,20 @@ func comparePackages(_ common.State, op common.Operator, self common.Value, othe
 	return -2, nil
 }
 
-func NewPackageClass() *Class {
-	return &Class{
+func NewPackageClass() *Type {
+	return &Type{
 		Name:    common.PackageTypeName,
 		IsFinal: true,
-		Bases:   []*Class{},
+		Bases:   []*Type{},
 		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
+		Initializer: func(attrs *map[string]common.Value) {
 			*attrs = MergeAttributes(
 				MakeLogicalOperators(Package),
 				MakeComparisonOperators(Package, comparePackages),
 				MakeCommonOperators(Package),
 			)
 		},
-		GetEmptyInstance: func() (common.Value, error) {
+		Construct: func() (common.Value, error) {
 			panic("unreachable")
 		},
 	}

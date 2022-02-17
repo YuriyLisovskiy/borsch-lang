@@ -2,7 +2,7 @@ package builtin
 
 import "github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 
-var ErrorClass *types.Class = nil
+var ErrorClass *types.Type = nil
 
 func initClasses() {
 	// def

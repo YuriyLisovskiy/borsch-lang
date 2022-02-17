@@ -109,7 +109,7 @@ func makeInputFunction() *types.FunctionInstance {
 		"ввід",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringType,
 				Name:       "повідомлення",
 				IsVariadic: true,
 				IsNullable: false,
@@ -118,7 +118,7 @@ func makeInputFunction() *types.FunctionInstance {
 		evalInput,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.String,
+				Type:       types.StringType,
 				IsNullable: false,
 			},
 		},

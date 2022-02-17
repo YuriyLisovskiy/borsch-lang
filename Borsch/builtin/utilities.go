@@ -8,7 +8,7 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func runUnaryOperator(state common.State, name string, object common.Value, expectedType *types.Class) (
+func runUnaryOperator(state common.State, name string, object common.Value, expectedType *types.Type) (
 	common.Value,
 	error,
 ) {
