@@ -44,7 +44,7 @@ var data = Data{
 		{Name: "invert", Title: "Invert", Operator: "~", Unary: true},
 		// {Name: "complex", Title: "MakeComplex", Operator: "complex", Unary: true, Conversion: "Complex"},
 		{Name: "int", Title: "MakeInt", Operator: "int", Unary: true, Conversion: "Int"},
-		{Name: "real", Title: "MakeReal", Operator: "real", Unary: true, Conversion: "RealClass"},
+		{Name: "real", Title: "MakeReal", Operator: "real", Unary: true, Conversion: "Real"},
 		// {Name: "iter", Title: "Iter", Operator: "iter", Unary: true},
 	},
 	BinaryOps: Ops{
@@ -117,14 +117,14 @@ func {{.Title}}(a Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(TypeError, "непідтримуваний тип операнда для {{.Operator}}: '%s'", a.Type().Name)
+	return nil, ErrorNewf(TypeError, "непідтримуваний тип операнда для {{.Operator}}: '%s'", a.Class().Name)
 }
 {{ end }}
 
 {{ range .BinaryOps }}
 // {{.Title}} {{ if .Binary }}two{{ end }}{{ if .Ternary }}three{{ end }} objects together returning an Object.
 {{ if .Ternary}}//
-// If c != NilClass then it won't attempt to call __reversed_{{.Name}}__
+// If c != NilTypeClass then it won't attempt to call __reversed_{{.Name}}__
 {{ end }}//
 // Will raise TypeError if {{.Name}} can't be run on these objects.
 func {{.Title}}(a, b {{ if .Ternary }}, c{{ end }} Object) (Object {{ if .TwoReturnParameters}}, Object{{ end }}, error) {
@@ -141,7 +141,7 @@ func {{.Title}}(a, b {{ if .Ternary }}, c{{ end }} Object) (Object {{ if .TwoRet
 	}
 
 	// Now using b to reversed_{{.Name}} if different in type to a
-	if {{ if .Ternary }} c == NilClass && {{ end }} a.Type() != b.Type() {
+	if {{ if .Ternary }} c == NilTypeClass && {{ end }} a.Class() != b.Class() {
 		if B, ok := b.(I__reversed_{{.Name}}__); ok {
 			res {{ if .TwoReturnParameters}}, res2 {{ end }}, err := B.__reversed_{{.Name}}__(a)
 			if err != nil {
@@ -154,7 +154,7 @@ func {{.Title}}(a, b {{ if .Ternary }}, c{{ end }} Object) (Object {{ if .TwoRet
 		}
 	}
 
-	return nil{{ if .TwoReturnParameters}}, nil{{ end }}, ErrorNewf(TypeError, "непідтримувані типи операндів для {{.Operator}}: '%s' та '%s'", a.Type().Name, b.Type().Name)
+	return nil{{ if .TwoReturnParameters}}, nil{{ end }}, ErrorNewf(TypeError, "непідтримувані типи операндів для {{.Operator}}: '%s' та '%s'", a.Class().Name, b.Class().Name)
 }
 
 {{ if not .NoInplace }}
@@ -204,11 +204,11 @@ func {{.Title}}(a Object, b Object) (Object, error) {
 	}
 
 {{ if .FailReturn}}
-if a.Type() != b.Type() {
+if a.Class() != b.Class() {
 	return {{ .FailReturn }}, nil
 }
 {{ end }}
-	return nil, ErrorNewf(TypeError, "непідтримувані типи операндів для {{.Operator}}: '%s' та '%s'", a.Type().Name, b.Type().Name)
+	return nil, ErrorNewf(TypeError, "непідтримувані типи операндів для {{.Operator}}: '%s' та '%s'", a.Class().Name, b.Class().Name)
 }
 {{ end }}
 `

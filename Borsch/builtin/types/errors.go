@@ -13,54 +13,56 @@ type Error struct {
 	Context         Object
 	Cause           Object
 	SuppressContext bool
-	Dict            StringDict // anything else that we want to stuff in
+	Dict            Dict // anything else that we want to stuff in
 }
 
 var (
-	BaseError = ObjectClass.NewType(
+	BaseError = ObjectClass.NewClass(
 		"БазоваПомилка",
 		"Спільний базовий клас для усіх помилок",
 		ErrorNew,
 		nil,
 	)
-	ErrorType = BaseError.NewType(
+	ErrorType = BaseError.NewClass(
 		"Помилка",
 		"Спільний базовий клас для усіх помилок, визначених розробником",
 		nil,
 		nil,
 	)
-	TypeError  = ErrorType.NewType("ПомилкаТипу", "Невідповідний тип аргументу.", nil, nil)
-	ValueError = ErrorType.NewType(
+	TypeError  = ErrorType.NewClass("ПомилкаТипу", "Невідповідний тип аргументу.", nil, nil)
+	ValueError = ErrorType.NewClass(
 		"ПомилкаЗначення",
 		"Невідповідне значення аргументу (з коректним типом).",
 		nil,
 		nil,
 	)
-	RuntimeError        = ErrorType.NewType("ПомилкаВиконання", "Невизначена помилка виконання.", nil, nil)
-	NotImplementedError = RuntimeError.NewType(
+	RuntimeError        = ErrorType.NewClass("ПомилкаВиконання", "Невизначена помилка виконання.", nil, nil)
+	NotImplementedError = RuntimeError.NewClass(
 		"ПомилкаВідсутностіРеалізації",
 		"Метод або функція не реалізована.",
 		nil,
 		nil,
 	)
-	StopIteration   = ErrorType.NewType("ЗупинкаІтерування", "Сигнал зупинки з ітератор.__наступний__().", nil, nil)
-	ArithmeticError = ErrorType.NewType("АрифметичнаПомилка", "Базовий клас для аорифметичних помилок.", nil, nil)
-	OverflowError   = ArithmeticError.NewType(
+	StopIteration   = ErrorType.NewClass("ЗупинкаІтерування", "Сигнал зупинки з ітератор.__наступний__().", nil, nil)
+	ArithmeticError = ErrorType.NewClass("АрифметичнаПомилка", "Базовий клас для аорифметичних помилок.", nil, nil)
+	OverflowError   = ArithmeticError.NewClass(
 		"ПомилкаПереповнення",
 		"Результат є занадто великим, щоб його преставити.",
 		nil,
 		nil,
 	)
-	ZeroDivisionError = ArithmeticError.NewType(
+	ZeroDivisionError = ArithmeticError.NewClass(
 		"ПомилкаДіленняНаНуль",
 		"Другий аргумент при діленні або обчисленні модуля був нулем.",
 		nil,
 		nil,
 	)
-	LookupError = ErrorType.NewType("ПомилкаПошуку", "Базовий клас для помилок пошуку.", nil, nil)
-	KeyError    = LookupError.NewType("ПомилкаКлюча", "Ключ відображення не знайдено.", nil, nil)
-	IndexError  = LookupError.NewType("ПомилкаІндексу", "Індекс послідовності за межами її діапазону.", nil, nil)
-	SystemError = ErrorType.NewType(
+	AttributeError = ErrorType.NewClass("ПомилкаАтрибута", "Атрибут не знайдено.", nil, nil)
+	ImportError    = ErrorType.NewClass("ПомилкаІмпорту", "Імпорт не зміг знайти пакет.", nil, nil)
+	LookupError    = ErrorType.NewClass("ПомилкаПошуку", "Базовий клас для помилок пошуку.", nil, nil)
+	KeyError       = LookupError.NewClass("ПомилкаКлюча", "Ключ відображення не знайдено.", nil, nil)
+	IndexError     = LookupError.NewClass("ПомилкаІндексу", "Індекс послідовності за межами її діапазону.", nil, nil)
+	SystemError    = ErrorType.NewClass(
 		"СистемнаПомилка",
 		`Внутрішня помилка в інтерпретаторі Borsch.
 
@@ -77,14 +79,13 @@ var (
 
 func init() {
 	var err error
-	NotImplemented, err = ErrorNew(NotImplementedError, nil, nil)
+	NotImplemented, err = ErrorNew(NotImplementedError, nil)
 	if err != nil {
 		log.Fatalf("Failed to make NotImplemented")
 	}
 }
 
-// Type of this object
-func (e *Error) Type() *Class {
+func (e *Error) Class() *Class {
 	return e.Base
 }
 
@@ -126,7 +127,7 @@ func ErrorNewf(cls *Class, format string, a ...interface{}) error {
 	return &Error{
 		Base: cls,
 		Args: Tuple{String(message)},
-		Dict: StringDict{},
+		Dict: Dict{},
 	}
 }
 
@@ -138,6 +139,6 @@ func errorNew(cls *Class, args Tuple) *Error {
 	return &Error{
 		Base: cls,
 		Args: args.Copy(),
-		Dict: StringDict{},
+		Dict: Dict{},
 	}
 }

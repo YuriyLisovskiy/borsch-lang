@@ -1,285 +1,380 @@
+// Copyright 2018 The go-python Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+//
+// Copyright 2022 The Borsch Authors. All rights reserved.
+// Use of this source code is governed by a MIT license
+// that can be found in the LICENSE file.
+
+// Real objects.
+
 package types
 
 import (
-	"errors"
+	"fmt"
 	"math"
+	"math/big"
 	"strconv"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
+	"strings"
 )
 
-type RealInstance struct {
-	BuiltinInstance
-	Value float64
+var RealClass = ObjectClass.NewClass(
+	"дійсний",
+	`дійсний(х) -> число з плаваючою комою
+
+Перетворює рядок або число у число з плаваючою комою, якщо це можливо.`,
+	RealNew,
+	nil,
+)
+
+// Bits of precision in a float64
+const (
+	float64precision   = 53
+	float64MaxExponent = 1023
+)
+
+type Real float64
+
+func (value Real) Class() *Class {
+	return RealClass
 }
 
-func NewRealInstance(value float64) RealInstance {
-	return RealInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance: ClassInstance{
-				class:      RealClass,
-				attributes: map[string]common.Object{},
-				address:    "",
-			},
-		},
-		Value: value,
+func RealNew(cls *Class, args Tuple) (Object, error) {
+	var xObj Object = Real(0)
+	err := ParseExactArgs(args, "дійсний:O", &xObj)
+	if err != nil {
+		return nil, err
 	}
+
+	if x, ok := xObj.(String); ok {
+		return RealFromString(string(x))
+	}
+
+	return MakeReal(xObj)
 }
 
-func (t RealInstance) String(common.State) (string, error) {
-	return strconv.FormatFloat(t.Value, 'f', -1, 64), nil
+func (value Real) __str__() (Object, error) {
+	if i := int64(value); Real(i) == value {
+		return String(fmt.Sprintf("%d.0", i)), nil
+	}
+
+	return String(fmt.Sprintf("%g", value)), nil
 }
 
-func (t RealInstance) Representation(state common.State) (string, error) {
-	return t.String(state)
+func (value Real) __represent__() (Object, error) {
+	return value.__str__()
 }
 
-func (t RealInstance) AsBool(common.State) (bool, error) {
-	return t.Value != 0.0, nil
+// RealFromString turns a string into a Real.
+func RealFromString(str string) (Object, error) {
+	str = strings.TrimSpace(str)
+	f, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		if numErr, ok := err.(*strconv.NumError); ok {
+			if numErr.Err == strconv.ErrRange {
+				if str[0] == '-' {
+					return Real(math.Inf(-1)), nil
+				} else {
+					return Real(math.Inf(1)), nil
+				}
+			}
+		}
+
+		return nil, ErrorNewf(ValueError, "некоректний літерал для дійсного числа: '%s'", str)
+	}
+
+	return Real(f), nil
 }
 
-func compareReals(_ common.State, op common.Operator, self, other common.Object) (int, error) {
-	left, ok := self.(RealInstance)
+var expectingReal = ErrorNewf(TypeError, "необхідне дійсне число")
+
+// RealCheckExact returns the real value of obj if it is exactly a real.
+func RealCheckExact(obj Object) (Real, error) {
+	f, ok := obj.(Real)
 	if !ok {
-		return 0, utilities.IncorrectUseOfFunctionError("compareReals")
+		return 0, expectingReal
 	}
 
-	switch right := other.(type) {
-	case NilInstance:
-	case BoolInstance:
-		rightVal := boolToFloat64(right.Value)
-		if left.Value == rightVal {
-			return 0, nil
-		}
+	return f, nil
+}
 
-		if left.Value < rightVal {
-			return -1, nil
-		}
+// RealCheck returns the real value of obj if it is a real subclass.
+func RealCheck(obj Object) (Real, error) {
+	// FIXME: should be checking subclasses
+	return RealCheckExact(obj)
+}
 
-		return 1, nil
-	case IntegerInstance:
-		rightVal := float64(right.Value)
-		if left.Value == rightVal {
-			return 0, nil
-		}
-
-		if left.Value < rightVal {
-			return -1, nil
-		}
-
-		return 1, nil
-	case RealInstance:
-		if left.Value == right.Value {
-			return 0, nil
-		}
-
-		if left.Value < right.Value {
-			return -1, nil
-		}
-
-		return 1, nil
-	default:
-		return 0, utilities.OperatorNotSupportedError(op, left, right)
+func RealAsReal64(obj Object) (float64, error) {
+	f, err := RealCheck(obj)
+	if err == nil {
+		return float64(f), nil
 	}
 
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
-}
-
-func realBinaryOperator(
-	operator common.Operator,
-	handler func(common.State, RealInstance, common.Object) (common.Object, error),
-) common.Object {
-	return NewFunctionInstance(
-		operator.Name(),
-		[]FunctionParameter{
-			{
-				Type:       RealClass,
-				Name:       "я",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-			{
-				Type:       AnyClass,
-				Name:       "інший",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-		},
-		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
-			left, ok := (*args)[0].(RealInstance)
-			if !ok {
-				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
-			}
-
-			right := (*args)[1]
-			result, err := handler(state, left, right)
-			if err != nil {
-				return nil, err
-			}
-
-			if result == nil {
-				return nil, utilities.OperatorNotSupportedError(operator, left, right)
-			}
-
-			return result, nil
-		},
-		[]FunctionReturnType{
-			{
-				Type:       AnyClass,
-				IsNullable: false,
-			},
-		},
-		true,
-		nil,
-		"", // TODO: add doc
-	)
-}
-
-func realUnaryOperator(
-	operator common.Operator,
-	handler func(common.State, RealInstance) (common.Object, error),
-) common.Object {
-	return NewFunctionInstance(
-		operator.Name(),
-		[]FunctionParameter{
-			{
-				Type:       RealClass,
-				Name:       "я",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-		},
-		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
-			left, ok := (*args)[0].(RealInstance)
-			if !ok {
-				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
-			}
-
-			return handler(state, left)
-		},
-		[]FunctionReturnType{
-			{
-				Type:       AnyClass,
-				IsNullable: false,
-			},
-		},
-		true,
-		nil,
-		"", // TODO: add doc
-	)
-}
-
-func realOperator_Pow(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case RealInstance:
-		return NewRealInstance(math.Pow(left.Value, other.Value)), nil
-	case IntegerInstance:
-		return NewRealInstance(math.Pow(left.Value, float64(other.Value))), nil
-	case BoolInstance:
-		return NewRealInstance(math.Pow(left.Value, boolToFloat64(other.Value))), nil
-	default:
-		return nil, nil
+	fObj, err := MakeReal(obj)
+	if err != nil {
+		return 0, err
 	}
-}
 
-func realOperator_UnaryPlus(_ common.State, self RealInstance) (common.Object, error) {
-	return self, nil
-}
-
-func realOperator_UnaryMinus(_ common.State, self RealInstance) (common.Object, error) {
-	return NewRealInstance(-self.Value), nil
-}
-
-func realOperator_Mul(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewRealInstance(left.Value * boolToFloat64(other.Value)), nil
-	case IntegerInstance:
-		return NewRealInstance(left.Value * float64(other.Value)), nil
-	case RealInstance:
-		return NewRealInstance(left.Value * other.Value), nil
-	default:
-		return nil, nil
+	f, err = RealCheck(fObj)
+	if err == nil {
+		return float64(f), nil
 	}
+
+	return float64(f), err
 }
 
-func realOperator_Div(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
-			return NewRealInstance(left.Value), nil
+// Arithmetic
+
+// Errors
+var floatDivisionByZero = ErrorNewf(ZeroDivisionError, "ділення дійсного числа на нуль")
+
+// Convert an Object to Real.
+//
+// Returns ok if the conversion worked or not.
+func convertToReal(other Object) (Real, bool) {
+	switch b := other.(type) {
+	case Real:
+		return b, true
+	case Int:
+		return Real(b), true
+	case *BigInt:
+		x, err := b.Real()
+		return x, err == nil
+	case Bool:
+		if b {
+			return Real(1), true
+		} else {
+			return Real(0), true
 		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewRealInstance(left.Value / float64(other.Value)), nil
+	}
+
+	return 0, false
+}
+
+func (value Real) __neg__() (Object, error) {
+	return -value, nil
+}
+
+func (value Real) __pos__() (Object, error) {
+	return value, nil
+}
+
+func (value Real) __add__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return value + b, nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __reversed_add__(other Object) (Object, error) {
+	return value.__add__(other)
+}
+
+func (value Real) __in_place_add__(other Object) (Object, error) {
+	return value.__add__(other)
+}
+
+func (value Real) __sub__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return value - b, nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __reversed_sub__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return b - value, nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __in_place_sub__(other Object) (Object, error) {
+	return value.__sub__(other)
+}
+
+func (value Real) __mul__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return value * b, nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __reversed_mul__(other Object) (Object, error) {
+	return value.__mul__(other)
+}
+
+func (value Real) __in_place_mul__(other Object) (Object, error) {
+	return value.__mul__(other)
+}
+
+func (value Real) __div__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		if b == 0 {
+			return nil, floatDivisionByZero
 		}
-	case RealInstance:
-		if other.Value != 0.0 {
-			return NewRealInstance(left.Value / other.Value), nil
+
+		return value / b, nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __reversed_div__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		if value == 0 {
+			return nil, floatDivisionByZero
 		}
-	default:
-		return nil, nil
+
+		return b / value, nil
 	}
 
-	return nil, errors.New("ділення на нуль")
+	return NotImplemented, nil
 }
 
-func realOperator_Add(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewRealInstance(left.Value + boolToFloat64(other.Value)), nil
-	case IntegerInstance:
-		return NewRealInstance(left.Value + float64(other.Value)), nil
-	case RealInstance:
-		return NewRealInstance(left.Value + other.Value), nil
-	default:
-		return nil, nil
-	}
+func (value Real) __in_place_div__(other Object) (Object, error) {
+	return value.__div__(other)
 }
 
-func realOperator_Sub(_ common.State, left RealInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewRealInstance(left.Value - boolToFloat64(other.Value)), nil
-	case IntegerInstance:
-		return NewRealInstance(left.Value - float64(other.Value)), nil
-	case RealInstance:
-		return NewRealInstance(left.Value - other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func newRealClass() *Class {
-	initAttributes := func(attrs *map[string]common.Object) {
-		*attrs = MergeAttributes(
-			map[string]common.Object{
-				// TODO: add doc
-				common.ConstructorName:   makeVariadicConstructor(RealClass, ToReal, ""),
-				common.PowOp.Name():      realBinaryOperator(common.PowOp, realOperator_Pow),
-				common.UnaryPlus.Name():  realUnaryOperator(common.UnaryPlus, realOperator_UnaryPlus),
-				common.UnaryMinus.Name(): realUnaryOperator(common.UnaryMinus, realOperator_UnaryMinus),
-				common.MulOp.Name():      realBinaryOperator(common.MulOp, realOperator_Mul),
-				common.DivOp.Name():      realBinaryOperator(common.DivOp, realOperator_Div),
-				common.AddOp.Name():      realBinaryOperator(common.AddOp, realOperator_Add),
-				common.SubOp.Name():      realBinaryOperator(common.SubOp, realOperator_Sub),
-			},
-			MakeLogicalOperators(RealClass),
-			MakeComparisonOperators(RealClass, compareReals),
-			MakeCommonOperators(RealClass),
-		)
+// Does DivMod of two floating point numbers
+func realDivMod(a, b Real) (Real, Real, error) {
+	if b == 0 {
+		return 0, 0, floatDivisionByZero
 	}
 
-	return &Class{
-		Name:            common.RealTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Object, error) {
-			return NewRealInstance(0), nil
-		},
-	}
+	q := Real(math.Floor(float64(a / b)))
+	r := a - q*b
+	return q, r, nil
 }
+
+func (value Real) __mod__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		_, r, err := realDivMod(value, b)
+		return r, err
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __reversed_mod__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		_, r, err := realDivMod(b, value)
+		return r, err
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __in_place_mod__(other Object) (Object, error) {
+	return value.__mod__(other)
+}
+
+func (value Real) __pow__(other, modulus Object) (Object, error) {
+	if modulus != Nil {
+		return NotImplemented, nil
+	}
+
+	if b, ok := convertToReal(other); ok {
+		return Real(math.Pow(float64(value), float64(b))), nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __reversed_pow__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return Real(math.Pow(float64(b), float64(value))), nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __in_place_pow__(other, modulus Object) (Object, error) {
+	return value.__pow__(other, modulus)
+}
+
+func (value Real) __bool__() (Object, error) {
+	return NewBool(value != 0), nil
+}
+
+func (value Real) __int__() (Object, error) {
+	if value >= IntMin && value <= IntMax {
+		return Int(value), nil
+	}
+
+	frac, exp := math.Frexp(float64(value))          // x = frac << exp; 0.5 <= abs(x) < 1
+	fracInt := int64(frac * (1 << float64precision)) // x = frac << (exp - float64precision)
+	res := big.NewInt(fracInt)
+	shift := exp - float64precision
+	switch {
+	case shift > 0:
+		res.Lsh(res, uint(shift))
+	case shift < 0:
+		res.Rsh(res, uint(-shift))
+	}
+
+	return (*BigInt)(res), nil
+}
+
+func (value Real) __real__() (Object, error) {
+	return value, nil
+}
+
+// Comparison
+
+func (value Real) __less_than__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return NewBool(value < b), nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __less_or_equal__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return NewBool(value <= b), nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __equal__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return NewBool(value == b), nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __not_equal__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return NewBool(value != b), nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __greater_than__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return NewBool(value > b), nil
+	}
+
+	return NotImplemented, nil
+}
+
+func (value Real) __greater_or_equal__(other Object) (Object, error) {
+	if b, ok := convertToReal(other); ok {
+		return NewBool(value >= b), nil
+	}
+
+	return NotImplemented, nil
+}
+
+// Check interface is satisfied
+var _ realArithmetic = Real(0)
+var _ conversionBetweenTypes = Real(0)
+var _ I__bool__ = Real(0)
+var _ iComparison = Real(0)

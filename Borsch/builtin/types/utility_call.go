@@ -1,14 +1,7 @@
 package types
 
-import (
-	"errors"
-	"fmt"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
-)
-
-func Call(
+/*
+func Call_(
 	state common.State,
 	function *FunctionInstance,
 	args Tuple,
@@ -110,3 +103,4 @@ func updateKwargs(args []common.Object, kwargs *map[string]common.Object, funcAr
 		(*kwargs)[funcArgs[i].Name] = list
 	}
 }
+*/

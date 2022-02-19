@@ -13,7 +13,7 @@ package types
 type NilType struct{}
 
 var (
-	NilTypeClass = NewType("нульовий", "")
+	NilTypeClass = NewClass("нульовий", "")
 
 	Nil = NilType(struct{}{})
 )

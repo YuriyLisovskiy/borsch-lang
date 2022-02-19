@@ -1,12 +1,6 @@
 package types
 
-import (
-	"fmt"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
-)
-
+/*
 type FunctionParameter struct {
 	// nil means any type
 	Type       *Class
@@ -220,3 +214,4 @@ func newFunctionClass() *Class {
 		},
 	}
 }
+*/

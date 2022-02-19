@@ -1,17 +1,15 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 	"log"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-type NewFunc func(cls *Class, args List, state common.State) (common.Object, error)
+type NewFunc func(cls *Class, args Tuple) (Object, error)
 
-type ConstructFunc func(self common.Object, args List, state common.State) error
+type ConstructFunc func(self Object, args Tuple) error
 
 const (
 	// TPFLAGS_BASETYPE is set if the type allows subclassing.
@@ -28,12 +26,12 @@ const (
 type Class struct {
 	Name string
 	Doc  string
-	Dict map[string]common.Object
+	Dict map[string]Object
 
 	IsFinal bool
 
 	ObjectClass *Class
-	Bases       *List
+	Bases       Tuple
 
 	New       NewFunc
 	Construct ConstructFunc
@@ -43,19 +41,19 @@ type Class struct {
 var TypeClass = &Class{
 	Name: "тип",
 	Doc:  "тип(об_єкт) -> тип об'єкта\nтип(назва, бази, атрибути) -> новий тип",
-	Dict: StringDict{},
+	Dict: map[string]Object{},
 }
 
 var ObjectClass = &Class{
 	Name: "об_єкт",
 	Doc:  "Базовий тип",
-	Dict: StringDict{},
+	Dict: map[string]Object{},
 }
 
 func init() {
 	// Initialised like this to avoid initialisation loops
 	TypeClass.New = TypeNew
-	TypeClass.Construct = TypeInit
+	TypeClass.Construct = TypeConstruct
 	TypeClass.ObjectClass = TypeClass
 	ObjectClass.New = ObjectNew
 	ObjectClass.Construct = ObjectConstruct
@@ -68,6 +66,38 @@ func init() {
 	err = ObjectClass.Ready()
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func NewClass(Name string, Doc string) *Class {
+	t := &Class{
+		ObjectClass: TypeClass,
+		Name:        Name,
+		Doc:         Doc,
+		Dict:        map[string]Object{},
+	}
+	TypeDelayReady(t)
+	return t
+}
+
+func (c *Class) NewClass(name string, doc string, newF NewFunc, constructF ConstructFunc) *Class {
+	if newF == nil {
+		newF = c.New
+	}
+
+	if constructF == nil {
+		constructF = c.Construct
+	}
+
+	return &Class{
+		Name:        name,
+		Doc:         doc,
+		Dict:        map[string]Object{},
+		IsFinal:     false,
+		ObjectClass: c,
+		Bases:       Tuple{c},
+		New:         newF,
+		Construct:   constructF,
 	}
 }
 
@@ -91,13 +121,13 @@ func (c *Class) Ready() error {
 
 	// Initialize Bases
 	if c.Bases == nil {
-		c.Bases = &List{}
+		c.Bases = Tuple{}
 	}
 
 	// Initialize tp_dict
 	dict := c.Dict
 	if dict == nil {
-		dict = NewStringDict()
+		dict = map[string]Object{}
 		c.Dict = dict
 	}
 
@@ -124,121 +154,84 @@ func (c *Class) Ready() error {
 }
 
 func (c *Class) Class() *Class {
-
+	return c.ObjectClass
 }
 
-func (c *Class) __str__() (common.Object, error) {
-	if res, ok, err := c.CallMethod(common.StringOperator, Tuple{t}, nil); ok {
+func (c *Class) Allocate() *Class {
+	return &Class{
+		Dict:        map[string]Object{},
+		ObjectClass: c,
+	}
+}
+
+func (c *Class) __str__() (Object, error) {
+	if res, ok, err := c.CallMethod(nil, common.StringOperatorName, Tuple{c}); ok {
 		return res, err
 	}
 
 	return c.__represent__()
 }
 
-func (c *Class) __represent__() (common.Object, error) {
-	if res, ok, err := c.CallMethod(common.RepresentOperator, List{c}, nil); ok {
+func (c *Class) __represent__() (Object, error) {
+	if res, ok, err := c.CallMethod(nil, common.RepresentOperatorName, Tuple{c}); ok {
 		return res, err
 	}
 
 	if c.Name == "" {
 		// FIXME: not a good way to tell objects from classes!
-		return String(fmt.Sprintf("<об'єкт %s з адресою %p>", c.Type().Name, c)), nil
+		return String(fmt.Sprintf("<об'єкт %s з адресою %p>", c.Class().Name, c)), nil
 	}
 
 	return String(fmt.Sprintf("<клас '%s'>", c.Name)), nil
 }
 
-func (c *Class) CallMethod(name string, args Tuple, state common.State) (Object, bool, error) {
+// Lookup returns a borrowed reference, and doesn't set an exception,
+// returning nil instead.
+func (c *Class) Lookup(name string) Object {
+	for _, baseObj := range c.Bases {
+		base := baseObj.(*Class)
+		if res, ok := base.Dict[name]; ok {
+			return res
+		}
+	}
+
+	return nil
+}
+
+// NativeGetAttrOrNil gets an attribute from the type of Go type.
+func (c *Class) NativeGetAttrOrNil(name string) Object {
+	// Look in type Dict
+	if res, ok := c.Dict[name]; ok {
+		return res
+	}
+
+	// Now look through base classes etc
+	return c.Lookup(name)
+}
+
+func (c *Class) GetAttrOrNil(name string) Object {
+	// Look in instance dictionary first
+	if res, ok := c.Dict[name]; ok {
+		return res
+	}
+
+	// Then look in type Dict
+	if res, ok := c.Class().Dict[name]; ok {
+		return res
+	}
+
+	// Now look through base classes etc
+	return c.Lookup(name)
+}
+
+func (c *Class) CallMethod(state common.State, name string, args Tuple) (Object, bool, error) {
 	fn := c.GetAttrOrNil(name)
 	if fn == nil {
 		return nil, false, nil
 	}
 
-	res, err := Call(state, fn, args, nil)
+	res, err := Call(state, fn, args)
 	return res, true, err
-}
-
-func (c *Class) GetOperator(name string) (common.Object, error) {
-	if c.isType() {
-		if c.Dict != nil {
-			if val, ok := c.Dict[name]; ok {
-				return val, nil
-			}
-		}
-
-		return nil, utilities.AttributeNotFoundError(c.GetTypeName(), name)
-	}
-
-	return c.GetClass().GetAttribute(name)
-}
-
-// GetAttribute uses getAttribute and in case of failure, searches for
-// an attribute in TypeClass.
-func (c *Class) GetAttribute(name string) (common.Object, error) {
-	if val, err := c.getAttribute(name); err == nil {
-		return val, nil
-	}
-
-	if !c.isType() {
-		if attr, err := c.GetClass().GetAttribute(name); err == nil {
-			return attr, nil
-		}
-	}
-
-	return nil, utilities.AttributeNotFoundError(c.GetName(), name)
-}
-
-func (c *Class) SetAttribute(name string, newValue common.Object) error {
-	if c.isType() {
-		if c.HasAttribute(name) {
-			return utilities.AttributeIsReadOnlyError(c.GetTypeName(), name)
-		}
-
-		return utilities.AttributeNotFoundError(c.GetTypeName(), name)
-	}
-
-	if oldValue, ok := c.Dict[name]; ok {
-		oldValueClass := oldValue.(ObjectInstance).GetClass()
-		newValueClass := newValue.(ObjectInstance).GetClass()
-		if oldValueClass == newValueClass || newValueClass.HasBase(oldValueClass) {
-			c.Dict[name] = newValue
-			return nil
-		}
-
-		return errors.New(
-			fmt.Sprintf(
-				"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
-				newValue.GetTypeName(), name, oldValue.GetTypeName(),
-			),
-		)
-	}
-
-	c.Dict[name] = newValue
-	return nil
-}
-
-func (c *Class) HasAttribute(name string) bool {
-	if _, ok := c.Dict[name]; !ok {
-		if !c.isType() {
-			return c.GetClass().HasAttribute(name)
-		}
-
-		return false
-	}
-
-	return true
-}
-
-func (c *Class) SetAttributes(attrs map[string]common.Object) {
-	c.Dict = attrs
-	if c.Dict == nil {
-		c.Dict = map[string]common.Object{}
-	}
-}
-
-func (c *Class) EqualsTo(other common.Object) bool {
-	cls, ok := other.(*Class)
-	return ok && cls == c
 }
 
 func (c *Class) HasBase(cls *Class) bool {
@@ -251,51 +244,155 @@ func (c *Class) HasBase(cls *Class) bool {
 	return false
 }
 
-// Call executes common.ConstructorName operator if it exists in Dict.
-func (c *Class) Call(state common.State, args *[]common.Object, kwargs *map[string]common.Object) (
-	common.Object,
-	error,
-) {
-	operator, err := c.GetOperator(common.ConstructorName)
+func ObjectNew(t *Class, args Tuple) (Object, error) {
+	// Check arguments to new only for object
+	if t == ObjectClass && excessArgs(args) {
+		return nil, ErrorNewf(TypeError, "об_єкт() не приймає аргументів")
+	}
+
+	return t.Allocate(), nil
+}
+
+// TypeNew creates a new type.
+func TypeNew(cls *Class, args Tuple) (Object, error) {
+	// Special case: тип(x) should return x.Type
+	if cls != nil && len(args) == 1 {
+		return args[0].Class(), nil
+	}
+
+	if len(args) != 3 {
+		return nil, ErrorNewf(TypeError, "тип() приймає 1 або 3 аргументи")
+	}
+
+	// Check arguments: (name, bases, attributes)
+	var nameObj, basesObj, attributesObj Object
+	err := ParseExactArgs(
+		args, "тип:sld",
+		&nameObj,
+		&basesObj,
+		&attributesObj,
+	)
 	if err != nil {
-		return nil, utilities.ObjectIsNotCallable(c.GetName(), c.GetTypeName())
+		return nil, err
 	}
 
-	return CallAttribute(state, c, operator, common.ConstructorName, args, kwargs, true)
-}
+	name := nameObj.(String)
+	bases := basesObj.(Tuple)
+	attributes := attributesObj.(Dict)
 
-// getAttribute searches for attribute only in current Dict and
-// in Bases.
-func (c *Class) getAttribute(name string) (common.Object, error) {
-	if c.Dict != nil {
-		if val, ok := c.Dict[name]; ok {
-			return val, nil
+	// Adjust for empty tuple bases
+	if len(bases) == 0 {
+		bases = Tuple{Object(ObjectClass)}
+	}
+
+	for _, newBase := range bases {
+		if base, ok := newBase.(*Class); ok {
+			if base.Flags&TPFLAGS_BASETYPE == 0 {
+				return nil, ErrorNewf(TypeError, "type '%s' is not an acceptable base type", base.Name)
+			}
+		} else {
+			str, err := Str(newBase)
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, ErrorNewf(TypeError, "object '%s' is not a type", str)
 		}
 	}
 
-	basesLastIdx := len(c.Bases) - 1
-	for i := basesLastIdx; i >= 0; i-- {
-		if attr, err := c.Bases[i].getAttribute(name); err == nil {
-			return attr, nil
+	dict := attributes.Copy()
+
+	// Allocate the type object
+	newType := cls.Allocate()
+	newType.New = ObjectNew
+	newType.Construct = ObjectConstruct
+
+	// Keep name and slots alive in the extended type object
+	et := newType
+	et.Name = string(name)
+
+	// Initialize Flags
+	newType.Flags = TPFLAGS_BASETYPE
+
+	// Set Bases
+	newType.Bases = bases
+	bases = nil
+
+	// Initialize tp_dict from passed-in dict
+	newType.Dict = dict
+
+	// The __doc__ accessor will first look for Doc;
+	// if that fails, it will still look into __dict__.
+	if doc, ok := dict[common.DocAttributeName]; ok {
+		if Doc, ok := doc.(String); ok {
+			newType.Doc = string(Doc)
 		}
 	}
 
-	return nil, utilities.AttributeNotFoundError(c.GetName(), name)
-}
-
-// isType checks if address of current Class is equal to TypeClass.
-func (c *Class) isType() bool {
-	return c.Class == c
-}
-
-func (c *Class) initializeAttributes() {
-	if c.AttrInitializer != nil {
-		c.AttrInitializer(&c.Dict)
-		c.AttrInitializer = nil
+	// Initialize the rest
+	err = newType.Ready()
+	if err != nil {
+		return nil, err
 	}
 
-	if _, ok := c.Dict[common.ConstructorName]; !ok {
-		// TODO: add doc
-		c.Dict[common.ConstructorName] = makeDefaultConstructor(c, "")
+	return newType, nil
+}
+
+func ObjectConstruct(self Object, args Tuple) error {
+	t := self.Class()
+
+	// Check args for object()
+	if t == ObjectClass && excessArgs(args) {
+		return ErrorNewf(TypeError, "об_єкт.%s() не приймає аргументів", common.ConstructorName)
 	}
+
+	// Call the '__конструктор__' method if it exists.
+	if _, ok := self.(*Class); ok {
+		init := t.GetAttrOrNil(common.ConstructorName)
+		if init != nil {
+			newArgs := make(Tuple, len(args)+1)
+			newArgs[0] = self
+			copy(newArgs[1:], args)
+			_, err := Call(nil, init, newArgs)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func TypeConstruct(self Object, args Tuple) error {
+	if len(args) != 1 && len(args) != 3 {
+		return ErrorNewf(TypeError, "тип.%s() приймає 1 або 3 аргументи", common.ConstructorName)
+	}
+
+	// Call object.__init__(self) now.
+	// XXX Could call super(type, cls).__init__() but what's the point?
+	return ObjectConstruct(self, nil)
+}
+
+func TypeCall(self Object, name string, args Tuple) (Object, bool, error) {
+	t, ok := self.(*Class)
+	if !ok {
+		return nil, false, nil
+	}
+
+	return t.CallMethod(nil, name, args)
+}
+
+// TypeCall0 calls TypeCall with 0 arguments.
+func TypeCall0(self Object, name string) (Object, bool, error) {
+	return TypeCall(self, name, Tuple{self})
+}
+
+// TypeCall1 calls TypeCall with 1 argument.
+func TypeCall1(self Object, name string, arg Object) (Object, bool, error) {
+	return TypeCall(self, name, Tuple{self, arg})
+}
+
+// Return true if any arguments supplied.
+func excessArgs(args Tuple) bool {
+	return len(args) != 0
 }

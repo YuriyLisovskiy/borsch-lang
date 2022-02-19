@@ -1,13 +1,6 @@
 package types
 
-import (
-	"errors"
-	"fmt"
-	"strings"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-)
-
+/*
 func checkArgument(parameter *FunctionParameter, arg Object, isVariadic bool) error {
 	if parameter == nil {
 		return errors.New("checkArgument: parameter is nil")
@@ -22,7 +15,7 @@ func checkArgument(parameter *FunctionParameter, arg Object, isVariadic bool) er
 	}
 
 	argPrototype := arg.(ObjectInstance).GetClass()
-	if argPrototype == NilClass && parameter.IsNullable {
+	if argPrototype == NilTypeClass && parameter.IsNullable {
 		return nil
 	}
 
@@ -221,3 +214,4 @@ func getEndings(value int) (string, string, string) {
 
 	return end1, end2, end3
 }
+*/

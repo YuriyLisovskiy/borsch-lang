@@ -1,347 +1,124 @@
+// Copyright 2022 The Borsch Authors. All rights reserved.
+// Use of this source code is governed by a MIT license
+// that can be found in the LICENSE file.
+
 package types
 
-import (
-	"errors"
-	"fmt"
-	"math"
+type Bool bool
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
+var (
+	BoolType = NewClass(
+		"логічний",
+		`логічний(x) -> логічний
+
+Повертає 'істина', якщо аргумент x є істиною, інакше - 'хиба'.
+The builtins True and False are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed.`,
+	)
+
+	False = Bool(false)
+	True  = Bool(true)
 )
 
-type BoolInstance struct {
-	BuiltinInstance
-	Value bool
+func (b Bool) Class() *Class {
+	return BoolType
 }
 
-func NewBoolInstance(value bool) BoolInstance {
-	return BoolInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance: *NewClassInstance(BoolClass, nil),
-		},
-		Value: value,
-	}
-}
-
-func (t BoolInstance) String(common.State) (string, error) {
-	if t.Value {
-		return "істина", nil
+// NewBool returns the canonical True and False values.
+func NewBool(t bool) Bool {
+	if t {
+		return True
 	}
 
-	return "хиба", nil
+	return False
 }
 
-func (t BoolInstance) Representation(state common.State) (string, error) {
-	return t.String(state)
+func (b Bool) __bool__() (Object, error) {
+	return b, nil
 }
 
-func (t BoolInstance) AsBool(common.State) (bool, error) {
-	return t.Value, nil
-}
-
-func toBool(state common.State, args ...common.Object) (common.Object, error) {
-	if len(args) == 0 {
-		return NewBoolInstance(false), nil
+func (b Bool) __index__() (Int, error) {
+	if b {
+		return Int(1), nil
 	}
 
-	if len(args) != 1 {
-		return nil, errors.New(
-			fmt.Sprintf(
-				"функція 'логічний()' приймає лише один аргумент (отримано %d)", len(args),
-			),
-		)
+	return Int(0), nil
+}
+
+func (b Bool) __str__() (Object, error) {
+	return b.__represent__()
+}
+
+func (b Bool) __represent__() (Object, error) {
+	if b {
+		return String("істина"), nil
 	}
 
-	boolValue, err := args[0].AsBool(state)
+	return String("хиба"), nil
+}
+
+// Convert an Object to Bool.
+//
+// Returns ok if the conversion worked or not.
+func convertToBool(other Object) (Bool, bool) {
+	switch b := other.(type) {
+	case Bool:
+		return b, true
+	case Int:
+		switch b {
+		case 0:
+			return False, true
+		case 1:
+			return True, true
+		default:
+			return False, false
+		}
+	case Real:
+		switch b {
+		case 0:
+			return False, true
+		case 1:
+			return True, true
+		default:
+			return False, false
+		}
+	}
+
+	return False, false
+}
+
+func (b Bool) __equal__(other Object) (Object, error) {
+	if o, ok := convertToBool(other); ok {
+		return NewBool(b == o), nil
+	}
+
+	return False, nil
+}
+
+func (b Bool) __not_equal__(other Object) (Object, error) {
+	if o, ok := convertToBool(other); ok {
+		return NewBool(b != o), nil
+	}
+
+	return True, nil
+}
+
+func notEq(eq Object, err error) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
 
-	return NewBoolInstance(boolValue), err
-}
-
-func compareBooleans(state common.State, op common.Operator, self common.Object, other common.Object) (int, error) {
-	left, ok := self.(BoolInstance)
-	if !ok {
-		return 0, utilities.IncorrectUseOfFunctionError("compareBooleans")
+	if eq == NotImplemented {
+		return eq, nil
 	}
 
-	switch right := other.(type) {
-	case NilInstance:
-	case BoolInstance:
-		if left.Value == right.Value {
-			return 0, nil
-		}
-	case IntegerInstance, RealInstance:
-		rightBool, err := right.AsBool(state)
-		if err != nil {
-			return 0, err
-		}
-
-		if left.Value == rightBool {
-			return 0, nil
-		}
-	default:
-		return 0, utilities.OperatorNotSupportedError(op, left, right)
-	}
-
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
+	return Not(eq)
 }
 
-func evalUnaryOperatorWithBooleans(_ common.State, operator common.Operator, value common.Object) (
-	common.Object,
-	error,
-) {
-	if self, ok := value.(BoolInstance); ok {
-		switch operator {
-		case common.UnaryPlus:
-			return NewIntegerInstance(boolToInt64(self.Value)), nil
-		case common.UnaryMinus:
-			return NewIntegerInstance(-boolToInt64(self.Value)), nil
-		case common.UnaryBitwiseNotOp:
-			return NewIntegerInstance(^boolToInt64(self.Value)), nil
-		default:
-			return nil, utilities.InternalOperatorError(operator)
-		}
-	}
-
-	return nil, utilities.BadOperandForUnaryOperatorError(operator)
-}
-
-func boolOperator(
-	operator common.Operator,
-	handler func(common.State, BoolInstance, common.Object) (common.Object, error),
-) common.Object {
-	return NewFunctionInstance(
-		operator.Name(),
-		[]FunctionParameter{
-			{
-				Type:       BoolClass,
-				Name:       "я",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-			{
-				Type:       AnyClass,
-				Name:       "інший",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-		},
-		func(state common.State, args *[]common.Object, _ *map[string]common.Object) (common.Object, error) {
-			left, ok := (*args)[0].(BoolInstance)
-			if !ok {
-				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
-			}
-
-			right := (*args)[1]
-			result, err := handler(state, left, right)
-			if err != nil {
-				return nil, err
-			}
-
-			if result == nil {
-				return nil, utilities.OperatorNotSupportedError(operator, left, right)
-			}
-
-			return result, nil
-		},
-		[]FunctionReturnType{
-			{
-				Type:       AnyClass,
-				IsNullable: false,
-			},
-		},
-		true,
-		nil,
-		"", // TODO: add doc
-	)
-}
-
-func boolOperator_Pow(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case RealInstance:
-		return NewRealInstance(math.Pow(boolToFloat64(left.Value), other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(int64(math.Pow(boolToFloat64(left.Value), float64(other.Value)))), nil
-	case BoolInstance:
-		return NewIntegerInstance(int64(math.Pow(boolToFloat64(left.Value), boolToFloat64(other.Value)))), nil
-	default:
-		return nil, nil
-	}
-}
-
-func boolOperator_Mul(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) * boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) * other.Value), nil
-	case RealInstance:
-		return NewRealInstance(boolToFloat64(left.Value) * other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func boolOperator_Div(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
-			return NewRealInstance(boolToFloat64(left.Value)), nil
-		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewRealInstance(boolToFloat64(left.Value) / float64(other.Value)), nil
-		}
-	case RealInstance:
-		if other.Value != 0.0 {
-			return NewRealInstance(boolToFloat64(left.Value) / other.Value), nil
-		}
-	default:
-		return nil, nil
-	}
-
-	return nil, errors.New("ділення на нуль")
-}
-
-func boolOperator_Modulo(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
-			return NewIntegerInstance(boolToInt64(left.Value) % boolToInt64(other.Value)), nil
-		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewIntegerInstance(boolToInt64(left.Value) % other.Value), nil
-		}
-	default:
-		return nil, nil
-	}
-
-	return nil, errors.New("ділення за модулем на нуль")
-}
-
-func boolOperator_Add(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) + boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) + other.Value), nil
-	case RealInstance:
-		return NewRealInstance(boolToFloat64(left.Value) + other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func boolOperator_Sub(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) - boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) - other.Value), nil
-	case RealInstance:
-		return NewRealInstance(boolToFloat64(left.Value) - other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func boolOperator_BitwiseLeftShift(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) << boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) << other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func boolOperator_BitwiseRightShift(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) >> boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) >> other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func boolOperator_BitwiseAnd(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) & boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) & other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func boolOperator_BitwiseXor(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) ^ boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) ^ other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func boolOperator_BitwiseOr(_ common.State, left BoolInstance, right common.Object) (common.Object, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) | boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) | other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func newBoolClass() *Class {
-	return &Class{
-		Name:    common.BoolTypeName,
-		IsFinal: true,
-		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Object) {
-			*attrs = MergeAttributes(
-				map[string]common.Object{
-					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(BoolClass, toBool, ""),
-
-					common.PowOp.Name():    boolOperator(common.PowOp, boolOperator_Pow),
-					common.MulOp.Name():    boolOperator(common.MulOp, boolOperator_Mul),
-					common.DivOp.Name():    boolOperator(common.DivOp, boolOperator_Div),
-					common.ModuloOp.Name(): boolOperator(common.ModuloOp, boolOperator_Modulo),
-					common.AddOp.Name():    boolOperator(common.AddOp, boolOperator_Add),
-					common.SubOp.Name():    boolOperator(common.SubOp, boolOperator_Sub),
-					common.BitwiseLeftShiftOp.Name(): boolOperator(
-						common.BitwiseLeftShiftOp,
-						boolOperator_BitwiseLeftShift,
-					),
-					common.BitwiseRightShiftOp.Name(): boolOperator(
-						common.BitwiseRightShiftOp,
-						boolOperator_BitwiseRightShift,
-					),
-					common.BitwiseAndOp.Name(): boolOperator(common.BitwiseAndOp, boolOperator_BitwiseAnd),
-					common.BitwiseXorOp.Name(): boolOperator(common.BitwiseXorOp, boolOperator_BitwiseXor),
-					common.BitwiseOrOp.Name():  boolOperator(common.BitwiseOrOp, boolOperator_BitwiseOr),
-				},
-				MakeUnaryOperators(BoolClass, IntClass, evalUnaryOperatorWithBooleans),
-				MakeLogicalOperators(BoolClass),
-				MakeComparisonOperators(BoolClass, compareBooleans),
-				MakeCommonOperators(BoolClass),
-			)
-		},
-		GetEmptyInstance: func() (common.Object, error) {
-			return NewBoolInstance(false), nil
-		},
-	}
-}
+// Check interface is satisfied
+var _ I__bool__ = Bool(false)
+var _ I__index__ = Bool(false)
+var _ I__str__ = Bool(false)
+var _ I__represent__ = Bool(false)
+var _ I__equal__ = Bool(false)
+var _ I__not_equal__ = Bool(false)
