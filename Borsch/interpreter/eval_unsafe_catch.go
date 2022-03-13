@@ -3,7 +3,6 @@ package interpreter
 import (
 	"fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
@@ -15,8 +14,8 @@ func (node *Throw) Evaluate(state common.State) StmtResult {
 		return StmtResult{Err: err}
 	}
 
-	expressionClass := expression.(types.ObjectInstance).GetClass()
-	if expressionClass == builtin.ErrorClass || expressionClass.HasBase(builtin.ErrorClass) {
+	expressionClass := expression.Class()
+	if expressionClass == types.ErrorType || expressionClass.HasBase(types.ErrorType) {
 		message, err := expression.String(state)
 		if err != nil {
 			return StmtResult{Err: err}
@@ -30,7 +29,7 @@ func (node *Throw) Evaluate(state common.State) StmtResult {
 		Err: state.RuntimeError(
 			fmt.Sprintf(
 				"помилки мають наслідувати клас '%s'",
-				builtin.ErrorClass.Name,
+				types.ErrorType.Name,
 			),
 			node,
 		),
@@ -58,7 +57,7 @@ func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 	return result
 }
 
-func (node *Catch) Evaluate(state common.State, exception common.Object, inFunction, inLoop bool) (StmtResult, bool) {
+func (node *Catch) Evaluate(state common.State, exception types.Object, inFunction, inLoop bool) (StmtResult, bool) {
 	errorToCatch, err := node.ErrorType.Evaluate(state, nil, nil)
 	if err != nil {
 		return StmtResult{Err: err}, false
@@ -73,19 +72,19 @@ func (node *Catch) Evaluate(state common.State, exception common.Object, inFunct
 		return StmtResult{Err: state.RuntimeError(fmt.Sprintf("об'єкт '%s' не є класом", str), node)}, false
 	}
 
-	generatedErrorClass := exception.(types.ObjectInstance).GetClass()
+	generatedErrorClass := exception.Class()
 	errorToCatchClass := errorToCatch.(*types.Class)
 	if shouldCatch(generatedErrorClass, errorToCatchClass) {
 		state.PopTrace()
 		return node.catch(state, exception, inFunction, inLoop)
 	}
 
-	if !errorToCatchClass.HasBase(builtin.ErrorClass) {
+	if !errorToCatchClass.HasBase(types.ErrorType) {
 		return StmtResult{
 			Err: state.RuntimeError(
 				fmt.Sprintf(
 					"перехоплення помилок, які не наслідують клас '%s' заборонено",
-					builtin.ErrorClass.Name,
+					types.ErrorType.Name,
 				),
 				node,
 			),
@@ -95,7 +94,7 @@ func (node *Catch) Evaluate(state common.State, exception common.Object, inFunct
 	return StmtResult{}, false
 }
 
-func (node *Catch) catch(state common.State, err common.Object, inFunction, inLoop bool) (StmtResult, bool) {
+func (node *Catch) catch(state common.State, err types.Object, inFunction, inLoop bool) (StmtResult, bool) {
 	ctx := state.GetContext()
 	ctx.PushScope(Scope{node.ErrorVar.String(): err})
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)

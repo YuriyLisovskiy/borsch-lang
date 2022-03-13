@@ -135,6 +135,7 @@ func IntFromString(str string, base int) (Object, error) {
 		}
 	nosigil:
 	}
+
 	if convertBase == 0 {
 		convertBase = 10
 	}

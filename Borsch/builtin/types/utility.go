@@ -2,8 +2,7 @@ package types
 
 import (
 	"errors"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"go/types"
 )
 
 func getIndex(index, length int64) (int64, error) {
@@ -40,7 +39,7 @@ func boolToFloat64(v bool) float64 {
 	return 0.0
 }
 
-func MergeAttributes(a map[string]common.Object, b ...map[string]common.Object) map[string]common.Object {
+func MergeAttributes(a map[string]types.Object, b ...map[string]types.Object) map[string]types.Object {
 	for _, m := range b {
 		for key, val := range m {
 			a[key] = val

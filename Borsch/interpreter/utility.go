@@ -11,11 +11,11 @@ import (
 
 func evalBinaryOperator(
 	state common.State,
-	valueToSet common.Object,
-	operatorName string,
+	valueToSet types.Object,
 	current common.OperatorEvaluatable,
 	next common.OperatorEvaluatable,
-) (common.Object, error) {
+	operator func(left, right types.Object) (types.Object, error),
+) (types.Object, error) {
 	left, err := current.Evaluate(state, valueToSet)
 	if err != nil {
 		return nil, err
@@ -27,12 +27,7 @@ func evalBinaryOperator(
 			return nil, err
 		}
 
-		operator, err := left.GetOperator(operatorName)
-		if err != nil {
-			return nil, err
-		}
-
-		return types.CallAttribute(state, left, operator, operatorName, &[]common.Object{right}, nil, true)
+		return operator(left, right)
 	}
 
 	return left, nil
@@ -40,21 +35,16 @@ func evalBinaryOperator(
 
 func evalUnaryOperator(
 	state common.State,
-	operatorName string,
-	operator common.OperatorEvaluatable,
-) (common.Object, error) {
-	if operator != nil {
-		value, err := operator.Evaluate(state, nil)
+	target common.OperatorEvaluatable,
+	operator func(self types.Object) (types.Object, error),
+) (types.Object, error) {
+	if target != nil {
+		value, err := target.Evaluate(state, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		operatorFunc, err := value.GetOperator(operatorName)
-		if err != nil {
-			return nil, err
-		}
-
-		return types.CallAttribute(state, value, operatorFunc, operatorName, nil, nil, true)
+		return operator(value)
 	}
 
 	panic("unreachable")
@@ -63,10 +53,10 @@ func evalUnaryOperator(
 // evalSlicingOperation: "ranges_" len should be greater than 0
 func evalSlicingOperation(
 	state common.State,
-	variable common.Object,
+	variable types.Object,
 	ranges_ []*Range,
-	valueToSet common.Object,
-) (common.Object, error) {
+	valueToSet types.Object,
+) (types.Object, error) {
 	switch iterable := variable.(type) {
 	case common.SequentialType:
 		errMsg := ""
@@ -77,7 +67,7 @@ func evalSlicingOperation(
 		}
 
 		leftIdx, err := mustInt(
-			state, ranges_[0].LeftBound, func(t common.Object) string {
+			state, ranges_[0].LeftBound, func(t types.Object) string {
 				return fmt.Sprintf("%s, отримано %s", errMsg, t.GetTypeName())
 			},
 		)
@@ -85,10 +75,10 @@ func evalSlicingOperation(
 			return nil, err
 		}
 
-		var element common.Object
+		var element types.Object
 		if ranges_[0].RightBound != nil {
 			rightIdx, err := mustInt(
-				state, ranges_[0].RightBound, func(t common.Object) string {
+				state, ranges_[0].RightBound, func(t types.Object) string {
 					return fmt.Sprintf("права межа має бути цілого типу, отримано %s", t.GetTypeName())
 				},
 			)
@@ -153,7 +143,7 @@ func evalSlicingOperation(
 	}
 }
 
-func mustInt(state common.State, expression *Expression, errFunc func(common.Object) string) (int64, error) {
+func mustInt(state common.State, expression *Expression, errFunc func(types.Object) string) (int64, error) {
 	value, err := expression.Evaluate(state, nil)
 	if err != nil {
 		return 0, err
@@ -167,7 +157,7 @@ func mustInt(state common.State, expression *Expression, errFunc func(common.Obj
 	}
 }
 
-func unpack(state common.State, lhs []*Expression, rhs []*Expression) (common.Object, error) {
+func unpack(state common.State, lhs []*Expression, rhs []*Expression) (types.Object, error) {
 	lhsLen := len(lhs)
 	rhsLen := len(rhs)
 	if lhsLen > rhsLen {
@@ -216,12 +206,12 @@ func unpack(state common.State, lhs []*Expression, rhs []*Expression) (common.Ob
 }
 
 func getSequenceOrResult(state common.State, lhs []*Expression, rhs []*Expression) (
-	[]common.Object,
-	common.Object,
+	[]types.Object,
+	types.Object,
 	error,
 ) {
 	rhsLen := len(rhs)
-	var sequence []common.Object
+	var sequence []types.Object
 	if rhsLen == 1 {
 		element, err := rhs[0].Evaluate(state, nil)
 		if err != nil {
@@ -257,7 +247,7 @@ func getSequenceOrResult(state common.State, lhs []*Expression, rhs []*Expressio
 	return sequence, nil, nil
 }
 
-func unpackList(state common.State, lhs []*Expression, rhs *Expression) (common.Object, error) {
+func unpackList(state common.State, lhs []*Expression, rhs *Expression) (types.Object, error) {
 	element, err := rhs.Evaluate(state, nil)
 	if err != nil {
 		return nil, err
@@ -326,7 +316,7 @@ func evalReturnTypes(state common.State, returnTypes []*ReturnType) ([]types.Fun
 	return result, nil
 }
 
-func getCurrentValue(ctx common.Context, prevValue common.Object, ident string) (common.Object, error) {
+func getCurrentValue(ctx common.Context, prevValue types.Object, ident string) (types.Object, error) {
 	if prevValue != nil {
 		if err := checkForNilAttribute(ident); err != nil {
 			return nil, err
@@ -338,8 +328,8 @@ func getCurrentValue(ctx common.Context, prevValue common.Object, ident string) 
 	return ctx.GetVar(ident)
 }
 
-func setCurrentValue(ctx common.Context, prevValue common.Object, ident string, valueToSet common.Object) (
-	common.Object,
+func setCurrentValue(ctx common.Context, prevValue types.Object, ident string, valueToSet types.Object) (
+	types.Object,
 	error,
 ) {
 	if prevValue != nil {
@@ -362,7 +352,7 @@ func checkForNilAttribute(ident string) error {
 	return nil
 }
 
-func updateArgs(state common.State, arguments []*Expression, args *[]common.Object) error {
+func updateArgs(state common.State, arguments []*Expression, args *[]types.Object) error {
 	for _, expressionArgument := range arguments {
 		arg, err := expressionArgument.Evaluate(state, nil)
 		if err != nil {

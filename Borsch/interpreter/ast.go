@@ -311,8 +311,8 @@ type Literal struct {
 	Pos lexer.Position
 
 	Nil             bool               `  @"нуль"`
-	Integer         *int64             `| @Int`
-	Real            *float64           `| @Float`
+	Integer         *string            `| @Int`
+	Real            *string            `| @Float`
 	Bool            *Boolean           `| @("істина" | "хиба")`
 	StringValue     *string            `| @String`
 	MultilineString *string            `| @RawString`
