@@ -265,8 +265,10 @@ func (node *Literal) Evaluate(state common.State) (types.Object, error) {
 				return nil, err
 			}
 
-			if err := dict.SetElement(key, value); err != nil {
-				return nil, err
+			if strKey, ok := key.(types.String); ok {
+				dict[string(strKey)] = value
+			} else {
+				return nil, types.ErrorNewf(types.KeyError, "key is not string")
 			}
 		}
 
