@@ -449,27 +449,37 @@ func (node *SlicingOrSubscription) Evaluate(
 }
 
 func (node *LambdaDef) Evaluate(state common.State) (types.Object, error) {
-	arguments, err := node.ParametersSet.Evaluate(state)
-	if err != nil {
-		return nil, err
-	}
+	// arguments, err := node.ParametersSet.Evaluate(state)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	returnTypes, err := evalReturnTypes(state, node.ReturnTypes)
-	if err != nil {
-		return nil, err
-	}
+	// returnTypes, err := evalReturnTypes(state, node.ReturnTypes)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	lambda := types.NewFunctionInstance(
-		common.LambdaSignature,
-		arguments,
-		func(state common.State, _ *[]types.Object, kwargs *map[string]types.Object) (types.Object, error) {
+	// TODO: check args and return type
+	lambda, err := types.NewMethod(
+		common.LambdaSignature, func(state common.State, self types.Object, args types.Tuple) (types.Object, error) {
 			return node.Body.Evaluate(state)
-		},
-		returnTypes,
-		false,
-		state.GetCurrentPackage().(*types.PackageInstance),
-		"",
+		}, 0, "",
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// lambda := types.NewFunctionInstance(
+	// 	common.LambdaSignature,
+	// 	arguments,
+	// 	func(state common.State, _ *[]types.Object, kwargs *map[string]types.Object) (types.Object, error) {
+	// 		return node.Body.Evaluate(state)
+	// 	},
+	// 	returnTypes,
+	// 	false,
+	// 	state.GetCurrentPackage().(*types.PackageInstance),
+	// 	"",
+	// )
 
 	if node.InstantCall {
 		return node.evalInstantCall(state, lambda)
@@ -478,14 +488,13 @@ func (node *LambdaDef) Evaluate(state common.State) (types.Object, error) {
 	return lambda, nil
 }
 
-func (node *LambdaDef) evalInstantCall(state common.State, function *types.FunctionInstance) (types.Object, error) {
-	types.Call()
-	var args []types.Object
+func (node *LambdaDef) evalInstantCall(state common.State, lambda types.Object) (types.Object, error) {
+	var args types.Tuple
 	if len(node.InstantCallArguments) != 0 {
 		if err := updateArgs(state, node.InstantCallArguments, &args); err != nil {
 			return nil, err
 		}
 	}
 
-	return types.Call(state, function, &args, nil)
+	return types.Call(state, lambda, args)
 }

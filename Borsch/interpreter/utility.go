@@ -352,7 +352,7 @@ func checkForNilAttribute(ident string) error {
 	return nil
 }
 
-func updateArgs(state common.State, arguments []*Expression, args *[]types.Object) error {
+func updateArgs(state common.State, arguments []*Expression, args *types.Tuple) error {
 	for _, expressionArgument := range arguments {
 		arg, err := expressionArgument.Evaluate(state, nil)
 		if err != nil {
