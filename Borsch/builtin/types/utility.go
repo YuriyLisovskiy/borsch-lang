@@ -24,7 +24,7 @@ func normalizeBound(bound, length int64) int64 {
 	return bound
 }
 
-func boolToInt64(v bool) int64 {
+func boolToInt64(v Bool) int64 {
 	if v {
 		return 1
 	}
@@ -32,7 +32,7 @@ func boolToInt64(v bool) int64 {
 	return 0
 }
 
-func boolToFloat64(v bool) float64 {
+func boolToFloat64(v Bool) float64 {
 	if v {
 		return 1.0
 	}

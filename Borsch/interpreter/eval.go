@@ -217,7 +217,7 @@ func (node *Literal) Evaluate(state common.State) (common.Value, error) {
 	}
 
 	if node.Integer != nil {
-		return types.NewIntegerInstance(*node.Integer), nil
+		return types.Int(*node.Integer), nil
 	}
 
 	if node.Real != nil {

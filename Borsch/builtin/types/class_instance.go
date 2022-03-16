@@ -33,10 +33,6 @@ func (i ClassInstance) GetClass() *Class {
 	return i.class
 }
 
-func (i ClassInstance) GetAddress() string {
-	return i.address
-}
-
 func (i ClassInstance) String(state common.State) (string, error) {
 	if operator, err := i.GetOperator(common.StringOperatorName); err == nil {
 		result, err := CallAttribute(state, i, operator, common.StringOperatorName, nil, nil, true)
@@ -47,7 +43,7 @@ func (i ClassInstance) String(state common.State) (string, error) {
 		return result.String(state)
 	}
 
-	return fmt.Sprintf("<об'єкт %s з адресою %s>", i.GetTypeName(), i.GetAddress()), nil
+	return fmt.Sprintf("<об'єкт %s з адресою %s>", i.GetTypeName(), i.address), nil
 }
 
 func (i ClassInstance) Representation(state common.State) (string, error) {
@@ -60,7 +56,7 @@ func (i ClassInstance) Representation(state common.State) (string, error) {
 		return result.String(state)
 	}
 
-	return fmt.Sprintf("<об'єкт %s з адресою %s>", i.GetTypeName(), i.GetAddress()), nil
+	return fmt.Sprintf("<об'єкт %s з адресою %s>", i.GetTypeName(), i.address), nil
 }
 
 func (i ClassInstance) GetTypeName() string {

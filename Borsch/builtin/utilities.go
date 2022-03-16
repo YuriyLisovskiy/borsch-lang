@@ -33,8 +33,8 @@ func runUnaryOperator(state common.State, name string, object common.Value, expe
 
 func mustBool(value common.Value, errFunc func(common.Value) error) (bool, error) {
 	switch integer := value.(type) {
-	case types.BoolInstance:
-		return integer.Value, nil
+	case types.Bool:
+		return bool(integer), nil
 	default:
 		return false, errFunc(value)
 	}

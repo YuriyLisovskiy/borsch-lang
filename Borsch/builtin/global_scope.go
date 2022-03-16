@@ -32,7 +32,7 @@ func init() {
 
 		// Conversion
 		"дійсний":           types.Real,
-		"логічний":          types.Bool,
+		"логічний":          types.BoolType,
 		ImportFunction.Name: ImportFunction,
 		"рядок":             types.String,
 		"словник":           types.Dictionary,

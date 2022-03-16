@@ -3,19 +3,22 @@ package types
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type Class struct {
-	Name       string
-	attributes map[string]common.Value
+	Name string
+	Doc  string
+
+	Dict map[string]common.Value
 
 	IsFinal bool
 
-	Class *Class
-	Bases []*Class
+	ObjectClass *Class
+	Bases       []*Class
 
 	Parent common.Value
 
@@ -23,8 +26,98 @@ type Class struct {
 	GetEmptyInstance func() (common.Value, error)
 }
 
+var TypeClass = &Class{
+	Name: "тип",
+	Doc:  "тип(об_єкт) -> тип об'єкта\nтип(назва, бази, атрибути) -> новий тип",
+	Dict: map[string]common.Value{},
+}
+
+var ObjectClass = &Class{
+	Name: "об_єкт",
+	Doc:  "Базовий тип",
+	Dict: map[string]common.Value{},
+}
+
+func init() {
+	// Initialised like this to avoid initialisation loops
+	// TypeClass.New = TypeNew
+	// TypeClass.Construct = TypeConstruct
+	TypeClass.ObjectClass = TypeClass
+	// ObjectClass.New = ObjectNew
+	// ObjectClass.Construct = ObjectConstruct
+	ObjectClass.ObjectClass = TypeClass
+	err := TypeClass.Ready()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ObjectClass.Ready()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func NewClass(name string, doc string) *Class {
+	t := &Class{
+		ObjectClass: TypeClass,
+		Name:        name,
+		Doc:         doc,
+		Dict:        map[string]common.Value{},
+	}
+	TypeDelayReady(t)
+	return t
+}
+
+func (c *Class) Ready() error {
+	return nil
+}
+
+// func (c *Class) NewClass(name string, doc string, newF NewFunc, constructF ConstructFunc) *Class {
+// 	if newF == nil {
+// 		newF = c.New
+// 	}
+//
+// 	if constructF == nil {
+// 		constructF = c.Construct
+// 	}
+//
+// 	return &Class{
+// 		Name:        name,
+// 		Doc:         doc,
+// 		Dict:        map[string]Object{},
+// 		IsFinal:     false,
+// 		ObjectClass: c,
+// 		Bases:       Tuple{c},
+// 		New:         newF,
+// 		Construct:   constructF,
+// 	}
+// }
+
+// Lookup returns a borrowed reference, and doesn't set an exception,
+// returning nil instead.
+func (c *Class) Lookup(name string) common.Value {
+	for _, baseObj := range c.Bases {
+		if res, ok := baseObj.Dict[name]; ok {
+			return res
+		}
+	}
+
+	return nil
+}
+
+// NativeGetAttrOrNil gets an attribute from the type of Go type.
+func (c *Class) NativeGetAttrOrNil(name string) common.Value {
+	// Look in type Dict
+	if res, ok := c.Dict[name]; ok {
+		return res
+	}
+
+	// Now look through base classes etc
+	return c.Lookup(name)
+}
+
 func (c *Class) Setup() {
-	c.Class = TypeClass
+	c.ObjectClass = TypeClass
 	if c.GetEmptyInstance == nil {
 		c.GetEmptyInstance = func() (common.Value, error) {
 			return NewClassInstance(c, map[string]common.Value{}), nil
@@ -37,8 +130,8 @@ func (c *Class) Setup() {
 	}
 
 	c.initializeAttributes()
-	if c.attributes == nil {
-		c.attributes = map[string]common.Value{}
+	if c.Dict == nil {
+		c.Dict = map[string]common.Value{}
 	}
 }
 
@@ -47,11 +140,11 @@ func (c *Class) IsValid() bool {
 		return false
 	}
 
-	if c.attributes == nil {
+	if c.Dict == nil {
 		return false
 	}
 
-	if c.Class == nil {
+	if c.ObjectClass == nil {
 		return false
 	}
 
@@ -83,15 +176,11 @@ func (c *Class) IsFinalClass() bool {
 }
 
 func (c *Class) GetClass() *Class {
-	if c.Class == nil {
+	if c.ObjectClass == nil {
 		panic("class is nil")
 	}
 
-	return c.Class
-}
-
-func (c *Class) GetAddress() string {
-	return fmt.Sprintf("%p", c)
+	return c.ObjectClass
 }
 
 func (c *Class) String(common.State) (string, error) {
@@ -108,8 +197,8 @@ func (c *Class) AsBool(common.State) (bool, error) {
 
 func (c *Class) GetOperator(name string) (common.Value, error) {
 	if c.isType() {
-		if c.attributes != nil {
-			if val, ok := c.attributes[name]; ok {
+		if c.Dict != nil {
+			if val, ok := c.Dict[name]; ok {
 				return val, nil
 			}
 		}
@@ -145,11 +234,11 @@ func (c *Class) SetAttribute(name string, newValue common.Value) error {
 		return utilities.AttributeNotFoundError(c.GetTypeName(), name)
 	}
 
-	if oldValue, ok := c.attributes[name]; ok {
+	if oldValue, ok := c.Dict[name]; ok {
 		oldValueClass := oldValue.(ObjectInstance).GetClass()
 		newValueClass := newValue.(ObjectInstance).GetClass()
 		if oldValueClass == newValueClass || newValueClass.HasBase(oldValueClass) {
-			c.attributes[name] = newValue
+			c.Dict[name] = newValue
 			return nil
 		}
 
@@ -161,12 +250,12 @@ func (c *Class) SetAttribute(name string, newValue common.Value) error {
 		)
 	}
 
-	c.attributes[name] = newValue
+	c.Dict[name] = newValue
 	return nil
 }
 
 func (c *Class) HasAttribute(name string) bool {
-	if _, ok := c.attributes[name]; !ok {
+	if _, ok := c.Dict[name]; !ok {
 		if !c.isType() {
 			return c.GetClass().HasAttribute(name)
 		}
@@ -178,9 +267,9 @@ func (c *Class) HasAttribute(name string) bool {
 }
 
 func (c *Class) SetAttributes(attrs map[string]common.Value) {
-	c.attributes = attrs
-	if c.attributes == nil {
-		c.attributes = map[string]common.Value{}
+	c.Dict = attrs
+	if c.Dict == nil {
+		c.Dict = map[string]common.Value{}
 	}
 }
 
@@ -212,8 +301,8 @@ func (c *Class) Call(state common.State, args *[]common.Value, kwargs *map[strin
 // getAttribute searches for attribute only in current attributes and
 // in Bases.
 func (c *Class) getAttribute(name string) (common.Value, error) {
-	if c.attributes != nil {
-		if val, ok := c.attributes[name]; ok {
+	if c.Dict != nil {
+		if val, ok := c.Dict[name]; ok {
 			return val, nil
 		}
 	}
@@ -230,17 +319,17 @@ func (c *Class) getAttribute(name string) (common.Value, error) {
 
 // isType checks if address of current Class is equal to TypeClass.
 func (c *Class) isType() bool {
-	return c.Class == c
+	return c.ObjectClass == c
 }
 
 func (c *Class) initializeAttributes() {
 	if c.AttrInitializer != nil {
-		c.AttrInitializer(&c.attributes)
+		c.AttrInitializer(&c.Dict)
 		c.AttrInitializer = nil
 	}
 
-	if _, ok := c.attributes[common.ConstructorName]; !ok {
+	if _, ok := c.Dict[common.ConstructorName]; !ok {
 		// TODO: add doc
-		c.attributes[common.ConstructorName] = makeDefaultConstructor(c, "")
+		c.Dict[common.ConstructorName] = makeDefaultConstructor(c, "")
 	}
 }

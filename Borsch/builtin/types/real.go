@@ -47,8 +47,8 @@ func compareReals(_ common.State, op common.Operator, self, other common.Value) 
 
 	switch right := other.(type) {
 	case NilInstance:
-	case BoolInstance:
-		rightVal := boolToFloat64(right.Value)
+	case Bool:
+		rightVal := boolToFloat64(right)
 		if left.Value == rightVal {
 			return 0, nil
 		}
@@ -58,8 +58,8 @@ func compareReals(_ common.State, op common.Operator, self, other common.Value) 
 		}
 
 		return 1, nil
-	case IntegerInstance:
-		rightVal := float64(right.Value)
+	case Int:
+		rightVal := float64(right)
 		if left.Value == rightVal {
 			return 0, nil
 		}
@@ -175,10 +175,10 @@ func realOperator_Pow(_ common.State, left RealInstance, right common.Value) (co
 	switch other := right.(type) {
 	case RealInstance:
 		return NewRealInstance(math.Pow(left.Value, other.Value)), nil
-	case IntegerInstance:
-		return NewRealInstance(math.Pow(left.Value, float64(other.Value))), nil
-	case BoolInstance:
-		return NewRealInstance(math.Pow(left.Value, boolToFloat64(other.Value))), nil
+	case Int:
+		return NewRealInstance(math.Pow(left.Value, float64(other))), nil
+	case Bool:
+		return NewRealInstance(math.Pow(left.Value, boolToFloat64(other))), nil
 	default:
 		return nil, nil
 	}
@@ -194,10 +194,10 @@ func realOperator_UnaryMinus(_ common.State, self RealInstance) (common.Value, e
 
 func realOperator_Mul(_ common.State, left RealInstance, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewRealInstance(left.Value * boolToFloat64(other.Value)), nil
-	case IntegerInstance:
-		return NewRealInstance(left.Value * float64(other.Value)), nil
+	case Bool:
+		return NewRealInstance(left.Value * boolToFloat64(other)), nil
+	case Int:
+		return NewRealInstance(left.Value * float64(other)), nil
 	case RealInstance:
 		return NewRealInstance(left.Value * other.Value), nil
 	default:
@@ -207,13 +207,13 @@ func realOperator_Mul(_ common.State, left RealInstance, right common.Value) (co
 
 func realOperator_Div(_ common.State, left RealInstance, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
+	case Bool:
+		if other {
 			return NewRealInstance(left.Value), nil
 		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewRealInstance(left.Value / float64(other.Value)), nil
+	case Int:
+		if other != 0 {
+			return NewRealInstance(left.Value / float64(other)), nil
 		}
 	case RealInstance:
 		if other.Value != 0.0 {
@@ -228,10 +228,10 @@ func realOperator_Div(_ common.State, left RealInstance, right common.Value) (co
 
 func realOperator_Add(_ common.State, left RealInstance, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewRealInstance(left.Value + boolToFloat64(other.Value)), nil
-	case IntegerInstance:
-		return NewRealInstance(left.Value + float64(other.Value)), nil
+	case Bool:
+		return NewRealInstance(left.Value + boolToFloat64(other)), nil
+	case Int:
+		return NewRealInstance(left.Value + float64(other)), nil
 	case RealInstance:
 		return NewRealInstance(left.Value + other.Value), nil
 	default:
@@ -241,10 +241,10 @@ func realOperator_Add(_ common.State, left RealInstance, right common.Value) (co
 
 func realOperator_Sub(_ common.State, left RealInstance, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewRealInstance(left.Value - boolToFloat64(other.Value)), nil
-	case IntegerInstance:
-		return NewRealInstance(left.Value - float64(other.Value)), nil
+	case Bool:
+		return NewRealInstance(left.Value - boolToFloat64(other)), nil
+	case Int:
+		return NewRealInstance(left.Value - float64(other)), nil
 	case RealInstance:
 		return NewRealInstance(left.Value - other.Value), nil
 	default:

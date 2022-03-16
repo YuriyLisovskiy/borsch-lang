@@ -152,11 +152,11 @@ func listOperator(
 
 func listOperator_Mul(_ common.State, left ListInstance, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case IntegerInstance:
-		count := int(other.Value)
+	case Int:
+		count := other
 		list := NewListInstance()
 		if count > 0 {
-			for c := 0; c < count; c++ {
+			for c := Int(0); c < count; c++ {
 				list.Values = append(list.Values, left.Values...)
 			}
 		}

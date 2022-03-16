@@ -11,39 +11,55 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-type IntegerInstance struct {
-	BuiltinInstance
-	Value int64
+type Int int64
+
+func (t Int) GetClass() *Class {
+	return Integer
 }
 
-func NewIntegerInstance(value int64) IntegerInstance {
-	return IntegerInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance{
-				class:      Integer,
-				attributes: map[string]common.Value{},
-				address:    "",
-			},
-		},
-		Value: value,
+func (t Int) GetTypeName() string {
+	return t.GetClass().GetName()
+}
+
+func (t Int) GetOperator(name string) (common.Value, error) {
+	if attr, err := t.GetClass().getAttribute(name); err == nil {
+		return attr, nil
 	}
+
+	return nil, utilities.OperatorNotFoundError(t.GetTypeName(), name)
 }
 
-func (t IntegerInstance) String(common.State) (string, error) {
-	return fmt.Sprintf("%d", t.Value), nil
+func (t Int) GetAttribute(name string) (common.Value, error) {
+	if attr, err := t.GetClass().getAttribute(name); err == nil {
+		return attr, nil
+	}
+
+	return nil, utilities.AttributeNotFoundError(t.GetTypeName(), name)
 }
 
-func (t IntegerInstance) Representation(state common.State) (string, error) {
+func (t Int) SetAttribute(name string, _ common.Value) error {
+	return utilities.AttributeNotFoundError(t.GetTypeName(), name)
+}
+
+func (t Int) HasAttribute(name string) bool {
+	return t.GetClass().HasAttribute(name)
+}
+
+func (t Int) String(common.State) (string, error) {
+	return fmt.Sprintf("%d", t), nil
+}
+
+func (t Int) Representation(state common.State) (string, error) {
 	return t.String(state)
 }
 
-func (t IntegerInstance) AsBool(common.State) (bool, error) {
-	return t.Value != 0, nil
+func (t Int) AsBool(common.State) (bool, error) {
+	return t != 0, nil
 }
 
 func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 	if len(args) == 0 {
-		return NewIntegerInstance(0), nil
+		return Int(0), nil
 	}
 
 	if len(args) != 1 {
@@ -56,8 +72,8 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 
 	switch vt := args[0].(type) {
 	case RealInstance:
-		return NewIntegerInstance(int64(vt.Value)), nil
-	case IntegerInstance:
+		return Int(vt.Value), nil
+	case Int:
 		return vt, nil
 	case StringInstance:
 		intVal, err := strconv.ParseInt(vt.Value, 10, 64)
@@ -69,13 +85,13 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 			)
 		}
 
-		return NewIntegerInstance(intVal), nil
-	case BoolInstance:
-		if vt.Value {
-			return NewIntegerInstance(1), nil
+		return Int(intVal), nil
+	case Bool:
+		if vt {
+			return Int(1), nil
 		}
 
-		return NewIntegerInstance(0), nil
+		return Int(0), nil
 	default:
 		return nil, errors.New(
 			fmt.Sprintf(
@@ -86,14 +102,14 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 }
 
 func evalUnaryOperatorWithIntegers(_ common.State, operator common.Operator, value common.Value) (common.Value, error) {
-	if self, ok := value.(IntegerInstance); ok {
+	if self, ok := value.(Int); ok {
 		switch operator {
 		case common.UnaryPlus:
 			return self, nil
 		case common.UnaryMinus:
-			return NewIntegerInstance(-self.Value), nil
+			return -self, nil
 		case common.UnaryBitwiseNotOp:
-			return NewIntegerInstance(^self.Value), nil
+			return ^self, nil
 		default:
 			return nil, utilities.InternalOperatorError(operator)
 		}
@@ -103,36 +119,36 @@ func evalUnaryOperatorWithIntegers(_ common.State, operator common.Operator, val
 }
 
 func compareIntegers(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
-	left, ok := self.(IntegerInstance)
+	left, ok := self.(Int)
 	if !ok {
 		return 0, utilities.IncorrectUseOfFunctionError("compareIntegers")
 	}
 
 	switch right := other.(type) {
 	case NilInstance:
-	case BoolInstance:
-		rightVal := boolToInt64(right.Value)
-		if left.Value == rightVal {
+	case Bool:
+		rightVal := Int(boolToInt64(right))
+		if left == rightVal {
 			return 0, nil
 		}
 
-		if left.Value < rightVal {
+		if left < rightVal {
 			return -1, nil
 		}
 
 		return 1, nil
-	case IntegerInstance:
-		if left.Value == right.Value {
+	case Int:
+		if left == right {
 			return 0, nil
 		}
 
-		if left.Value < right.Value {
+		if left < right {
 			return -1, nil
 		}
 
 		return 1, nil
 	case RealInstance:
-		leftVal := float64(left.Value)
+		leftVal := float64(left)
 		if leftVal == right.Value {
 			return 0, nil
 		}
@@ -152,7 +168,7 @@ func compareIntegers(_ common.State, op common.Operator, self common.Value, othe
 
 func intOperator(
 	operator common.Operator,
-	handler func(common.State, IntegerInstance, common.Value) (common.Value, error),
+	handler func(common.State, Int, common.Value) (common.Value, error),
 ) common.Value {
 	return NewFunctionInstance(
 		operator.Name(),
@@ -171,7 +187,7 @@ func intOperator(
 			},
 		},
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			left, ok := (*args)[0].(IntegerInstance)
+			left, ok := (*args)[0].(Int)
 			if !ok {
 				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
@@ -200,36 +216,36 @@ func intOperator(
 	)
 }
 
-func intOperator_Pow(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Pow(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
 	case RealInstance:
-		return NewRealInstance(math.Pow(float64(left.Value), other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(int64(math.Pow(float64(left.Value), float64(other.Value)))), nil
-	case BoolInstance:
-		return NewIntegerInstance(int64(math.Pow(float64(left.Value), boolToFloat64(other.Value)))), nil
+		return NewRealInstance(math.Pow(float64(left), other.Value)), nil
+	case Int:
+		return Int(math.Pow(float64(left), float64(other))), nil
+	case Bool:
+		return Int(math.Pow(float64(left), boolToFloat64(other))), nil
 	default:
 		return nil, nil
 	}
 }
 
-func intOperator_Mul(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Mul(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(left.Value * boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(left.Value * other.Value), nil
+	case Bool:
+		return left * Int(boolToInt64(other)), nil
+	case Int:
+		return left * other, nil
 	case RealInstance:
-		return NewRealInstance(float64(left.Value) * other.Value), nil
+		return NewRealInstance(float64(left) * other.Value), nil
 	case StringInstance:
-		count := int(left.Value)
+		count := int(left)
 		if count <= 0 {
 			return NewStringInstance(""), nil
 		}
 
 		return NewStringInstance(strings.Repeat(other.Value, count)), nil
 	case ListInstance:
-		count := int(left.Value)
+		count := int(left)
 		list := NewListInstance()
 		if count > 0 {
 			for c := 0; c < count; c++ {
@@ -243,19 +259,19 @@ func intOperator_Mul(_ common.State, left IntegerInstance, right common.Value) (
 	}
 }
 
-func intOperator_Div(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Div(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
-			return NewRealInstance(float64(left.Value)), nil
+	case Bool:
+		if other {
+			return NewRealInstance(float64(left)), nil
 		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewRealInstance(float64(left.Value) / float64(other.Value)), nil
+	case Int:
+		if other != 0 {
+			return NewRealInstance(float64(left) / float64(other)), nil
 		}
 	case RealInstance:
 		if other.Value != 0.0 {
-			return NewRealInstance(float64(left.Value) / other.Value), nil
+			return NewRealInstance(float64(left) / other.Value), nil
 		}
 	default:
 		return nil, nil
@@ -264,15 +280,15 @@ func intOperator_Div(_ common.State, left IntegerInstance, right common.Value) (
 	return nil, errors.New("ділення на нуль")
 }
 
-func intOperator_Modulo(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Modulo(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
-			return NewIntegerInstance(left.Value % boolToInt64(other.Value)), nil
+	case Bool:
+		if other {
+			return left % Int(boolToInt64(other)), nil
 		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewIntegerInstance(left.Value % other.Value), nil
+	case Int:
+		if other != 0 {
+			return left % other, nil
 		}
 	default:
 		return nil, nil
@@ -281,82 +297,82 @@ func intOperator_Modulo(_ common.State, left IntegerInstance, right common.Value
 	return nil, errors.New("ділення за модулем на нуль")
 }
 
-func intOperator_Add(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Add(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(left.Value + boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(left.Value + other.Value), nil
+	case Bool:
+		return left + Int(boolToInt64(other)), nil
+	case Int:
+		return left + other, nil
 	case RealInstance:
-		return NewRealInstance(float64(left.Value) + other.Value), nil
+		return NewRealInstance(float64(left) + other.Value), nil
 	default:
 		return nil, nil
 	}
 }
 
-func intOperator_Sub(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_Sub(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(left.Value - boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(left.Value - other.Value), nil
+	case Bool:
+		return left - Int(boolToInt64(other)), nil
+	case Int:
+		return left - other, nil
 	case RealInstance:
-		return NewRealInstance(float64(left.Value) - other.Value), nil
+		return NewRealInstance(float64(left) - other.Value), nil
 	default:
 		return nil, nil
 	}
 }
 
-func intOperator_BitwiseLeftShift(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseLeftShift(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(left.Value << boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(left.Value << other.Value), nil
+	case Bool:
+		return left << Int(boolToInt64(other)), nil
+	case Int:
+		return left << other, nil
 	default:
 		return nil, nil
 	}
 }
 
-func intOperator_BitwiseRightShift(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseRightShift(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(left.Value >> boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(left.Value >> other.Value), nil
+	case Bool:
+		return left >> Int(boolToInt64(other)), nil
+	case Int:
+		return left >> other, nil
 	default:
 		return nil, nil
 	}
 }
 
-func intOperator_BitwiseAnd(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseAnd(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(left.Value & boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(left.Value & other.Value), nil
+	case Bool:
+		return left & Int(boolToInt64(other)), nil
+	case Int:
+		return left & other, nil
 	default:
 		return nil, nil
 	}
 }
 
-func intOperator_BitwiseXor(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseXor(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(left.Value ^ boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(left.Value ^ other.Value), nil
+	case Bool:
+		return left ^ Int(boolToInt64(other)), nil
+	case Int:
+		return left ^ other, nil
 	default:
 		return nil, nil
 	}
 }
 
-func intOperator_BitwiseOr(_ common.State, left IntegerInstance, right common.Value) (common.Value, error) {
+func intOperator_BitwiseOr(_ common.State, left Int, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(left.Value | boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(left.Value | other.Value), nil
+	case Bool:
+		return left | Int(boolToInt64(other)), nil
+	case Int:
+		return left | other, nil
 	default:
 		return nil, nil
 	}
@@ -399,7 +415,7 @@ func newIntegerClass() *Class {
 			)
 		},
 		GetEmptyInstance: func() (common.Value, error) {
-			return NewIntegerInstance(0), nil
+			return Int(0), nil
 		},
 	}
 }

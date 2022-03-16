@@ -9,34 +9,58 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-type BoolInstance struct {
-	BuiltinInstance
-	Value bool
+type Bool bool
+
+func NewBoolInstance(value bool) Bool {
+	return Bool(value)
 }
 
-func NewBoolInstance(value bool) BoolInstance {
-	return BoolInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance: *NewClassInstance(Bool, nil),
-		},
-		Value: value,
+func (t Bool) GetClass() *Class {
+	return BoolType
+}
+
+func (t Bool) GetTypeName() string {
+	return t.GetClass().GetName()
+}
+
+func (t Bool) GetOperator(name string) (common.Value, error) {
+	if attr, err := t.GetClass().getAttribute(name); err == nil {
+		return attr, nil
 	}
+
+	return nil, utilities.OperatorNotFoundError(t.GetTypeName(), name)
 }
 
-func (t BoolInstance) String(common.State) (string, error) {
-	if t.Value {
+func (t Bool) GetAttribute(name string) (common.Value, error) {
+	if attr, err := t.GetClass().getAttribute(name); err == nil {
+		return attr, nil
+	}
+
+	return nil, utilities.AttributeNotFoundError(t.GetTypeName(), name)
+}
+
+func (t Bool) SetAttribute(name string, _ common.Value) error {
+	return utilities.AttributeNotFoundError(t.GetTypeName(), name)
+}
+
+func (t Bool) HasAttribute(name string) bool {
+	return t.GetClass().HasAttribute(name)
+}
+
+func (t Bool) String(common.State) (string, error) {
+	if t {
 		return "істина", nil
 	}
 
 	return "хиба", nil
 }
 
-func (t BoolInstance) Representation(state common.State) (string, error) {
+func (t Bool) Representation(state common.State) (string, error) {
 	return t.String(state)
 }
 
-func (t BoolInstance) AsBool(common.State) (bool, error) {
-	return t.Value, nil
+func (t Bool) AsBool(common.State) (bool, error) {
+	return bool(t), nil
 }
 
 func toBool(state common.State, args ...common.Value) (common.Value, error) {
@@ -61,24 +85,24 @@ func toBool(state common.State, args ...common.Value) (common.Value, error) {
 }
 
 func compareBooleans(state common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
-	left, ok := self.(BoolInstance)
+	left, ok := self.(Bool)
 	if !ok {
 		return 0, utilities.IncorrectUseOfFunctionError("compareBooleans")
 	}
 
 	switch right := other.(type) {
 	case NilInstance:
-	case BoolInstance:
-		if left.Value == right.Value {
+	case Bool:
+		if left == right {
 			return 0, nil
 		}
-	case IntegerInstance, RealInstance:
+	case Int, RealInstance:
 		rightBool, err := right.AsBool(state)
 		if err != nil {
 			return 0, err
 		}
 
-		if left.Value == rightBool {
+		if bool(left) == rightBool {
 			return 0, nil
 		}
 	default:
@@ -90,14 +114,14 @@ func compareBooleans(state common.State, op common.Operator, self common.Value, 
 }
 
 func evalUnaryOperatorWithBooleans(_ common.State, operator common.Operator, value common.Value) (common.Value, error) {
-	if self, ok := value.(BoolInstance); ok {
+	if self, ok := value.(Bool); ok {
 		switch operator {
 		case common.UnaryPlus:
-			return NewIntegerInstance(boolToInt64(self.Value)), nil
+			return Int(boolToInt64(self)), nil
 		case common.UnaryMinus:
-			return NewIntegerInstance(-boolToInt64(self.Value)), nil
+			return Int(-boolToInt64(self)), nil
 		case common.UnaryBitwiseNotOp:
-			return NewIntegerInstance(^boolToInt64(self.Value)), nil
+			return Int(^boolToInt64(self)), nil
 		default:
 			return nil, utilities.InternalOperatorError(operator)
 		}
@@ -108,13 +132,13 @@ func evalUnaryOperatorWithBooleans(_ common.State, operator common.Operator, val
 
 func boolOperator(
 	operator common.Operator,
-	handler func(common.State, BoolInstance, common.Value) (common.Value, error),
+	handler func(common.State, Bool, common.Value) (common.Value, error),
 ) common.Value {
 	return NewFunctionInstance(
 		operator.Name(),
 		[]FunctionParameter{
 			{
-				Type:       Bool,
+				Type:       BoolType,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
@@ -127,7 +151,7 @@ func boolOperator(
 			},
 		},
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			left, ok := (*args)[0].(BoolInstance)
+			left, ok := (*args)[0].(Bool)
 			if !ok {
 				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
@@ -156,45 +180,45 @@ func boolOperator(
 	)
 }
 
-func boolOperator_Pow(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_Pow(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
 	case RealInstance:
-		return NewRealInstance(math.Pow(boolToFloat64(left.Value), other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(int64(math.Pow(boolToFloat64(left.Value), float64(other.Value)))), nil
-	case BoolInstance:
-		return NewIntegerInstance(int64(math.Pow(boolToFloat64(left.Value), boolToFloat64(other.Value)))), nil
+		return NewRealInstance(math.Pow(boolToFloat64(left), other.Value)), nil
+	case Int:
+		return Int(math.Pow(boolToFloat64(left), float64(other))), nil
+	case Bool:
+		return Int(math.Pow(boolToFloat64(left), boolToFloat64(other))), nil
 	default:
 		return nil, nil
 	}
 }
 
-func boolOperator_Mul(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_Mul(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) * boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) * other.Value), nil
+	case Bool:
+		return Int(boolToInt64(left) * boolToInt64(other)), nil
+	case Int:
+		return Int(boolToInt64(left)) * other, nil
 	case RealInstance:
-		return NewRealInstance(boolToFloat64(left.Value) * other.Value), nil
+		return NewRealInstance(boolToFloat64(left) * other.Value), nil
 	default:
 		return nil, nil
 	}
 }
 
-func boolOperator_Div(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_Div(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
-			return NewRealInstance(boolToFloat64(left.Value)), nil
+	case Bool:
+		if other {
+			return NewRealInstance(boolToFloat64(left)), nil
 		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewRealInstance(boolToFloat64(left.Value) / float64(other.Value)), nil
+	case Int:
+		if other != 0 {
+			return NewRealInstance(boolToFloat64(left) / float64(other)), nil
 		}
 	case RealInstance:
 		if other.Value != 0.0 {
-			return NewRealInstance(boolToFloat64(left.Value) / other.Value), nil
+			return NewRealInstance(boolToFloat64(left) / other.Value), nil
 		}
 	default:
 		return nil, nil
@@ -203,15 +227,15 @@ func boolOperator_Div(_ common.State, left BoolInstance, right common.Value) (co
 	return nil, errors.New("ділення на нуль")
 }
 
-func boolOperator_Modulo(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_Modulo(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
-			return NewIntegerInstance(boolToInt64(left.Value) % boolToInt64(other.Value)), nil
+	case Bool:
+		if other {
+			return Int(boolToInt64(left) % boolToInt64(other)), nil
 		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewIntegerInstance(boolToInt64(left.Value) % other.Value), nil
+	case Int:
+		if other != 0 {
+			return Int(boolToInt64(left)) % other, nil
 		}
 	default:
 		return nil, nil
@@ -220,82 +244,82 @@ func boolOperator_Modulo(_ common.State, left BoolInstance, right common.Value) 
 	return nil, errors.New("ділення за модулем на нуль")
 }
 
-func boolOperator_Add(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_Add(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) + boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) + other.Value), nil
+	case Bool:
+		return Int(boolToInt64(left) + boolToInt64(other)), nil
+	case Int:
+		return Int(boolToInt64(left)) + other, nil
 	case RealInstance:
-		return NewRealInstance(boolToFloat64(left.Value) + other.Value), nil
+		return NewRealInstance(boolToFloat64(left) + other.Value), nil
 	default:
 		return nil, nil
 	}
 }
 
-func boolOperator_Sub(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_Sub(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) - boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) - other.Value), nil
+	case Bool:
+		return Int(boolToInt64(left) - boolToInt64(other)), nil
+	case Int:
+		return Int(boolToInt64(left)) - other, nil
 	case RealInstance:
-		return NewRealInstance(boolToFloat64(left.Value) - other.Value), nil
+		return NewRealInstance(boolToFloat64(left) - other.Value), nil
 	default:
 		return nil, nil
 	}
 }
 
-func boolOperator_BitwiseLeftShift(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_BitwiseLeftShift(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) << boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) << other.Value), nil
+	case Bool:
+		return Int(boolToInt64(left) << boolToInt64(other)), nil
+	case Int:
+		return Int(boolToInt64(left)) << other, nil
 	default:
 		return nil, nil
 	}
 }
 
-func boolOperator_BitwiseRightShift(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_BitwiseRightShift(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) >> boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) >> other.Value), nil
+	case Bool:
+		return Int(boolToInt64(left) >> boolToInt64(other)), nil
+	case Int:
+		return Int(boolToInt64(left)) >> other, nil
 	default:
 		return nil, nil
 	}
 }
 
-func boolOperator_BitwiseAnd(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_BitwiseAnd(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) & boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) & other.Value), nil
+	case Bool:
+		return Int(boolToInt64(left) & boolToInt64(other)), nil
+	case Int:
+		return Int(boolToInt64(left)) & other, nil
 	default:
 		return nil, nil
 	}
 }
 
-func boolOperator_BitwiseXor(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_BitwiseXor(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) ^ boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) ^ other.Value), nil
+	case Bool:
+		return Int(boolToInt64(left) ^ boolToInt64(other)), nil
+	case Int:
+		return Int(boolToInt64(left)) ^ other, nil
 	default:
 		return nil, nil
 	}
 }
 
-func boolOperator_BitwiseOr(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
+func boolOperator_BitwiseOr(_ common.State, left Bool, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) | boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) | other.Value), nil
+	case Bool:
+		return Int(boolToInt64(left) | boolToInt64(other)), nil
+	case Int:
+		return Int(boolToInt64(left)) | other, nil
 	default:
 		return nil, nil
 	}
@@ -311,7 +335,7 @@ func newBoolClass() *Class {
 			*attrs = MergeAttributes(
 				map[string]common.Value{
 					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(Bool, toBool, ""),
+					common.ConstructorName: makeVariadicConstructor(BoolType, toBool, ""),
 
 					common.PowOp.Name():    boolOperator(common.PowOp, boolOperator_Pow),
 					common.MulOp.Name():    boolOperator(common.MulOp, boolOperator_Mul),
@@ -331,10 +355,10 @@ func newBoolClass() *Class {
 					common.BitwiseXorOp.Name(): boolOperator(common.BitwiseXorOp, boolOperator_BitwiseXor),
 					common.BitwiseOrOp.Name():  boolOperator(common.BitwiseOrOp, boolOperator_BitwiseOr),
 				},
-				MakeUnaryOperators(Bool, Integer, evalUnaryOperatorWithBooleans),
-				MakeLogicalOperators(Bool),
-				MakeComparisonOperators(Bool, compareBooleans),
-				MakeCommonOperators(Bool),
+				MakeUnaryOperators(BoolType, Integer, evalUnaryOperatorWithBooleans),
+				MakeLogicalOperators(BoolType),
+				MakeComparisonOperators(BoolType, compareBooleans),
+				MakeCommonOperators(BoolType),
 			)
 		},
 		GetEmptyInstance: func() (common.Value, error) {

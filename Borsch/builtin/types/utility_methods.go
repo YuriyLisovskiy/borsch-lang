@@ -87,7 +87,7 @@ func MakeComparisonOperator(
 	return MakeBinaryMethod(
 		operator.Name(),
 		itemType,
-		Bool,
+		BoolType,
 		doc,
 		func(state common.State, self common.Value, other common.Value) (common.Value, error) {
 			res, err := comparator(state, operator, self, other)
@@ -150,7 +150,7 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 			// TODO: add doc
 			common.NotOp.Name(),
 			itemType,
-			Bool,
+			BoolType,
 			"",
 			func(state common.State, self common.Value) (common.Value, error) {
 				selfBool, err := self.AsBool(state)
@@ -165,7 +165,7 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 			// TODO: add doc
 			common.AndOp.Name(),
 			itemType,
-			Bool,
+			BoolType,
 			"",
 			func(state common.State, self common.Value, other common.Value) (common.Value, error) {
 				selfBool, err := self.AsBool(state)
@@ -185,7 +185,7 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 			// TODO: add doc
 			common.OrOp.Name(),
 			itemType,
-			Bool,
+			BoolType,
 			"",
 			func(state common.State, self common.Value, other common.Value) (common.Value, error) {
 				selfBool, err := self.AsBool(state)
@@ -208,7 +208,7 @@ func MakeCommonOperators(itemType *Class) map[string]common.Value {
 	return map[string]common.Value{
 		// TODO: add doc
 		common.BoolOperatorName: MakeUnaryMethod(
-			common.BoolOperatorName, itemType, Bool, "",
+			common.BoolOperatorName, itemType, BoolType, "",
 			func(state common.State, self common.Value) (common.Value, error) {
 				boolVal, err := self.AsBool(state)
 				if err != nil {
@@ -316,7 +316,7 @@ func makeLengthOperator(
 			sequence := (*args)[0]
 			switch self := sequence.(type) {
 			case common.SequentialType:
-				return NewIntegerInstance(self.Length(state)), nil
+				return Int(self.Length(state)), nil
 			}
 
 			return nil, errors.New(fmt.Sprint("invalid type in length operator: ", sequence.GetTypeName()))

@@ -6,14 +6,13 @@ import (
 
 type ObjectInstance interface {
 	GetClass() *Class
-	GetAddress() string
 }
 
 var (
-	Any        *Class = nil
-	TypeClass  *Class = nil
+	Any *Class = nil
+	// TypeClass  *Class = nil
 	Nil        *Class = nil
-	Bool       *Class = nil
+	BoolType   *Class = nil
 	Dictionary *Class = nil
 	Function   *Class = nil
 	Integer    *Class = nil
@@ -29,9 +28,9 @@ func Init() {
 	BuiltinPackage = NewPackageInstance(nil, "вбудований", nil, map[string]common.Value{})
 
 	// def
-	TypeClass = newTypeClass()
+	// TypeClass = newTypeClass()
 	Nil = newNilClass()
-	Bool = newBoolClass()
+	BoolType = newBoolClass()
 	Dictionary = newDictionaryClass()
 	Function = newFunctionClass()
 	Integer = newIntegerClass()
@@ -41,9 +40,9 @@ func Init() {
 	String = newStringClass()
 
 	// init
-	InitClass(TypeClass)
+	// InitClass(TypeClass)
 	InitClass(Nil)
-	InitClass(Bool)
+	InitClass(BoolType)
 	InitClass(Dictionary)
 	InitClass(Function)
 	InitClass(Integer)

@@ -170,8 +170,8 @@ func stringBinaryOperator(
 
 func stringOperator_Mul(_ common.State, left StringInstance, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case IntegerInstance:
-		count := int(other.Value)
+	case Int:
+		count := int(other)
 		if count < 0 {
 			return NewStringInstance(""), nil
 		}

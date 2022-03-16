@@ -24,8 +24,8 @@ func ToReal(_ common.State, args ...common.Value) (common.Value, error) {
 	switch vt := args[0].(type) {
 	case RealInstance:
 		return vt, nil
-	case IntegerInstance:
-		return NewRealInstance(float64(vt.Value)), nil
+	case Int:
+		return NewRealInstance(float64(vt)), nil
 	case StringInstance:
 		realVal, err := strconv.ParseFloat(vt.Value, 64)
 		if err != nil {
@@ -37,8 +37,8 @@ func ToReal(_ common.State, args ...common.Value) (common.Value, error) {
 		}
 
 		return NewRealInstance(realVal), nil
-	case BoolInstance:
-		if vt.Value {
+	case Bool:
+		if vt {
 			return NewRealInstance(1.0), nil
 		}
 
