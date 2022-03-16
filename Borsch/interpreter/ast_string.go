@@ -3,7 +3,6 @@ package interpreter
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -154,7 +153,7 @@ func (node *Literal) String() string {
 	case node.Integer != nil:
 		return fmt.Sprintf("%d", *node.Integer)
 	case node.Real != nil:
-		return strconv.FormatFloat(*node.Real, 'f', -1, 64)
+		return *node.Real
 	case node.Bool != nil:
 		if *node.Bool {
 			return "істина"

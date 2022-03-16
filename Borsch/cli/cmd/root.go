@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 	"github.com/alecthomas/participle/v2"
@@ -33,13 +33,13 @@ var rootCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(stdRoot) == 0 {
-			stdRoot = os.Getenv(common.BORSCH_LIB)
+			stdRoot = os.Getenv(builtin.BORSCH_LIB)
 		}
 
 		if len(stdRoot) == 0 {
 			fmt.Printf(
 				"Увага: змінна середовища '%s' необхідна для використання стандартної бібліотеки\n\n",
-				common.BORSCH_LIB,
+				builtin.BORSCH_LIB,
 			)
 		}
 

@@ -1,4 +1,4 @@
-package common
+package builtin
 
 const BORSCH_LIB = "BORSCH_LIB"
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 )
 
 type NewFunc func(cls *Class, args Tuple) (Object, error)
@@ -131,11 +131,11 @@ func (c *Class) Ready() error {
 		c.Dict = dict
 	}
 
-	if _, ok := c.Dict[common.DocAttributeName]; ok {
+	if _, ok := c.Dict[builtin.DocAttributeName]; ok {
 		if c.Doc != "" {
-			c.Dict[common.DocAttributeName] = String(c.Doc)
+			c.Dict[builtin.DocAttributeName] = String(c.Doc)
 		} else {
-			c.Dict[common.DocAttributeName] = Nil
+			c.Dict[builtin.DocAttributeName] = Nil
 		}
 	}
 
@@ -165,7 +165,7 @@ func (c *Class) Allocate() *Class {
 }
 
 func (c *Class) __str__() (Object, error) {
-	if res, ok, err := c.CallMethod(nil, common.StringOperatorName, Tuple{c}); ok {
+	if res, ok, err := c.CallMethod(nil, builtin.StringOperatorName, Tuple{c}); ok {
 		return res, err
 	}
 
@@ -173,7 +173,7 @@ func (c *Class) __str__() (Object, error) {
 }
 
 func (c *Class) __represent__() (Object, error) {
-	if res, ok, err := c.CallMethod(nil, common.RepresentOperatorName, Tuple{c}); ok {
+	if res, ok, err := c.CallMethod(nil, builtin.RepresentOperatorName, Tuple{c}); ok {
 		return res, err
 	}
 
@@ -224,7 +224,7 @@ func (c *Class) GetAttrOrNil(name string) Object {
 	return c.Lookup(name)
 }
 
-func (c *Class) CallMethod(state common.State, name string, args Tuple) (Object, bool, error) {
+func (c *Class) CallMethod(state State, name string, args Tuple) (Object, bool, error) {
 	fn := c.GetAttrOrNil(name)
 	if fn == nil {
 		return nil, false, nil
@@ -323,7 +323,7 @@ func TypeNew(cls *Class, args Tuple) (Object, error) {
 
 	// The __doc__ accessor will first look for Doc;
 	// if that fails, it will still look into __dict__.
-	if doc, ok := dict[common.DocAttributeName]; ok {
+	if doc, ok := dict[builtin.DocAttributeName]; ok {
 		if Doc, ok := doc.(String); ok {
 			newType.Doc = string(Doc)
 		}
@@ -343,12 +343,12 @@ func ObjectConstruct(self Object, args Tuple) error {
 
 	// Check args for object()
 	if t == ObjectClass && excessArgs(args) {
-		return ErrorNewf(TypeError, "об_єкт.%s() не приймає аргументів", common.ConstructorName)
+		return ErrorNewf(TypeError, "об_єкт.%s() не приймає аргументів", builtin.ConstructorName)
 	}
 
 	// Call the '__конструктор__' method if it exists.
 	if _, ok := self.(*Class); ok {
-		init := t.GetAttrOrNil(common.ConstructorName)
+		init := t.GetAttrOrNil(builtin.ConstructorName)
 		if init != nil {
 			newArgs := make(Tuple, len(args)+1)
 			newArgs[0] = self
@@ -365,7 +365,7 @@ func ObjectConstruct(self Object, args Tuple) error {
 
 func TypeConstruct(self Object, args Tuple) error {
 	if len(args) != 1 && len(args) != 3 {
-		return ErrorNewf(TypeError, "тип.%s() приймає 1 або 3 аргументи", common.ConstructorName)
+		return ErrorNewf(TypeError, "тип.%s() приймає 1 або 3 аргументи", builtin.ConstructorName)
 	}
 
 	// Call object.__init__(self) now.
@@ -390,6 +390,11 @@ func TypeCall0(self Object, name string) (Object, bool, error) {
 // TypeCall1 calls TypeCall with 1 argument.
 func TypeCall1(self Object, name string, arg Object) (Object, bool, error) {
 	return TypeCall(self, name, Tuple{self, arg})
+}
+
+// TypeCall2 calls TypeCall with 2 arguments.
+func TypeCall2(self Object, name string, arg1 Object, arg2 Object) (Object, bool, error) {
+	return TypeCall(self, name, Tuple{self, arg1, arg2})
 }
 
 // Return true if any arguments supplied.

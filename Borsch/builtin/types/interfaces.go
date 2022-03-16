@@ -1,7 +1,5 @@
 package types
 
-import "github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-
 type Object interface {
 	Class() *Class
 }
@@ -77,6 +75,14 @@ type I__get_attribute__ interface {
 	__get_attribute__(name string) (Object, error)
 }
 
+type I__set_attr__ interface {
+	__set_attr__(name string, value Object) error
+}
+
+type I__set_attribute__ interface {
+	__set_attribute__(name string, value Object) error
+}
+
 type I__get__ interface {
 	__get__(instance, owner Object) (Object, error)
 }
@@ -86,7 +92,7 @@ type I__length__ interface {
 }
 
 type I__call__ interface {
-	__call__(state common.State, args Tuple) (Object, error)
+	__call__(state State, args Tuple) (Object, error)
 }
 
 type I__get_item__ interface {

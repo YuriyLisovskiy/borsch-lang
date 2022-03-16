@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
@@ -13,7 +14,7 @@ func assertionFailed(actual, expected string) string {
 }
 
 func TestStackTrace_Empty(t *testing.T) {
-	st := StackTrace{}
+	st := types.StackTrace{}
 	expected := ""
 	actual := st.String(nil)
 	if actual != expected {
@@ -22,7 +23,7 @@ func TestStackTrace_Empty(t *testing.T) {
 }
 
 func TestStackTrace_ErrorOnly(t *testing.T) {
-	st := StackTrace{}
+	st := types.StackTrace{}
 	expected := `Помилка: сталося щось страшне`
 	actual := st.String(errors.New("Помилка: сталося щось страшне"))
 	if actual != expected {
@@ -31,9 +32,9 @@ func TestStackTrace_ErrorOnly(t *testing.T) {
 }
 
 func TestStackTrace_SingleRow(t *testing.T) {
-	st := StackTrace{}
+	st := types.StackTrace{}
 	st.Push(
-		NewTraceRow(
+		types.NewTraceRow(
 			lexer.Position{
 				Filename: "/Users/проект/якийсь_пакет.борщ",
 				Line:     3,
@@ -51,9 +52,9 @@ func TestStackTrace_SingleRow(t *testing.T) {
 }
 
 func TestStackTrace_SingleRowWithError(t *testing.T) {
-	st := StackTrace{}
+	st := types.StackTrace{}
 	st.Push(
-		NewTraceRow(
+		types.NewTraceRow(
 			lexer.Position{
 				Filename: "/Users/проект/якийсь_пакет.борщ",
 				Line:     3,
@@ -72,9 +73,9 @@ func TestStackTrace_SingleRowWithError(t *testing.T) {
 }
 
 func TestStackTrace_MultipleRowsWithError(t *testing.T) {
-	st := StackTrace{}
+	st := types.StackTrace{}
 	st.Push(
-		NewTraceRow(
+		types.NewTraceRow(
 			lexer.Position{
 				Filename: "/Users/проект/якийсь_пакет.борщ",
 				Line:     5,
@@ -84,7 +85,7 @@ func TestStackTrace_MultipleRowsWithError(t *testing.T) {
 		),
 	)
 	st.Push(
-		NewTraceRow(
+		types.NewTraceRow(
 			lexer.Position{
 				Filename: "/Users/проект/якийсь_пакет.борщ",
 				Line:     3,

@@ -4,21 +4,21 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 )
 
 type StateImpl struct {
-	parser         common.Parser
-	interpreter    common.Interpreter
-	context        common.Context
-	currentPackage common.Object
+	parser         types.Parser
+	interpreter    types.Interpreter
+	context        types.Context
+	currentPackage types.Object
 }
 
 func NewState(
-	parser common.Parser,
-	interpreter common.Interpreter,
-	context common.Context,
-	currentPackage common.Object,
+	parser types.Parser,
+	interpreter types.Interpreter,
+	context types.Context,
+	currentPackage *types.Package,
 ) *StateImpl {
 	return &StateImpl{
 		parser:         parser,
@@ -28,7 +28,7 @@ func NewState(
 	}
 }
 
-func (s *StateImpl) GetParser() common.Parser {
+func (s *StateImpl) GetParser() types.Parser {
 	if s.parser != nil {
 		return s.parser
 	}
@@ -36,7 +36,7 @@ func (s *StateImpl) GetParser() common.Parser {
 	panic("state: parser is nil")
 }
 
-func (s *StateImpl) GetInterpreter() common.Interpreter {
+func (s *StateImpl) GetInterpreter() types.Interpreter {
 	if s.interpreter != nil {
 		return s.interpreter
 	}
@@ -44,7 +44,7 @@ func (s *StateImpl) GetInterpreter() common.Interpreter {
 	panic("state: interpreter is nil")
 }
 
-func (s *StateImpl) GetContext() common.Context {
+func (s *StateImpl) GetContext() types.Context {
 	if s.context != nil {
 		return s.context
 	}
@@ -52,7 +52,7 @@ func (s *StateImpl) GetContext() common.Context {
 	panic("state: context is nil")
 }
 
-func (s *StateImpl) GetCurrentPackage() common.Object {
+func (s *StateImpl) GetCurrentPackage() types.Object {
 	if s.currentPackage != nil {
 		return s.currentPackage
 	}
@@ -60,11 +60,11 @@ func (s *StateImpl) GetCurrentPackage() common.Object {
 	panic("state: current package is nil")
 }
 
-func (s *StateImpl) GetCurrentPackageOrNil() common.Object {
+func (s *StateImpl) GetCurrentPackageOrNil() types.Object {
 	return s.currentPackage
 }
 
-func (s *StateImpl) WithContext(ctx common.Context) common.State {
+func (s *StateImpl) WithContext(ctx types.Context) types.State {
 	return &StateImpl{
 		parser:         s.parser,
 		interpreter:    s.interpreter,
@@ -73,7 +73,7 @@ func (s *StateImpl) WithContext(ctx common.Context) common.State {
 	}
 }
 
-func (s *StateImpl) WithPackage(pkg common.Object) common.State {
+func (s *StateImpl) WithPackage(pkg types.Object) types.State {
 	return &StateImpl{
 		parser:         s.parser,
 		interpreter:    s.interpreter,
@@ -82,7 +82,7 @@ func (s *StateImpl) WithPackage(pkg common.Object) common.State {
 	}
 }
 
-func (s *StateImpl) RuntimeError(message string, statement common.Statement) error {
+func (s *StateImpl) RuntimeError(message string, statement types.Statement) error {
 	if statement != nil {
 		s.Trace(statement, "")
 	}
@@ -90,8 +90,8 @@ func (s *StateImpl) RuntimeError(message string, statement common.Statement) err
 	return errors.New(fmt.Sprintf("Помилка виконання: %s", message))
 }
 
-func (s *StateImpl) Trace(statement common.Statement, place string) {
-	s.interpreter.StackTrace().Push(common.NewTraceRow(statement.Position(), statement.String(), place))
+func (s *StateImpl) Trace(statement types.Statement, place string) {
+	s.interpreter.StackTrace().Push(types.NewTraceRow(statement.Position(), statement.String(), place))
 }
 
 func (s *StateImpl) PopTrace() {

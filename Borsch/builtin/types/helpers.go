@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 )
 
-func Call(state common.State, fn Object, args Tuple) (Object, error) {
+func Call(state State, fn Object, args Tuple) (Object, error) {
 	if I, ok := fn.(I__call__); ok {
 		return I.__call__(state, args)
 	}
@@ -20,7 +20,7 @@ func Call(state common.State, fn Object, args Tuple) (Object, error) {
 func Represent(self Object) (Object, error) {
 	if I, ok := self.(I__represent__); ok {
 		return I.__represent__()
-	} else if res, ok, err := TypeCall0(self, common.RepresentOperatorName); ok {
+	} else if res, ok, err := TypeCall0(self, builtin.RepresentOperatorName); ok {
 		return res, err
 	}
 
@@ -32,7 +32,7 @@ func Represent(self Object) (Object, error) {
 func Str(self Object) (Object, error) {
 	if I, ok := self.(I__str__); ok {
 		return I.__str__()
-	} else if res, ok, err := TypeCall0(self, common.StringOperatorName); ok {
+	} else if res, ok, err := TypeCall0(self, builtin.StringOperatorName); ok {
 		return res, err
 	}
 
@@ -132,7 +132,7 @@ func Index(a Object) (Int, error) {
 		return A.__index__()
 	}
 
-	if A, ok, err := TypeCall0(a, common.IndexOperatorName); ok {
+	if A, ok, err := TypeCall0(a, builtin.IndexOperatorName); ok {
 		if err != nil {
 			return 0, err
 		}
@@ -144,7 +144,7 @@ func Index(a Object) (Int, error) {
 		return 0, ErrorNewf(
 			TypeError,
 			"'%s' повернув не ціле число: (тип %s)",
-			common.IndexOperatorName,
+			builtin.IndexOperatorName,
 			A.Class().Name,
 		)
 	}
@@ -152,7 +152,7 @@ func Index(a Object) (Int, error) {
 	return 0, ErrorNewf(
 		TypeError,
 		"непідтримуваний(і) тип(и) операнда для %s: '%s'",
-		common.IndexOperatorName,
+		builtin.IndexOperatorName,
 		a.Class().Name,
 	)
 }
@@ -212,7 +212,7 @@ func RepresentAsString(self Object) (string, error) {
 		return "", ErrorNewf(
 			TypeError,
 			"результат '%s' має бути рядком, отримано '%s'",
-			common.RepresentOperatorName,
+			builtin.RepresentOperatorName,
 			res.Class().Name,
 		)
 	}
@@ -270,4 +270,51 @@ func GetAttrString(self Object, key string) (res Object, err error) {
 
 	// Not found - return nil
 	return nil, ErrorNewf(AttributeError, "'%s' has no attribute '%s'", self.Class().Name, key)
+}
+
+// SetAttrString - returns nil or an error to be raised if not found.
+//
+// If not found err will be an AttributeError.
+func SetAttrString(self Object, key string, value Object) error {
+	// Call __set_attribute__ unconditionally if it exists
+	if I, ok := self.(I__set_attribute__); ok {
+		return I.__set_attribute__(key, value)
+	} else if _, ok, err := TypeCall2(self, "__set_attribute__", Object(String(key)), value); ok {
+		return err
+	}
+
+	// Look in the instance dictionary if it exists
+	// if I, ok := self.(IGetDict); ok {
+	// 	dict := I.GetDict()
+	// 	_, ok = dict[key]
+	// 	if ok {
+	// 		return nil
+	// 	}
+	// }
+
+	// And now only if not found call __set_attr__
+	if I, ok := self.(I__set_attr__); ok {
+		return I.__set_attr__(key, value)
+	} else if _, ok, err := TypeCall2(self, "__set_attr__", Object(String(key)), value); ok {
+		return err
+	}
+
+	// Not found - return nil
+	return ErrorNewf(AttributeError, "'%s' has no attribute '%s'", self.Class().Name, key)
+}
+
+func GetItem(self Object, key Object) (Object, error) {
+	if s, ok := self.(I__get_item__); ok {
+		return s.__get_item__(key)
+	}
+
+	return Nil, ErrorNewf(TypeError, "'%s' object is not subscriptable", self.Class().Name)
+}
+
+func SetItem(self Object, key Object, value Object) (Object, error) {
+	if s, ok := self.(I__set_item__); ok {
+		return s.__set_item__(key, value)
+	}
+
+	return Nil, ErrorNewf(TypeError, "'%s' object is not subscriptable", self.Class().Name)
 }

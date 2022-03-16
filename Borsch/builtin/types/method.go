@@ -15,20 +15,12 @@ package types
 
 import (
 	"fmt"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 // Types for methods
 
-// Function called with self and a tuple of args.
-type Function func(state common.State, self Object, args Tuple) (Object, error)
-
 // FunctionNoArgs called with self only.
-type FunctionNoArgs func(common.State, Object) (Object, error)
-
-// Function1Arg called with one (unnamed) parameter only.
-type Function1Arg func(common.State, Object, Object) (Object, error)
+type FunctionNoArgs func(State, Object) (Object, error)
 
 const (
 	// These two constants are not used to indicate the calling convention
@@ -100,9 +92,9 @@ func NewMethod(name string, method interface{}, flags int, doc string) (*Method,
 	// have to write out the function arguments - can't use the
 	// type aliases as they are different types :-(
 	switch method.(type) {
-	case Function:
+	case func(state State, self Object, args Tuple) (Object, error):
 	case FunctionNoArgs:
-	case Function1Arg:
+	case func(State, Object, Object) (Object, error):
 	case InternalMethod:
 	default:
 		return nil, ErrorNewf(SystemError, "Unknown function type for NewMethod %q, %T", name, method)
@@ -122,6 +114,7 @@ func MustNewMethod(name string, method interface{}, flags int, doc string) *Meth
 	if err != nil {
 		panic(err)
 	}
+
 	return m
 }
 
@@ -130,13 +123,14 @@ func (value *Method) Internal() InternalMethod {
 	if internalMethod, ok := value.method.(InternalMethod); ok {
 		return internalMethod
 	}
+
 	return InternalMethodNone
 }
 
 // Call the method with the given arguments
-func (value *Method) Call(state common.State, self Object, args Tuple) (Object, error) {
+func (value *Method) Call(state State, self Object, args Tuple) (Object, error) {
 	switch f := value.method.(type) {
-	case Function:
+	case func(state State, self Object, args Tuple) (Object, error):
 		return f(state, self, args)
 	case FunctionNoArgs:
 		if len(args) != 0 {
@@ -144,7 +138,7 @@ func (value *Method) Call(state common.State, self Object, args Tuple) (Object, 
 		}
 
 		return f(state, self)
-	case Function1Arg:
+	case func(State, Object, Object) (Object, error):
 		if len(args) != 1 {
 			return nil, ErrorNewf(TypeError, "%s() приймає точно 1 аргумент (отримано %d)", value.Name, len(args))
 		}
@@ -165,22 +159,22 @@ func newBoundMethod(name string, fn interface{}) (Object, error) {
 	}
 	switch f := fn.(type) {
 	case func(args Tuple) (Object, error):
-		m.method = func(_ common.State, _ Object, args Tuple) (Object, error) {
+		m.method = func(_ State, _ Object, args Tuple) (Object, error) {
 			return f(args)
 		}
 	// __str__() (Object, error)
 	case func() (Object, error):
-		m.method = func(_ common.State, _ Object) (Object, error) {
+		m.method = func(_ State, _ Object) (Object, error) {
 			return f()
 		}
 	// __add__(other Object) (Object, error)
 	case func(Object) (Object, error):
-		m.method = func(_ common.State, _ Object, other Object) (Object, error) {
+		m.method = func(_ State, _ Object, other Object) (Object, error) {
 			return f(other)
 		}
 	// __get_attr__(name string) (Object, error)
 	case func(string) (Object, error):
-		m.method = func(_ common.State, _ Object, stringObject Object) (Object, error) {
+		m.method = func(_ State, _ Object, stringObject Object) (Object, error) {
 			name, err := StrAsString(stringObject)
 			if err != nil {
 				return nil, err
@@ -190,7 +184,7 @@ func newBoundMethod(name string, fn interface{}) (Object, error) {
 		}
 	// __get__(instance, owner Object) (Object, error)
 	case func(Object, Object) (Object, error):
-		m.method = func(_ common.State, _ Object, args Tuple) (Object, error) {
+		m.method = func(_ State, _ Object, args Tuple) (Object, error) {
 			var a, b Object
 			err := UnpackTuple(args, name, 2, 2, &a, &b)
 			if err != nil {
@@ -201,7 +195,7 @@ func newBoundMethod(name string, fn interface{}) (Object, error) {
 		}
 	// __new__(cls, args, kwargs Object) (Object, error)
 	case func(Object, Object, Object) (Object, error):
-		m.method = func(_ common.State, _ Object, args Tuple) (Object, error) {
+		m.method = func(_ State, _ Object, args Tuple) (Object, error) {
 			var a, b, c Object
 			err := UnpackTuple(args, name, 3, 3, &a, &b, &c)
 			if err != nil {
@@ -218,7 +212,7 @@ func newBoundMethod(name string, fn interface{}) (Object, error) {
 }
 
 // Call a method
-func (value *Method) __call__(state common.State, args Tuple) (Object, error) {
+func (value *Method) __call__(state State, args Tuple) (Object, error) {
 	self := Object(value.Package)
 	return value.Call(state, self, args)
 }

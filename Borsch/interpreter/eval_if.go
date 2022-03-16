@@ -1,10 +1,10 @@
 package interpreter
 
 import (
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 )
 
-func (node *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *IfStmt) Evaluate(state types.State, inFunction, inLoop bool) StmtResult {
 	if node.Condition != nil {
 		condition, err := node.Condition.Evaluate(state, nil)
 		if err != nil {
@@ -12,12 +12,12 @@ func (node *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 		}
 
 		ctx := state.GetContext()
-		conditionValue, err := condition.AsBool(state)
+		conditionValue, err := types.MakeBool(condition)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
 
-		if conditionValue {
+		if conditionValue.(types.Bool) {
 			ctx.PushScope(Scope{})
 			result := node.Body.Evaluate(state, inFunction, inLoop)
 			if result.Err != nil {
@@ -66,18 +66,18 @@ func (node *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 	panic("unreachable")
 }
 
-func (node *ElseIfStmt) Evaluate(state common.State, inFunction, inLoop bool) (bool, StmtResult) {
+func (node *ElseIfStmt) Evaluate(state types.State, inFunction, inLoop bool) (bool, StmtResult) {
 	condition, err := node.Condition.Evaluate(state, nil)
 	if err != nil {
 		return false, StmtResult{Err: err}
 	}
 
-	conditionValue, err := condition.AsBool(state)
+	conditionValue, err := types.MakeBool(condition)
 	if err != nil {
 		return false, StmtResult{Err: err}
 	}
 
-	if conditionValue {
+	if conditionValue.(types.Bool) {
 		ctx := state.GetContext()
 		ctx.PushScope(Scope{})
 		result := node.Body.Evaluate(state, inFunction, inLoop)

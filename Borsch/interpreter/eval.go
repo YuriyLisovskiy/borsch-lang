@@ -3,14 +3,14 @@ package interpreter
 import (
 	"errors"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 type Scope map[string]types.Object
 
-func (node *Package) Evaluate(state common.State) (types.Object, error) {
+func (node *Package) Evaluate(state types.State) (types.Object, error) {
 	state.GetContext().PushScope(map[string]types.Object{})
 	result := node.Stmts.Evaluate(state, false, false)
 	if result.Err != nil {
@@ -22,7 +22,7 @@ func (node *Package) Evaluate(state common.State) (types.Object, error) {
 
 // Evaluate executes block of statements.
 // Returns (result value, force stop flag, error)
-func (node *BlockStmts) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *BlockStmts) Evaluate(state types.State, inFunction, inLoop bool) StmtResult {
 	node.stmtPos = 0
 	for _, stmt := range node.Stmts {
 		result := stmt.Evaluate(state, inFunction, inLoop)
@@ -41,7 +41,7 @@ func (node *BlockStmts) Evaluate(state common.State, inFunction, inLoop bool) St
 	return StmtResult{Value: types.Nil}
 }
 
-func (node *Expression) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *Expression) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	if node.LogicalAnd != nil {
 		return node.LogicalAnd.Evaluate(state, valueToSet)
 	}
@@ -49,7 +49,7 @@ func (node *Expression) Evaluate(state common.State, valueToSet types.Object) (t
 	panic("unreachable")
 }
 
-func (node *Assignment) Evaluate(state common.State) (types.Object, error) {
+func (node *Assignment) Evaluate(state types.State) (types.Object, error) {
 	if len(node.Next) == 0 {
 		return node.Expressions[0].Evaluate(state, nil)
 	}
@@ -69,15 +69,15 @@ func (node *Assignment) Evaluate(state common.State) (types.Object, error) {
 // Evaluate executes LogicalAnd operation.
 // If `valueToSet` is nil, return variable or value from context,
 // set a new value or return an error otherwise.
-func (node *LogicalAnd) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *LogicalAnd) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	return evalBinaryOperator(state, valueToSet, node.LogicalOr, node.Next, types.And)
 }
 
-func (node *LogicalOr) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *LogicalOr) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	return evalBinaryOperator(state, valueToSet, node.LogicalNot, node.Next, types.Or)
 }
 
-func (node *LogicalNot) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *LogicalNot) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	if node.Comparison != nil {
 		return node.Comparison.Evaluate(state, valueToSet)
 	}
@@ -94,7 +94,7 @@ func (node *LogicalNot) Evaluate(state common.State, valueToSet types.Object) (t
 	panic("unreachable")
 }
 
-func (node *Comparison) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *Comparison) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	switch node.Op {
 	case ">=":
 		return evalBinaryOperator(state, valueToSet, node.BitwiseOr, node.Next, types.GreaterOrEqual)
@@ -113,23 +113,23 @@ func (node *Comparison) Evaluate(state common.State, valueToSet types.Object) (t
 	}
 }
 
-func (node *BitwiseOr) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *BitwiseOr) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	// TODO: BitwiseOr
-	panic("unreachable")
+	return node.BitwiseXor.Evaluate(state, valueToSet)
 	// return evalBinaryOperator(state, valueToSet, common.BitwiseOrOp.Name(), node.BitwiseXor, node.Next)
 }
 
-func (node *BitwiseXor) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *BitwiseXor) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	return evalBinaryOperator(state, valueToSet, node.BitwiseAnd, node.Next, types.Xor)
 }
 
-func (node *BitwiseAnd) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *BitwiseAnd) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	// TODO: BitwiseAnd
-	panic("unreachable")
+	return node.BitwiseShift.Evaluate(state, valueToSet)
 	// return evalBinaryOperator(state, valueToSet, common.BitwiseAndOp.Name(), node.BitwiseShift, node.Next)
 }
 
-func (node *BitwiseShift) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *BitwiseShift) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	switch node.Op {
 	case "<<":
 		return evalBinaryOperator(state, valueToSet, node.Addition, node.Next, types.LeftShift)
@@ -140,7 +140,7 @@ func (node *BitwiseShift) Evaluate(state common.State, valueToSet types.Object) 
 	}
 }
 
-func (node *Addition) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *Addition) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	switch node.Op {
 	case "+":
 		return evalBinaryOperator(state, valueToSet, node.MultiplicationOrMod, node.Next, types.Add)
@@ -151,7 +151,7 @@ func (node *Addition) Evaluate(state common.State, valueToSet types.Object) (typ
 	}
 }
 
-func (node *MultiplicationOrMod) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *MultiplicationOrMod) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	switch node.Op {
 	case "/":
 		return evalBinaryOperator(state, valueToSet, node.Unary, node.Next, types.Divide)
@@ -164,7 +164,7 @@ func (node *MultiplicationOrMod) Evaluate(state common.State, valueToSet types.O
 	}
 }
 
-func (node *Unary) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *Unary) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	switch node.Op {
 	case "+":
 		return evalUnaryOperator(state, node.Next, types.MakePositive)
@@ -177,7 +177,7 @@ func (node *Unary) Evaluate(state common.State, valueToSet types.Object) (types.
 	}
 }
 
-func (node *Exponent) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *Exponent) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	return evalBinaryOperator(
 		state, valueToSet, node.Primary, node.Next,
 		func(left, right types.Object) (types.Object, error) {
@@ -186,7 +186,7 @@ func (node *Exponent) Evaluate(state common.State, valueToSet types.Object) (typ
 	)
 }
 
-func (node *Primary) Evaluate(state common.State, valueToSet types.Object) (types.Object, error) {
+func (node *Primary) Evaluate(state types.State, valueToSet types.Object) (types.Object, error) {
 	if node.SubExpression != nil {
 		if valueToSet != nil {
 			return nil, utilities.SyntaxError("неможливо записати значення у вираз")
@@ -214,13 +214,13 @@ func (node *Primary) Evaluate(state common.State, valueToSet types.Object) (type
 	panic("unreachable")
 }
 
-func (node *Literal) Evaluate(state common.State) (types.Object, error) {
+func (node *Literal) Evaluate(state types.State) (types.Object, error) {
 	if node.Nil {
 		return types.Nil, nil
 	}
 
 	if node.Integer != nil {
-		return types.IntFromString(*node.Integer, 10)
+		return types.IntFromString(*node.Integer, 0)
 	}
 
 	if node.Real != nil {
@@ -240,14 +240,14 @@ func (node *Literal) Evaluate(state common.State) (types.Object, error) {
 	}
 
 	if node.List != nil {
-		list := types.NewListWithCapacity(len(node.List))
-		for _, expr := range node.List {
+		list := types.NewListSized(len(node.List))
+		for i, expr := range node.List {
 			value, err := expr.Evaluate(state, nil)
 			if err != nil {
 				return nil, err
 			}
 
-			list.Append(value)
+			list.Items[i] = value
 		}
 
 		return list, nil
@@ -282,7 +282,7 @@ func (node *Literal) Evaluate(state common.State) (types.Object, error) {
 	panic("unreachable")
 }
 
-func (node *DictionaryEntry) Evaluate(state common.State) (types.Object, types.Object, error) {
+func (node *DictionaryEntry) Evaluate(state types.State) (types.Object, types.Object, error) {
 	key, err := node.Key.Evaluate(state, nil)
 	if err != nil {
 		return nil, nil, err
@@ -296,7 +296,7 @@ func (node *DictionaryEntry) Evaluate(state common.State) (types.Object, types.O
 	return key, value, nil
 }
 
-func (node *AttributeAccess) Evaluate(state common.State, valueToSet, prevValue types.Object) (types.Object, error) {
+func (node *AttributeAccess) Evaluate(state types.State, valueToSet, prevValue types.Object) (types.Object, error) {
 	if node.IdentOrCall == nil {
 		panic("unreachable")
 	}
@@ -336,7 +336,7 @@ func (node *AttributeAccess) Evaluate(state common.State, valueToSet, prevValue 
 	return currentValue, err
 }
 
-func (node *IdentOrCall) Evaluate(state common.State, valueToSet types.Object, prevValue types.Object) (
+func (node *IdentOrCall) Evaluate(state types.State, valueToSet types.Object, prevValue types.Object) (
 	types.Object,
 	error,
 ) {
@@ -405,7 +405,7 @@ func (node *IdentOrCall) Evaluate(state common.State, valueToSet types.Object, p
 	return variable, nil
 }
 
-func (node *IdentOrCall) callFunction(state common.State, prevValue types.Object) (types.Object, error) {
+func (node *IdentOrCall) callFunction(state types.State, prevValue types.Object) (types.Object, error) {
 	ctx := state.GetContext()
 	variable, err := getCurrentValue(ctx, prevValue, node.Call.Ident.String())
 	if err != nil {
@@ -422,7 +422,7 @@ func (node *IdentOrCall) callFunction(state common.State, prevValue types.Object
 }
 
 func (node *SlicingOrSubscription) Evaluate(
-	state common.State,
+	state types.State,
 	variable types.Object,
 	valueToSet types.Object,
 ) (types.Object, error) {
@@ -448,7 +448,7 @@ func (node *SlicingOrSubscription) Evaluate(
 	return variable, nil
 }
 
-func (node *LambdaDef) Evaluate(state common.State) (types.Object, error) {
+func (node *LambdaDef) Evaluate(state types.State) (types.Object, error) {
 	// arguments, err := node.ParametersSet.Evaluate(state)
 	// if err != nil {
 	// 	return nil, err
@@ -461,7 +461,7 @@ func (node *LambdaDef) Evaluate(state common.State) (types.Object, error) {
 
 	// TODO: check args and return type
 	lambda, err := types.NewMethod(
-		common.LambdaSignature, func(state common.State, self types.Object, args types.Tuple) (types.Object, error) {
+		builtin.LambdaSignature, func(state types.State, self types.Object, args types.Tuple) (types.Object, error) {
 			return node.Body.Evaluate(state)
 		}, 0, "",
 	)
@@ -488,7 +488,7 @@ func (node *LambdaDef) Evaluate(state common.State) (types.Object, error) {
 	return lambda, nil
 }
 
-func (node *LambdaDef) evalInstantCall(state common.State, lambda types.Object) (types.Object, error) {
+func (node *LambdaDef) evalInstantCall(state types.State, lambda types.Object) (types.Object, error) {
 	var args types.Tuple
 	if len(node.InstantCallArguments) != 0 {
 		if err := updateArgs(state, node.InstantCallArguments, &args); err != nil {

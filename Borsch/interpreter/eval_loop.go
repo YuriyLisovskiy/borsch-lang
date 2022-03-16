@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (node *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *LoopStmt) Evaluate(state types.State, inFunction, inLoop bool) StmtResult {
 	if node.RangeBasedLoop != nil {
 		return node.RangeBasedLoop.Evaluate(state, node.Body, inFunction)
 	} else if node.ConditionalLoop != nil {
@@ -17,7 +16,7 @@ func (node *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) Stmt
 	return evalInfiniteLoop(state, node.Body, inFunction)
 }
 
-func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFunction bool) StmtResult {
+func (node *RangeBasedLoop) Evaluate(state types.State, body *BlockStmts, inFunction bool) StmtResult {
 	leftBound, err := getBound(state, node.LeftBound, "ліва")
 	if err != nil {
 		return StmtResult{Err: err}
@@ -30,7 +29,7 @@ func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFun
 
 	ctx := state.GetContext()
 	for leftBound < rightBound {
-		ctx.PushScope(Scope{node.Variable.String(): types.NewIntegerInstance(leftBound)})
+		ctx.PushScope(Scope{node.Variable.String(): types.Int(leftBound)})
 		result := body.Evaluate(state, inFunction, true)
 		ctx.PopScope()
 		if result.Interrupt() {
@@ -47,7 +46,7 @@ func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFun
 	return StmtResult{}
 }
 
-func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFunction bool) StmtResult {
+func (node *ConditionalLoop) Evaluate(state types.State, body *BlockStmts, inFunction bool) StmtResult {
 	ctx := state.GetContext()
 	for {
 		condition, err := node.Condition.Evaluate(state, nil)
@@ -55,12 +54,12 @@ func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFu
 			return StmtResult{Err: err}
 		}
 
-		conditionValue, err := condition.AsBool(state)
+		conditionValue, err := types.MakeBool(condition)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
 
-		if !conditionValue {
+		if !conditionValue.(types.Bool) {
 			break
 		}
 
@@ -79,15 +78,15 @@ func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFu
 	return StmtResult{}
 }
 
-func getBound(state common.State, bound *Expression, boundName string) (int64, error) {
+func getBound(state types.State, bound *Expression, boundName string) (int64, error) {
 	return mustInt(
-		state, bound, func(t common.Object) string {
-			return fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.GetTypeName())
+		state, bound, func(t types.Object) string {
+			return fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.Class().Name)
 		},
 	)
 }
 
-func evalInfiniteLoop(state common.State, body *BlockStmts, inFunction bool) StmtResult {
+func evalInfiniteLoop(state types.State, body *BlockStmts, inFunction bool) StmtResult {
 	ctx := state.GetContext()
 	for {
 		ctx.PushScope(Scope{})

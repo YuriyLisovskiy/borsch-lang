@@ -13,8 +13,6 @@ package types
 import (
 	"fmt"
 	"sync"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 type PackageFlags int32
@@ -93,9 +91,9 @@ func NewModuleStore() *PackageStore {
 
 // Package is a runtime instance of a PackageImpl bound to the py.Context that imported it.
 type Package struct {
-	PackageImpl *PackageImpl   // Parent implementation of this Package instance
-	Globals     Dict           // Initialized from PackageImpl.Globals
-	Context     common.Context // Parent context that "owns" this Package instance
+	PackageImpl *PackageImpl // Parent implementation of this Package instance
+	Globals     Dict         // Initialized from PackageImpl.Globals
+	Context     Context      // Parent context that "owns" this Package instance
 }
 
 var PackageClass = NewClass("пакет", "об_єкт пакету")
@@ -118,7 +116,7 @@ func (value *Package) GetDict() Dict {
 }
 
 // Call calls a named method of a module.
-func (value *Package) Call(state common.State, name string, args Tuple) (Object, error) {
+func (value *Package) Call(state State, name string, args Tuple) (Object, error) {
 	attr, err := GetAttrString(value, name)
 	if err != nil {
 		return nil, err
@@ -133,7 +131,7 @@ var _ IGetDict = (*Package)(nil)
 // NewPackage adds a new Package instance to this PackageStore.
 // Each given Method prototype is used to create a new "live" Method bound this the newly created Package.
 // This func also sets appropriate module global attribs based on the given PackageInfo (e.g. __name__).
-func (store *PackageStore) NewPackage(ctx common.Context, impl *PackageImpl) (*Package, error) {
+func (store *PackageStore) NewPackage(ctx Context, impl *PackageImpl) (*Package, error) {
 	name := impl.Info.Name
 	if name == "" {
 		name = MainModuleName
@@ -181,6 +179,7 @@ func (store *PackageStore) GetModule(name string) (*Package, error) {
 	if !ok {
 		return nil, ErrorNewf(ImportError, "Пакет '%s' не знайдено", name)
 	}
+
 	return m, nil
 }
 

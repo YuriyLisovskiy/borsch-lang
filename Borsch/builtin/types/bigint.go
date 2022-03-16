@@ -20,7 +20,7 @@ type BigInt big.Int
 
 var BigIntClass = NewClass("великий_цілий", "Зберігає великі цілі числа")
 
-func (value *BigInt) Class() *Class {
+func (value BigInt) Class() *Class {
 	return BigIntClass
 }
 

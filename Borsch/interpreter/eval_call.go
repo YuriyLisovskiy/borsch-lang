@@ -1,78 +1,48 @@
 package interpreter
 
 import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func (node *Call) Evaluate(
-	state common.State,
-	variable common.Object,
-	selfInstance common.Object,
+	state types.State,
+	variable types.Object,
+	selfInstance types.Object,
 	isLambda *bool,
-) (common.Object, error) {
+) (types.Object, error) {
 	switch object := variable.(type) {
 	case *types.Class:
-		var args []common.Object
-		instance, err := object.GetEmptyInstance()
+		var args types.Tuple
+		if err := updateArgs(state, node.Arguments, &args); err != nil {
+			return nil, err
+		}
+
+		instance, err := object.New(object, args)
 		if err != nil {
 			return nil, err
 		}
 
-		_, err = node.evalFunctionByName(state, instance, common.ConstructorName, &args, nil, true)
+		err = object.Construct(instance, args)
 		if err != nil {
 			return nil, err
 		}
 
-		return args[0], nil
-	case *types.FunctionInstance:
-		*isLambda = object.IsLambda()
-		var args []common.Object
-		if selfInstance != nil {
-			switch selfInstance.(type) {
-			case *types.Class, *types.PackageInstance:
-				// ignore
-			case types.ObjectInstance:
-				if !*isLambda {
-					args = append(args, selfInstance)
-				}
-			}
+		return instance, nil
+	case *types.Method:
+		*isLambda = object.Name == builtin.LambdaSignature
+		var args types.Tuple
+		if err := updateArgs(state, node.Arguments, &args); err != nil {
+			return nil, err
 		}
 
-		return node.evalFunction(state, object, &args, nil)
-	case types.ObjectInstance:
-		args := []common.Object{variable}
-		return node.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
+		if *isLambda || selfInstance == nil {
+			return types.Call(state, object, args)
+		}
+
+		return object.Call(state, selfInstance, args)
 	default:
-		return nil, utilities.ObjectIsNotCallable(node.Ident.String(), object.GetTypeName())
+		return nil, utilities.ObjectIsNotCallable(node.Ident.String(), object.Class().Name)
 	}
-}
-
-func (node *Call) evalFunctionByName(
-	state common.State,
-	object common.Object,
-	functionName string,
-	args *[]common.Object,
-	kwargs *map[string]common.Object,
-	isMethod bool,
-) (common.Object, error) {
-	if err := updateArgs(state, node.Arguments, args); err != nil {
-		return nil, err
-	}
-
-	return types.CallByName(state, object, functionName, args, kwargs, isMethod)
-}
-
-func (node *Call) evalFunction(
-	state common.State,
-	function *types.FunctionInstance,
-	args *[]common.Object,
-	kwargs *map[string]common.Object,
-) (common.Object, error) {
-	if err := updateArgs(state, node.Arguments, args); err != nil {
-		return nil, err
-	}
-
-	return types.Call(state, function, args, kwargs)
 }

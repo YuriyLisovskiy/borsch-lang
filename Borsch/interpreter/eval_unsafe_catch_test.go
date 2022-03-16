@@ -50,13 +50,13 @@ func makeThrowStmt(name *Ident) *Throw {
 type testInterpreter struct {
 }
 
-func (i *testInterpreter) Import(common.State, string) (common.Object, error) {
+func (i *testInterpreter) Import(types.State, string) (common.Object, error) {
 	return nil, nil
 }
 
-func (i *testInterpreter) StackTrace() *common.StackTrace {
-	st := &common.StackTrace{}
-	st.Push(&common.TraceRow{})
+func (i *testInterpreter) StackTrace() *types.StackTrace {
+	st := &types.StackTrace{}
+	st.Push(&types.TraceRow{})
 	return st
 }
 
