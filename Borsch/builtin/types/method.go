@@ -56,6 +56,7 @@ const (
 )
 
 // A python Method object
+// TODO: add method args and expected return type!
 type Method struct {
 	// Name of this function
 	Name string
@@ -129,6 +130,9 @@ func (value *Method) Internal() InternalMethod {
 
 // Call the method with the given arguments
 func (value *Method) Call(state State, self Object, args Tuple) (Object, error) {
+	// TODO: check method args
+
+	state = state.WithContext(value.Package.Context)
 	switch f := value.method.(type) {
 	case func(state State, self Object, args Tuple) (Object, error):
 		return f(state, self, args)
@@ -145,6 +149,8 @@ func (value *Method) Call(state State, self Object, args Tuple) (Object, error) 
 
 		return f(state, self, args[0])
 	}
+
+	// TODO: check method return type if it matches with actual result
 
 	panic(fmt.Sprintf("Unknown method type: %T", value.method))
 }
