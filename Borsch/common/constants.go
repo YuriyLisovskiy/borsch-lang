@@ -39,6 +39,6 @@ const (
 	CallOperatorName           = "__оператор_виклику__"
 	LengthOperatorName         = "__довжина__"
 	BoolOperatorName           = "__логічний__"
-	StringOperatorName         = "__рядок__"
-	RepresentationOperatorName = "__представлення__"
+	StringOperatorName    = "__рядок__"
+	RepresentOperatorName = "__представлення__"
 )

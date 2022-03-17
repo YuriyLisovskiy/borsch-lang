@@ -13,7 +13,7 @@ func evalEnv(state common.State, args *[]common.Value, _ *map[string]common.Valu
 		return nil, err
 	}
 
-	return types.StringInstance{Value: os.Getenv(argStr)}, nil
+	return types.String{Value: os.Getenv(argStr)}, nil
 }
 
 func makeEnvFunction() *types.FunctionInstance {
@@ -21,7 +21,7 @@ func makeEnvFunction() *types.FunctionInstance {
 		"середовище",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "ключ",
 				IsVariadic: false,
 				IsNullable: false,
@@ -30,7 +30,7 @@ func makeEnvFunction() *types.FunctionInstance {
 		evalEnv,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				IsNullable: false,
 			},
 		},

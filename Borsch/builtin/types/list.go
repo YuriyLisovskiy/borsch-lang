@@ -182,26 +182,26 @@ func newListClass() *Class {
 		Name:    common.ListTypeName,
 		IsFinal: true,
 		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				map[string]common.Value{
-					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(List, toList, ""),
-
-					// TODO: add doc
-					common.LengthOperatorName: makeLengthOperator(List, ""),
-
-					common.MulOp.Name(): listOperator(common.MulOp, listOperator_Mul),
-					common.AddOp.Name(): listOperator(common.AddOp, listOperator_Add),
-				},
-				MakeLogicalOperators(List),
-				MakeComparisonOperators(List, compareLists),
-				MakeCommonOperators(List),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewListInstance(), nil
-		},
+		// Parent:  BuiltinPackage,
+		// AttrInitializer: func(attrs *map[string]common.Value) {
+		// 	*attrs = MergeAttributes(
+		// 		map[string]common.Value{
+		// 			// TODO: add doc
+		// 			common.ConstructorName: makeVariadicConstructor(List, toList, ""),
+		//
+		// 			// TODO: add doc
+		// 			common.LengthOperatorName: makeLengthOperator(List, ""),
+		//
+		// 			common.MulOp.Name(): listOperator(common.MulOp, listOperator_Mul),
+		// 			common.AddOp.Name(): listOperator(common.AddOp, listOperator_Add),
+		// 		},
+		// 		MakeLogicalOperators(List),
+		// 		MakeComparisonOperators(List, compareLists),
+		// 		MakeCommonOperators(List),
+		// 	)
+		// },
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	return NewListInstance(), nil
+		// },
 	}
 }

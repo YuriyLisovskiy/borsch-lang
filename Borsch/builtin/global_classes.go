@@ -9,5 +9,5 @@ func initClasses() {
 	ErrorClass = newErrorClass()
 
 	// init
-	types.InitClass(ErrorClass)
+	// types.InitClass(ErrorClass)
 }

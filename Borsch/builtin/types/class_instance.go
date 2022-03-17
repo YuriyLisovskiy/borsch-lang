@@ -47,8 +47,8 @@ func (i ClassInstance) String(state common.State) (string, error) {
 }
 
 func (i ClassInstance) Representation(state common.State) (string, error) {
-	if operator, err := i.GetOperator(common.RepresentationOperatorName); err == nil {
-		result, err := CallAttribute(state, i, operator, common.RepresentationOperatorName, nil, nil, true)
+	if operator, err := i.GetOperator(common.RepresentOperatorName); err == nil {
+		result, err := CallAttribute(state, i, operator, common.RepresentOperatorName, nil, nil, true)
 		if err != nil {
 			return "", err
 		}
@@ -125,7 +125,7 @@ func (i ClassInstance) Call(state common.State, args *[]common.Value, kwargs *ma
 		return nil, utilities.ObjectIsNotCallable("", i.GetTypeName())
 	}
 
-	return CallAttribute(state, i, operator, common.CallOperatorName, args, kwargs, true)
+	return CallAttribute(state, i, operator, common.CallOperatorName, *args, *kwargs, true)
 }
 
 func (i ClassInstance) Copy() *ClassInstance {

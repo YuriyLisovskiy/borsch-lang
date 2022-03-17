@@ -2,7 +2,7 @@ package types
 
 import "github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 
-// String interfaces.
+// StringClass interfaces.
 
 type I__represent__ interface {
 	__represent__() (common.Value, error)
@@ -68,7 +68,7 @@ type I__length__ interface {
 }
 
 type I__call__ interface {
-	__call__(state common.State, args Tuple, kwargs Dict) (common.Value, error)
+	__call__(state common.State, args Tuple, kwargs map[string]common.Value) (common.Value, error)
 }
 
 type I__get_item__ interface {
@@ -107,7 +107,7 @@ type I__contains__ interface {
 // Arithmetic operators.
 
 type I__add__ interface {
-	__add__(other common.Value) (common.Value, error)
+	__add__(ctx common.Context, other common.Value) (common.Value, error)
 }
 
 type I__sub__ interface {
@@ -321,7 +321,7 @@ type conversionBetweenTypes interface {
 	I__real__
 }
 
-// String, Tuple, List should satisfy this.
+// StringClass, Tuple, List should satisfy this.
 type sequenceArithmetic interface {
 	I__add__
 	I__mul__

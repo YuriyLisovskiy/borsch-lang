@@ -14,13 +14,20 @@ func (node *Call) Evaluate(
 ) (common.Value, error) {
 	switch object := variable.(type) {
 	case *types.Class:
-		var args []common.Value
+
+		var args types.Tuple
+		if err := updateArgs(state, node.Arguments, &args); err != nil {
+			return nil, err
+		}
+
+		object.New(state, object, args,)
+
 		instance, err := object.GetEmptyInstance()
 		if err != nil {
 			return nil, err
 		}
 
-		_, err = node.evalFunctionByName(state, instance, common.ConstructorName, &args, nil, true)
+		_, err = node.evalFunctionByName(state, instance, common.ConstructorName, args, nil, true)
 		if err != nil {
 			return nil, err
 		}
@@ -40,10 +47,10 @@ func (node *Call) Evaluate(
 			}
 		}
 
-		return node.evalFunction(state, object, &args, nil)
+		return node.evalFunction(state, object, args, nil)
 	case types.ObjectInstance:
 		args := []common.Value{variable}
-		return node.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
+		return node.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, args, nil, true)
 	default:
 		return nil, utilities.ObjectIsNotCallable(node.Ident.String(), object.GetTypeName())
 	}
@@ -53,11 +60,11 @@ func (node *Call) evalFunctionByName(
 	state common.State,
 	object common.Value,
 	functionName string,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
+	args types.Tuple,
+	kwargs map[string]common.Value,
 	isMethod bool,
 ) (common.Value, error) {
-	if err := updateArgs(state, node.Arguments, args); err != nil {
+	if err := updateArgs(state, node.Arguments, &args); err != nil {
 		return nil, err
 	}
 
@@ -67,10 +74,10 @@ func (node *Call) evalFunctionByName(
 func (node *Call) evalFunction(
 	state common.State,
 	function *types.FunctionInstance,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
+	args types.Tuple,
+	kwargs map[string]common.Value,
 ) (common.Value, error) {
-	if err := updateArgs(state, node.Arguments, args); err != nil {
+	if err := updateArgs(state, node.Arguments, &args); err != nil {
 		return nil, err
 	}
 

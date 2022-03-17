@@ -13,7 +13,7 @@ func runUnaryOperator(state common.State, name string, object common.Value, expe
 	error,
 ) {
 	var args []common.Value
-	result, err := types.CallByName(state, object, name, &args, nil, true)
+	result, err := types.CallByName(state, object, name, args, nil, true)
 	if err != nil {
 		return nil, err
 	}

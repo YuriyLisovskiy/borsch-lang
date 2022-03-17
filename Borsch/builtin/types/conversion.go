@@ -26,7 +26,7 @@ func ToReal(_ common.State, args ...common.Value) (common.Value, error) {
 		return vt, nil
 	case Int:
 		return NewRealInstance(float64(vt)), nil
-	case StringInstance:
+	case String:
 		realVal, err := strconv.ParseFloat(vt.Value, 64)
 		if err != nil {
 			return nil, errors.New(

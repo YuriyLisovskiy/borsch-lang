@@ -82,13 +82,13 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 		switch exported := toExport.(type) {
 		case types.ListInstance:
 			for _, value := range exported.Values {
-				if name, ok := value.(types.StringInstance); ok {
+				if name, ok := value.(types.String); ok {
 					if attr, ok := scope[name.Value]; ok {
 						attrs[name.Value] = attr
 					}
 				}
 			}
-		case types.StringInstance:
+		case types.String:
 			if attr, ok := scope[exported.Value]; ok {
 				attrs[exported.Value] = attr
 			}

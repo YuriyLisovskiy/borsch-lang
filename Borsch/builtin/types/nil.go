@@ -73,19 +73,19 @@ func newNilClass() *Class {
 		Name:    common.NilTypeName,
 		IsFinal: true,
 		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				map[string]common.Value{
-					common.ConstructorName: nilMethod_Constructor(),
-				},
-				MakeLogicalOperators(Nil),
-				MakeComparisonOperators(Nil, compareNils),
-				MakeCommonOperators(Nil),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewNilInstance(), nil
-		},
+		// Parent:  BuiltinPackage,
+		// AttrInitializer: func(attrs *map[string]common.Value) {
+		// 	*attrs = MergeAttributes(
+		// 		map[string]common.Value{
+		// 			common.ConstructorName: nilMethod_Constructor(),
+		// 		},
+		// 		MakeLogicalOperators(Nil),
+		// 		MakeComparisonOperators(Nil, compareNils),
+		// 		MakeCommonOperators(Nil),
+		// 	)
+		// },
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	return NewNilInstance(), nil
+		// },
 	}
 }

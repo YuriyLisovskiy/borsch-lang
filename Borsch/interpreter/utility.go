@@ -32,7 +32,7 @@ func evalBinaryOperator(
 			return nil, err
 		}
 
-		return types.CallAttribute(state, left, operator, operatorName, &[]common.Value{right}, nil, true)
+		return types.CallAttribute(state, left, operator, operatorName, types.Tuple{right}, nil, true)
 	}
 
 	return left, nil
@@ -362,7 +362,7 @@ func checkForNilAttribute(ident string) error {
 	return nil
 }
 
-func updateArgs(state common.State, arguments []*Expression, args *[]common.Value) error {
+func updateArgs(state common.State, arguments []*Expression, args *types.Tuple) error {
 	for _, expressionArgument := range arguments {
 		arg, err := expressionArgument.Evaluate(state, nil)
 		if err != nil {

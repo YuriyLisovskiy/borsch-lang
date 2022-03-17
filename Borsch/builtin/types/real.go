@@ -253,7 +253,7 @@ func realOperator_Sub(_ common.State, left RealInstance, right common.Value) (co
 }
 
 func newRealClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
+	_ = func(attrs *map[string]common.Value) {
 		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
@@ -273,13 +273,13 @@ func newRealClass() *Class {
 	}
 
 	return &Class{
-		Name:            common.RealTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewRealInstance(0), nil
-		},
+		Name:    common.RealTypeName,
+		IsFinal: true,
+		Bases:   []*Class{},
+		// Parent:          BuiltinPackage,
+		// AttrInitializer: initAttributes,
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	return NewRealInstance(0), nil
+		// },
 	}
 }

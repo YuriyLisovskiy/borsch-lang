@@ -61,7 +61,7 @@ func typeOperator_Call() common.Value {
 
 func newTypeClass() *Class {
 	// TODO: add required operators and methods
-	initAttributes := func(attrs *map[string]common.Value) {
+	_ = func(attrs *map[string]common.Value) {
 		*attrs = map[string]common.Value{
 			// TODO: add doc
 			common.CallOperatorName: typeOperator_Call(),
@@ -81,16 +81,16 @@ func newTypeClass() *Class {
 	}
 
 	typeClass := &Class{
-		Name:            common.TypeTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
-			panic("unreachable")
-		},
+		Name:    common.TypeTypeName,
+		IsFinal: true,
+		Bases:   []*Class{},
+		// Parent:          BuiltinPackage,
+		// AttrInitializer: initAttributes,
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	panic("unreachable")
+		// },
 	}
 
-	typeClass.Class = typeClass
+	// typeClass.Class = typeClass
 	return typeClass
 }

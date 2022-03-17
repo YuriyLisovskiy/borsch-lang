@@ -47,8 +47,8 @@ func checkArgument(parameter *FunctionParameter, arg common.Value, isVariadic bo
 	)
 }
 
-func CheckFunctionArguments(function *FunctionInstance, args *[]common.Value, _ *map[string]common.Value) error {
-	parametersLen := len(*args)
+func CheckFunctionArguments(function *FunctionInstance, args Tuple, _ map[string]common.Value) error {
+	parametersLen := len(args)
 	argsLen := len(function.Parameters)
 	if argsLen > 0 && function.Parameters[argsLen-1].IsVariadic {
 		argsLen--
@@ -63,17 +63,17 @@ func CheckFunctionArguments(function *FunctionInstance, args *[]common.Value, _ 
 
 	var c int
 	for c = 0; c < argsLen; c++ {
-		if err := checkArgument(&function.Parameters[c], (*args)[c], false); err != nil {
+		if err := checkArgument(&function.Parameters[c], args[c], false); err != nil {
 			return err
 		}
 	}
 
 	if len(function.Parameters) > 0 {
 		if lastArgument := function.Parameters[len(function.Parameters)-1]; lastArgument.IsVariadic {
-			if len(*args)-parametersLen > 0 {
-				parametersLen = len(*args)
+			if len(args)-parametersLen > 0 {
+				parametersLen = len(args)
 				for k := c; k < parametersLen; k++ {
-					if err := checkArgument(&lastArgument, (*args)[k], true); err != nil {
+					if err := checkArgument(&lastArgument, args[k], true); err != nil {
 						return err
 					}
 				}

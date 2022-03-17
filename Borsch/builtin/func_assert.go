@@ -10,7 +10,7 @@ import (
 
 func assert(state common.State, expected common.Value, actual common.Value, errorTemplate string) error {
 	args := []common.Value{actual}
-	result, err := types.CallByName(state, expected, common.EqualsOp.Name(), &args, nil, true)
+	result, err := types.CallByName(state, expected, common.EqualsOp.Name(), args, nil, true)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func makeAssertFunction() *types.FunctionInstance {
 				IsNullable: true,
 			},
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "повідомлення_про_помилку",
 				IsVariadic: true,
 				IsNullable: false,

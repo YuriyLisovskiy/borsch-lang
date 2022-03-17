@@ -226,25 +226,25 @@ func newDictionaryClass() *Class {
 		Name:    common.DictionaryTypeName,
 		IsFinal: true,
 		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				map[string]common.Value{
-					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(Dictionary, toDictionary, ""),
-
-					// TODO: add doc
-					common.LengthOperatorName: makeLengthOperator(List, ""),
-
-					"вилучити": dictionaryMethod_Remove("вилучити"),
-				},
-				MakeLogicalOperators(Dictionary),
-				MakeComparisonOperators(Dictionary, compareDictionaries),
-				MakeCommonOperators(Dictionary),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewDictionaryInstance(), nil
-		},
+		// Parent:  BuiltinPackage,
+		// AttrInitializer: func(attrs *map[string]common.Value) {
+		// 	*attrs = MergeAttributes(
+		// 		map[string]common.Value{
+		// 			// TODO: add doc
+		// 			common.ConstructorName: makeVariadicConstructor(Dictionary, toDictionary, ""),
+		//
+		// 			// TODO: add doc
+		// 			common.LengthOperatorName: makeLengthOperator(List, ""),
+		//
+		// 			"вилучити": dictionaryMethod_Remove("вилучити"),
+		// 		},
+		// 		MakeLogicalOperators(Dictionary),
+		// 		MakeComparisonOperators(Dictionary, compareDictionaries),
+		// 		MakeCommonOperators(Dictionary),
+		// 	)
+		// },
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	return NewDictionaryInstance(), nil
+		// },
 	}
 }

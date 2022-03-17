@@ -95,7 +95,7 @@ func MakeComparisonOperator(
 				return nil, err
 			}
 
-			return NewBoolInstance(checker(res)), nil
+			return Bool(checker(res)), nil
 		},
 	)
 }
@@ -158,7 +158,7 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 					return nil, err
 				}
 
-				return NewBoolInstance(!selfBool), nil
+				return Bool(!selfBool), nil
 			},
 		),
 		common.AndOp.Name(): MakeBinaryMethod(
@@ -178,7 +178,7 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 					return nil, err
 				}
 
-				return NewBoolInstance(selfBool && otherBool), nil
+				return Bool(selfBool && otherBool), nil
 			},
 		),
 		common.OrOp.Name(): MakeBinaryMethod(
@@ -198,7 +198,7 @@ func MakeLogicalOperators(itemType *Class) map[string]common.Value {
 					return nil, err
 				}
 
-				return NewBoolInstance(selfBool || otherBool), nil
+				return Bool(selfBool || otherBool), nil
 			},
 		),
 	}
@@ -215,7 +215,7 @@ func MakeCommonOperators(itemType *Class) map[string]common.Value {
 					return nil, err
 				}
 
-				return NewBoolInstance(boolVal), nil
+				return Bool(boolVal), nil
 			},
 		),
 	}
@@ -349,12 +349,12 @@ func makeDefaultConstructor(cls *Class, doc string) *FunctionInstance {
 			},
 		},
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			instance, err := cls.GetEmptyInstance()
-			if err != nil {
-				return nil, err
-			}
-
-			(*args)[0] = instance
+			// instance, err := cls.GetEmptyInstance()
+			// if err != nil {
+			// 	return nil, err
+			// }
+			//
+			// (*args)[0] = instance
 			return NewNilInstance(), nil
 		},
 		[]FunctionReturnType{

@@ -11,9 +11,18 @@ import (
 
 type Bool bool
 
-func NewBoolInstance(value bool) Bool {
-	return Bool(value)
-}
+var (
+	BoolType = NewClass(
+		"логічний",
+		`логічний(x) -> логічний
+Повертає 'істина', якщо аргумент x є істиною, інакше - 'хиба'.
+The builtins True and False are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed.`,
+	)
+
+	False = Bool(false)
+	True  = Bool(true)
+)
 
 func (t Bool) GetClass() *Class {
 	return BoolType
@@ -63,9 +72,22 @@ func (t Bool) AsBool(common.State) (bool, error) {
 	return bool(t), nil
 }
 
+func (t Bool) __add__(_ common.Context, other common.Value) (common.Value, error) {
+	switch o := other.(type) {
+	case Bool:
+		return Int(boolToInt64(t) + boolToInt64(o)), nil
+	case Int:
+		return Int(boolToInt64(t)) + o, nil
+	case RealInstance:
+		return NewRealInstance(boolToFloat64(t) + o.Value), nil
+	default:
+		return nil, nil
+	}
+}
+
 func toBool(state common.State, args ...common.Value) (common.Value, error) {
 	if len(args) == 0 {
-		return NewBoolInstance(false), nil
+		return Bool(false), nil
 	}
 
 	if len(args) != 1 {
@@ -81,7 +103,7 @@ func toBool(state common.State, args ...common.Value) (common.Value, error) {
 		return nil, err
 	}
 
-	return NewBoolInstance(boolValue), err
+	return Bool(boolValue), err
 }
 
 func compareBooleans(state common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
@@ -330,39 +352,39 @@ func newBoolClass() *Class {
 		Name:    common.BoolTypeName,
 		IsFinal: true,
 		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				map[string]common.Value{
-					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(BoolType, toBool, ""),
-
-					common.PowOp.Name():    boolOperator(common.PowOp, boolOperator_Pow),
-					common.MulOp.Name():    boolOperator(common.MulOp, boolOperator_Mul),
-					common.DivOp.Name():    boolOperator(common.DivOp, boolOperator_Div),
-					common.ModuloOp.Name(): boolOperator(common.ModuloOp, boolOperator_Modulo),
-					common.AddOp.Name():    boolOperator(common.AddOp, boolOperator_Add),
-					common.SubOp.Name():    boolOperator(common.SubOp, boolOperator_Sub),
-					common.BitwiseLeftShiftOp.Name(): boolOperator(
-						common.BitwiseLeftShiftOp,
-						boolOperator_BitwiseLeftShift,
-					),
-					common.BitwiseRightShiftOp.Name(): boolOperator(
-						common.BitwiseRightShiftOp,
-						boolOperator_BitwiseRightShift,
-					),
-					common.BitwiseAndOp.Name(): boolOperator(common.BitwiseAndOp, boolOperator_BitwiseAnd),
-					common.BitwiseXorOp.Name(): boolOperator(common.BitwiseXorOp, boolOperator_BitwiseXor),
-					common.BitwiseOrOp.Name():  boolOperator(common.BitwiseOrOp, boolOperator_BitwiseOr),
-				},
-				MakeUnaryOperators(BoolType, Integer, evalUnaryOperatorWithBooleans),
-				MakeLogicalOperators(BoolType),
-				MakeComparisonOperators(BoolType, compareBooleans),
-				MakeCommonOperators(BoolType),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewBoolInstance(false), nil
-		},
+		// Parent:  BuiltinPackage,
+		// AttrInitializer: func(attrs *map[string]common.Value) {
+		// 	*attrs = MergeAttributes(
+		// 		map[string]common.Value{
+		// 			// TODO: add doc
+		// 			common.ConstructorName: makeVariadicConstructor(BoolType, toBool, ""),
+		//
+		// 			common.PowOp.Name():    boolOperator(common.PowOp, boolOperator_Pow),
+		// 			common.MulOp.Name():    boolOperator(common.MulOp, boolOperator_Mul),
+		// 			common.DivOp.Name():    boolOperator(common.DivOp, boolOperator_Div),
+		// 			common.ModuloOp.Name(): boolOperator(common.ModuloOp, boolOperator_Modulo),
+		// 			common.AddOp.Name():    boolOperator(common.AddOp, boolOperator_Add),
+		// 			common.SubOp.Name():    boolOperator(common.SubOp, boolOperator_Sub),
+		// 			common.BitwiseLeftShiftOp.Name(): boolOperator(
+		// 				common.BitwiseLeftShiftOp,
+		// 				boolOperator_BitwiseLeftShift,
+		// 			),
+		// 			common.BitwiseRightShiftOp.Name(): boolOperator(
+		// 				common.BitwiseRightShiftOp,
+		// 				boolOperator_BitwiseRightShift,
+		// 			),
+		// 			common.BitwiseAndOp.Name(): boolOperator(common.BitwiseAndOp, boolOperator_BitwiseAnd),
+		// 			common.BitwiseXorOp.Name(): boolOperator(common.BitwiseXorOp, boolOperator_BitwiseXor),
+		// 			common.BitwiseOrOp.Name():  boolOperator(common.BitwiseOrOp, boolOperator_BitwiseOr),
+		// 		},
+		// 		MakeUnaryOperators(BoolType, Integer, evalUnaryOperatorWithBooleans),
+		// 		MakeLogicalOperators(BoolType),
+		// 		MakeComparisonOperators(BoolType, compareBooleans),
+		// 		MakeCommonOperators(BoolType),
+		// 	)
+		// },
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	return Bool(false), nil
+		// },
 	}
 }

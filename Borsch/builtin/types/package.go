@@ -73,16 +73,16 @@ func NewPackageClass() *Class {
 		Name:    common.PackageTypeName,
 		IsFinal: true,
 		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				MakeLogicalOperators(Package),
-				MakeComparisonOperators(Package, comparePackages),
-				MakeCommonOperators(Package),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			panic("unreachable")
-		},
+		// Parent:  BuiltinPackage,
+		// AttrInitializer: func(attrs *map[string]common.Value) {
+		// 	*attrs = MergeAttributes(
+		// 		MakeLogicalOperators(Package),
+		// 		MakeComparisonOperators(Package, comparePackages),
+		// 		MakeCommonOperators(Package),
+		// 	)
+		// },
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	panic("unreachable")
+		// },
 	}
 }

@@ -11,11 +11,11 @@ import (
 func Call(
 	state common.State,
 	function *FunctionInstance,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
+	args Tuple,
+	kwargs map[string]common.Value,
 ) (common.Value, error) {
 	if args == nil {
-		args = &[]common.Value{}
+		args = Tuple{}
 	}
 
 	if err := CheckFunctionArguments(function, args, nil); err != nil {
@@ -23,18 +23,20 @@ func Call(
 	}
 
 	if kwargs == nil {
-		kwargs = &map[string]common.Value{}
+		kwargs = map[string]common.Value{}
 	}
 
-	updateKwargs(*args, kwargs, function.Parameters)
+	updateKwargs(args, &kwargs, function.Parameters)
 	ctx := function.GetContext()
 	if ctx == nil {
 		ctx = state.GetContext()
 	}
 
-	ctx.PushScope(*kwargs)
+	ctx.PushScope(kwargs)
 	funcState := state.WithContext(ctx)
-	result, err := function.Call(funcState, args, kwargs)
+	var argsSlice []common.Value
+	argsSlice = args
+	result, err := function.Call(funcState, &argsSlice, &kwargs)
 	if err != nil {
 		return nil, utilities.NewCallError(err, function.Name)
 	}
@@ -52,8 +54,8 @@ func CallAttribute(
 	object common.Value,
 	attribute common.Value,
 	attributeName string,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
+	args Tuple,
+	kwargs map[string]common.Value,
 	isMethod bool,
 ) (common.Value, error) {
 	switch function := attribute.(type) {
@@ -69,10 +71,10 @@ func CallAttribute(
 			}
 
 			if args == nil {
-				args = &[]common.Value{}
+				args = Tuple{}
 			}
 
-			*args = append([]common.Value{object}, *args...)
+			args = append([]common.Value{object}, args...)
 		}
 
 		return Call(state, function, args, kwargs)
@@ -85,8 +87,8 @@ func CallByName(
 	state common.State,
 	object common.Value,
 	funcName string,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
+	args Tuple,
+	kwargs map[string]common.Value,
 	isMethod bool,
 ) (common.Value, error) {
 	attribute, err := object.GetAttribute(funcName)

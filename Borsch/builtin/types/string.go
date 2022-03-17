@@ -10,16 +10,16 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-type StringInstance struct {
+type String struct {
 	BuiltinInstance
 	Value string
 }
 
-func NewStringInstance(value string) StringInstance {
-	return StringInstance{
+func NewStringInstance(value string) String {
+	return String{
 		BuiltinInstance: BuiltinInstance{
 			ClassInstance: ClassInstance{
-				class:      String,
+				class:      StringClass,
 				attributes: map[string]common.Value{},
 				address:    "",
 			},
@@ -28,11 +28,11 @@ func NewStringInstance(value string) StringInstance {
 	}
 }
 
-func (t StringInstance) String(common.State) (string, error) {
+func (t String) String(common.State) (string, error) {
 	return t.Value, nil
 }
 
-func (t StringInstance) Representation(state common.State) (string, error) {
+func (t String) Representation(state common.State) (string, error) {
 	value, err := t.String(state)
 	if err != nil {
 		return "", err
@@ -41,15 +41,15 @@ func (t StringInstance) Representation(state common.State) (string, error) {
 	return "\"" + value + "\"", nil
 }
 
-func (t StringInstance) AsBool(state common.State) (bool, error) {
+func (t String) AsBool(state common.State) (bool, error) {
 	return t.Length(state) != 0, nil
 }
 
-func (t StringInstance) Length(_ common.State) int64 {
+func (t String) Length(_ common.State) int64 {
 	return int64(utf8.RuneCountInString(t.Value))
 }
 
-func (t StringInstance) GetElement(state common.State, index int64) (common.Value, error) {
+func (t String) GetElement(state common.State, index int64) (common.Value, error) {
 	idx, err := getIndex(index, t.Length(state))
 	if err != nil {
 		return nil, err
@@ -58,9 +58,9 @@ func (t StringInstance) GetElement(state common.State, index int64) (common.Valu
 	return NewStringInstance(string([]rune(t.Value)[idx])), nil
 }
 
-func (t StringInstance) SetElement(state common.State, index int64, value common.Value) (common.Value, error) {
+func (t String) SetElement(state common.State, index int64, value common.Value) (common.Value, error) {
 	switch v := value.(type) {
-	case StringInstance:
+	case String:
 		idx, err := getIndex(index, t.Length(state))
 		if err != nil {
 			return nil, err
@@ -81,7 +81,7 @@ func (t StringInstance) SetElement(state common.State, index int64, value common
 	return t, nil
 }
 
-func (t StringInstance) Slice(state common.State, from, to int64) (common.Value, error) {
+func (t String) Slice(state common.State, from, to int64) (common.Value, error) {
 	length := t.Length(state)
 	fromIdx := normalizeBound(from, length)
 	toIdx := normalizeBound(to, length)
@@ -93,14 +93,14 @@ func (t StringInstance) Slice(state common.State, from, to int64) (common.Value,
 }
 
 func compareStrings(_ common.State, op common.Operator, self, other common.Value) (int, error) {
-	left, ok := self.(StringInstance)
+	left, ok := self.(String)
 	if !ok {
 		return 0, utilities.IncorrectUseOfFunctionError("compareStrings")
 	}
 
 	switch right := other.(type) {
 	case NilInstance:
-	case StringInstance:
+	case String:
 		if left.Value == right.Value {
 			return 0, nil
 		}
@@ -120,13 +120,13 @@ func compareStrings(_ common.State, op common.Operator, self, other common.Value
 
 func stringBinaryOperator(
 	operator common.Operator,
-	handler func(common.State, StringInstance, common.Value) (common.Value, error),
+	handler func(common.State, String, common.Value) (common.Value, error),
 ) common.Value {
 	return NewFunctionInstance(
 		operator.Name(),
 		[]FunctionParameter{
 			{
-				Type:       String,
+				Type:       StringClass,
 				Name:       "я",
 				IsVariadic: false,
 				IsNullable: false,
@@ -139,7 +139,7 @@ func stringBinaryOperator(
 			},
 		},
 		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			left, ok := (*args)[0].(StringInstance)
+			left, ok := (*args)[0].(String)
 			if !ok {
 				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
 			}
@@ -168,7 +168,7 @@ func stringBinaryOperator(
 	)
 }
 
-func stringOperator_Mul(_ common.State, left StringInstance, right common.Value) (common.Value, error) {
+func stringOperator_Mul(_ common.State, left String, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
 	case Int:
 		count := int(other)
@@ -182,9 +182,9 @@ func stringOperator_Mul(_ common.State, left StringInstance, right common.Value)
 	}
 }
 
-func stringOperator_Add(_ common.State, left StringInstance, right common.Value) (common.Value, error) {
+func stringOperator_Add(_ common.State, left String, right common.Value) (common.Value, error) {
 	switch other := right.(type) {
-	case StringInstance:
+	case String:
 		return NewStringInstance(left.Value + other.Value), nil
 	default:
 		return nil, nil
@@ -192,28 +192,28 @@ func stringOperator_Add(_ common.State, left StringInstance, right common.Value)
 }
 
 func newStringClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
+	_ = func(attrs *map[string]common.Value) {
 		*attrs = MergeAttributes(
 			map[string]common.Value{
 				// TODO: add doc
-				common.ConstructorName: makeVariadicConstructor(String, ToString, ""),
+				common.ConstructorName: makeVariadicConstructor(StringClass, ToString, ""),
 				common.MulOp.Name():    stringBinaryOperator(common.MulOp, stringOperator_Mul),
 				common.AddOp.Name():    stringBinaryOperator(common.AddOp, stringOperator_Add),
 			},
-			MakeLogicalOperators(String),
-			MakeComparisonOperators(String, compareStrings),
-			MakeCommonOperators(String),
+			MakeLogicalOperators(StringClass),
+			MakeComparisonOperators(StringClass, compareStrings),
+			MakeCommonOperators(StringClass),
 		)
 	}
 
 	return &Class{
-		Name:            common.StringTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewStringInstance(""), nil
-		},
+		Name:    common.StringTypeName,
+		IsFinal: true,
+		Bases:   []*Class{},
+		// Parent:          BuiltinPackage,
+		// AttrInitializer: initAttributes,
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	return NewStringInstance(""), nil
+		// },
 	}
 }

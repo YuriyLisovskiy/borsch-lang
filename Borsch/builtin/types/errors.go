@@ -7,6 +7,46 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
+var (
+	BaseError = ObjectClass.NewClass(
+		"БазоваПомилка",
+		"Спільний базовий клас для усіх помилок",
+		ErrorNew,
+		nil,
+	)
+	ErrorType = BaseError.NewClass(
+		"Помилка",
+		"Спільний базовий клас для усіх помилок, визначених розробником",
+		nil,
+		nil,
+	)
+	AttributeError      = ErrorType.NewClass("ПомилкаАтрибута", "Атрибут не знайдено.", nil, nil)
+	TypeError           = ErrorType.NewClass("ПомилкаТипу", "Невідповідний тип аргументу.", nil, nil)
+	RuntimeError        = ErrorType.NewClass("ПомилкаВиконання", "Невизначена помилка виконання.", nil, nil)
+	NotImplementedError = RuntimeError.NewClass(
+		"ПомилкаВідсутностіРеалізації",
+		"Метод або функція не реалізована.",
+		nil,
+		nil,
+	)
+
+	// Singleton exceptions
+
+	NotImplemented common.Value
+)
+
+func init() {
+	var err error
+	NotImplemented = &Error{
+		Base:    NotImplementedError,
+		Dict:    Dict{},
+		Message: "",
+	}
+	if err != nil {
+		log.Fatalf("Failed to make NotImplemented")
+	}
+}
+
 type Error struct {
 	Base    *Class
 	Dict    Dict
@@ -70,49 +110,27 @@ func (e *Error) Error() string {
 }
 
 func ErrorNewf(cls *Class, format string, a ...interface{}) error {
-	return &Error{
-		Base:    cls,
-		Message: fmt.Sprintf(format, a...),
-		Dict:    Dict{},
-	}
+	return errorNew(cls, fmt.Sprintf(format, a...))
 }
 
-var (
-	BaseError = ObjectClass.NewClass(
-		"БазоваПомилка",
-		"Спільний базовий клас для усіх помилок",
-		ErrorNew,
-		nil,
-	)
-	ErrorType = BaseError.NewClass(
-		"Помилка",
-		"Спільний базовий клас для усіх помилок, визначених розробником",
-		nil,
-		nil,
-	)
-	AttributeError      = ErrorType.NewClass("ПомилкаАтрибута", "Атрибут не знайдено.", nil, nil)
-	TypeError           = ErrorType.NewClass("ПомилкаТипу", "Невідповідний тип аргументу.", nil, nil)
-	RuntimeError        = ErrorType.NewClass("ПомилкаВиконання", "Невизначена помилка виконання.", nil, nil)
-	NotImplementedError = RuntimeError.NewClass(
-		"ПомилкаВідсутностіРеалізації",
-		"Метод або функція не реалізована.",
-		nil,
-		nil,
-	)
+func ErrorNew(state common.State, cls *Class, args Tuple, _ map[string]common.Value) (common.Value, error) {
+	message := ""
+	for _, arg := range args {
+		strArg, err := Str(state, arg)
+		if err != nil {
+			return nil, err
+		}
 
-	// Singleton exceptions
-
-	NotImplemented common.Value
-)
-
-func init() {
-	var err error
-	NotImplemented = &Error{
-		Base:    NotImplementedError,
-		Dict:    Dict{},
-		Message: "",
+		message += strArg.(String).Value
 	}
-	if err != nil {
-		log.Fatalf("Failed to make NotImplemented")
+
+	return errorNew(cls, message), nil
+}
+
+func errorNew(cls *Class, message string) *Error {
+	return &Error{
+		Base:    cls,
+		Message: message,
+		Dict:    Dict{},
 	}
 }

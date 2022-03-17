@@ -110,7 +110,7 @@ func makeErrorOperator_Constructor() common.Value {
 				IsNullable: false,
 			},
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "повідомлення",
 				IsVariadic: true,
 				IsNullable: false,
@@ -143,7 +143,7 @@ func makeErrorMethod_Message(name string) common.Value {
 		errorEvalMessage,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				IsNullable: false,
 			},
 		},
@@ -158,54 +158,54 @@ func newErrorClass() *types.Class {
 		Name:    common.ErrorTypeName,
 		IsFinal: false,
 		Bases:   []*types.Class{},
-		Parent:  types.BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = types.MergeAttributes(
-				map[string]common.Value{
-					// TODO: add doc
-					common.ConstructorName: makeErrorOperator_Constructor(),
-					"повідомлення":         makeErrorMethod_Message("повідомлення"),
-					common.EqualsOp.Name(): types.MakeComparisonOperator(
-						// TODO: add doc
-						common.EqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
-							return res == 0
-						},
-					),
-					common.NotEqualsOp.Name(): types.MakeComparisonOperator(
-						// TODO: add doc
-						common.NotEqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
-							return res != 0
-						},
-					),
-					common.StringOperatorName: types.MakeUnaryMethod(
-						common.StringOperatorName, ErrorClass, types.String, "",
-						func(state common.State, value common.Value) (common.Value, error) {
-							message, err := errorInstance_EvalString(state, value)
-							if err != nil {
-								return nil, err
-							}
-
-							return types.NewStringInstance(message), nil
-						},
-					),
-					common.RepresentationOperatorName: types.MakeUnaryMethod(
-						common.RepresentationOperatorName, ErrorClass, types.String, "",
-						func(state common.State, value common.Value) (common.Value, error) {
-							message, err := errorInstance_EvalRepresentation(state, value)
-							if err != nil {
-								return nil, err
-							}
-
-							return types.NewStringInstance(message), nil
-						},
-					),
-				},
-				types.MakeLogicalOperators(ErrorClass),
-				types.MakeCommonOperators(ErrorClass),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewErrorInstance("")
-		},
+		// Parent:  types.BuiltinPackage,
+		// AttrInitializer: func(attrs *map[string]common.Value) {
+		// 	*attrs = types.MergeAttributes(
+		// 		map[string]common.Value{
+		// 			// TODO: add doc
+		// 			common.ConstructorName: makeErrorOperator_Constructor(),
+		// 			"повідомлення":         makeErrorMethod_Message("повідомлення"),
+		// 			common.EqualsOp.Name(): types.MakeComparisonOperator(
+		// 				// TODO: add doc
+		// 				common.EqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
+		// 					return res == 0
+		// 				},
+		// 			),
+		// 			common.NotEqualsOp.Name(): types.MakeComparisonOperator(
+		// 				// TODO: add doc
+		// 				common.NotEqualsOp, ErrorClass, "", compareErrors, func(res int) bool {
+		// 					return res != 0
+		// 				},
+		// 			),
+		// 			common.StringOperatorName: types.MakeUnaryMethod(
+		// 				common.StringOperatorName, ErrorClass, types.StringClass, "",
+		// 				func(state common.State, value common.Value) (common.Value, error) {
+		// 					message, err := errorInstance_EvalString(state, value)
+		// 					if err != nil {
+		// 						return nil, err
+		// 					}
+		//
+		// 					return types.NewStringInstance(message), nil
+		// 				},
+		// 			),
+		// 			common.RepresentOperatorName: types.MakeUnaryMethod(
+		// 				common.RepresentOperatorName, ErrorClass, types.StringClass, "",
+		// 				func(state common.State, value common.Value) (common.Value, error) {
+		// 					message, err := errorInstance_EvalRepresentation(state, value)
+		// 					if err != nil {
+		// 						return nil, err
+		// 					}
+		//
+		// 					return types.NewStringInstance(message), nil
+		// 				},
+		// 			),
+		// 		},
+		// 		types.MakeLogicalOperators(ErrorClass),
+		// 		types.MakeCommonOperators(ErrorClass),
+		// 	)
+		// },
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	return NewErrorInstance("")
+		// },
 	}
 }

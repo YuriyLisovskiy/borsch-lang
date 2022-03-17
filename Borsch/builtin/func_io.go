@@ -53,7 +53,7 @@ func evalInput(state common.State, args *[]common.Value, kwargs *map[string]comm
 		return nil, utilities.InternalError(err.Error())
 	}
 
-	return types.StringInstance{Value: strings.TrimSuffix(input, "\n")}, nil
+	return types.String{Value: strings.TrimSuffix(input, "\n")}, nil
 }
 
 func makePrintFunction() *types.FunctionInstance {
@@ -109,7 +109,7 @@ func makeInputFunction() *types.FunctionInstance {
 		"ввід",
 		[]types.FunctionParameter{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				Name:       "повідомлення",
 				IsVariadic: true,
 				IsNullable: false,
@@ -118,7 +118,7 @@ func makeInputFunction() *types.FunctionInstance {
 		evalInput,
 		[]types.FunctionReturnType{
 			{
-				Type:       types.String,
+				Type:       types.StringClass,
 				IsNullable: false,
 			},
 		},

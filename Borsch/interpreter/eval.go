@@ -225,7 +225,7 @@ func (node *Literal) Evaluate(state common.State) (common.Value, error) {
 	}
 
 	if node.Bool != nil {
-		return types.NewBoolInstance(bool(*node.Bool)), nil
+		return types.Bool(bool(*node.Bool)), nil
 	}
 
 	if node.StringValue != nil {
@@ -481,5 +481,5 @@ func (node *LambdaDef) evalInstantCall(state common.State, function *types.Funct
 		}
 	}
 
-	return types.Call(state, function, &args, nil)
+	return types.Call(state, function, args, nil)
 }

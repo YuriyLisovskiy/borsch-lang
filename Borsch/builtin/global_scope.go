@@ -34,7 +34,7 @@ func init() {
 		"дійсний":           types.Real,
 		"логічний":          types.BoolType,
 		ImportFunction.Name: ImportFunction,
-		"рядок":             types.String,
+		"рядок":             types.StringClass,
 		"словник":           types.Dictionary,
 		"список":            types.List,
 		// "функція": types.Function,

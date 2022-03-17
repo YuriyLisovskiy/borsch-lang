@@ -75,7 +75,7 @@ func toInteger(_ common.State, args ...common.Value) (common.Value, error) {
 		return Int(vt.Value), nil
 	case Int:
 		return vt, nil
-	case StringInstance:
+	case String:
 		intVal, err := strconv.ParseInt(vt.Value, 10, 64)
 		if err != nil {
 			return nil, errors.New(
@@ -237,7 +237,7 @@ func intOperator_Mul(_ common.State, left Int, right common.Value) (common.Value
 		return left * other, nil
 	case RealInstance:
 		return NewRealInstance(float64(left) * other.Value), nil
-	case StringInstance:
+	case String:
 		count := int(left)
 		if count <= 0 {
 			return NewStringInstance(""), nil
@@ -383,39 +383,39 @@ func newIntegerClass() *Class {
 		Name:    common.IntegerTypeName,
 		IsFinal: true,
 		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				map[string]common.Value{
-					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(Integer, toInteger, ""),
-
-					common.PowOp.Name():    intOperator(common.PowOp, intOperator_Pow),
-					common.MulOp.Name():    intOperator(common.MulOp, intOperator_Mul),
-					common.DivOp.Name():    intOperator(common.DivOp, intOperator_Div),
-					common.ModuloOp.Name(): intOperator(common.ModuloOp, intOperator_Modulo),
-					common.AddOp.Name():    intOperator(common.AddOp, intOperator_Add),
-					common.SubOp.Name():    intOperator(common.SubOp, intOperator_Sub),
-					common.BitwiseLeftShiftOp.Name(): intOperator(
-						common.BitwiseLeftShiftOp,
-						intOperator_BitwiseLeftShift,
-					),
-					common.BitwiseRightShiftOp.Name(): intOperator(
-						common.BitwiseRightShiftOp,
-						intOperator_BitwiseRightShift,
-					),
-					common.BitwiseAndOp.Name(): intOperator(common.BitwiseAndOp, intOperator_BitwiseAnd),
-					common.BitwiseXorOp.Name(): intOperator(common.BitwiseXorOp, intOperator_BitwiseXor),
-					common.BitwiseOrOp.Name():  intOperator(common.BitwiseOrOp, intOperator_BitwiseOr),
-				},
-				MakeUnaryOperators(Integer, Integer, evalUnaryOperatorWithIntegers),
-				MakeLogicalOperators(Integer),
-				MakeComparisonOperators(Integer, compareIntegers),
-				MakeCommonOperators(Integer),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			return Int(0), nil
-		},
+		// Parent:  BuiltinPackage,
+		// AttrInitializer: func(attrs *map[string]common.Value) {
+		// 	*attrs = MergeAttributes(
+		// 		map[string]common.Value{
+		// 			// TODO: add doc
+		// 			common.ConstructorName: makeVariadicConstructor(Integer, toInteger, ""),
+		//
+		// 			common.PowOp.Name():    intOperator(common.PowOp, intOperator_Pow),
+		// 			common.MulOp.Name():    intOperator(common.MulOp, intOperator_Mul),
+		// 			common.DivOp.Name():    intOperator(common.DivOp, intOperator_Div),
+		// 			common.ModuloOp.Name(): intOperator(common.ModuloOp, intOperator_Modulo),
+		// 			common.AddOp.Name():    intOperator(common.AddOp, intOperator_Add),
+		// 			common.SubOp.Name():    intOperator(common.SubOp, intOperator_Sub),
+		// 			common.BitwiseLeftShiftOp.Name(): intOperator(
+		// 				common.BitwiseLeftShiftOp,
+		// 				intOperator_BitwiseLeftShift,
+		// 			),
+		// 			common.BitwiseRightShiftOp.Name(): intOperator(
+		// 				common.BitwiseRightShiftOp,
+		// 				intOperator_BitwiseRightShift,
+		// 			),
+		// 			common.BitwiseAndOp.Name(): intOperator(common.BitwiseAndOp, intOperator_BitwiseAnd),
+		// 			common.BitwiseXorOp.Name(): intOperator(common.BitwiseXorOp, intOperator_BitwiseXor),
+		// 			common.BitwiseOrOp.Name():  intOperator(common.BitwiseOrOp, intOperator_BitwiseOr),
+		// 		},
+		// 		MakeUnaryOperators(Integer, Integer, evalUnaryOperatorWithIntegers),
+		// 		MakeLogicalOperators(Integer),
+		// 		MakeComparisonOperators(Integer, compareIntegers),
+		// 		MakeCommonOperators(Integer),
+		// 	)
+		// },
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	return Int(0), nil
+		// },
 	}
 }

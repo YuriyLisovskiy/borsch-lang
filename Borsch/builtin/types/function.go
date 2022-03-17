@@ -182,7 +182,7 @@ func functionOperator_Call(name string) common.Value {
 			functionArgs := (*args)[1:]
 			functionKwargs := *kwargs
 			delete(functionKwargs, "я")
-			if err := CheckFunctionArguments(function, &functionArgs, &functionKwargs); err != nil {
+			if err := CheckFunctionArguments(function, functionArgs, functionKwargs); err != nil {
 				return nil, err
 			}
 
@@ -205,18 +205,18 @@ func newFunctionClass() *Class {
 		Name:    common.FunctionTypeName,
 		IsFinal: true,
 		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				map[string]common.Value{
-					common.CallOperatorName: functionOperator_Call(common.CallOperatorName),
-				},
-				MakeLogicalOperators(Function),
-				MakeCommonOperators(Function),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			panic("unreachable")
-		},
+		// Parent:  BuiltinPackage,
+		// AttrInitializer: func(attrs *map[string]common.Value) {
+		// 	*attrs = MergeAttributes(
+		// 		map[string]common.Value{
+		// 			common.CallOperatorName: functionOperator_Call(common.CallOperatorName),
+		// 		},
+		// 		MakeLogicalOperators(Function),
+		// 		MakeCommonOperators(Function),
+		// 	)
+		// },
+		// GetEmptyInstance: func() (common.Value, error) {
+		// 	panic("unreachable")
+		// },
 	}
 }
