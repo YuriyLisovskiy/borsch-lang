@@ -1,219 +1,123 @@
 package types
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
-	"unicode/utf8"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-type StringInstance struct {
-	BuiltinInstance
-	Value string
+var StringClass = ObjectClass.ClassNew("рядок", map[string]Object{}, true, StringNew, nil)
+
+type String string
+
+func (value String) Class() *Class {
+	return StringClass
 }
 
-func NewStringInstance(value string) StringInstance {
-	return StringInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance: ClassInstance{
-				class:      String,
-				attributes: map[string]common.Value{},
-				address:    "",
-			},
-		},
-		Value: value,
-	}
+func (value String) represent(Context) (Object, error) {
+	out, err := StringEscape(value, false)
+	return String(out), err
 }
 
-func (t StringInstance) String(common.State) (string, error) {
-	return t.Value, nil
+func (value String) string(Context) (Object, error) {
+	return value, nil
 }
 
-func (t StringInstance) Representation(state common.State) (string, error) {
-	value, err := t.String(state)
-	if err != nil {
-		return "", err
+func (value String) add(_ Context, other Object) (Object, error) {
+	if s, ok := other.(String); ok {
+		return value + s, nil
 	}
 
-	return "\"" + value + "\"", nil
+	return nil, ErrorNewf("неможливо виконати конкатенацію рядка з об'єктом '%s'", other.Class().Name)
 }
 
-func (t StringInstance) AsBool(state common.State) (bool, error) {
-	return t.Length(state) != 0, nil
-}
-
-func (t StringInstance) Length(_ common.State) int64 {
-	return int64(utf8.RuneCountInString(t.Value))
-}
-
-func (t StringInstance) GetElement(state common.State, index int64) (common.Value, error) {
-	idx, err := getIndex(index, t.Length(state))
-	if err != nil {
-		return nil, err
+func (value String) reversedAdd(_ Context, other Object) (Object, error) {
+	if s, ok := other.(String); ok {
+		return s + value, nil
 	}
 
-	return NewStringInstance(string([]rune(t.Value)[idx])), nil
+	return nil, ErrorNewf("неможливо виконати конкатенацію об'єкта '%s' з рядком", other.Class().Name)
 }
 
-func (t StringInstance) SetElement(state common.State, index int64, value common.Value) (common.Value, error) {
-	switch v := value.(type) {
-	case StringInstance:
-		idx, err := getIndex(index, t.Length(state))
-		if err != nil {
-			return nil, err
-		}
-
-		if utf8.RuneCountInString(v.Value) != 1 {
-			return nil, errors.New("неможливо вставити жодного, або більше ніж один символ в рядок")
-		}
-
-		runes := []rune(v.Value)
-		target := []rune(t.Value)
-		target[idx] = runes[0]
-		t.Value = string(target)
-	default:
-		return nil, errors.New(fmt.Sprintf("неможливо вставити в рядок об'єкт типу '%s'", v.GetTypeName()))
+func StringEscape(a String, ascii bool) (string, error) {
+	s := string(a)
+	var out bytes.Buffer
+	quote := '\''
+	if strings.ContainsRune(s, '\'') && !strings.ContainsRune(s, '"') {
+		quote = '"'
 	}
 
-	return t, nil
-}
-
-func (t StringInstance) Slice(state common.State, from, to int64) (common.Value, error) {
-	length := t.Length(state)
-	fromIdx := normalizeBound(from, length)
-	toIdx := normalizeBound(to, length)
-	if fromIdx > toIdx {
-		return nil, errors.New("індекс рядка за межами послідовності")
+	if !ascii {
+		out.WriteRune(quote)
 	}
 
-	return NewStringInstance(string([]rune(t.Value)[fromIdx:toIdx])), nil
-}
-
-func compareStrings(_ common.State, op common.Operator, self, other common.Value) (int, error) {
-	left, ok := self.(StringInstance)
-	if !ok {
-		return 0, utilities.IncorrectUseOfFunctionError("compareStrings")
-	}
-
-	switch right := other.(type) {
-	case NilInstance:
-	case StringInstance:
-		if left.Value == right.Value {
-			return 0, nil
-		}
-
-		if left.Value < right.Value {
-			return -1, nil
-		}
-
-		return 1, nil
-	default:
-		return 0, utilities.OperatorNotSupportedError(op, left, right)
-	}
-
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
-}
-
-func stringBinaryOperator(
-	operator common.Operator,
-	handler func(common.State, StringInstance, common.Value) (common.Value, error),
-) common.Value {
-	return NewFunctionInstance(
-		operator.Name(),
-		[]FunctionParameter{
-			{
-				Type:       String,
-				Name:       "я",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-			{
-				Type:       Any,
-				Name:       "інший",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			left, ok := (*args)[0].(StringInstance)
-			if !ok {
-				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
+	for _, c := range s {
+		switch {
+		case c < 0x20:
+			switch c {
+			case '\t':
+				out.WriteString(`\t`)
+			case '\n':
+				out.WriteString(`\n`)
+			case '\r':
+				out.WriteString(`\r`)
+			default:
+				_, err := fmt.Fprintf(&out, `\x%02x`, c)
+				if err != nil {
+					// TODO: convert to ukr error!
+					return "", err
+				}
 			}
-
-			right := (*args)[1]
-			result, err := handler(state, left, right)
-			if err != nil {
-				return nil, err
+		case !ascii && c < 0x7F:
+			if c == '\\' || (quote == '\'' && c == '\'') || (quote == '"' && c == '"') {
+				out.WriteRune('\\')
 			}
-
-			if result == nil {
-				return nil, utilities.OperatorNotSupportedError(operator, left, right)
+			out.WriteRune(c)
+		case c < 0x100:
+			if ascii || strconv.IsPrint(c) {
+				out.WriteRune(c)
+			} else {
+				_, err := fmt.Fprintf(&out, "\\x%02x", c)
+				if err != nil {
+					// TODO: convert to ukr error!
+					return "", err
+				}
 			}
-
-			return result, nil
-		},
-		[]FunctionReturnType{
-			{
-				Type:       Any,
-				IsNullable: false,
-			},
-		},
-		true,
-		nil,
-		"", // TODO: add doc
-	)
-}
-
-func stringOperator_Mul(_ common.State, left StringInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case IntegerInstance:
-		count := int(other.Value)
-		if count < 0 {
-			return NewStringInstance(""), nil
+		case c < 0x10000:
+			if !ascii && strconv.IsPrint(c) {
+				out.WriteRune(c)
+			} else {
+				_, err := fmt.Fprintf(&out, "\\u%04x", c)
+				if err != nil {
+					// TODO: convert to ukr error!
+					return "", err
+				}
+			}
+		default:
+			if !ascii && strconv.IsPrint(c) {
+				out.WriteRune(c)
+			} else {
+				_, err := fmt.Fprintf(&out, "\\U%08x", c)
+				if err != nil {
+					// TODO: convert to ukr error!
+					return "", err
+				}
+			}
 		}
-
-		return NewStringInstance(strings.Repeat(left.Value, count)), nil
-	default:
-		return nil, nil
 	}
+
+	if !ascii {
+		out.WriteRune(quote)
+	}
+
+	return out.String(), nil
 }
 
-func stringOperator_Add(_ common.State, left StringInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case StringInstance:
-		return NewStringInstance(left.Value + other.Value), nil
-	default:
-		return nil, nil
-	}
-}
-
-func newStringClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			map[string]common.Value{
-				// TODO: add doc
-				common.ConstructorName: makeVariadicConstructor(String, ToString, ""),
-				common.MulOp.Name():    stringBinaryOperator(common.MulOp, stringOperator_Mul),
-				common.AddOp.Name():    stringBinaryOperator(common.AddOp, stringOperator_Add),
-			},
-			MakeLogicalOperators(String),
-			MakeComparisonOperators(String, compareStrings),
-			MakeCommonOperators(String),
-		)
+func StringNew(ctx Context, cls *Class, args Tuple) (Object, error) {
+	if len(args) != 1 {
+		return nil, ErrorNewf("рядок() приймає 1 аргумент")
 	}
 
-	return &Class{
-		Name:            common.StringTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewStringInstance(""), nil
-		},
-	}
+	return ToString(ctx, args[0])
 }

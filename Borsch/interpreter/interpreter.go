@@ -15,28 +15,28 @@ import (
 )
 
 type Interpreter struct {
-	packages    map[string]*types.PackageInstance
-	rootContext common.Context
+	packages    map[string]*types.Package
+	rootContext types.Context
 	stacktrace  common.StackTrace
 }
 
 func NewInterpreter() *Interpreter {
 	i := &Interpreter{
-		packages: map[string]*types.PackageInstance{},
+		packages: map[string]*types.Package{},
 	}
 
 	i.rootContext = &ContextImpl{
-		scopes:        []map[string]common.Value{builtin.GlobalScope},
+		scopes:        []map[string]types.Object{GlobalScope},
 		parentContext: nil,
 	}
 	return i
 }
 
 func (i *Interpreter) Import(state common.State, newPackagePath string) (
-	common.Value,
+	types.Object,
 	error,
 ) {
-	parentPackageInstance, _ := state.GetCurrentPackageOrNil().(*types.PackageInstance)
+	parentPackageInstance, _ := state.GetCurrentPackageOrNil().(*types.Package)
 	fullPackagePath, err := getFullPath(newPackagePath, parentPackageInstance)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 
 	currPackage := parentPackageInstance
 	for currPackage != nil {
-		if currPackage.Name == fullPackagePath {
+		if currPackage.Filename == fullPackagePath {
 			return nil, errors.New("циклічний імпорт заборонений")
 		}
 
@@ -65,32 +65,31 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 		return nil, err
 	}
 
-	pkg := types.NewPackageInstance(
-		i.rootContext.Derive(),
+	pkg := types.PackageNew(
 		fullPackagePath,
 		parentPackageInstance,
-		nil,
+		i.rootContext.Derive(),
 	)
-	ctx := pkg.GetContext()
+	ctx := pkg.Context
 	if _, err = ast.Evaluate(state.WithContext(ctx).WithPackage(pkg)); err != nil {
 		return nil, err
 	}
 
 	scope := ctx.TopScope()
-	attrs := map[string]common.Value{}
-	if toExport, err := ctx.GetVar(common.ExportedAttributeName); err == nil {
+	attrs := map[string]types.Object{}
+	if toExport, err := ctx.GetVar(builtin.ExportedAttributeName); err == nil {
 		switch exported := toExport.(type) {
-		case types.ListInstance:
-			for _, value := range exported.Values {
-				if name, ok := value.(types.StringInstance); ok {
-					if attr, ok := scope[name.Value]; ok {
-						attrs[name.Value] = attr
-					}
-				}
-			}
-		case types.StringInstance:
-			if attr, ok := scope[exported.Value]; ok {
-				attrs[exported.Value] = attr
+		// case types.ListInstance:
+		// 	for _, value := range exported.Values {
+		// 		if name, ok := value.(types.StringInstance); ok {
+		// 			if attr, ok := scope[name.Value]; ok {
+		// 				attrs[name.Value] = attr
+		// 			}
+		// 		}
+		// 	}
+		case types.String:
+			if attr, ok := scope[string(exported)]; ok {
+				attrs[string(exported)] = attr
 			}
 		default:
 			attrs = scope
@@ -99,7 +98,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 		attrs = scope
 	}
 
-	pkg.SetAttributes(attrs)
+	pkg.Dict = attrs
 	i.packages[fullPackagePath] = pkg
 	return pkg, nil
 }
@@ -108,13 +107,13 @@ func (i *Interpreter) StackTrace() *common.StackTrace {
 	return &i.stacktrace
 }
 
-func getFullPath(packagePath string, parentPackage *types.PackageInstance) (string, error) {
+func getFullPath(packagePath string, parentPackage *types.Package) (string, error) {
 	if strings.HasPrefix(packagePath, "!/") {
-		packagePath = path.Join(os.Getenv(common.BORSCH_LIB), packagePath[2:])
+		packagePath = path.Join(os.Getenv(builtin.BORSCH_LIB), packagePath[2:])
 	} else if !path.IsAbs(packagePath) {
 		var err error
 		if parentPackage != nil {
-			baseDir := path.Dir(parentPackage.Name)
+			baseDir := path.Dir(parentPackage.Filename)
 			packagePath = path.Join(baseDir, packagePath)
 		} else {
 			packagePath, err = filepath.Abs(packagePath)
@@ -125,7 +124,7 @@ func getFullPath(packagePath string, parentPackage *types.PackageInstance) (stri
 		}
 	}
 
-	ext := "." + common.LANGUAGE_FILE_EXT
+	ext := "." + builtin.LANGUAGE_FILE_EXT
 	if !strings.HasSuffix(packagePath, ext) {
 		packagePath += ext
 	}

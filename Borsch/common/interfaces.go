@@ -1,6 +1,7 @@
 package common
 
 import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
@@ -9,28 +10,18 @@ type Parser interface {
 }
 
 type Interpreter interface {
-	Import(state State, packageName string) (Value, error)
+	Import(state State, packageName string) (types.Object, error)
 	StackTrace() *StackTrace
-}
-
-type Context interface {
-	PushScope(scope map[string]Value)
-	PopScope() map[string]Value
-	TopScope() map[string]Value
-	GetVar(name string) (Value, error)
-	SetVar(name string, value Value) error
-	GetClass(name string) (Value, error)
-	Derive() Context
 }
 
 type State interface {
 	GetParser() Parser
 	GetInterpreter() Interpreter
-	GetContext() Context
-	GetCurrentPackage() Value
-	GetCurrentPackageOrNil() Value
-	WithContext(Context) State
-	WithPackage(Value) State
+	GetContext() types.Context
+	GetCurrentPackage() types.Object
+	GetCurrentPackageOrNil() types.Object
+	WithContext(types.Context) State
+	WithPackage(types.Object) State
 	RuntimeError(message string, statement Statement) error
 	Trace(statement Statement, place string)
 	PopTrace()
@@ -42,31 +33,20 @@ type Statement interface {
 }
 
 type Evaluatable interface {
-	Evaluate(State) (Value, error)
+	Evaluate(State) (types.Object, error)
 }
 
 type OperatorEvaluatable interface {
-	Evaluate(State, Value) (Value, error)
-}
-
-type Value interface {
-	String(State) (string, error)
-	Representation(State) (string, error)
-	AsBool(State) (bool, error)
-	GetTypeName() string
-	GetOperator(string) (Value, error)
-	GetAttribute(string) (Value, error)
-	SetAttribute(string, Value) error
-	HasAttribute(string) bool
+	Evaluate(State, types.Object) (types.Object, error)
 }
 
 type SequentialType interface {
 	Length(State) int64
-	GetElement(State, int64) (Value, error)
-	SetElement(State, int64, Value) (Value, error)
-	Slice(State, int64, int64) (Value, error)
+	GetElement(State, int64) (types.Object, error)
+	SetElement(State, int64, types.Object) (types.Object, error)
+	Slice(State, int64, int64) (types.Object, error)
 }
 
 type CallableType interface {
-	Call(State, *[]Value, *map[string]Value) (Value, error)
+	Call(State, *[]types.Object, *map[string]types.Object) (types.Object, error)
 }

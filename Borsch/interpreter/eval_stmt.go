@@ -33,7 +33,7 @@ const (
 
 type StmtResult struct {
 	State StmtState
-	Value common.Value
+	Value types.Object
 	Err   error
 }
 
@@ -75,7 +75,7 @@ func (node *Stmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResu
 		ctx.PopScope()
 		return blockResult
 	case node.FunctionDef != nil:
-		function, err := node.FunctionDef.Evaluate(state, state.GetCurrentPackage().(*types.PackageInstance), nil)
+		function, err := node.FunctionDef.Evaluate(state, state.GetCurrentPackage().(*types.Package), nil)
 		if err != nil {
 			return StmtResult{Err: err}
 		}

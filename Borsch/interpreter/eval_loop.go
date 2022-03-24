@@ -30,7 +30,7 @@ func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFun
 
 	ctx := state.GetContext()
 	for leftBound < rightBound {
-		ctx.PushScope(Scope{node.Variable.String(): types.NewIntegerInstance(leftBound)})
+		ctx.PushScope(Scope{node.Variable.String(): types.Int(leftBound)})
 		result := body.Evaluate(state, inFunction, true)
 		ctx.PopScope()
 		if result.Interrupt() {
@@ -55,12 +55,12 @@ func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFu
 			return StmtResult{Err: err}
 		}
 
-		conditionValue, err := condition.AsBool(state)
+		conditionValue, err := types.ToBool(state.GetContext(), condition)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
 
-		if !conditionValue {
+		if !conditionValue.(types.Bool) {
 			break
 		}
 
@@ -81,8 +81,8 @@ func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFu
 
 func getBound(state common.State, bound *Expression, boundName string) (int64, error) {
 	return mustInt(
-		state, bound, func(t common.Value) string {
-			return fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.GetTypeName())
+		state, bound, func(t types.Object) string {
+			return fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.Class().Name)
 		},
 	)
 }

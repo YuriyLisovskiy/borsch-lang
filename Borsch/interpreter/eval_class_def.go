@@ -4,21 +4,22 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
-	ctx := state.GetContext()
-
+func (node *ClassDef) Evaluate(state common.State) (types.Object, error) {
 	// TODO: add doc
-	cls := &types.Class{
-		Name:    node.Name.String(),
-		IsFinal: node.IsFinal,
-		Class:   nil,
-		Parent:  state.GetCurrentPackage(),
-	}
+	// cls := &types.Class{
+	// 	Name:    node.Name.String(),
+	// 	IsFinal: node.IsFinal,
+	// 	Class:   nil,
+	// 	Parent:  state.GetCurrentPackage(),
+	// }
 
+	ctx := state.GetContext()
+	var bases []*types.Class
 	for _, name := range node.Bases {
 		base, err := ctx.GetClass(name.String())
 		if err != nil {
@@ -26,22 +27,18 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 		}
 
 		baseClass := base.(*types.Class)
-		if baseClass.IsFinalClass() {
+		if baseClass.IsFinal {
 			return nil, state.RuntimeError(
-				fmt.Sprintf(
-					"клас '%s' є закритим для розширення, не наслідуйте цей клас",
-					name,
-				),
+				fmt.Sprintf("клас '%s' є закритим для розширення, не наслідуйте цей клас", name),
 				node,
 			)
 		}
 
-		cls.Bases = append(cls.Bases, baseClass)
+		bases = append(bases, baseClass)
 	}
 
-	cls.GetEmptyInstance = func() (common.Value, error) {
-		return types.NewClassInstance(cls, map[string]common.Value{}), nil
-	}
+	cls := types.ObjectClass.ClassNew(node.Name.String(), map[string]types.Object{}, node.IsFinal, nil, nil)
+	cls.Bases = append(cls.Bases, bases...)
 
 	err := ctx.SetVar(node.Name.String(), cls)
 	if err != nil {
@@ -49,7 +46,7 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 	}
 
 	classContext := ctx.Derive()
-	classContext.PushScope(map[string]common.Value{})
+	classContext.PushScope(map[string]types.Object{})
 	for _, classMember := range node.Members {
 		_, err := classMember.Evaluate(state.WithContext(classContext), cls)
 		if err != nil {
@@ -57,16 +54,11 @@ func (node *ClassDef) Evaluate(state common.State) (common.Value, error) {
 		}
 	}
 
-	cls.SetAttributes(classContext.PopScope())
-	cls.Setup()
-	if !cls.IsValid() {
-		panic("custom class is invalid")
-	}
-
+	cls.Dict = classContext.PopScope()
 	return cls, nil
 }
 
-func (node *ClassMember) Evaluate(state common.State, class *types.Class) (common.Value, error) {
+func (node *ClassMember) Evaluate(state common.State, class *types.Class) (types.Object, error) {
 	if node.Variable != nil {
 		return node.Variable.Evaluate(state)
 	}
@@ -74,13 +66,13 @@ func (node *ClassMember) Evaluate(state common.State, class *types.Class) (commo
 	if node.Method != nil {
 		return node.Method.Evaluate(
 			state,
-			state.GetCurrentPackage().(*types.PackageInstance),
-			func(arguments []types.FunctionParameter, returnTypes []types.FunctionReturnType) error {
+			state.GetCurrentPackage().(*types.Package),
+			func(arguments []types.MethodParameter, returnTypes []types.MethodReturnType) error {
 				if err := checkMethod(class, arguments, returnTypes); err != nil {
 					return state.RuntimeError(err.Error(), node)
 				}
 
-				if node.Method.Name == common.ConstructorName {
+				if node.Method.Name == builtin.ConstructorName {
 					err := checkConstructor(arguments, returnTypes)
 					if err != nil {
 						return state.RuntimeError(err.Error(), node)
@@ -99,18 +91,16 @@ func (node *ClassMember) Evaluate(state common.State, class *types.Class) (commo
 	panic("unreachable")
 }
 
-func checkMethod(class *types.Class, args []types.FunctionParameter, _ []types.FunctionReturnType) error {
+func checkMethod(class *types.Class, args []types.MethodParameter, _ []types.MethodReturnType) error {
 	if len(args) == 0 {
 		// TODO: ukr error text!
 		return errors.New("not enough args, self required")
 	}
 
-	if args[0].Type != class {
+	if args[0].Class != class {
 		return errors.New(
 			fmt.Sprintf(
-				"перший параметер метода має бути типу '%s' отримано '%s'",
-				class.GetTypeName(),
-				args[0].GetTypeName(),
+				"перший параметер методу має бути типу '%s' отримано '%s'", class.Name, args[0].Name,
 			),
 		)
 	}
@@ -118,12 +108,12 @@ func checkMethod(class *types.Class, args []types.FunctionParameter, _ []types.F
 	return nil
 }
 
-func checkConstructor(_ []types.FunctionParameter, returnTypes []types.FunctionReturnType) error {
+func checkConstructor(_ []types.MethodParameter, returnTypes []types.MethodReturnType) error {
 	switch len(returnTypes) {
 	case 0:
 		// skip
 	case 1:
-		if returnTypes[0].Type != types.Nil {
+		if returnTypes[0].Class != types.NilClass {
 			return errors.New("конструктор має повертати 'нуль'")
 		}
 	default:

@@ -4,21 +4,22 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 type StateImpl struct {
 	parser         common.Parser
 	interpreter    common.Interpreter
-	context        common.Context
-	currentPackage common.Value
+	context        types.Context
+	currentPackage types.Object
 }
 
 func NewState(
 	parser common.Parser,
 	interpreter common.Interpreter,
-	context common.Context,
-	currentPackage common.Value,
+	context types.Context,
+	currentPackage types.Object,
 ) *StateImpl {
 	return &StateImpl{
 		parser:         parser,
@@ -44,7 +45,7 @@ func (s *StateImpl) GetInterpreter() common.Interpreter {
 	panic("state: interpreter is nil")
 }
 
-func (s *StateImpl) GetContext() common.Context {
+func (s *StateImpl) GetContext() types.Context {
 	if s.context != nil {
 		return s.context
 	}
@@ -52,7 +53,7 @@ func (s *StateImpl) GetContext() common.Context {
 	panic("state: context is nil")
 }
 
-func (s *StateImpl) GetCurrentPackage() common.Value {
+func (s *StateImpl) GetCurrentPackage() types.Object {
 	if s.currentPackage != nil {
 		return s.currentPackage
 	}
@@ -60,11 +61,11 @@ func (s *StateImpl) GetCurrentPackage() common.Value {
 	panic("state: current package is nil")
 }
 
-func (s *StateImpl) GetCurrentPackageOrNil() common.Value {
+func (s *StateImpl) GetCurrentPackageOrNil() types.Object {
 	return s.currentPackage
 }
 
-func (s *StateImpl) WithContext(ctx common.Context) common.State {
+func (s *StateImpl) WithContext(ctx types.Context) common.State {
 	return &StateImpl{
 		parser:         s.parser,
 		interpreter:    s.interpreter,
@@ -73,7 +74,7 @@ func (s *StateImpl) WithContext(ctx common.Context) common.State {
 	}
 }
 
-func (s *StateImpl) WithPackage(pkg common.Value) common.State {
+func (s *StateImpl) WithPackage(pkg types.Object) common.State {
 	return &StateImpl{
 		parser:         s.parser,
 		interpreter:    s.interpreter,

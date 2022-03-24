@@ -50,7 +50,7 @@ func makeThrowStmt(name *Ident) *Throw {
 type testInterpreter struct {
 }
 
-func (i *testInterpreter) Import(common.State, string) (common.Value, error) {
+func (i *testInterpreter) Import(common.State, string) (types.Object, error) {
 	return nil, nil
 }
 
@@ -68,7 +68,7 @@ func TestThrow_EvaluateSuccess(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]types.Object{
 				{errorIdent.String(): exc},
 			},
 		},
@@ -96,7 +96,7 @@ func TestThrow_EvaluateFail_NotAnErrorInstance(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]types.Object{
 				{errorIdent.String(): types.NewStringInstance(errMessage)},
 			},
 		},
@@ -144,7 +144,7 @@ func TestUnsafe_EvaluateNoThrow(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]types.Object{
 				{errorIdent.String(): err},
 			},
 		},
@@ -197,7 +197,7 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]types.Object{
 				{errorClass.Name: &errorClass},
 				{errorIdent.String(): err},
 			},
@@ -259,7 +259,7 @@ func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]types.Object{
 				{builtin.ErrorClass.Name: builtin.ErrorClass},
 				{errorIdent.String(): err},
 			},
@@ -318,7 +318,7 @@ func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
 	state := StateImpl{
 		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]types.Object{
 				{errorClass.Name: &errorClass},
 				{errorIdent.String(): err},
 			},

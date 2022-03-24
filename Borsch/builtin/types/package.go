@@ -1,88 +1,88 @@
 package types
 
-import (
-	"fmt"
+import "fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
-)
+var PackageClass = ObjectClass.ClassNew("пакет", map[string]Object{}, true, nil, nil)
 
-type PackageInstance struct {
-	ClassInstance
-	Name   string
-	Parent *PackageInstance
-
-	ctx common.Context
+type Package struct {
+	Filename string
+	Dict     map[string]Object
+	Parent   *Package
+	Context  Context
 }
 
-func NewPackageInstance(
-	ctx common.Context,
-	name string,
-	parent *PackageInstance,
-	attributes map[string]common.Value,
-) *PackageInstance {
-	instance := &PackageInstance{
-		ClassInstance: *NewClassInstance(Package, attributes),
-		Name:          name,
-		Parent:        parent,
-		ctx:           ctx,
-	}
-
-	instance.address = fmt.Sprintf("%p", instance)
-	return instance
-}
-
-func (p *PackageInstance) String(common.State) (string, error) {
-	return fmt.Sprintf("<пакет '%s'>", p.Name), nil
-}
-
-func (p *PackageInstance) Representation(state common.State) (string, error) {
-	return p.String(state)
-}
-
-func (p *PackageInstance) GetContext() common.Context {
-	return p.ctx
-}
-
-func (p *PackageInstance) SetContext(ctx common.Context) {
-	p.ctx = ctx
-}
-
-func (p *PackageInstance) SetAttributes(attrs map[string]common.Value) {
-	p.attributes = attrs
-	if p.attributes == nil {
-		p.attributes = map[string]common.Value{}
-	}
-}
-
-func comparePackages(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
-	switch right := other.(type) {
-	case NilInstance:
-	case *PackageInstance:
-		return -2, utilities.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
-	default:
-		return -2, utilities.OperatorNotSupportedError(op, self, right)
-	}
-
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
-}
-
-func NewPackageClass() *Class {
-	return &Class{
-		Name:    common.PackageTypeName,
-		IsFinal: true,
-		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				MakeLogicalOperators(Package),
-				MakeComparisonOperators(Package, comparePackages),
-				MakeCommonOperators(Package),
-			)
+func PackageNew(filename string, parent *Package, ctx Context) *Package {
+	return &Package{
+		Filename: filename,
+		Dict: map[string]Object{
+			"__назва__": String(filename),
 		},
-		GetEmptyInstance: func() (common.Value, error) {
-			panic("unreachable")
-		},
+		Parent:  parent,
+		Context: ctx,
 	}
+}
+
+func (value *Package) Class() *Class {
+	return PackageClass
+}
+
+func (value *Package) represent(Context) (Object, error) {
+	return String(fmt.Sprintf("<пакет %s>", value.Name())), nil
+}
+
+func (value *Package) string(ctx Context) (Object, error) {
+	return value.represent(ctx)
+}
+
+func (value *Package) getAttribute(_ Context, name string) (Object, error) {
+	if attr, ok := value.Dict[name]; ok {
+		return attr, nil
+	}
+
+	if attr := value.Class().GetAttributeOrNil(name); attr != nil {
+		return attr, nil
+	}
+
+	return nil, ErrorNewf("пакет '%s' не містить атрибута '%s'", value.Name(), name)
+}
+
+func (value *Package) setAttribute(_ Context, name string, newValue Object) error {
+	attr, ok := value.Dict[name]
+	if !ok {
+		attr = value.Class().GetAttributeOrNil(name)
+	}
+
+	if attr != nil && attr.Class() != newValue.Class() {
+		return ErrorNewf(
+			"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
+			newValue.Class().Name,
+			name,
+			attr.Class().Name,
+		)
+	}
+
+	value.Dict[name] = value
+	return nil
+}
+
+func (value *Package) deleteAttribute(_ Context, name string) (Object, error) {
+	if attr, ok := value.Dict[name]; ok {
+		delete(value.Dict, name)
+		return attr, nil
+	}
+
+	if attr := value.Class().DeleteAttributeOrNil(name); attr != nil {
+		return attr, nil
+	}
+
+	return nil, ErrorNewf("пакет '%s' не містить атрибута '%s'", value.Name(), name)
+}
+
+func (value *Package) Name() string {
+	name, ok := value.Dict["__назва__"].(String)
+	if !ok {
+		name = "???"
+	}
+
+	return string(name)
 }

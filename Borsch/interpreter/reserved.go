@@ -1,10 +1,6 @@
 package interpreter
 
-import (
-	"sort"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
-)
+import "sort"
 
 var keywords = []string{
 	"блок",
@@ -54,7 +50,7 @@ func init() {
 		sort.Strings(keywords)
 	}
 
-	for key := range builtin.GlobalScope {
+	for key := range GlobalScope {
 		builtinIds = append(builtinIds, key)
 	}
 

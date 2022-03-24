@@ -1,78 +1,80 @@
 package interpreter
 
 import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func (node *Call) Evaluate(
 	state common.State,
-	variable common.Value,
-	selfInstance common.Value,
+	variable types.Object,
+	self types.Object,
 	isLambda *bool,
-) (common.Value, error) {
+) (types.Object, error) {
+	args := types.Tuple{}
 	switch object := variable.(type) {
-	case *types.Class:
-		var args []common.Value
-		instance, err := object.GetEmptyInstance()
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = node.evalFunctionByName(state, instance, common.ConstructorName, &args, nil, true)
-		if err != nil {
-			return nil, err
-		}
-
-		return args[0], nil
-	case *types.FunctionInstance:
-		*isLambda = object.IsLambda()
-		var args []common.Value
-		if selfInstance != nil {
-			switch selfInstance.(type) {
-			case *types.Class, *types.PackageInstance:
+	case *types.Method:
+		*isLambda = object.Name == builtin.LambdaSignature
+		if !*isLambda {
+			switch o := self.(type) {
+			case *types.Package:
 				// ignore
-			case types.ObjectInstance:
-				if !*isLambda {
-					args = append(args, selfInstance)
+			case *types.Class:
+				if o.ClassType != nil {
+					// got class instance
+					args = append(args, self)
+					// } else {
+					// 	// got class
+					// 	if err := updateArgs(state, node.Arguments, &args); err != nil {
+					// 		return nil, err
+					// 	}
+					//
+					// 	ctx := state.GetContext()
+					// 	instance, err := o.New(ctx, o, args)
+					// 	if err != nil {
+					// 		return nil, err
+					// 	}
+					//
+					// 	if o.Construct != nil {
+					// 		err = o.Construct(ctx, instance, args)
+					// 		if err != nil {
+					// 			return nil, err
+					// 		}
+					// 	}
+					//
+					// 	return instance, nil
 				}
+			case nil:
+				// ignore
+			default:
+				args = append(args, self)
+			}
+		}
+	case *types.Class:
+		if err := updateArgs(state, node.Arguments, &args); err != nil {
+			return nil, err
+		}
+
+		ctx := state.GetContext()
+		instance, err := object.New(ctx, object, args)
+		if err != nil {
+			return nil, err
+		}
+
+		if object.Construct != nil {
+			err = object.Construct(ctx, instance, args)
+			if err != nil {
+				return nil, err
 			}
 		}
 
-		return node.evalFunction(state, object, &args, nil)
-	case types.ObjectInstance:
-		args := []common.Value{variable}
-		return node.evalFunctionByName(state, object.GetClass(), common.CallOperatorName, &args, nil, true)
-	default:
-		return nil, utilities.ObjectIsNotCallable(node.Ident.String(), object.GetTypeName())
+		return instance, nil
 	}
-}
 
-func (node *Call) evalFunctionByName(
-	state common.State,
-	object common.Value,
-	functionName string,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
-	isMethod bool,
-) (common.Value, error) {
-	if err := updateArgs(state, node.Arguments, args); err != nil {
+	if err := updateArgs(state, node.Arguments, &args); err != nil {
 		return nil, err
 	}
 
-	return types.CallByName(state, object, functionName, args, kwargs, isMethod)
-}
-
-func (node *Call) evalFunction(
-	state common.State,
-	function *types.FunctionInstance,
-	args *[]common.Value,
-	kwargs *map[string]common.Value,
-) (common.Value, error) {
-	if err := updateArgs(state, node.Arguments, args); err != nil {
-		return nil, err
-	}
-
-	return types.Call(state, function, args, kwargs)
+	return types.Call(state.GetContext(), variable, args)
 }

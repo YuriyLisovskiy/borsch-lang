@@ -5,19 +5,18 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 type ContextImpl struct {
-	scopes        []map[string]common.Value
-	parentContext common.Context
+	scopes        []map[string]types.Object
+	parentContext types.Context
 }
 
-func (c *ContextImpl) PushScope(scope map[string]common.Value) {
+func (c *ContextImpl) PushScope(scope map[string]types.Object) {
 	c.scopes = append(c.scopes, scope)
 }
 
-func (c *ContextImpl) PopScope() map[string]common.Value {
+func (c *ContextImpl) PopScope() map[string]types.Object {
 	if len(c.scopes) == 0 {
 		panic("fatal: not enough scopes")
 	}
@@ -28,7 +27,7 @@ func (c *ContextImpl) PopScope() map[string]common.Value {
 	return scope
 }
 
-func (c *ContextImpl) TopScope() map[string]common.Value {
+func (c *ContextImpl) TopScope() map[string]types.Object {
 	if len(c.scopes) == 0 {
 		panic("fatal: not enough scopes")
 	}
@@ -36,7 +35,7 @@ func (c *ContextImpl) TopScope() map[string]common.Value {
 	return c.scopes[len(c.scopes)-1]
 }
 
-func (c *ContextImpl) GetVar(name string) (common.Value, error) {
+func (c *ContextImpl) GetVar(name string) (types.Object, error) {
 	lastScopeIdx := len(c.scopes) - 1
 	for i := lastScopeIdx; i >= 0; i-- {
 		if val, ok := c.scopes[i][name]; ok {
@@ -51,7 +50,7 @@ func (c *ContextImpl) GetVar(name string) (common.Value, error) {
 	return nil, errors.New(fmt.Sprintf("ідентифікатор '%s' не визначений", name))
 }
 
-func (c *ContextImpl) SetVar(name string, value common.Value) error {
+func (c *ContextImpl) SetVar(name string, value types.Object) error {
 	if isKeyword(name) {
 		return errors.New(
 			fmt.Sprintf(
@@ -64,13 +63,13 @@ func (c *ContextImpl) SetVar(name string, value common.Value) error {
 	size := len(c.scopes)
 	for i := 0; i < size; i++ {
 		if old, found := c.scopes[i][name]; found {
-			oldClass := old.(types.ObjectInstance).GetClass()
-			if oldClass != value.(types.ObjectInstance).GetClass() && oldClass != types.Nil {
+			oldClass := old.Class()
+			if oldClass != value.Class() && oldClass != types.NilClass {
 				if i == size-1 {
 					return errors.New(
 						fmt.Sprintf(
 							"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
-							value.GetTypeName(), name, old.GetTypeName(),
+							value.Class().Name, name, old.Class().Name,
 						),
 					)
 				}
@@ -87,7 +86,7 @@ func (c *ContextImpl) SetVar(name string, value common.Value) error {
 	return nil
 }
 
-func (c *ContextImpl) GetClass(name string) (common.Value, error) {
+func (c *ContextImpl) GetClass(name string) (types.Object, error) {
 	if variable, err := c.GetVar(name); err == nil {
 		if _, ok := variable.(*types.Class); ok {
 			return variable, nil
@@ -99,9 +98,9 @@ func (c *ContextImpl) GetClass(name string) (common.Value, error) {
 	return nil, errors.New(fmt.Sprintf("невідомий тип '%s'", name))
 }
 
-func (c *ContextImpl) Derive() common.Context {
+func (c *ContextImpl) Derive() types.Context {
 	return &ContextImpl{
-		scopes:        []map[string]common.Value{},
+		scopes:        []map[string]types.Object{},
 		parentContext: c,
 	}
 }

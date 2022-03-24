@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
@@ -12,12 +13,12 @@ func (node *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 		}
 
 		ctx := state.GetContext()
-		conditionValue, err := condition.AsBool(state)
+		conditionValue, err := types.ToBool(state.GetContext(), condition)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
 
-		if conditionValue {
+		if conditionValue.(types.Bool) {
 			ctx.PushScope(Scope{})
 			result := node.Body.Evaluate(state, inFunction, inLoop)
 			if result.Err != nil {
@@ -72,12 +73,12 @@ func (node *ElseIfStmt) Evaluate(state common.State, inFunction, inLoop bool) (b
 		return false, StmtResult{Err: err}
 	}
 
-	conditionValue, err := condition.AsBool(state)
+	conditionValue, err := types.ToBool(state.GetContext(), condition)
 	if err != nil {
 		return false, StmtResult{Err: err}
 	}
 
-	if conditionValue {
+	if conditionValue.(types.Bool) {
 		ctx := state.GetContext()
 		ctx.PushScope(Scope{})
 		result := node.Body.Evaluate(state, inFunction, inLoop)
