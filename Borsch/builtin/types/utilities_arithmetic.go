@@ -37,6 +37,16 @@ func Sub(ctx Context, a, b Object) (Object, error) {
 }
 
 func Div(ctx Context, a, b Object) (Object, error) {
+	if v, ok := a.(IDiv); ok {
+		return v.div(ctx, b)
+	}
+
+	if a.Class() != b.Class() {
+		if v, ok := b.(IReversedDiv); ok {
+			return v.reversedDiv(ctx, a)
+		}
+	}
+
 	return nil, ErrorNewf(
 		"непідтримувані типи операндів для /: '%s' та '%s'",
 		a.Class().Name,
@@ -63,6 +73,16 @@ func Mul(ctx Context, a, b Object) (Object, error) {
 }
 
 func Mod(ctx Context, a, b Object) (Object, error) {
+	if v, ok := a.(IMod); ok {
+		return v.mod(ctx, b)
+	}
+
+	if a.Class() != b.Class() {
+		if v, ok := b.(IReversedMod); ok {
+			return v.reversedMod(ctx, a)
+		}
+	}
+
 	return nil, ErrorNewf(
 		"непідтримувані типи операндів для %: '%s' та '%s'",
 		a.Class().Name,
@@ -71,6 +91,16 @@ func Mod(ctx Context, a, b Object) (Object, error) {
 }
 
 func Pow(ctx Context, a, b Object) (Object, error) {
+	if v, ok := a.(IPow); ok {
+		return v.pow(ctx, b)
+	}
+
+	if a.Class() != b.Class() {
+		if v, ok := b.(IReversedPow); ok {
+			return v.reversedPow(ctx, a)
+		}
+	}
+
 	return nil, ErrorNewf(
 		"непідтримувані типи операндів для **: '%s' та '%s'",
 		a.Class().Name,
@@ -78,63 +108,11 @@ func Pow(ctx Context, a, b Object) (Object, error) {
 	)
 }
 
-func ShiftLeft(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для <<: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func ShiftRight(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для >>: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func BitwiseOr(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для |: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func BitwiseXor(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для ^: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func BitwiseAnd(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для &: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func And(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для &&: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func Or(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для ||: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
 func Positive(ctx Context, a Object) (Object, error) {
+	if v, ok := a.(IPositive); ok {
+		return v.positive(ctx)
+	}
+
 	return nil, ErrorNewf(
 		"непідтримуваний тип операнда для унарного +: '%s'",
 		a.Class().Name,
@@ -142,22 +120,12 @@ func Positive(ctx Context, a Object) (Object, error) {
 }
 
 func Negate(ctx Context, a Object) (Object, error) {
+	if v, ok := a.(INegate); ok {
+		return v.negate(ctx)
+	}
+
 	return nil, ErrorNewf(
 		"непідтримуваний тип операнда для унарного -: '%s'",
-		a.Class().Name,
-	)
-}
-
-func Invert(ctx Context, a Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримуваний тип операнда для унарного ~: '%s'",
-		a.Class().Name,
-	)
-}
-
-func Not(ctx Context, a Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримуваний тип операнда для унарного !: '%s'",
 		a.Class().Name,
 	)
 }

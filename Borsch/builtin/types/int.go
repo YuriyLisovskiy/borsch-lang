@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -175,7 +176,59 @@ func (value Int) toGoInt(Context) (int, error) {
 	return r, nil
 }
 
+func (value Int) add(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value + otherValue, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати додавання цілого числа до об'єкта '%s'", other.Class().Name)
+}
+
+func (value Int) reversedAdd(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue + value, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати додавання об'єкта '%s' до ціле число", other.Class().Name)
+}
+
+func (value Int) sub(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value - otherValue, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати віднімання цілого числа від об'єкта '%s'", other.Class().Name)
+}
+
+func (value Int) reversedSub(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue - value, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати віднімання об'єкта '%s' від ціле число", other.Class().Name)
+}
+
+func (value Int) div(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value / otherValue, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати ділення цілого числа на об'єкт '%s'", other.Class().Name)
+}
+
+func (value Int) reversedDiv(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue / value, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати ділення об'єкта '%s' на ціле число", other.Class().Name)
+}
+
 func (value Int) mul(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value * otherValue, nil
+	}
+
 	if otherValue, ok := other.(String); ok {
 		result := String("")
 		if value <= 0 {
@@ -190,7 +243,6 @@ func (value Int) mul(_ Context, other Object) (Object, error) {
 	}
 
 	// TODO: add multiplication for:
-	//  int, int
 	//  int, real
 	//  int, bool
 	//  int, ...
@@ -199,15 +251,198 @@ func (value Int) mul(_ Context, other Object) (Object, error) {
 }
 
 func (value Int) reversedMul(ctx Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue * value, nil
+	}
+
 	if otherValue, ok := other.(String); ok {
 		return otherValue.mul(ctx, value)
 	}
 
 	// TODO: add multiplication for:
-	//  int, int
 	//  real, int
 	//  bool, int
 	//  ..., int
 
 	return nil, ErrorNewf("неможливо виконати множення об'єкта '%s' на ціле число", other.Class().Name)
+}
+
+func (value Int) mod(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value % otherValue, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати модуль? цілого числа  '%s'", other.Class().Name)
+}
+
+func (value Int) reversedMod(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue % value, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати модуль? об'єкта '%s'  ціле число", other.Class().Name)
+}
+
+func (value Int) pow(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return Int(math.Pow(float64(value), float64(otherValue))), nil
+	}
+
+	// TODO:
+	return nil, ErrorNewf("неможливо виконати ??? '%s'", other.Class().Name)
+}
+
+func (value Int) reversedPow(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return Int(math.Pow(float64(otherValue), float64(value))), nil
+	}
+
+	// TODO:
+	return nil, ErrorNewf("неможливо виконати ??? '%s' ???", other.Class().Name)
+}
+
+func (value Int) equals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value == v), nil
+	}
+
+	return False, nil
+}
+
+func (value Int) notEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value != v), nil
+	}
+
+	return False, nil
+}
+
+func (value Int) less(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value < v), nil
+	}
+
+	return False, nil
+}
+
+func (value Int) lessOrEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value <= v), nil
+	}
+
+	return False, nil
+}
+
+func (value Int) greater(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value > v), nil
+	}
+
+	return False, nil
+}
+
+func (value Int) greaterOrEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value >= v), nil
+	}
+
+	return False, nil
+}
+
+func (value Int) shiftLeft(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value << otherValue, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати побітовий зсув ліворуч цілого числа на об'єкт '%s'", other.Class().Name)
+}
+
+func (value Int) reversedShiftLeft(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue << value, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати побітовий зсув ліворуч об'єкта '%s' на ціле число", other.Class().Name)
+}
+
+func (value Int) shiftRight(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value >> otherValue, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати побітовий зсув праворуч цілого числа на об'єкт '%s'", other.Class().Name)
+}
+
+func (value Int) reversedShiftRight(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue >> value, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати побітовий зсув праворуч об'єкта '%s' на ціле число", other.Class().Name)
+}
+
+func (value Int) bitwiseOr(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value | otherValue, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати побітову диз'юнкцію цілого числа та об'єкта '%s'", other.Class().Name)
+}
+
+func (value Int) reversedBitwiseOr(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue | value, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати побітову диз'юнкцію об'єкта '%s' та ціле число", other.Class().Name)
+}
+
+func (value Int) bitwiseXor(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value ^ otherValue, nil
+	}
+
+	return nil, ErrorNewf(
+		"неможливо виконати побітову виняткову диз'юнкцію цілого числа та об'єкта '%s'",
+		other.Class().Name,
+	)
+}
+
+func (value Int) reversedBitwiseXor(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue ^ value, nil
+	}
+
+	return nil, ErrorNewf(
+		"неможливо виконати побітову виняткову диз'юнкцію об'єкта '%s' та ціле число",
+		other.Class().Name,
+	)
+}
+
+func (value Int) bitwiseAnd(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return value & otherValue, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати побітову кон'юнкцію цілого числа та об'єкта '%s'", other.Class().Name)
+}
+
+func (value Int) reversedBitwiseAnd(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue & value, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати побітову кон'юнкцію об'єкта '%s' та ціле число", other.Class().Name)
+}
+
+func (value Int) positive(_ Context) (Object, error) {
+	return +value, nil
+}
+
+func (value Int) negate(_ Context) (Object, error) {
+	return -value, nil
+}
+
+func (value Int) invert(_ Context) (Object, error) {
+	return ^value, nil
 }

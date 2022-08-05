@@ -56,7 +56,13 @@ type IReversedSub interface {
 	reversedSub(ctx Context, other Object) (Object, error)
 }
 
-// TODO: div
+type IDiv interface {
+	div(ctx Context, other Object) (Object, error)
+}
+
+type IReversedDiv interface {
+	reversedDiv(ctx Context, other Object) (Object, error)
+}
 
 type IMul interface {
 	mul(ctx Context, other Object) (Object, error)
@@ -64,4 +70,28 @@ type IMul interface {
 
 type IReversedMul interface {
 	reversedMul(ctx Context, other Object) (Object, error)
+}
+
+type IMod interface {
+	mod(ctx Context, other Object) (Object, error)
+}
+
+type IReversedMod interface {
+	reversedMod(ctx Context, other Object) (Object, error)
+}
+
+type IPow interface {
+	pow(ctx Context, other Object) (Object, error)
+}
+
+type IReversedPow interface {
+	reversedPow(ctx Context, other Object) (Object, error)
+}
+
+type IPositive interface {
+	positive(ctx Context) (Object, error)
+}
+
+type INegate interface {
+	negate(ctx Context) (Object, error)
 }
