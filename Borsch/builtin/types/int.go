@@ -174,3 +174,40 @@ func (value Int) toGoInt(Context) (int, error) {
 
 	return r, nil
 }
+
+func (value Int) mul(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(String); ok {
+		result := String("")
+		if value <= 0 {
+			return result, nil
+		}
+
+		for i := int64(0); i < int64(value); i++ {
+			result += otherValue
+		}
+
+		return result, nil
+	}
+
+	// TODO: add multiplication for:
+	//  int, int
+	//  int, real
+	//  int, bool
+	//  int, ...
+
+	return nil, ErrorNewf("неможливо виконати множення цілого числа на об'єкт '%s'", other.Class().Name)
+}
+
+func (value Int) reversedMul(ctx Context, other Object) (Object, error) {
+	if otherValue, ok := other.(String); ok {
+		return otherValue.mul(ctx, value)
+	}
+
+	// TODO: add multiplication for:
+	//  int, int
+	//  real, int
+	//  bool, int
+	//  ..., int
+
+	return nil, ErrorNewf("неможливо виконати множення об'єкта '%s' на ціле число", other.Class().Name)
+}

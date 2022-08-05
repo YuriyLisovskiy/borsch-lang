@@ -40,6 +40,79 @@ func (value String) reversedAdd(_ Context, other Object) (Object, error) {
 	return nil, ErrorNewf("неможливо виконати конкатенацію об'єкта '%s' з рядком", other.Class().Name)
 }
 
+func (value String) mul(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		result := String("")
+		if otherValue <= 0 {
+			return result, nil
+		}
+
+		for i := int64(0); i < int64(otherValue); i++ {
+			result += value
+		}
+
+		return result, nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати множення рядка на об'єкт '%s'", other.Class().Name)
+}
+
+func (value String) reversedMul(ctx Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Int); ok {
+		return otherValue.mul(ctx, value)
+	}
+
+	return nil, ErrorNewf("неможливо виконати множення об'єкта '%s' на рядок", other.Class().Name)
+}
+
+func (value String) equals(_ Context, other Object) (Object, error) {
+	if s, ok := other.(String); ok {
+		return goBoolToBoolObject(value == s), nil
+	}
+
+	return False, nil
+}
+
+func (value String) notEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(String); ok {
+		return goBoolToBoolObject(value != v), nil
+	}
+
+	return False, nil
+}
+
+func (value String) less(_ Context, other Object) (Object, error) {
+	if v, ok := other.(String); ok {
+		return goBoolToBoolObject(value < v), nil
+	}
+
+	return False, nil
+}
+
+func (value String) lessOrEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(String); ok {
+		return goBoolToBoolObject(value <= v), nil
+	}
+
+	return False, nil
+}
+
+func (value String) greater(_ Context, other Object) (Object, error) {
+	if v, ok := other.(String); ok {
+		return goBoolToBoolObject(value > v), nil
+	}
+
+	return False, nil
+}
+
+func (value String) greaterOrEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(String); ok {
+		return goBoolToBoolObject(value >= v), nil
+	}
+
+	return False, nil
+}
+
 func StringEscape(a String, ascii bool) (string, error) {
 	s := string(a)
 	var out bytes.Buffer

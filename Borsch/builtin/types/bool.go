@@ -7,6 +7,14 @@ var (
 	False = Bool(false)
 )
 
+func goBoolToBoolObject(value bool) Object {
+	if value {
+		return True
+	}
+
+	return False
+}
+
 type Bool bool
 
 func (value Bool) Class() *Class {
@@ -39,4 +47,20 @@ func BoolNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	}
 
 	return ToBool(ctx, args[0])
+}
+
+func (value Bool) equals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Bool); ok {
+		return goBoolToBoolObject(value == v), nil
+	}
+
+	return False, nil
+}
+
+func (value Bool) notEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Bool); ok {
+		return goBoolToBoolObject(value != v), nil
+	}
+
+	return False, nil
 }

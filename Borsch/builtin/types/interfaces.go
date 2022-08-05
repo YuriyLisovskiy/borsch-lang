@@ -55,3 +55,13 @@ type ISub interface {
 type IReversedSub interface {
 	reversedSub(ctx Context, other Object) (Object, error)
 }
+
+// TODO: div
+
+type IMul interface {
+	mul(ctx Context, other Object) (Object, error)
+}
+
+type IReversedMul interface {
+	reversedMul(ctx Context, other Object) (Object, error)
+}

@@ -45,6 +45,16 @@ func Div(ctx Context, a, b Object) (Object, error) {
 }
 
 func Mul(ctx Context, a, b Object) (Object, error) {
+	if v, ok := a.(IMul); ok {
+		return v.mul(ctx, b)
+	}
+
+	if a.Class() != b.Class() {
+		if v, ok := b.(IReversedMul); ok {
+			return v.reversedMul(ctx, a)
+		}
+	}
+
 	return nil, ErrorNewf(
 		"непідтримувані типи операндів для *: '%s' та '%s'",
 		a.Class().Name,
@@ -103,54 +113,6 @@ func BitwiseXor(ctx Context, a, b Object) (Object, error) {
 func BitwiseAnd(ctx Context, a, b Object) (Object, error) {
 	return nil, ErrorNewf(
 		"непідтримувані типи операндів для &: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func GreaterOrEquals(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для >=: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func Greater(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для >: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func LessOrEquals(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для <=: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func Less(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для <: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func Equals(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для ==: '%s' та '%s'",
-		a.Class().Name,
-		b.Class().Name,
-	)
-}
-
-func NotEquals(ctx Context, a, b Object) (Object, error) {
-	return nil, ErrorNewf(
-		"непідтримувані типи операндів для !=: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
 	)
