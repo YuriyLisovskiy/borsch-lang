@@ -20,6 +20,10 @@ type IInt interface {
 	toInt(ctx Context) (Object, error)
 }
 
+type IReal interface {
+	toReal(ctx Context) (Object, error)
+}
+
 type IGoInt interface {
 	toGoInt(ctx Context) (int, error)
 }

@@ -65,6 +65,19 @@ func ToInt(ctx Context, a Object) (Object, error) {
 	return nil, ErrorNewf("непідтримуваний тип операнда для 'цілий': '%s'", a.Class().Name)
 }
 
+func ToReal(ctx Context, a Object) (Object, error) {
+	if _, ok := a.(Real); ok {
+		return a, nil
+	}
+
+	if A, ok := a.(IReal); ok {
+		return A.toReal(ctx)
+	}
+
+	// TODO: TypeError
+	return nil, ErrorNewf("непідтримуваний тип операнда для 'дійсний': '%s'", a.Class().Name)
+}
+
 // ToGoInt turns 'a' into Go int if possible.
 func ToGoInt(ctx Context, a Object) (int, error) {
 	a, err := ToInt(ctx, a)

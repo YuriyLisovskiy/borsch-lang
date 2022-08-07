@@ -210,7 +210,11 @@ func (value Int) reversedSub(_ Context, other Object) (Object, error) {
 
 func (value Int) div(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Int); ok {
-		return value / otherValue, nil
+		if otherValue == 0 {
+			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+		}
+
+		return Real(value) / Real(otherValue), nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати ділення цілого числа на об'єкт '%s'", other.Class().Name)
@@ -218,7 +222,11 @@ func (value Int) div(_ Context, other Object) (Object, error) {
 
 func (value Int) reversedDiv(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Int); ok {
-		return otherValue / value, nil
+		if value == 0 {
+			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+		}
+
+		return Real(otherValue) / Real(value), nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати ділення об'єкта '%s' на ціле число", other.Class().Name)
@@ -269,6 +277,10 @@ func (value Int) reversedMul(ctx Context, other Object) (Object, error) {
 
 func (value Int) mod(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Int); ok {
+		if otherValue == 0 {
+			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
+		}
+
 		return value % otherValue, nil
 	}
 
@@ -277,6 +289,10 @@ func (value Int) mod(_ Context, other Object) (Object, error) {
 
 func (value Int) reversedMod(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Int); ok {
+		if value == 0 {
+			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
+		}
+
 		return otherValue % value, nil
 	}
 
@@ -304,6 +320,10 @@ func (value Int) reversedPow(_ Context, other Object) (Object, error) {
 func (value Int) equals(_ Context, other Object) (Object, error) {
 	if v, ok := other.(Int); ok {
 		return goBoolToBoolObject(value == v), nil
+	}
+
+	if v, ok := other.(Real); ok {
+		return goBoolToBoolObject(Real(value) == v), nil
 	}
 
 	return False, nil

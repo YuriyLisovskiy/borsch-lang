@@ -215,9 +215,9 @@ func (node *Literal) Evaluate(state common.State) (types.Object, error) {
 		return types.IntFromString(*node.Integer, 0)
 	}
 
-	// if node.Real != nil {
-	// 	return types.NewRealInstance(*node.Real), nil
-	// }
+	if node.Real != nil {
+		return types.RealFromString(*node.Real)
+	}
 
 	if node.Bool != nil {
 		return types.NewBool(bool(*node.Bool)), nil
