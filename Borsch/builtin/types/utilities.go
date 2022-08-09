@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 func Represent(ctx Context, self Object) (Object, error) {
 	if v, ok := self.(IRepresent); ok {
@@ -151,4 +154,136 @@ func Call(ctx Context, self Object, args Tuple) (Object, error) {
 	}
 
 	return nil, ErrorNewf("неможливо застосувати оператор виклику до об'єкта з типом '%s'", self.Class().Name)
+}
+
+func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ...*Object) error {
+	typesFormat, nullablesFormat, err := parseFormat(format)
+	if len(typesFormat) != len(results) {
+		return ErrorNewf("Internal Error: supply the same number of results and types in format")
+	}
+
+	if err = checkNumberOfArgs(name, len(args), len(results), argsMin, argsMax); err != nil {
+		return err
+	}
+
+	for i, arg := range args {
+		result := results[i]
+		isNullable := nullablesFormat[i] == '?'
+		if arg.Class() == NilClass {
+			if !isNullable {
+				return ErrorNewf( /*TypeError,*/ "%s() аргумент виклику %d не може бути нульовим", name, i+1)
+			}
+		} else {
+			extra := ""
+			if isNullable {
+				extra = "або 'нульовий'"
+			}
+
+			t := typesFormat[i]
+			switch t {
+			case 'b':
+				if _, ok := arg.(Bool); !ok {
+					return ErrorNewf(
+						"%s() аргумент %d має бути типу 'логічний'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+					)
+				}
+			case 'i':
+				if _, ok := arg.(Int); !ok {
+					return ErrorNewf(
+						"%s() аргумент %d має бути типу 'цілий'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+					)
+				}
+			// case 'l':
+			// 	if _, ok := arg.(List); !ok {
+			// 		return ErrorNewf(
+			// 			"%s() аргумент %d має бути типу 'список'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+			// 		)
+			// 	}
+			// case 'm':
+			// 	if _, ok := arg.(Method); !ok {
+			// 		return ErrorNewf(
+			// 			"%s() аргумент %d має бути типу 'метод'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+			// 		)
+			// 	}
+			case 'n':
+				if arg != Nil {
+					return ErrorNewf(
+						"%s() аргумент %d має бути типу 'нульовий', а не '%s'", name, i+1, arg.Class().Name,
+					)
+				}
+			// case 'p':
+			// 	if _, ok := arg.(Package); !ok {
+			// 		return ErrorNewf(
+			// 			"%s() аргумент %d має бути типу 'пакет'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+			// 		)
+			// 	}
+			case 'r':
+				if _, ok := arg.(Real); !ok {
+					return ErrorNewf(
+						"%s() аргумент %d має бути типу 'дійсний'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+					)
+				}
+			case 's':
+				if _, ok := arg.(String); !ok {
+					return ErrorNewf(
+						"%s() аргумент %d має бути типу 'рядок'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+					)
+				}
+			case 't':
+				if _, ok := arg.(Tuple); !ok {
+					return ErrorNewf(
+						"%s() аргумент %d має бути типу 'кортеж'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+					)
+				}
+			case 'o':
+			default:
+				return ErrorNewf("Internal Error: unknown type to parse from format")
+			}
+		}
+
+		*result = arg
+	}
+
+	return nil
+}
+
+func checkNumberOfArgs(name string, argsN, resultsN, argsMin, argsMax int) error {
+	if argsMin == argsMax {
+		if argsN != argsMax {
+			return ErrorNewf( /*TypeError, */ "%s() takes exactly %d arguments (%d given)", name, argsMax, argsN)
+		}
+	} else {
+		if argsN > argsMax {
+			return ErrorNewf( /*TypeError, */ "%s() takes at most %d arguments (%d given)", name, argsMax, argsN)
+		}
+		if argsN < argsMin {
+			return ErrorNewf( /*TypeError, */ "%s() takes at least %d arguments (%d given)", name, argsMin, argsN)
+		}
+	}
+
+	if argsN > resultsN {
+		return ErrorNewf( /*TypeError, */ "Internal error: not enough arguments supplied to Unpack*/Parse*")
+	}
+
+	return nil
+}
+
+// Format has three parts: types|nullables.
+//
+//  Example of format: we need to parse int, real and string
+//  in this order and real arg is nullable:
+//      irs|.?.
+func parseFormat(format string) (string, string, error) {
+	parts := strings.Split(format, "|")
+	if len(parts) != 2 {
+		return "", "", ErrorNewf("Internal Error: provide nullables in format")
+	}
+
+	typesFormat := parts[0]
+	nullablesFormat := parts[1]
+	if len(typesFormat) != len(nullablesFormat) {
+		return "", "", ErrorNewf("Internal Error: supply the same number of nullables and types in format")
+	}
+
+	return typesFormat, nullablesFormat, nil
 }

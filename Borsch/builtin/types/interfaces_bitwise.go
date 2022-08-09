@@ -17,7 +17,7 @@ type IReversedShiftRight interface {
 }
 
 type IBitwiseOr interface {
-	BitwiseOr(ctx Context, other Object) (Object, error)
+	bitwiseOr(ctx Context, other Object) (Object, error)
 }
 
 type IReversedBitwiseOr interface {
@@ -25,7 +25,7 @@ type IReversedBitwiseOr interface {
 }
 
 type IBitwiseXor interface {
-	BitwiseXor(ctx Context, other Object) (Object, error)
+	bitwiseXor(ctx Context, other Object) (Object, error)
 }
 
 type IReversedBitwiseXor interface {
@@ -33,7 +33,7 @@ type IReversedBitwiseXor interface {
 }
 
 type IBitwiseAnd interface {
-	BitwiseAnd(ctx Context, other Object) (Object, error)
+	bitwiseAnd(ctx Context, other Object) (Object, error)
 }
 
 type IReversedBitwiseAnd interface {

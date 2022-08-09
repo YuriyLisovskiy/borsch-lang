@@ -9,17 +9,17 @@ func (value Tuple) Class() *Class {
 }
 
 func TupleNew(ctx Context, cls *Class, args Tuple) (Object, error) {
-	if len(args) != 1 {
-		return nil, ErrorNewf("кортеж() приймає 1 аргумент")
-	}
-
 	// TODO: add iterators!
 	tuple := Tuple{}
-	switch arg := args[0].(type) {
-	case *List:
-		tuple = arg.Values
-	default:
-		return nil, ErrorNewf("об'єкт '%s' не є ітерованим", arg.Class().Name)
+	if len(args) == 1 {
+		switch arg := args[0].(type) {
+		case *List:
+			tuple = arg.Values
+		default:
+			return nil, ErrorNewf("об'єкт '%s' не є ітерованим", arg.Class().Name)
+		}
+	} else if len(args) > 1 {
+		tuple = args
 	}
 
 	return tuple, nil

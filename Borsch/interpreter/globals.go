@@ -19,6 +19,13 @@ var (
 
 func init() {
 	GlobalScope = map[string]types.Object{
+		types.BoolClass.Name:   types.BoolClass,
+		types.IntClass.Name:    types.IntClass,
+		types.ListClass.Name:   types.ListClass,
+		types.RealClass.Name:   types.RealClass,
+		types.StringClass.Name: types.StringClass,
+		types.TupleClass.Name:  types.TupleClass,
+
 		"друкр": types.MethodNew(
 			"друкр", BuiltinPackage, []types.MethodParameter{
 				{
@@ -44,8 +51,8 @@ func init() {
 				return nil, nil
 			},
 		),
-		"припустити": types.MethodNew(
-			"припустити", BuiltinPackage, []types.MethodParameter{
+		"переконатися": types.MethodNew(
+			"переконатися", BuiltinPackage, []types.MethodParameter{
 				{
 					Class:      types.BoolClass,
 					Name:       "умова",

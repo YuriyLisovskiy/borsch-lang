@@ -38,7 +38,7 @@ func ShiftRight(ctx Context, a, b Object) (Object, error) {
 
 func BitwiseOr(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IBitwiseOr); ok {
-		return v.BitwiseOr(ctx, b)
+		return v.bitwiseOr(ctx, b)
 	}
 
 	if a.Class() != b.Class() {
@@ -56,7 +56,7 @@ func BitwiseOr(ctx Context, a, b Object) (Object, error) {
 
 func BitwiseXor(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IBitwiseXor); ok {
-		return v.BitwiseXor(ctx, b)
+		return v.bitwiseXor(ctx, b)
 	}
 
 	if a.Class() != b.Class() {
@@ -74,7 +74,7 @@ func BitwiseXor(ctx Context, a, b Object) (Object, error) {
 
 func BitwiseAnd(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IBitwiseAnd); ok {
-		return v.BitwiseAnd(ctx, b)
+		return v.bitwiseAnd(ctx, b)
 	}
 
 	if a.Class() != b.Class() {
