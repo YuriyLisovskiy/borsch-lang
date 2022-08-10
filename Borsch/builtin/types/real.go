@@ -11,6 +11,14 @@ var RealClass = ObjectClass.ClassNew("дійсний", map[string]Object{}, true
 
 type Real float64
 
+func bo2ro(value Bool) Real {
+	if value {
+		return 1.0
+	}
+
+	return 0.0
+}
+
 func (value Real) Class() *Class {
 	return RealClass
 }
@@ -61,6 +69,14 @@ func (value Real) string(Context) (Object, error) {
 
 	return String(fmt.Sprintf("%g", value)), nil
 }
+
+func (value Real) toBool(Context) (Object, error) {
+	return Bool(value != 0.0), nil
+}
+
+// func (value Real) toReal(Context) (Object, error) {
+// 	return value, nil
+// }
 
 func (value Real) toInt(ctx Context) (Object, error) {
 	return Int(value), nil
@@ -264,7 +280,7 @@ func (value Real) less(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(value < Real(v)), nil
 	}
 
-	return False, nil
+	return nil, OperatorNotSupportedErrorNew("<", value.Class().Name, other.Class().Name)
 }
 
 func (value Real) lessOrEquals(_ Context, other Object) (Object, error) {
@@ -276,7 +292,7 @@ func (value Real) lessOrEquals(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(value <= Real(v)), nil
 	}
 
-	return False, nil
+	return nil, OperatorNotSupportedErrorNew("<=", value.Class().Name, other.Class().Name)
 }
 
 func (value Real) greater(_ Context, other Object) (Object, error) {
@@ -288,7 +304,7 @@ func (value Real) greater(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(value > Real(v)), nil
 	}
 
-	return False, nil
+	return nil, OperatorNotSupportedErrorNew(">", value.Class().Name, other.Class().Name)
 }
 
 func (value Real) greaterOrEquals(_ Context, other Object) (Object, error) {
@@ -300,7 +316,7 @@ func (value Real) greaterOrEquals(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(value >= Real(v)), nil
 	}
 
-	return False, nil
+	return nil, OperatorNotSupportedErrorNew(">=", value.Class().Name, other.Class().Name)
 }
 
 func (value Real) positive(_ Context) (Object, error) {

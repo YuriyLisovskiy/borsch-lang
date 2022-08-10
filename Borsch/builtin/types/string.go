@@ -24,6 +24,10 @@ func (value String) string(Context) (Object, error) {
 	return value, nil
 }
 
+func (value String) toBool(Context) (Object, error) {
+	return Bool(value != ""), nil
+}
+
 func (value String) add(_ Context, other Object) (Object, error) {
 	if s, ok := other.(String); ok {
 		return value + s, nil

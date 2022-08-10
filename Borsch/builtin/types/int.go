@@ -12,6 +12,10 @@ var IntClass = ObjectClass.ClassNew("цілий", map[string]Object{}, true, Int
 
 type Int int64
 
+func io2bo(value Int) Bool {
+	return value != 0
+}
+
 func (value Int) Class() *Class {
 	return IntClass
 }
@@ -155,6 +159,18 @@ func (value Int) represent(ctx Context) (Object, error) {
 func (value Int) string(Context) (Object, error) {
 	return String(fmt.Sprintf("%d", value)), nil
 }
+
+func (value Int) toBool(Context) (Object, error) {
+	return Bool(value != 0), nil
+}
+
+func (value Int) toReal(Context) (Object, error) {
+	return Real(value), nil
+}
+
+// func (value Int) toInt(Context) (Object, error) {
+// 	return value, nil
+// }
 
 // GoInt truncates to Go int.
 //
@@ -338,7 +354,7 @@ func (value Int) reversedMod(_ Context, other Object) (Object, error) {
 		if value == 0 {
 			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
 		}
-
+		
 		return Real(math.Mod(float64(otherValue), float64(value))), nil
 	}
 
@@ -383,7 +399,7 @@ func (value Int) reversedPow(_ Context, other Object) (Object, error) {
 
 func (value Int) equals(_ Context, other Object) (Object, error) {
 	if v, ok := other.(Int); ok {
-		return goBoolToBoolObject(value == v), nil
+		return gb2bo(value == v), nil
 	}
 
 	if v, ok := other.(Real); ok {
@@ -414,7 +430,7 @@ func (value Int) less(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(Real(value) < v), nil
 	}
 
-	return False, nil
+	return nil, OperatorNotSupportedErrorNew("<", value.Class().Name, other.Class().Name)
 }
 
 func (value Int) lessOrEquals(_ Context, other Object) (Object, error) {
@@ -426,7 +442,7 @@ func (value Int) lessOrEquals(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(Real(value) <= v), nil
 	}
 
-	return False, nil
+	return nil, OperatorNotSupportedErrorNew("<=", value.Class().Name, other.Class().Name)
 }
 
 func (value Int) greater(_ Context, other Object) (Object, error) {
@@ -438,7 +454,7 @@ func (value Int) greater(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(Real(value) > v), nil
 	}
 
-	return False, nil
+	return nil, OperatorNotSupportedErrorNew(">", value.Class().Name, other.Class().Name)
 }
 
 func (value Int) greaterOrEquals(_ Context, other Object) (Object, error) {
@@ -450,7 +466,7 @@ func (value Int) greaterOrEquals(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(Real(value) >= v), nil
 	}
 
-	return False, nil
+	return nil, OperatorNotSupportedErrorNew(">=", value.Class().Name, other.Class().Name)
 }
 
 func (value Int) shiftLeft(_ Context, other Object) (Object, error) {
