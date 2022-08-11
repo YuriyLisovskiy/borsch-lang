@@ -1,7 +1,5 @@
 package types
 
-import "math"
-
 var (
 	BoolClass = ObjectClass.ClassNew("логічний", map[string]Object{}, true, BoolNew, nil)
 
@@ -268,7 +266,8 @@ func (value Bool) mod(_ Context, other Object) (Object, error) {
 			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
 		}
 
-		return Int(math.Mod(float64(bo2ro(value)), float64(otherValue))), nil
+		// return Int(mod(float64(bo2ro(value)), float64(otherValue))), nil
+		return Int(mod(bo2ro(value), Real(otherValue))), nil
 	}
 
 	if otherValue, ok := other.(Real); ok {
@@ -276,7 +275,7 @@ func (value Bool) mod(_ Context, other Object) (Object, error) {
 			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
 		}
 
-		return Int(math.Mod(float64(bo2ro(value)), float64(otherValue))), nil
+		return mod(bo2ro(value), otherValue), nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати модуль? логічного значення  '%s'", other.Class().Name)
@@ -303,43 +302,67 @@ func (value Bool) reversedMod(_ Context, other Object) (Object, error) {
 
 func (value Bool) pow(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Bool); ok {
-		return value * *otherValue, nil
+		return bo2io(!(!value && otherValue)), nil
 	}
 
 	switch otherValue := other.(type) {
-	case Bool:
 	case Int:
+		if value {
+			if otherValue < 0 {
+				return Real(1.0), nil
+			}
+
+			return Int(1), nil
+		}
+
+		if otherValue < 0.0 {
+			// TODO: error
+		}
+
+		if otherValue == 0 {
+			return Int(1), nil
+		}
+
+		return Int(0), nil
 	case Real:
-		if
-		return Real(1.0), nil
+		if value {
+			return Real(1.0), nil
+		}
+
+		if otherValue < 0.0 {
+			// TODO: error
+		}
+
+		if otherValue == 0.0 {
+			return Real(1.0), nil
+		}
+
+		return Real(0.0), nil
 	}
 
-	if otherValue, ok := other.(Int); ok {
-		return value * *otherValue, nil
-	}
-
-	if otherValue, ok := other.(Real); ok {
-		return value * *otherValue, nil
-	}
-
-	return nil, ErrorNewf("неможливо виконати степінь? логічного значення  '%s'", other.Class().Name)
+	return nil, ErrorNewf("неможливо виконати обчислення логічного значення в степені '%s'", other.Class().Name)
 }
 
 func (value Bool) reversedPow(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Bool); ok {
-		return otherValue * *value, nil
-	}
-	if otherValue, ok := other.(Int); ok {
-		return otherValue * *value, nil
-	}
-	if otherValue, ok := other.(Real); ok {
-		return otherValue * *value, nil
-	}
-	if otherValue, ok := other.(String); ok {
-		return otherValue * *value, nil
+		return bo2io(!(!otherValue && value)), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати степінь? об'єкта '%s'  логічне значення", other.Class().Name)
+	if value {
+		switch other.(type) {
+		case Int, Real:
+			return other, nil
+		}
+	}
+
+	switch other.(type) {
+	case Int:
+		return Int(1), nil
+	case Real:
+		return Real(1.0), nil
+	}
+
+	return nil, ErrorNewf("неможливо виконати обчислення об'єкта '%s' в степені логічного значення", other.Class().Name)
 }
 
 func (value Bool) equals(_ Context, other Object) (Object, error) {
@@ -369,6 +392,10 @@ func (value Bool) notEquals(_ Context, other Object) (Object, error) {
 
 	if v, ok := other.(Real); ok {
 		return gb2bo(bo2ro(value) != v), nil
+	}
+
+	if _, ok := other.(String); ok {
+		return True, nil
 	}
 
 	return False, nil
@@ -440,7 +467,7 @@ func (value Bool) greaterOrEquals(_ Context, other Object) (Object, error) {
 
 func (value Bool) shiftLeft(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Bool); ok {
-		return io2bo(bo2io(value) << bo2io(otherValue)), nil
+		return bo2io(value) << bo2io(otherValue), nil
 	}
 
 	if otherValue, ok := other.(Int); ok {
@@ -455,7 +482,7 @@ func (value Bool) shiftLeft(_ Context, other Object) (Object, error) {
 
 func (value Bool) reversedShiftLeft(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Bool); ok {
-		return io2bo(bo2io(otherValue) << bo2io(value)), nil
+		return bo2io(otherValue) << bo2io(value), nil
 	}
 
 	if otherValue, ok := other.(Int); ok {
@@ -470,7 +497,7 @@ func (value Bool) reversedShiftLeft(_ Context, other Object) (Object, error) {
 
 func (value Bool) shiftRight(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Bool); ok {
-		return io2bo(bo2io(value) >> bo2io(otherValue)), nil
+		return bo2io(value) >> bo2io(otherValue), nil
 	}
 
 	if otherValue, ok := other.(Int); ok {
@@ -485,7 +512,7 @@ func (value Bool) shiftRight(_ Context, other Object) (Object, error) {
 
 func (value Bool) reversedShiftRight(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Bool); ok {
-		return io2bo(bo2io(otherValue) >> bo2io(value)), nil
+		return bo2io(otherValue) >> bo2io(value), nil
 	}
 
 	if otherValue, ok := other.(Int); ok {

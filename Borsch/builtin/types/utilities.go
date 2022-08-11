@@ -2,8 +2,21 @@ package types
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
+
+func mod(l, r Real) Real {
+	// return l - (r * Real(math.Floor(float64(l/r))))
+	// if r-Real(math.Floor(float64(r))) == 0.0 {
+	// 	return l - (r * Real(math.Floor(float64(l/r))))
+	// }
+	//
+	// return l - (r * (l / r))
+	a := float64(l)
+	b := float64(r)
+	return Real(math.Mod(b+math.Mod(a, b), b))
+}
 
 func Represent(ctx Context, self Object) (Object, error) {
 	if v, ok := self.(IRepresent); ok {
