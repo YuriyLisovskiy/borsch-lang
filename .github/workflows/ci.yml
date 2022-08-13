@@ -59,6 +59,32 @@ jobs:
       - name: Upload build to artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: borsch-v${{ env.app_version }}-${{ matrix.platform.os }}-${{ matrix.platform.arch }}
+          name: borsch-${{ matrix.platform.os }}-${{ matrix.platform.arch }}
           path: ./build
           retention-days: 60
+
+  lang-test:
+    needs:
+      - build
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: ubuntu-20.04
+            artifact: borsch-linux-amd64
+          - os: ubuntu-22.04
+            artifact: borsch-linux-amd64
+          - os: macos-11
+            artifact: borsch-darwin-amd64
+          - os: macos-12
+            artifact: borsch-darwin-amd64
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download the interpreter
+        uses: actions/download-artifact@v3
+        with:
+          name: borsch-${{ matrix.platform.artifact }}
+          path: ./build
+      - name: Display structure of downloaded interpreter
+        run: ls -R ./build
