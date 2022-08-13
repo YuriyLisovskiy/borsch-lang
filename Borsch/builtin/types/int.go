@@ -473,7 +473,7 @@ func (value Int) reversedPow(_ Context, other Object) (Object, error) {
 		}
 
 		if value < 0.0 {
-			// TODO: error
+			return nil, ZeroDivisionErrorNewf("неможливо піднести 0.0 до від'ємного степеня")
 		}
 
 		if value == 0 {

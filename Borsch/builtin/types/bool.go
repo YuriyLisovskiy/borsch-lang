@@ -321,8 +321,8 @@ func (value Bool) pow(_ Context, other Object) (Object, error) {
 			return Int(1), nil
 		}
 
-		if otherValue < 0.0 {
-			// TODO: error
+		if otherValue < 0 {
+			return nil, ZeroDivisionErrorNewf("неможливо піднести 0.0 до від'ємного степеня")
 		}
 
 		if otherValue == 0 {
@@ -336,7 +336,7 @@ func (value Bool) pow(_ Context, other Object) (Object, error) {
 		}
 
 		if otherValue < 0.0 {
-			// TODO: error
+			return nil, ZeroDivisionErrorNewf("неможливо піднести 0.0 до від'ємного степеня")
 		}
 
 		if otherValue == 0.0 {
