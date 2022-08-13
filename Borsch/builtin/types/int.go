@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var IntClass = ObjectClass.ClassNew("цілий", map[string]Object{}, true, IntNew, nil)
+var IntClass = ObjectClass.ClassNew("ціле", map[string]Object{}, true, IntNew, nil)
 
 type Int int64
 
@@ -36,7 +36,7 @@ func IntNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 		}
 
 		if base != 0 && (base < 2 || base > 36) {
-			return nil, ErrorNewf("база для 'цілий()' має бути >= 2 та <= 36")
+			return nil, ErrorNewf("база для 'ціле()' має бути >= 2 та <= 36")
 		}
 	}
 
@@ -46,7 +46,7 @@ func IntNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 
 	if baseObj != nil {
 		// TODO: TypeError
-		return nil, ErrorNewf("'цілий()' не може перетворити об'єкт не рядкового типу з явною базою")
+		return nil, ErrorNewf("'ціле()' не може перетворити об'єкт не рядкового типу з явною базою")
 	}
 
 	return ToInt(ctx, xObj)
@@ -149,7 +149,7 @@ func IntFromString(str string, base int) (Object, error) {
 
 error:
 	// TODO: ValueError
-	return nil, ErrorNewf("некоректний літерал для 'цілий()' з базою %d: '%s'", convertBase, str)
+	return nil, ErrorNewf("некоректний літерал для 'ціле()' з базою %d: '%s'", convertBase, str)
 }
 
 func (value Int) represent(ctx Context) (Object, error) {
@@ -209,6 +209,10 @@ func (value Int) reversedAdd(_ Context, other Object) (Object, error) {
 		return otherValue + Real(value), nil
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(otherValue) + value, nil
+	}
+
 	return nil, ErrorNewf("неможливо виконати додавання об'єкта '%s' до ціле число", other.Class().Name)
 }
 
@@ -235,6 +239,10 @@ func (value Int) reversedSub(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Real); ok {
 		return otherValue - Real(value), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(otherValue) - value, nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати віднімання об'єкта '%s' від цілого числа", other.Class().Name)
@@ -285,6 +293,18 @@ func (value Int) reversedDiv(_ Context, other Object) (Object, error) {
 		return otherValue / Real(value), nil
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		if value == 0 {
+			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+		}
+
+		if !otherValue {
+			return Real(0.0), nil
+		}
+
+		return 1.0 / Real(value), nil
+	}
+
 	return nil, ErrorNewf("неможливо виконати ділення об'єкта '%s' на ціле число", other.Class().Name)
 }
 
@@ -333,8 +353,15 @@ func (value Int) reversedMul(ctx Context, other Object) (Object, error) {
 		return otherValue.mul(ctx, value)
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		if !otherValue {
+			return Int(0), nil
+		}
+
+		return value, nil
+	}
+
 	// TODO: add multiplication for:
-	//  bool, int
 	//  ..., int
 
 	return nil, ErrorNewf("неможливо виконати множення об'єкта '%s' на ціле число", other.Class().Name)
@@ -374,7 +401,7 @@ func (value Int) reversedMod(_ Context, other Object) (Object, error) {
 			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
 		}
 
-		return otherValue % value, nil
+		return Int(mod(Real(otherValue), Real(value))), nil
 	}
 
 	if otherValue, ok := other.(Real); ok {
@@ -382,7 +409,15 @@ func (value Int) reversedMod(_ Context, other Object) (Object, error) {
 			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
 		}
 
-		return Real(math.Mod(float64(otherValue), float64(value))), nil
+		return mod(otherValue, Real(value)), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if value == 0 {
+			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
+		}
+
+		return Int(mod(bo2ro(otherValue), Real(value))), nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати модуль? об'єкта '%s'  ціле число", other.Class().Name)

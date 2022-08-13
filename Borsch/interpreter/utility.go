@@ -346,7 +346,7 @@ func setCurrentValue(ctx types.Context, prevValue types.Object, ident string, va
 
 func checkForNilAttribute(ident string) error {
 	switch ident {
-	case "нуль", "нульовий":
+	case "нуль", "нульове":
 		return errors.New(fmt.Sprintf("'%s' не є атрибутом", ident))
 	}
 

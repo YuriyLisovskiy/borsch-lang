@@ -78,7 +78,7 @@ func ToInt(ctx Context, a Object) (Object, error) {
 	}
 
 	// TODO: TypeError
-	return nil, ErrorNewf("непідтримуваний тип операнда для 'цілий': '%s'", a.Class().Name)
+	return nil, ErrorNewf("непідтримуваний тип операнда для 'ціле': '%s'", a.Class().Name)
 }
 
 func ToReal(ctx Context, a Object) (Object, error) {
@@ -91,7 +91,7 @@ func ToReal(ctx Context, a Object) (Object, error) {
 	}
 
 	// TODO: TypeError
-	return nil, ErrorNewf("непідтримуваний тип операнда для 'дійсний': '%s'", a.Class().Name)
+	return nil, ErrorNewf("непідтримуваний тип операнда для 'дійсне': '%s'", a.Class().Name)
 }
 
 // ToGoInt turns 'a' into Go int if possible.
@@ -189,7 +189,7 @@ func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ..
 		} else {
 			extra := ""
 			if isNullable {
-				extra = "або 'нульовий'"
+				extra = "або 'нульове'"
 			}
 
 			t := typesFormat[i]
@@ -197,13 +197,13 @@ func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ..
 			case 'b':
 				if _, ok := arg.(Bool); !ok {
 					return ErrorNewf(
-						"%s() аргумент %d має бути типу 'логічний'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+						"%s() аргумент %d має бути типу 'логічне'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
 					)
 				}
 			case 'i':
 				if _, ok := arg.(Int); !ok {
 					return ErrorNewf(
-						"%s() аргумент %d має бути типу 'цілий'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+						"%s() аргумент %d має бути типу 'ціле'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
 					)
 				}
 			// case 'l':
@@ -221,7 +221,7 @@ func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ..
 			case 'n':
 				if arg != Nil {
 					return ErrorNewf(
-						"%s() аргумент %d має бути типу 'нульовий', а не '%s'", name, i+1, arg.Class().Name,
+						"%s() аргумент %d має бути типу 'нульове', а не '%s'", name, i+1, arg.Class().Name,
 					)
 				}
 			// case 'p':
@@ -233,7 +233,7 @@ func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ..
 			case 'r':
 				if _, ok := arg.(Real); !ok {
 					return ErrorNewf(
-						"%s() аргумент %d має бути типу 'дійсний'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
+						"%s() аргумент %d має бути типу 'дійсне'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
 					)
 				}
 			case 's':

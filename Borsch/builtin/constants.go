@@ -12,14 +12,14 @@ const (
 // Built-in types
 const (
 	AnyTypeName        = "довільний"
-	BoolTypeName       = "логічний"
+	BoolTypeName       = "логічне"
 	DictionaryTypeName = "словник"
 	FunctionTypeName   = "функція"
-	IntegerTypeName    = "цілий"
+	IntegerTypeName    = "ціле"
 	ListTypeName       = "список"
-	NilTypeName        = "нульовий"
+	NilTypeName        = "нульове"
 	PackageTypeName    = "пакет"
-	RealTypeName       = "дійсний"
+	RealTypeName       = "дійсне"
 	StringTypeName     = "рядок"
 	TypeTypeName       = "тип"
 	ErrorTypeName      = "Помилка"
@@ -38,7 +38,7 @@ const (
 	ConstructorName            = "__конструктор__"
 	CallOperatorName           = "__оператор_виклику__"
 	LengthOperatorName         = "__довжина__"
-	BoolOperatorName           = "__логічний__"
+	BoolOperatorName           = "__логічне__"
 	StringOperatorName         = "__рядок__"
 	RepresentationOperatorName = "__представлення__"
 )

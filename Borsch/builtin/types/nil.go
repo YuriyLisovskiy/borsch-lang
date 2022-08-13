@@ -1,7 +1,7 @@
 package types
 
 var (
-	NilClass = ObjectClass.ClassNew("нульовий", map[string]Object{}, true, nil, nil)
+	NilClass = ObjectClass.ClassNew("нульове", map[string]Object{}, true, nil, nil)
 
 	Nil = nilType{}
 )

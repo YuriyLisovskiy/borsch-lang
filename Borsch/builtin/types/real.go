@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var RealClass = ObjectClass.ClassNew("дійсний", map[string]Object{}, true, RealNew, nil)
+var RealClass = ObjectClass.ClassNew("дійсне", map[string]Object{}, true, RealNew, nil)
 
 type Real float64
 
@@ -91,6 +91,10 @@ func (value Real) add(_ Context, other Object) (Object, error) {
 		return value + Real(otherValue), nil
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		return value + bo2ro(otherValue), nil
+	}
+
 	return nil, ErrorNewf("неможливо виконати додавання дійсного числа до об'єкта '%s'", other.Class().Name)
 }
 
@@ -101,6 +105,10 @@ func (value Real) reversedAdd(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Int); ok {
 		return Real(otherValue) + value, nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		return bo2ro(otherValue) + value, nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати додавання об'єкта '%s' до дійсне число", other.Class().Name)
@@ -115,6 +123,10 @@ func (value Real) sub(_ Context, other Object) (Object, error) {
 		return value - Real(otherValue), nil
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		return value - bo2ro(otherValue), nil
+	}
+
 	return nil, ErrorNewf("неможливо виконати віднімання дійсного числа від об'єкта '%s'", other.Class().Name)
 }
 
@@ -125,6 +137,10 @@ func (value Real) reversedSub(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Int); ok {
 		return Real(otherValue) - value, nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		return bo2ro(otherValue) - value, nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати віднімання об'єкта '%s' від дійсне число", other.Class().Name)
@@ -147,6 +163,14 @@ func (value Real) div(_ Context, other Object) (Object, error) {
 		return value / Real(otherValue), nil
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		if !otherValue {
+			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+		}
+
+		return value, nil
+	}
+
 	return nil, ErrorNewf("неможливо виконати ділення дійсного числа на об'єкт '%s'", other.Class().Name)
 }
 
@@ -167,6 +191,18 @@ func (value Real) reversedDiv(_ Context, other Object) (Object, error) {
 		return Real(otherValue) / value, nil
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		if value == 0.0 {
+			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+		}
+
+		if !otherValue {
+			return Real(0.0), nil
+		}
+
+		return 1.0 / value, nil
+	}
+
 	return nil, ErrorNewf("неможливо виконати ділення об'єкта '%s' на дійсне число", other.Class().Name)
 }
 
@@ -177,6 +213,14 @@ func (value Real) mul(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Int); ok {
 		return value * Real(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if otherValue {
+			return value, nil
+		}
+
+		return Real(0.0), nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати множення дійсного числа на об'єкт '%s'", other.Class().Name)
@@ -191,16 +235,32 @@ func (value Real) reversedMul(_ Context, other Object) (Object, error) {
 		return Real(otherValue) * value, nil
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		if !otherValue {
+			return Real(0.0), nil
+		}
+
+		return value, nil
+	}
+
 	return nil, ErrorNewf("неможливо виконати множення об'єкта '%s' на дійсне число", other.Class().Name)
 }
 
 func (value Real) mod(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Real); ok {
-		return Real(math.Mod(float64(value), float64(otherValue))), nil
+		return mod(value, otherValue), nil
 	}
 
 	if otherValue, ok := other.(Int); ok {
-		return Real(math.Mod(float64(value), float64(otherValue))), nil
+		return mod(value, Real(otherValue)), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if !otherValue {
+			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
+		}
+
+		return mod(value, bo2ro(otherValue)), nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати модуль? дійсного числа  '%s'", other.Class().Name)
@@ -208,11 +268,19 @@ func (value Real) mod(_ Context, other Object) (Object, error) {
 
 func (value Real) reversedMod(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Real); ok {
-		return Real(math.Mod(float64(otherValue), float64(value))), nil
+		return mod(otherValue, value), nil
 	}
 
 	if otherValue, ok := other.(Int); ok {
-		return Real(math.Mod(float64(otherValue), float64(value))), nil
+		return mod(Real(otherValue), value), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if value == 0.0 {
+			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
+		}
+
+		return mod(bo2ro(otherValue), value), nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати модуль? об'єкта '%s'  дійсне число", other.Class().Name)
@@ -225,6 +293,14 @@ func (value Real) pow(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Int); ok {
 		return Real(math.Pow(float64(value), float64(otherValue))), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if otherValue {
+			return value, nil
+		}
+
+		return Real(1.0), nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати степінь? дійсного числа  '%s'", other.Class().Name)
@@ -244,6 +320,22 @@ func (value Real) reversedPow(_ Context, other Object) (Object, error) {
 		return Int(result), nil
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		if otherValue {
+			return Real(1.0), nil
+		}
+
+		if value < 0.0 {
+			// TODO: error
+		}
+
+		if value == 0.0 {
+			return Real(1.0), nil
+		}
+
+		return Real(0.0), nil
+	}
+
 	return nil, ErrorNewf("неможливо виконати степінь? об'єкта '%s'  дійсне число", other.Class().Name)
 }
 
@@ -254,6 +346,10 @@ func (value Real) equals(_ Context, other Object) (Object, error) {
 
 	if v, ok := other.(Int); ok {
 		return goBoolToBoolObject(value == Real(v)), nil
+	}
+
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value == bo2ro(v)), nil
 	}
 
 	return False, nil
@@ -268,6 +364,10 @@ func (value Real) notEquals(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(value != Real(v)), nil
 	}
 
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value != bo2ro(v)), nil
+	}
+
 	return False, nil
 }
 
@@ -278,6 +378,10 @@ func (value Real) less(_ Context, other Object) (Object, error) {
 
 	if v, ok := other.(Int); ok {
 		return goBoolToBoolObject(value < Real(v)), nil
+	}
+
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value < bo2ro(v)), nil
 	}
 
 	return nil, OperatorNotSupportedErrorNew("<", value.Class().Name, other.Class().Name)
@@ -292,6 +396,10 @@ func (value Real) lessOrEquals(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(value <= Real(v)), nil
 	}
 
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value <= bo2ro(v)), nil
+	}
+
 	return nil, OperatorNotSupportedErrorNew("<=", value.Class().Name, other.Class().Name)
 }
 
@@ -304,6 +412,10 @@ func (value Real) greater(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(value > Real(v)), nil
 	}
 
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value > bo2ro(v)), nil
+	}
+
 	return nil, OperatorNotSupportedErrorNew(">", value.Class().Name, other.Class().Name)
 }
 
@@ -314,6 +426,10 @@ func (value Real) greaterOrEquals(_ Context, other Object) (Object, error) {
 
 	if v, ok := other.(Int); ok {
 		return goBoolToBoolObject(value >= Real(v)), nil
+	}
+
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value >= bo2ro(v)), nil
 	}
 
 	return nil, OperatorNotSupportedErrorNew(">=", value.Class().Name, other.Class().Name)

@@ -1,7 +1,7 @@
 package types
 
 var (
-	BoolClass = ObjectClass.ClassNew("логічний", map[string]Object{}, true, BoolNew, nil)
+	BoolClass = ObjectClass.ClassNew("логічне", map[string]Object{}, true, BoolNew, nil)
 
 	True  = Bool(true)
 	False = Bool(false)
@@ -48,7 +48,7 @@ func NewBool(value bool) Bool {
 
 func BoolNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	if len(args) != 1 {
-		return nil, ErrorNewf("логічний() приймає 1 аргумент")
+		return nil, ErrorNewf("логічне() приймає 1 аргумент")
 	}
 
 	return ToBool(ctx, args[0])
@@ -208,9 +208,15 @@ func (value Bool) mul(_ Context, other Object) (Object, error) {
 	}
 
 	switch other.(type) {
-	case Int, Real:
+	case Int:
 		if !value {
 			return Int(0), nil
+		}
+
+		return other, nil
+	case Real:
+		if !value {
+			return Real(0.0), nil
 		}
 
 		return other, nil

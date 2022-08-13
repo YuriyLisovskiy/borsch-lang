@@ -58,12 +58,28 @@ func (value String) mul(_ Context, other Object) (Object, error) {
 		return result, nil
 	}
 
+	if otherValue, ok := other.(Bool); ok {
+		if otherValue {
+			return value, nil
+		}
+
+		return String(""), nil
+	}
+
 	return nil, ErrorNewf("неможливо виконати множення рядка на об'єкт '%s'", other.Class().Name)
 }
 
 func (value String) reversedMul(ctx Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Int); ok {
 		return otherValue.mul(ctx, value)
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if otherValue {
+			return value, nil
+		}
+
+		return String(""), nil
 	}
 
 	return nil, ErrorNewf("неможливо виконати множення об'єкта '%s' на рядок", other.Class().Name)
@@ -74,12 +90,20 @@ func (value String) equals(_ Context, other Object) (Object, error) {
 		return goBoolToBoolObject(value == s), nil
 	}
 
+	if _, ok := other.(Bool); ok {
+		return False, nil
+	}
+
 	return False, nil
 }
 
 func (value String) notEquals(_ Context, other Object) (Object, error) {
 	if v, ok := other.(String); ok {
 		return goBoolToBoolObject(value != v), nil
+	}
+
+	if _, ok := other.(Bool); ok {
+		return True, nil
 	}
 
 	return False, nil

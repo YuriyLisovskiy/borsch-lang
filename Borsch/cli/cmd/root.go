@@ -47,14 +47,14 @@ var rootCmd = &cobra.Command{
 			filePath, err := filepath.Abs(args[0])
 			if err != nil {
 				fmt.Println(err.Error())
-				return
+				os.Exit(1)
 			}
 
 			i := interpreter.NewInterpreter()
 			parser, err := interpreter.NewParser()
 			if err != nil {
 				fmt.Println(err.Error())
-				return
+				os.Exit(2)
 			}
 
 			state := interpreter.NewState(parser, i, nil, nil)
@@ -67,7 +67,7 @@ var rootCmd = &cobra.Command{
 				}
 
 				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", stackTrace.String(err)))
-				return
+				os.Exit(1)
 			}
 		} else {
 			// interpret := interpreter.NewInterpreter(stdRoot, builtin.RootPackageName, "")
