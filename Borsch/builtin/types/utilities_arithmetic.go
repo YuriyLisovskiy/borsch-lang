@@ -84,7 +84,7 @@ func Mod(ctx Context, a, b Object) (Object, error) {
 	}
 
 	return nil, ErrorNewf(
-		"непідтримувані типи операндів для %: '%s' та '%s'",
+		"непідтримувані типи операндів для %%: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
 	)
