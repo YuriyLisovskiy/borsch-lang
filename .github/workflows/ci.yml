@@ -84,7 +84,7 @@ jobs:
       - name: Download the interpreter
         uses: actions/download-artifact@v3
         with:
-          name: borsch-${{ matrix.platform.artifact }}
+          name: ${{ matrix.platform.artifact }}
           path: ./build
       - name: Display structure of downloaded interpreter
         run: ls -R ./build
