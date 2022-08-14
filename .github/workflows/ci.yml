@@ -89,4 +89,4 @@ jobs:
       - name: Run language tests
         env:
           BORSCH_LIB: ./build/Lib
-        run: bash ./scripts/ci_lang_test.sh ./Test/вбудовані
+        run: bash ./scripts/ci_lang_test.sh ./build/bin/borsch ./Test/вбудовані
