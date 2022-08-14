@@ -4,6 +4,13 @@ type Object interface {
 	Class() *Class
 }
 
+type ISequence interface {
+	Length(ctx Context) (Int, error)
+	GetElement(ctx Context, index Int) (Object, error)
+	SetElement(ctx Context, index Int, item Object) (Object, error)
+	Slice(ctx Context, lBound Int, rBound Int) (Object, error)
+}
+
 type IString interface {
 	string(ctx Context) (Object, error)
 }

@@ -1,4 +1,4 @@
-.PHONY: all rebuild build install uninstall clean
+.PHONY: all rebuild build install uninstall clean test
 
 APP_NAME=borsch
 BINARY=bin/${APP_NAME}
@@ -28,3 +28,9 @@ uninstall:
 
 clean:
 	if [ -f ${BINARY} ] ; then rm ${BINARY} ; fi
+
+test:
+	go run Borsch/cli/main.go Test/вбудовані/типи/дійсний.борщ
+	go run Borsch/cli/main.go Test/вбудовані/типи/логічний.борщ
+	go run Borsch/cli/main.go Test/вбудовані/типи/рядок.борщ
+	go run Borsch/cli/main.go Test/вбудовані/типи/цілий.борщ

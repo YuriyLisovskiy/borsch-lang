@@ -40,12 +40,12 @@ type OperatorEvaluatable interface {
 	Evaluate(State, types.Object) (types.Object, error)
 }
 
-type SequentialType interface {
-	Length(State) int64
-	GetElement(State, int64) (types.Object, error)
-	SetElement(State, int64, types.Object) (types.Object, error)
-	Slice(State, int64, int64) (types.Object, error)
-}
+// type SequentialType interface {
+// 	Length( /*State*/ ) int64
+// 	GetElement( /*State,*/ int64) (types.Object, error)
+// 	SetElement( /*State,*/ int64, types.Object) (types.Object, error)
+// 	Slice( /*State,*/ int64, int64) (types.Object, error)
+// }
 
 type CallableType interface {
 	Call(State, *[]types.Object, *map[string]types.Object) (types.Object, error)

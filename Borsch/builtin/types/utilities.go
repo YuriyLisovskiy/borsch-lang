@@ -20,7 +20,19 @@ func mod(l, r Real) Real {
 
 func Represent(ctx Context, self Object) (Object, error) {
 	if v, ok := self.(IRepresent); ok {
-		return v.represent(ctx)
+		res, err := v.represent(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := res.(String); !ok {
+			return nil, ErrorNewf(
+				"результат виклику '__представлення__' має бути типу 'рядок', отримано '%s'",
+				res.Class().Name,
+			)
+		}
+
+		return res, nil
 	}
 
 	return String(fmt.Sprintf("<об'єкт %s з адресою %p>", self.Class().Name, self)), nil
@@ -28,7 +40,19 @@ func Represent(ctx Context, self Object) (Object, error) {
 
 func ToString(ctx Context, self Object) (Object, error) {
 	if v, ok := self.(IString); ok {
-		return v.string(ctx)
+		res, err := v.string(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := res.(String); !ok {
+			return nil, ErrorNewf(
+				"результат виклику '__рядок__' має бути типу 'рядок', отримано '%s'",
+				res.Class().Name,
+			)
+		}
+
+		return res, nil
 	}
 
 	return Represent(ctx, self)
@@ -40,12 +64,7 @@ func ToGoString(ctx Context, self Object) (string, error) {
 		return "", err
 	}
 
-	goString, ok := s.(String)
-	if !ok {
-		return "", ErrorNewf("результат виклику '__рядок__' має бути типу 'рядок', отримано '%s'", s.Class().Name)
-	}
-
-	return string(goString), nil
+	return string(s.(String)), nil
 }
 
 func ToBool(ctx Context, self Object) (Object, error) {
@@ -243,7 +262,7 @@ func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ..
 					)
 				}
 			case 't':
-				if _, ok := arg.(Tuple); !ok {
+				if _, ok := arg.(*Tuple); !ok {
 					return ErrorNewf(
 						"%s() аргумент %d має бути типу 'кортеж'%s, а не '%s'", name, i+1, extra, arg.Class().Name,
 					)

@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
@@ -79,10 +80,10 @@ func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFu
 	return StmtResult{}
 }
 
-func getBound(state common.State, bound *Expression, boundName string) (int64, error) {
+func getBound(state common.State, bound *Expression, boundName string) (types.Int, error) {
 	return mustInt(
-		state, bound, func(t types.Object) string {
-			return fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.Class().Name)
+		state, bound, func(t types.Object) error {
+			return errors.New(fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.Class().Name))
 		},
 	)
 }

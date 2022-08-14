@@ -58,7 +58,7 @@ func evalSlicingOperation(
 	valueToSet types.Object,
 ) (types.Object, error) {
 	switch iterable := variable.(type) {
-	case common.SequentialType:
+	case types.ISequence:
 		errMsg := ""
 		if ranges_[0].IsSlicing {
 			errMsg = "ліва межа має бути цілого типу"
@@ -67,26 +67,40 @@ func evalSlicingOperation(
 		}
 
 		leftIdx, err := mustInt(
-			state, ranges_[0].LeftBound, func(t types.Object) string {
-				return fmt.Sprintf("%s, отримано %s", errMsg, t.Class().Name)
+			state, ranges_[0].LeftBound, func(t types.Object) error {
+				return errors.New(fmt.Sprintf("%s, отримано %s", errMsg, t.Class().Name))
 			},
 		)
 		if err != nil {
 			return nil, err
 		}
 
+		ctx := state.GetContext()
+		length, err := iterable.Length(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if leftIdx < 0 {
+			leftIdx = length + leftIdx
+		}
+
 		var element types.Object
 		if ranges_[0].RightBound != nil {
 			rightIdx, err := mustInt(
-				state, ranges_[0].RightBound, func(t types.Object) string {
-					return fmt.Sprintf("права межа має бути цілого типу, отримано %s", t.Class().Name)
+				state, ranges_[0].RightBound, func(t types.Object) error {
+					return types.TypeErrorNewf("права межа має бути цілого типу, отримано %s", t.Class().Name)
 				},
 			)
 			if err != nil {
 				return nil, err
 			}
 
-			element, err = iterable.Slice(state, leftIdx, rightIdx)
+			if rightIdx < 0 {
+				rightIdx = length + rightIdx
+			}
+
+			element, err = iterable.Slice(ctx, leftIdx, rightIdx)
 			if err != nil {
 				return nil, err
 			}
@@ -96,7 +110,7 @@ func evalSlicingOperation(
 				return element, nil
 			}
 		} else if ranges_[0].IsSlicing {
-			element, err = iterable.Slice(state, leftIdx, iterable.Length(state))
+			element, err = iterable.Slice(ctx, leftIdx, length)
 			if err != nil {
 				return nil, err
 			}
@@ -108,13 +122,13 @@ func evalSlicingOperation(
 		} else {
 			if len(ranges_) == 1 {
 				if valueToSet != nil {
-					return iterable.SetElement(state, leftIdx, valueToSet)
+					return iterable.SetElement(ctx, leftIdx, valueToSet)
 				}
 
-				return iterable.GetElement(state, leftIdx)
+				return iterable.GetElement(ctx, leftIdx)
 			}
 
-			element, err = iterable.GetElement(state, leftIdx)
+			element, err = iterable.GetElement(ctx, leftIdx)
 			if err != nil {
 				return nil, err
 			}
@@ -125,7 +139,7 @@ func evalSlicingOperation(
 			return nil, err
 		}
 
-		return iterable.SetElement(state, leftIdx, element)
+		return iterable.SetElement(ctx, leftIdx, element)
 	default:
 		operatorDescription := ""
 		if ranges_[0].IsSlicing {
@@ -134,16 +148,14 @@ func evalSlicingOperation(
 			operatorDescription = "довільного доступу"
 		}
 
-		return nil, errors.New(
-			fmt.Sprintf(
-				"неможливо застосувати оператор %s до об'єкта з типом '%s'",
-				operatorDescription, variable.Class().Name,
-			),
+		return nil, types.TypeErrorNewf(
+			"неможливо застосувати оператор %s до об'єкта з типом '%s'",
+			operatorDescription, variable.Class().Name,
 		)
 	}
 }
 
-func mustInt(state common.State, expression *Expression, errFunc func(types.Object) string) (int64, error) {
+func mustInt(state common.State, expression *Expression, errFunc func(types.Object) error) (types.Int, error) {
 	value, err := expression.Evaluate(state, nil)
 	if err != nil {
 		return 0, err
@@ -151,9 +163,9 @@ func mustInt(state common.State, expression *Expression, errFunc func(types.Obje
 
 	switch integer := value.(type) {
 	case types.Int:
-		return int64(integer), nil
+		return integer, nil
 	default:
-		return 0, errors.New(errFunc(value))
+		return 0, errFunc(value)
 	}
 }
 
@@ -254,18 +266,28 @@ func unpackList(state common.State, lhs []*Expression, rhs *Expression) (types.O
 	}
 
 	switch list := element.(type) {
-	case *types.List:
-		lhsLen := int64(len(lhs))
-		rhsLen := list.Length()
+	case types.ISequence:
+		lhsLen := types.Int(len(lhs))
+		rhsLen, err := list.Length(state.GetContext())
+		if err != nil {
+			return nil, err
+		}
+
 		if lhsLen > rhsLen {
 			// TODO: return error
 			panic(fmt.Sprintf("unable to unpack %d elements of %s to %d vars", rhsLen, element.Class().Name, lhsLen))
 		}
 
-		var i int64
+		ctx := state.GetContext()
+		var i types.Int
 		resultList := types.NewList()
 		for i = 0; i < lhsLen-1; i++ {
-			item, err := lhs[i].Evaluate(state, list.Values[i])
+			value, err := list.GetElement(ctx, i)
+			if err != nil {
+				return nil, err
+			}
+
+			item, err := lhs[i].Evaluate(state, value)
 			if err != nil {
 				return nil, err
 			}
@@ -273,12 +295,21 @@ func unpackList(state common.State, lhs []*Expression, rhs *Expression) (types.O
 			resultList.Values = append(resultList.Values, item)
 		}
 
-		if i < list.Length()-1 {
-			rest := types.NewList()
-			rest.Values = list.Values[i:]
+		listLen, err := list.Length(state.GetContext())
+		if i < listLen-1 {
+			rest, err := list.Slice(ctx, i, listLen)
+			if err != nil {
+				return nil, err
+			}
+
 			resultList.Values = append(resultList.Values, rest)
 		} else {
-			element, err := lhs[i].Evaluate(state, list.Values[i])
+			value, err := list.GetElement(ctx, i)
+			if err != nil {
+				return nil, err
+			}
+
+			element, err := lhs[i].Evaluate(state, value)
 			if err != nil {
 				return nil, err
 			}
