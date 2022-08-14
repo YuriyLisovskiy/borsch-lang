@@ -92,4 +92,5 @@ jobs:
           BORSCH_LIB: ./build/Lib
         run: |
           chmod +x ./scripts/ci_lang_test.sh
-          bash ./scripts/ci_lang_test.sh ./build/bin/borsch ./Test/вбудовані
+          chmod +x ./build/bin/borsch
+          ./scripts/ci_lang_test.sh ./build/bin/borsch ./Test/вбудовані
