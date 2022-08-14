@@ -26,10 +26,10 @@ func (node *Throw) Evaluate(state common.State) StmtResult {
 
 	return StmtResult{
 		Err: state.RuntimeError(
-			fmt.Sprintf(
-				"помилки мають наслідувати клас '%s'",
-				// builtin.ErrorClass.Name,
-			),
+			// fmt.Sprintf(
+			"помилки мають наслідувати клас '%s'",
+			// builtin.ErrorClass.Name,
+			// ),
 			node,
 		),
 	}
