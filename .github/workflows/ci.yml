@@ -86,5 +86,7 @@ jobs:
         with:
           name: ${{ matrix.platform.artifact }}
           path: ./build
-      - name: Display structure of downloaded interpreter
-        run: ls -R ./build
+      - name: Run language tests
+        env:
+          BORSCH_LIB: ./build/Lib
+        run: bash ./scripts/ci_lang_test.sh ./Test/вбудовані
