@@ -43,7 +43,7 @@ func (value *Package) getAttribute(_ Context, name string) (Object, error) {
 		return attr, nil
 	}
 
-	return nil, ErrorNewf("пакет '%s' не містить атрибута '%s'", value.Name(), name)
+	return nil, NewErrorf("пакет '%s' не містить атрибута '%s'", value.Name(), name)
 }
 
 func (value *Package) setAttribute(_ Context, name string, newValue Object) error {
@@ -53,7 +53,7 @@ func (value *Package) setAttribute(_ Context, name string, newValue Object) erro
 	}
 
 	if attr != nil && attr.Class() != newValue.Class() {
-		return ErrorNewf(
+		return NewErrorf(
 			"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
 			newValue.Class().Name,
 			name,
@@ -75,7 +75,7 @@ func (value *Package) deleteAttribute(_ Context, name string) (Object, error) {
 		return attr, nil
 	}
 
-	return nil, ErrorNewf("пакет '%s' не містить атрибута '%s'", value.Name(), name)
+	return nil, NewErrorf("пакет '%s' не містить атрибута '%s'", value.Name(), name)
 }
 
 func (value *Package) Name() string {

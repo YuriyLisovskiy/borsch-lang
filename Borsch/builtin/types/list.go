@@ -13,7 +13,7 @@ func checkIndex(index, length Int, indexOfWhat string) error {
 		return nil
 	}
 
-	return IndexOutOfRangeErrorNew(indexOfWhat)
+	return NewIndexOutOfRangeErrorf("індекс %s за межами діапазону", indexOfWhat)
 }
 
 func NewList() *List {

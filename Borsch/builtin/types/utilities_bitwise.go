@@ -11,7 +11,7 @@ func ShiftLeft(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для <<: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -29,7 +29,7 @@ func ShiftRight(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для >>: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -47,7 +47,7 @@ func BitwiseOr(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для |: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -65,7 +65,7 @@ func BitwiseXor(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для ^: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -83,7 +83,7 @@ func BitwiseAnd(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для &: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -95,7 +95,7 @@ func Invert(ctx Context, a Object) (Object, error) {
 		return v.invert(ctx)
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримуваний тип операнда для унарного ~: '%s'",
 		a.Class().Name,
 	)

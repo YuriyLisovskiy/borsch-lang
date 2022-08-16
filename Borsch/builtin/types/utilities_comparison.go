@@ -11,7 +11,7 @@ func Equals(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для ==: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -29,7 +29,7 @@ func NotEquals(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для !=: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -47,7 +47,7 @@ func Less(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для <: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -65,7 +65,7 @@ func LessOrEquals(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для <=: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -83,7 +83,7 @@ func Greater(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для >: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -101,7 +101,7 @@ func GreaterOrEquals(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для >=: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,

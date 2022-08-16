@@ -11,7 +11,7 @@ func Add(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для +: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -29,7 +29,7 @@ func Sub(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для -: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -47,7 +47,7 @@ func Div(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для /: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -65,7 +65,7 @@ func Mul(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для *: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -83,7 +83,7 @@ func Mod(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для %%: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -101,7 +101,7 @@ func Pow(ctx Context, a, b Object) (Object, error) {
 		}
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримувані типи операндів для **: '%s' та '%s'",
 		a.Class().Name,
 		b.Class().Name,
@@ -113,7 +113,7 @@ func Positive(ctx Context, a Object) (Object, error) {
 		return v.positive(ctx)
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримуваний тип операнда для унарного +: '%s'",
 		a.Class().Name,
 	)
@@ -124,7 +124,7 @@ func Negate(ctx Context, a Object) (Object, error) {
 		return v.negate(ctx)
 	}
 
-	return nil, ErrorNewf(
+	return nil, NewErrorf(
 		"непідтримуваний тип операнда для унарного -: '%s'",
 		a.Class().Name,
 	)

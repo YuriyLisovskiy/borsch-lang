@@ -5,33 +5,32 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
 func (node *Throw) Evaluate(state common.State) StmtResult {
-	// expression, err := node.Expression.Evaluate(state, nil)
-	// if err != nil {
-	// 	return StmtResult{Err: err}
-	// }
+	expressionObj, err := node.Expression.Evaluate(state, nil)
+	if err != nil {
+		return StmtResult{Err: err}
+	}
 
-	// expressionClass := expression.Class()
-	// if expressionClass == builtin.ErrorClass || expressionClass.HasBase(builtin.ErrorClass) {
-	// 	message, err := expression.String(state)
-	// 	if err != nil {
-	// 		return StmtResult{Err: err}
-	// 	}
-	//
-	// 	state.Trace(node, "")
-	// 	return StmtResult{State: StmtThrow, Value: expression, Err: utilities.NewRuntimeStatementError(message, node)}
-	// }
+	expressionClass := expressionObj.Class()
+	if expressionClass == types.ErrorClass || expressionClass.HasBase(types.ErrorClass) {
+		message, err := types.ToGoString(state.GetContext(), expressionObj)
+		if err != nil {
+			return StmtResult{Err: err}
+		}
+
+		state.Trace(node, "")
+		return StmtResult{
+			State: StmtThrow,
+			Value: expressionObj,
+			Err:   utilities.NewRuntimeStatementError(message, node),
+		}
+	}
 
 	return StmtResult{
-		Err: state.RuntimeError(
-			// fmt.Sprintf(
-			"помилки мають наслідувати клас '%s'",
-			// builtin.ErrorClass.Name,
-			// ),
-			node,
-		),
+		Err: state.RuntimeError(fmt.Sprintf("помилки мають наслідувати клас '%s'", types.ErrorClass.Name), node),
 	}
 }
 
@@ -78,17 +77,16 @@ func (node *Catch) Evaluate(state common.State, exception types.Object, inFuncti
 		return node.catch(state, exception, inFunction, inLoop)
 	}
 
-	// if !errorToCatchClass.HasBase(builtin.ErrorClass) {
-	// 	return StmtResult{
-	// 		Err: state.RuntimeError(
-	// 			fmt.Sprintf(
-	// 				"перехоплення помилок, які не наслідують клас '%s' заборонено",
-	// 				builtin.ErrorClass.Name,
-	// 			),
-	// 			node,
-	// 		),
-	// 	}, false
-	// }
+	if !errorToCatchClass.HasBase(types.ErrorClass) {
+		return StmtResult{
+			Err: state.RuntimeError(
+				fmt.Sprintf(
+					"перехоплення помилок, які не наслідують клас '%s' заборонено",
+					types.ErrorClass.Name,
+				), node,
+			),
+		}, false
+	}
 
 	return StmtResult{}, false
 }

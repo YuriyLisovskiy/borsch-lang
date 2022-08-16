@@ -192,7 +192,7 @@ func (value *Class) HasBase(cls *Class) bool {
 func ObjectNew(_ Context, cls *Class, args Tuple) (Object, error) {
 	// Check arguments to new only for object
 	if cls == ObjectClass && excessArgs(args) {
-		return nil, ErrorNewf("об_єкт() не приймає аргументів")
+		return nil, NewErrorf("об_єкт() не приймає аргументів")
 	}
 
 	return cls.Allocate(map[string]Object{}), nil
@@ -203,7 +203,7 @@ func ObjectConstruct(ctx Context, self Object, args Tuple) error {
 
 	// Check args for object()
 	if t == ObjectClass && excessArgs(args) {
-		return ErrorNewf("об_єкт.%s() не приймає аргументів", builtin.ConstructorName)
+		return NewErrorf("об_єкт.%s() не приймає аргументів", builtin.ConstructorName)
 	}
 
 	// Call the '__конструктор__' method if it exists.
@@ -230,14 +230,14 @@ func TypeNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	}
 
 	// if len(args) != 3 {
-	// 	return nil, ErrorNewf("тип() приймає 1 або 3 аргументи")
+	// 	return nil, NewErrorf("тип() приймає 1 або 3 аргументи")
 	// }
-	return nil, ErrorNewf("тип() приймає 1 аргумент")
+	return nil, NewErrorf("тип() приймає 1 аргумент")
 }
 
 func TypeConstruct(ctx Context, self Object, args Tuple) error {
 	if len(args) != 1 && len(args) != 3 {
-		return ErrorNewf("тип.%s() приймає 1 або 3 аргументи", builtin.ConstructorName)
+		return NewErrorf("тип.%s() приймає 1 або 3 аргументи", builtin.ConstructorName)
 	}
 
 	// Call об_єкт.__конструктор__(я) now.

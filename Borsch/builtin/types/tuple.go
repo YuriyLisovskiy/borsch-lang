@@ -18,7 +18,7 @@ func TupleNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 		case *List:
 			*tuple = arg.Values
 		default:
-			return nil, ErrorNewf("об'єкт '%s' не є ітерованим", arg.Class().Name)
+			return nil, NewErrorf("об'єкт '%s' не є ітерованим", arg.Class().Name)
 		}
 	} else if len(args) > 1 {
 		*tuple = args
@@ -67,7 +67,7 @@ func (value *Tuple) GetElement(ctx Context, index Int) (Object, error) {
 }
 
 func (value *Tuple) SetElement(_ Context, _ Int, _ Object) (Object, error) {
-	return nil, TypeErrorNewf("об'єкт з типом 'кортеж' не підтримує присвоєння елементів за індексом")
+	return nil, NewTypeError("об'єкт з типом 'кортеж' не підтримує присвоєння елементів за індексом")
 }
 
 func (value *Tuple) Slice(ctx Context, leftBound, rightBound Int) (Object, error) {

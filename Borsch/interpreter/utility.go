@@ -89,7 +89,7 @@ func evalSlicingOperation(
 		if ranges_[0].RightBound != nil {
 			rightIdx, err := mustInt(
 				state, ranges_[0].RightBound, func(t types.Object) error {
-					return types.TypeErrorNewf("права межа має бути цілого типу, отримано %s", t.Class().Name)
+					return types.NewTypeErrorf("права межа має бути цілого типу, отримано %s", t.Class().Name)
 				},
 			)
 			if err != nil {
@@ -148,7 +148,7 @@ func evalSlicingOperation(
 			operatorDescription = "довільного доступу"
 		}
 
-		return nil, types.TypeErrorNewf(
+		return nil, types.NewTypeErrorf(
 			"неможливо застосувати оператор %s до об'єкта з типом '%s'",
 			operatorDescription, variable.Class().Name,
 		)
@@ -321,7 +321,7 @@ func unpackList(state common.State, lhs []*Expression, rhs *Expression) (types.O
 	}
 
 	// TODO: return error
-	return nil, types.ErrorNewf("unable to unpack %s", element.Class().Name)
+	return nil, types.NewErrorf("unable to unpack %s", element.Class().Name)
 }
 
 func evalReturnTypes(state common.State, returnTypes []*ReturnType) ([]types.MethodReturnType, error) {

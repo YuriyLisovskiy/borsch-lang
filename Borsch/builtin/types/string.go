@@ -33,7 +33,7 @@ func (value String) add(_ Context, other Object) (Object, error) {
 		return value + s, nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати конкатенацію рядка з об'єктом '%s'", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати конкатенацію рядка з об'єктом '%s'", other.Class().Name)
 }
 
 func (value String) reversedAdd(_ Context, other Object) (Object, error) {
@@ -41,7 +41,7 @@ func (value String) reversedAdd(_ Context, other Object) (Object, error) {
 		return s + value, nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати конкатенацію об'єкта '%s' з рядком", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати конкатенацію об'єкта '%s' з рядком", other.Class().Name)
 }
 
 func (value String) mul(_ Context, other Object) (Object, error) {
@@ -66,7 +66,7 @@ func (value String) mul(_ Context, other Object) (Object, error) {
 		return String(""), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати множення рядка на об'єкт '%s'", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати множення рядка на об'єкт '%s'", other.Class().Name)
 }
 
 func (value String) reversedMul(ctx Context, other Object) (Object, error) {
@@ -82,7 +82,7 @@ func (value String) reversedMul(ctx Context, other Object) (Object, error) {
 		return String(""), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати множення об'єкта '%s' на рядок", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати множення об'єкта '%s' на рядок", other.Class().Name)
 }
 
 func (value String) equals(_ Context, other Object) (Object, error) {
@@ -217,7 +217,7 @@ func StringEscape(a String, ascii bool) (string, error) {
 
 func StringNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	if len(args) != 1 {
-		return nil, ErrorNewf("рядок() приймає 1 аргумент")
+		return nil, NewErrorf("рядок() приймає 1 аргумент")
 	}
 
 	return ToString(ctx, args[0])

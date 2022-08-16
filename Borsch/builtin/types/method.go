@@ -58,7 +58,7 @@ func (value *Method) call(args Tuple) (Object, error) {
 	pLen := len(value.Parameters)
 	aLen := len(args)
 	if pLen != aLen {
-		return nil, ErrorNewf("кількість параметрів не дорівнює кількості аргументів, %d != %d", pLen, aLen)
+		return nil, NewErrorf("кількість параметрів не дорівнює кількості аргументів, %d != %d", pLen, aLen)
 	}
 
 	// TODO: take into account variable parameters!

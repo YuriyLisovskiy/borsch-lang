@@ -52,7 +52,7 @@ func RealFromString(str string) (Object, error) {
 			}
 		}
 
-		return nil, ErrorNewf("invalid literal for real: '%s'", str)
+		return nil, NewErrorf("invalid literal for real: '%s'", str)
 	}
 
 	return Real(f), nil
@@ -95,7 +95,7 @@ func (value Real) add(_ Context, other Object) (Object, error) {
 		return value + bo2ro(otherValue), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати додавання дійсного числа до об'єкта '%s'", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати додавання дійсного числа до об'єкта '%s'", other.Class().Name)
 }
 
 func (value Real) reversedAdd(_ Context, other Object) (Object, error) {
@@ -111,7 +111,7 @@ func (value Real) reversedAdd(_ Context, other Object) (Object, error) {
 		return bo2ro(otherValue) + value, nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати додавання об'єкта '%s' до дійсне число", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати додавання об'єкта '%s' до дійсне число", other.Class().Name)
 }
 
 func (value Real) sub(_ Context, other Object) (Object, error) {
@@ -127,7 +127,7 @@ func (value Real) sub(_ Context, other Object) (Object, error) {
 		return value - bo2ro(otherValue), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати віднімання дійсного числа від об'єкта '%s'", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати віднімання дійсного числа від об'єкта '%s'", other.Class().Name)
 }
 
 func (value Real) reversedSub(_ Context, other Object) (Object, error) {
@@ -143,13 +143,13 @@ func (value Real) reversedSub(_ Context, other Object) (Object, error) {
 		return bo2ro(otherValue) - value, nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати віднімання об'єкта '%s' від дійсне число", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати віднімання об'єкта '%s' від дійсне число", other.Class().Name)
 }
 
 func (value Real) div(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Real); ok {
 		if otherValue == 0 {
-			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+			return nil, NewZeroDivisionError("ділення на нуль")
 		}
 
 		return value / otherValue, nil
@@ -157,7 +157,7 @@ func (value Real) div(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Int); ok {
 		if otherValue == 0 {
-			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+			return nil, NewZeroDivisionError("ділення на нуль")
 		}
 
 		return value / Real(otherValue), nil
@@ -165,19 +165,19 @@ func (value Real) div(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Bool); ok {
 		if !otherValue {
-			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+			return nil, NewZeroDivisionError("ділення на нуль")
 		}
 
 		return value, nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати ділення дійсного числа на об'єкт '%s'", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати ділення дійсного числа на об'єкт '%s'", other.Class().Name)
 }
 
 func (value Real) reversedDiv(_ Context, other Object) (Object, error) {
 	if otherValue, ok := other.(Real); ok {
 		if value == 0 {
-			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+			return nil, NewZeroDivisionError("ділення на нуль")
 		}
 
 		return otherValue / value, nil
@@ -185,7 +185,7 @@ func (value Real) reversedDiv(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Int); ok {
 		if value == 0 {
-			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+			return nil, NewZeroDivisionError("ділення на нуль")
 		}
 
 		return Real(otherValue) / value, nil
@@ -193,7 +193,7 @@ func (value Real) reversedDiv(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Bool); ok {
 		if value == 0.0 {
-			return nil, ZeroDivisionErrorNewf("ділення на нуль")
+			return nil, NewZeroDivisionError("ділення на нуль")
 		}
 
 		if !otherValue {
@@ -203,7 +203,7 @@ func (value Real) reversedDiv(_ Context, other Object) (Object, error) {
 		return 1.0 / value, nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати ділення об'єкта '%s' на дійсне число", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати ділення об'єкта '%s' на дійсне число", other.Class().Name)
 }
 
 func (value Real) mul(_ Context, other Object) (Object, error) {
@@ -223,7 +223,7 @@ func (value Real) mul(_ Context, other Object) (Object, error) {
 		return Real(0.0), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати множення дійсного числа на об'єкт '%s'", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати множення дійсного числа на об'єкт '%s'", other.Class().Name)
 }
 
 func (value Real) reversedMul(_ Context, other Object) (Object, error) {
@@ -243,7 +243,7 @@ func (value Real) reversedMul(_ Context, other Object) (Object, error) {
 		return value, nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати множення об'єкта '%s' на дійсне число", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати множення об'єкта '%s' на дійсне число", other.Class().Name)
 }
 
 func (value Real) mod(_ Context, other Object) (Object, error) {
@@ -257,13 +257,13 @@ func (value Real) mod(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Bool); ok {
 		if !otherValue {
-			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
+			return nil, NewZeroDivisionError("цілочисельне ділення або за модулем на нуль")
 		}
 
 		return mod(value, bo2ro(otherValue)), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати модуль? дійсного числа  '%s'", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати модуль? дійсного числа  '%s'", other.Class().Name)
 }
 
 func (value Real) reversedMod(_ Context, other Object) (Object, error) {
@@ -277,13 +277,13 @@ func (value Real) reversedMod(_ Context, other Object) (Object, error) {
 
 	if otherValue, ok := other.(Bool); ok {
 		if value == 0.0 {
-			return nil, ZeroDivisionErrorNewf("цілочисельне ділення або за модулем на нуль")
+			return nil, NewZeroDivisionError("цілочисельне ділення або за модулем на нуль")
 		}
 
 		return mod(bo2ro(otherValue), value), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати модуль? об'єкта '%s'  дійсне число", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати модуль? об'єкта '%s'  дійсне число", other.Class().Name)
 }
 
 func (value Real) pow(_ Context, other Object) (Object, error) {
@@ -303,7 +303,7 @@ func (value Real) pow(_ Context, other Object) (Object, error) {
 		return Real(1.0), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати степінь? дійсного числа  '%s'", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати степінь? дійсного числа  '%s'", other.Class().Name)
 }
 
 func (value Real) reversedPow(_ Context, other Object) (Object, error) {
@@ -326,7 +326,7 @@ func (value Real) reversedPow(_ Context, other Object) (Object, error) {
 		}
 
 		if value < 0.0 {
-			return nil, ZeroDivisionErrorNewf("неможливо піднести 0.0 до від'ємного степеня")
+			return nil, NewZeroDivisionError("неможливо піднести 0.0 до від'ємного степеня")
 		}
 
 		if value == 0.0 {
@@ -336,7 +336,7 @@ func (value Real) reversedPow(_ Context, other Object) (Object, error) {
 		return Real(0.0), nil
 	}
 
-	return nil, ErrorNewf("неможливо виконати степінь? об'єкта '%s'  дійсне число", other.Class().Name)
+	return nil, NewErrorf("неможливо виконати степінь? об'єкта '%s'  дійсне число", other.Class().Name)
 }
 
 func (value Real) equals(_ Context, other Object) (Object, error) {

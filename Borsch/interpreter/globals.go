@@ -26,6 +26,13 @@ func init() {
 		types.StringClass.Name: types.StringClass,
 		types.TupleClass.Name:  types.TupleClass,
 
+		types.ErrorClass.Name:                types.ErrorClass,
+		types.RuntimeErrorClass.Name:         types.RuntimeErrorClass,
+		types.TypeErrorClass.Name:            types.TypeErrorClass,
+		types.AssertionErrorClass.Name:       types.AssertionErrorClass,
+		types.ZeroDivisionErrorClass.Name:    types.ZeroDivisionErrorClass,
+		types.IndexOutOfRangeErrorClass.Name: types.IndexOutOfRangeErrorClass,
+
 		"друкр": types.MethodNew(
 			"друкр", BuiltinPackage, []types.MethodParameter{
 				{
@@ -77,7 +84,7 @@ func init() {
 					return nil, nil
 				}
 
-				return nil, types.AssertionErrorNewf(string(args[1].(types.String)))
+				return nil, types.NewAssertionError(string(args[1].(types.String)))
 			},
 		),
 	}
