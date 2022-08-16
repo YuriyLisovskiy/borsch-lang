@@ -14,7 +14,7 @@ type Error struct {
 }
 
 func (value *Error) Error() string {
-	return fmt.Sprintf("%s: %s", value.Class().Name, value.message)
+	return fmt.Sprintf("%s: %s", ErrorClass.Name, value.message)
 }
 
 func (value *Error) Class() *Class {

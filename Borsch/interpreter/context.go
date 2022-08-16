@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
@@ -47,16 +46,14 @@ func (c *ContextImpl) GetVar(name string) (types.Object, error) {
 		return c.parentContext.GetVar(name)
 	}
 
-	return nil, errors.New(fmt.Sprintf("ідентифікатор '%s' не визначений", name))
+	return nil, types.NewIdentifierErrorf("ідентифікатор '%s' не визначений", name)
 }
 
 func (c *ContextImpl) SetVar(name string, value types.Object) error {
 	if isKeyword(name) {
-		return errors.New(
-			fmt.Sprintf(
-				"неможливо записати значення у '%s', оскільки це ключове слово",
-				name,
-			),
+		return types.NewIdentifierErrorf(
+			"неможливо записати значення у '%s', оскільки це ключове слово",
+			name,
 		)
 	}
 
@@ -66,11 +63,9 @@ func (c *ContextImpl) SetVar(name string, value types.Object) error {
 			oldClass := old.Class()
 			if oldClass != value.Class() && oldClass != types.NilClass {
 				if i == size-1 {
-					return errors.New(
-						fmt.Sprintf(
-							"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
-							value.Class().Name, name, old.Class().Name,
-						),
+					return types.NewTypeErrorf(
+						"неможливо записати значення типу '%s' у змінну '%s' з типом '%s'",
+						value.Class().Name, name, old.Class().Name,
 					)
 				}
 
@@ -92,10 +87,10 @@ func (c *ContextImpl) GetClass(name string) (types.Object, error) {
 			return variable, nil
 		}
 
-		return nil, errors.New(fmt.Sprintf("'%s' не є ідентифікатором типу", name))
+		return nil, types.NewIdentifierErrorf("'%s' не є ідентифікатором типу", name)
 	}
 
-	return nil, errors.New(fmt.Sprintf("невідомий тип '%s'", name))
+	return nil, types.NewIdentifierErrorf(fmt.Sprintf("невідомий тип '%s'", name))
 }
 
 func (c *ContextImpl) Derive() types.Context {

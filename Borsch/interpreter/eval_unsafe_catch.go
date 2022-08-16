@@ -16,17 +16,27 @@ func (node *Throw) Evaluate(state common.State) StmtResult {
 
 	expressionClass := expressionObj.Class()
 	if expressionClass == types.ErrorClass || expressionClass.HasBase(types.ErrorClass) {
-		message, err := types.ToGoString(state.GetContext(), expressionObj)
-		if err != nil {
-			return StmtResult{Err: err}
-		}
-
 		state.Trace(node, "")
-		return StmtResult{
+		stmtResult := StmtResult{
 			State: StmtThrow,
 			Value: expressionObj,
-			Err:   utilities.NewRuntimeStatementError(message, node),
+			// Err:   utilities.NewRuntimeStatementError(message, node),
 		}
+
+		if execErr, ok := expressionObj.(types.LangException); ok {
+			stmtResult.Err = execErr
+		} else {
+			// TODO: remove this branch in future!
+
+			message, err := types.ToGoString(state.GetContext(), expressionObj)
+			if err != nil {
+				return StmtResult{Err: err}
+			}
+
+			stmtResult.Err = utilities.NewRuntimeStatementError(message, node)
+		}
+
+		return stmtResult
 	}
 
 	return StmtResult{

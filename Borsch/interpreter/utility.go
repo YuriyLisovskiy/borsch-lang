@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -68,7 +67,7 @@ func evalSlicingOperation(
 
 		leftIdx, err := mustInt(
 			state, ranges_[0].LeftBound, func(t types.Object) error {
-				return errors.New(fmt.Sprintf("%s, отримано %s", errMsg, t.Class().Name))
+				return types.NewTypeErrorf("%s, отримано %s", errMsg, t.Class().Name)
 			},
 		)
 		if err != nil {
@@ -378,7 +377,7 @@ func setCurrentValue(ctx types.Context, prevValue types.Object, ident string, va
 func checkForNilAttribute(ident string) error {
 	switch ident {
 	case "нуль", "нульове":
-		return errors.New(fmt.Sprintf("'%s' не є атрибутом", ident))
+		return types.NewAttributeErrorf("'%s' не є атрибутом", ident)
 	}
 
 	return nil
