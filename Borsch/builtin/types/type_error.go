@@ -38,5 +38,5 @@ func (value *TypeError) represent(ctx Context) (Object, error) {
 }
 
 func (value *TypeError) string(_ Context) (Object, error) {
-	return String(fmt.Sprintf("%s: %s", TypeErrorClass.Name, value.message)), nil
+	return String(value.message), nil
 }

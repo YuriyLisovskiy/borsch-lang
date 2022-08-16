@@ -38,5 +38,5 @@ func (value *IndexOutOfRangeError) represent(ctx Context) (Object, error) {
 }
 
 func (value *IndexOutOfRangeError) string(_ Context) (Object, error) {
-	return String(fmt.Sprintf("%s: %s", IndexOutOfRangeErrorClass.Name, value.message)), nil
+	return String(value.message), nil
 }

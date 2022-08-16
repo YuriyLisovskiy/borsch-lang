@@ -38,5 +38,5 @@ func (value *AssertionError) represent(ctx Context) (Object, error) {
 }
 
 func (value *AssertionError) string(_ Context) (Object, error) {
-	return String(fmt.Sprintf("%s: %s", AssertionErrorClass.Name, value.message)), nil
+	return String(value.message), nil
 }

@@ -33,6 +33,10 @@ func (e *TraceRow) String(place string) string {
 
 type StackTrace []*TraceRow
 
+func (st *StackTrace) IsEmpty() bool {
+	return len(*st) == 0
+}
+
 func (st *StackTrace) Push(row *TraceRow) {
 	if row == nil {
 		panic("stack trace row is nil")

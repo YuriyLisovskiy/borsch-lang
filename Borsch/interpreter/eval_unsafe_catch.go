@@ -37,7 +37,16 @@ func (node *Throw) Evaluate(state common.State) StmtResult {
 func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.State != StmtThrow {
-		return result
+		if result.Err == nil {
+			return result
+		}
+
+		langErr, ok := result.Err.(types.LangException)
+		if !ok {
+			return result
+		}
+
+		result.Value = langErr
 	}
 
 	for _, catchBlock := range node.CatchBlocks {
@@ -73,7 +82,8 @@ func (node *Catch) Evaluate(state common.State, exception types.Object, inFuncti
 	generatedErrorClass := exception.Class()
 	errorToCatchClass := errorToCatch.(*types.Class)
 	if shouldCatch(generatedErrorClass, errorToCatchClass) {
-		state.PopTrace()
+		// TODO: check if stacktrace is ok when the line below is not used!
+		// state.PopTrace()
 		return node.catch(state, exception, inFunction, inLoop)
 	}
 

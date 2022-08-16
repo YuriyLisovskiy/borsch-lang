@@ -96,5 +96,8 @@ func (s *StateImpl) Trace(statement common.Statement, place string) {
 }
 
 func (s *StateImpl) PopTrace() {
-	s.interpreter.StackTrace().Pop()
+	st := s.interpreter.StackTrace()
+	if !st.IsEmpty() {
+		st.Pop()
+	}
 }

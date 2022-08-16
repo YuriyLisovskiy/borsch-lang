@@ -38,5 +38,5 @@ func (value *ZeroDivisionError) represent(ctx Context) (Object, error) {
 }
 
 func (value *ZeroDivisionError) string(_ Context) (Object, error) {
-	return String(fmt.Sprintf("%s: %s", ZeroDivisionErrorClass.Name, value.message)), nil
+	return String(value.message), nil
 }

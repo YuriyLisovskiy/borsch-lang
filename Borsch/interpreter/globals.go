@@ -26,6 +26,8 @@ func init() {
 		types.StringClass.Name: types.StringClass,
 		types.TupleClass.Name:  types.TupleClass,
 
+		types.TypeClass.Name: types.TypeClass,
+
 		types.ErrorClass.Name:                types.ErrorClass,
 		types.RuntimeErrorClass.Name:         types.RuntimeErrorClass,
 		types.TypeErrorClass.Name:            types.TypeErrorClass,

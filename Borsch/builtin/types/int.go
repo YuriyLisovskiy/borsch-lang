@@ -36,7 +36,7 @@ func IntNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 		}
 
 		if base != 0 && (base < 2 || base > 36) {
-			return nil, NewErrorf("база для 'ціле()' має бути >= 2 та <= 36")
+			return nil, NewValueErrorf("база для 'ціле()' має бути >= 2 та <= 36")
 		}
 	}
 
@@ -45,8 +45,7 @@ func IntNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	}
 
 	if baseObj != nil {
-		// TODO: TypeError
-		return nil, NewErrorf("'ціле()' не може перетворити об'єкт не рядкового типу з явною базою")
+		return nil, NewTypeErrorf("'ціле()' не може перетворити об'єкт не рядкового типу з явною базою")
 	}
 
 	return ToInt(ctx, xObj)

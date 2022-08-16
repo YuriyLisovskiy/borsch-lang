@@ -38,5 +38,5 @@ func (value *RuntimeError) represent(ctx Context) (Object, error) {
 }
 
 func (value *RuntimeError) string(_ Context) (Object, error) {
-	return String(fmt.Sprintf("%s: %s", RuntimeErrorClass.Name, value.message)), nil
+	return String(value.message), nil
 }

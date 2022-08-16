@@ -4,6 +4,7 @@ import "fmt"
 
 type LangException interface {
 	Error() string
+	Class() *Class
 }
 
 var ErrorClass = ObjectClass.ClassNew("Помилка", map[string]Object{}, false, ErrorNew, nil)
@@ -42,7 +43,7 @@ func (value *Error) represent(ctx Context) (Object, error) {
 }
 
 func (value *Error) string(ctx Context) (Object, error) {
-	return String(fmt.Sprintf("%s: %s", value.Class().Name, value.message)), nil
+	return String(value.message), nil
 }
 
 func errorMessageFromArgs(ctx Context, cls *Class, args Tuple) (string, error) {

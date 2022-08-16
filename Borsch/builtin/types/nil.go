@@ -3,20 +3,20 @@ package types
 var (
 	NilClass = ObjectClass.ClassNew("нульове", map[string]Object{}, true, nil, nil)
 
-	Nil = nilType{}
+	Nil = NilType{}
 )
 
-type nilType struct {
+type NilType struct {
 }
 
-func (value nilType) Class() *Class {
+func (value NilType) Class() *Class {
 	return NilClass
 }
 
-func (value nilType) represent(Context) (Object, error) {
+func (value NilType) represent(Context) (Object, error) {
 	return String("нуль"), nil
 }
 
-func (value nilType) string(ctx Context) (Object, error) {
+func (value NilType) string(ctx Context) (Object, error) {
 	return value.represent(ctx)
 }
