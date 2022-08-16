@@ -40,11 +40,7 @@ jobs:
             arch: arm64
 
           - os: darwin
-            arch: 386
-          - os: darwin
             arch: amd64
-          - os: darwin
-            arch: arm
           - os: darwin
             arch: arm64
 
