@@ -88,7 +88,7 @@ func (value *Class) ClassNew(
 }
 
 func (value *Class) Allocate(attributes map[string]Object) *Class {
-	return &Class{
+	instance := &Class{
 		Name:    "",
 		Dict:    attributes,
 		Bases:   nil,
@@ -96,6 +96,17 @@ func (value *Class) Allocate(attributes map[string]Object) *Class {
 
 		ClassType: value,
 	}
+
+	for name, attr := range value.Dict {
+		if m, ok := attr.(*Method); ok && m.Name != builtin.LambdaSignature {
+			instance.Dict[name] = &MethodWrapper{
+				Method:   m,
+				Instance: instance,
+			}
+		}
+	}
+
+	return instance
 }
 
 func (value *Class) Class() *Class {

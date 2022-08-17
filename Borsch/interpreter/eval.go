@@ -460,8 +460,8 @@ func (node *LambdaDef) Evaluate(state State) (types.Object, error) {
 		state.Package().(*types.Package),
 		arguments,
 		returnTypes,
-		func(ctx types.Context, _ types.Tuple, kwargs types.StringDict) (types.Object, error) {
-			return node.Body.Evaluate(state)
+		func(ctx types.Context, args types.Tuple, kwargs types.StringDict) (types.Object, error) {
+			return node.Body.Evaluate(state.NewChild().WithContext(ctx))
 		},
 	)
 

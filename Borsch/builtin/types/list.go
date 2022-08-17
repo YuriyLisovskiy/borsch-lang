@@ -78,7 +78,7 @@ func (value *List) SetElement(ctx Context, index Int, item Object) (Object, erro
 	}
 
 	value.Values[index] = item
-	return nil, nil
+	return value, nil
 }
 
 func (value *List) Slice(ctx Context, leftBound, rightBound Int) (Object, error) {

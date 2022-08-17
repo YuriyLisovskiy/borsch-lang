@@ -23,26 +23,6 @@ func (node *Call) Evaluate(
 				if o.ClassType != nil {
 					// got class instance
 					args = append(args, self)
-					// } else {
-					// 	// got class
-					// 	if err := updateArgs(state, node.Arguments, &args); err != nil {
-					// 		return nil, err
-					// 	}
-					//
-					// 	ctx := state.Context()
-					// 	instance, err := o.New(ctx, o, args)
-					// 	if err != nil {
-					// 		return nil, err
-					// 	}
-					//
-					// 	if o.Construct != nil {
-					// 		err = o.Construct(ctx, instance, args)
-					// 		if err != nil {
-					// 			return nil, err
-					// 		}
-					// 	}
-					//
-					// 	return instance, nil
 				}
 			case nil:
 				// ignore
