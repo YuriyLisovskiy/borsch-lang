@@ -5,15 +5,14 @@ import (
 	"reflect"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 func evalBinaryOperator(
-	state common.State,
+	state State,
 	valueToSet types.Object,
 	operator func(ctx types.Context, a, b types.Object) (types.Object, error),
-	current common.OperatorEvaluatable,
-	next common.OperatorEvaluatable,
+	current OperatorEvaluatable,
+	next OperatorEvaluatable,
 ) (types.Object, error) {
 	left, err := current.Evaluate(state, valueToSet)
 	if err != nil {
@@ -26,16 +25,16 @@ func evalBinaryOperator(
 			return nil, err
 		}
 
-		return operator(state.GetContext(), left, right)
+		return operator(state.Context(), left, right)
 	}
 
 	return left, nil
 }
 
 func evalUnaryOperator(
-	state common.State,
+	state State,
 	operator func(ctx types.Context, a types.Object) (types.Object, error),
-	next common.OperatorEvaluatable,
+	next OperatorEvaluatable,
 ) (types.Object, error) {
 	if next != nil {
 		value, err := next.Evaluate(state, nil)
@@ -43,7 +42,7 @@ func evalUnaryOperator(
 			return nil, err
 		}
 
-		return operator(state.GetContext(), value)
+		return operator(state.Context(), value)
 	}
 
 	panic("unreachable")
@@ -51,7 +50,7 @@ func evalUnaryOperator(
 
 // evalSlicingOperation: "ranges_" len should be greater than 0
 func evalSlicingOperation(
-	state common.State,
+	state State,
 	variable types.Object,
 	ranges_ []*Range,
 	valueToSet types.Object,
@@ -74,7 +73,7 @@ func evalSlicingOperation(
 			return nil, err
 		}
 
-		ctx := state.GetContext()
+		ctx := state.Context()
 		length, err := iterable.Length(ctx)
 		if err != nil {
 			return nil, err
@@ -154,7 +153,7 @@ func evalSlicingOperation(
 	}
 }
 
-func mustInt(state common.State, expression *Expression, errFunc func(types.Object) error) (types.Int, error) {
+func mustInt(state State, expression *Expression, errFunc func(types.Object) error) (types.Int, error) {
 	value, err := expression.Evaluate(state, nil)
 	if err != nil {
 		return 0, err
@@ -168,7 +167,7 @@ func mustInt(state common.State, expression *Expression, errFunc func(types.Obje
 	}
 }
 
-func unpack(state common.State, lhs []*Expression, rhs []*Expression) (types.Object, error) {
+func unpack(state State, lhs []*Expression, rhs []*Expression) (types.Object, error) {
 	lhsLen := len(lhs)
 	rhsLen := len(rhs)
 	if lhsLen > rhsLen {
@@ -216,7 +215,7 @@ func unpack(state common.State, lhs []*Expression, rhs []*Expression) (types.Obj
 	return list, nil
 }
 
-func getSequenceOrResult(state common.State, lhs []*Expression, rhs []*Expression) (
+func getSequenceOrResult(state State, lhs []*Expression, rhs []*Expression) (
 	[]types.Object,
 	types.Object,
 	error,
@@ -258,7 +257,7 @@ func getSequenceOrResult(state common.State, lhs []*Expression, rhs []*Expressio
 	return sequence, nil, nil
 }
 
-func unpackList(state common.State, lhs []*Expression, rhs *Expression) (types.Object, error) {
+func unpackList(state State, lhs []*Expression, rhs *Expression) (types.Object, error) {
 	element, err := rhs.Evaluate(state, nil)
 	if err != nil {
 		return nil, err
@@ -267,7 +266,7 @@ func unpackList(state common.State, lhs []*Expression, rhs *Expression) (types.O
 	switch list := element.(type) {
 	case types.ISequence:
 		lhsLen := types.Int(len(lhs))
-		rhsLen, err := list.Length(state.GetContext())
+		rhsLen, err := list.Length(state.Context())
 		if err != nil {
 			return nil, err
 		}
@@ -277,7 +276,7 @@ func unpackList(state common.State, lhs []*Expression, rhs *Expression) (types.O
 			panic(fmt.Sprintf("unable to unpack %d elements of %s to %d vars", rhsLen, element.Class().Name, lhsLen))
 		}
 
-		ctx := state.GetContext()
+		ctx := state.Context()
 		var i types.Int
 		resultList := types.NewList()
 		for i = 0; i < lhsLen-1; i++ {
@@ -294,7 +293,7 @@ func unpackList(state common.State, lhs []*Expression, rhs *Expression) (types.O
 			resultList.Values = append(resultList.Values, item)
 		}
 
-		listLen, err := list.Length(state.GetContext())
+		listLen, err := list.Length(state.Context())
 		if i < listLen-1 {
 			rest, err := list.Slice(ctx, i, listLen)
 			if err != nil {
@@ -323,7 +322,7 @@ func unpackList(state common.State, lhs []*Expression, rhs *Expression) (types.O
 	return nil, types.NewErrorf("unable to unpack %s", element.Class().Name)
 }
 
-func evalReturnTypes(state common.State, returnTypes []*ReturnType) ([]types.MethodReturnType, error) {
+func evalReturnTypes(state State, returnTypes []*ReturnType) ([]types.MethodReturnType, error) {
 	var result []types.MethodReturnType
 	if len(returnTypes) == 0 {
 		result = append(
@@ -334,7 +333,7 @@ func evalReturnTypes(state common.State, returnTypes []*ReturnType) ([]types.Met
 		)
 	} else {
 		for _, returnType := range returnTypes {
-			r, err := returnType.Evaluate(state.GetContext())
+			r, err := returnType.Evaluate(state.Context())
 			if err != nil {
 				return nil, err
 			}
@@ -383,7 +382,7 @@ func checkForNilAttribute(ident string) error {
 	return nil
 }
 
-func updateArgs(state common.State, arguments []*Expression, args *types.Tuple) error {
+func updateArgs(state State, arguments []*Expression, args *types.Tuple) error {
 	for _, expressionArgument := range arguments {
 		arg, err := expressionArgument.Evaluate(state, nil)
 		if err != nil {

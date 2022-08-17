@@ -5,10 +5,9 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (node *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *LoopStmt) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 	if node.RangeBasedLoop != nil {
 		return node.RangeBasedLoop.Evaluate(state, node.Body, inFunction)
 	} else if node.ConditionalLoop != nil {
@@ -18,7 +17,7 @@ func (node *LoopStmt) Evaluate(state common.State, inFunction, inLoop bool) Stmt
 	return evalInfiniteLoop(state, node.Body, inFunction)
 }
 
-func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFunction bool) StmtResult {
+func (node *RangeBasedLoop) Evaluate(state State, body *BlockStmts, inFunction bool) StmtResult {
 	leftBound, err := getBound(state, node.LeftBound, "ліва")
 	if err != nil {
 		return StmtResult{Err: err}
@@ -29,7 +28,7 @@ func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFun
 		return StmtResult{Err: err}
 	}
 
-	ctx := state.GetContext()
+	ctx := state.Context()
 	for leftBound < rightBound {
 		ctx.PushScope(Scope{node.Variable.String(): types.Int(leftBound)})
 		result := body.Evaluate(state, inFunction, true)
@@ -48,15 +47,15 @@ func (node *RangeBasedLoop) Evaluate(state common.State, body *BlockStmts, inFun
 	return StmtResult{}
 }
 
-func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFunction bool) StmtResult {
-	ctx := state.GetContext()
+func (node *ConditionalLoop) Evaluate(state State, body *BlockStmts, inFunction bool) StmtResult {
+	ctx := state.Context()
 	for {
 		condition, err := node.Condition.Evaluate(state, nil)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
 
-		conditionValue, err := types.ToBool(state.GetContext(), condition)
+		conditionValue, err := types.ToBool(state.Context(), condition)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
@@ -80,7 +79,7 @@ func (node *ConditionalLoop) Evaluate(state common.State, body *BlockStmts, inFu
 	return StmtResult{}
 }
 
-func getBound(state common.State, bound *Expression, boundName string) (types.Int, error) {
+func getBound(state State, bound *Expression, boundName string) (types.Int, error) {
 	return mustInt(
 		state, bound, func(t types.Object) error {
 			return errors.New(fmt.Sprintf("%s межа має бути цілого типу, отримано %s", boundName, t.Class().Name))
@@ -88,8 +87,8 @@ func getBound(state common.State, bound *Expression, boundName string) (types.In
 	)
 }
 
-func evalInfiniteLoop(state common.State, body *BlockStmts, inFunction bool) StmtResult {
-	ctx := state.GetContext()
+func evalInfiniteLoop(state State, body *BlockStmts, inFunction bool) StmtResult {
+	ctx := state.Context()
 	for {
 		ctx.PushScope(Scope{})
 		result := body.Evaluate(state, inFunction, true)

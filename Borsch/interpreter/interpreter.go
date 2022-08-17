@@ -14,16 +14,39 @@ import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-type Interpreter struct {
+type InterpreterImpl struct {
 	packages    map[string]*types.Package
 	rootContext types.Context
-	stacktrace  common.StackTrace
+	parser      Parser
+	state       State
 }
 
-func NewInterpreter() *Interpreter {
-	i := &Interpreter{
+func NewInterpreter(parser Parser, initialState State) Interpreter {
+	i := &InterpreterImpl{
 		packages: map[string]*types.Package{},
+		parser:   parser,
+		state:    initialState,
 	}
+
+	GlobalScope["імпорт"] = types.MethodNew(
+		"імпорт", BuiltinPackage, []types.MethodParameter{
+			{
+				Class:      types.StringClass,
+				Name:       "шлях",
+				IsNullable: false,
+				IsVariadic: false,
+			},
+		},
+		[]types.MethodReturnType{
+			{
+				Class:      types.PackageClass,
+				IsNullable: false,
+			},
+		},
+		func(ctx types.Context, args types.Tuple, kwargs types.StringDict) (types.Object, error) {
+			return i.Import(string(args[0].(types.String)))
+		},
+	)
 
 	i.rootContext = &ContextImpl{
 		scopes:        []map[string]types.Object{GlobalScope},
@@ -32,12 +55,12 @@ func NewInterpreter() *Interpreter {
 	return i
 }
 
-func (i *Interpreter) Import(state common.State, newPackagePath string) (
+func (i *InterpreterImpl) Import(newPackagePath string) (
 	types.Object,
 	error,
 ) {
-	parentPackageInstance, _ := state.GetCurrentPackageOrNil().(*types.Package)
-	fullPackagePath, err := getFullPath(newPackagePath, parentPackageInstance)
+	parentPkg, _ := i.state.PackageOrNil().(*types.Package)
+	fullPackagePath, err := getFullPath(newPackagePath, parentPkg)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +69,7 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 		return p, nil
 	}
 
-	currPackage := parentPackageInstance
+	currPackage := parentPkg
 	for currPackage != nil {
 		if currPackage.Filename == fullPackagePath {
 			return nil, errors.New("циклічний імпорт заборонений")
@@ -60,18 +83,14 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 		return nil, err
 	}
 
-	ast, err := state.GetParser().Parse(fullPackagePath, string(packageCode))
+	ast, err := i.parser.Parse(fullPackagePath, string(packageCode))
 	if err != nil {
 		return nil, err
 	}
 
-	pkg := types.PackageNew(
-		fullPackagePath,
-		parentPackageInstance,
-		i.rootContext.Derive(),
-	)
+	pkg := types.PackageNew(fullPackagePath, parentPkg, i.rootContext.Derive())
 	ctx := pkg.Context
-	if _, err = ast.Evaluate(state.WithContext(ctx).WithPackage(pkg)); err != nil {
+	if _, err = ast.Evaluate(i.state.NewChild().WithContext(ctx).WithPackage(pkg)); err != nil {
 		return nil, err
 	}
 
@@ -103,8 +122,12 @@ func (i *Interpreter) Import(state common.State, newPackagePath string) (
 	return pkg, nil
 }
 
-func (i *Interpreter) StackTrace() *common.StackTrace {
-	return &i.stacktrace
+func (i *InterpreterImpl) StackTrace() *common.StackTrace {
+	return i.state.StackTrace()
+}
+
+func (i *InterpreterImpl) Parser() Parser {
+	return i.parser
 }
 
 func getFullPath(packagePath string, parentPackage *types.Package) (string, error) {

@@ -46,31 +46,18 @@ func makeThrowStmt(name *Ident) *Throw {
 	}
 }
 
-type testInterpreter struct {
-}
-
-func (i *testInterpreter) Import(common.State, string) (types.Object, error) {
-	return nil, nil
-}
-
-func (i *testInterpreter) StackTrace() *common.StackTrace {
-	st := &common.StackTrace{}
-	st.Push(&common.TraceRow{})
-	return st
-}
-
 func TestThrow_EvaluateSuccess(t *testing.T) {
 	errorIdent := Ident("err")
 	throwNode := makeThrowStmt(&errorIdent)
 	errMessage := "This is an error"
 	exc := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
 			scopes: []map[string]types.Object{
 				{errorIdent.String(): exc},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 
 	result := throwNode.Evaluate(&state)
@@ -93,12 +80,12 @@ func TestThrow_EvaluateFail_NotAnErrorInstance(t *testing.T) {
 	throwNode := makeThrowStmt(&errorIdent)
 	errMessage := "This is an error"
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
 			scopes: []map[string]types.Object{
 				{errorIdent.String(): types.String(errMessage)},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 
 	result := throwNode.Evaluate(&state)
@@ -141,12 +128,12 @@ func TestUnsafe_EvaluateNoThrow(t *testing.T) {
 	errMessage := "This is an error"
 	err := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
 			scopes: []map[string]types.Object{
 				{errorIdent.String(): err},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 	result := unsafe.Evaluate(&state, false, false)
 	if result.State == StmtThrow {
@@ -190,13 +177,13 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 	errMessage := "This is an error"
 	err := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
 			scopes: []map[string]types.Object{
 				{errorClass.Name: errorClass},
 				{errorIdent.String(): err},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 	result := unsafe.Evaluate(&state, false, false)
 	if result.State != StmtThrow {
@@ -252,13 +239,13 @@ func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 	errMessage := "This is an error"
 	err := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
 			scopes: []map[string]types.Object{
 				{types.ErrorClass.Name: types.ErrorClass},
 				{errorIdent.String(): err},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 	result := unsafe.Evaluate(&state, false, false)
 	if result.State != StmtNone {
@@ -307,13 +294,13 @@ func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
 	errMessage := "This is an error"
 	err := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
 			scopes: []map[string]types.Object{
 				{errorClass.Name: errorClass},
 				{errorIdent.String(): err},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 	result := unsafe.Evaluate(&state, false, false)
 	if result.State != StmtThrow {

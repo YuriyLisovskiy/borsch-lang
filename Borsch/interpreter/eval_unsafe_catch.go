@@ -4,11 +4,10 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-func (node *Throw) Evaluate(state common.State) StmtResult {
+func (node *Throw) Evaluate(state State) StmtResult {
 	expressionObj, err := node.Expression.Evaluate(state, nil)
 	if err != nil {
 		return StmtResult{Err: err}
@@ -28,7 +27,7 @@ func (node *Throw) Evaluate(state common.State) StmtResult {
 		} else {
 			// TODO: remove this branch in future!
 
-			message, err := types.ToGoString(state.GetContext(), expressionObj)
+			message, err := types.ToGoString(state.Context(), expressionObj)
 			if err != nil {
 				return StmtResult{Err: err}
 			}
@@ -44,7 +43,7 @@ func (node *Throw) Evaluate(state common.State) StmtResult {
 	}
 }
 
-func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *Unsafe) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.State != StmtThrow {
 		if result.Err == nil {
@@ -74,14 +73,17 @@ func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 	return result
 }
 
-func (node *Catch) Evaluate(state common.State, exception types.Object, inFunction, inLoop bool) (StmtResult, bool) {
+func (node *Catch) Evaluate(state State, exception types.Object, inFunction, inLoop bool) (
+	StmtResult,
+	bool,
+) {
 	errorToCatch, err := node.ErrorType.Evaluate(state, nil, nil)
 	if err != nil {
 		return StmtResult{Err: err}, false
 	}
 
 	if _, ok := errorToCatch.(*types.Class); !ok {
-		str, err := types.ToGoString(state.GetContext(), errorToCatch)
+		str, err := types.ToGoString(state.Context(), errorToCatch)
 		if err != nil {
 			return StmtResult{Err: err}, false
 		}
@@ -111,8 +113,8 @@ func (node *Catch) Evaluate(state common.State, exception types.Object, inFuncti
 	return StmtResult{}, false
 }
 
-func (node *Catch) catch(state common.State, err types.Object, inFunction, inLoop bool) (StmtResult, bool) {
-	ctx := state.GetContext()
+func (node *Catch) catch(state State, err types.Object, inFunction, inLoop bool) (StmtResult, bool) {
+	ctx := state.Context()
 	ctx.PushScope(Scope{node.ErrorVar.String(): err})
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.Err != nil {

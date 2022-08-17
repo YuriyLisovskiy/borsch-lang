@@ -3,6 +3,7 @@ package interpreter
 import (
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/methods"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 )
 
@@ -18,6 +19,8 @@ var (
 )
 
 func init() {
+	addMethod := methods.MakeAdd(BuiltinPackage)
+
 	GlobalScope = map[string]types.Object{
 		types.BoolClass.Name:   types.BoolClass,
 		types.IntClass.Name:    types.IntClass,
@@ -34,6 +37,8 @@ func init() {
 		types.AssertionErrorClass.Name:       types.AssertionErrorClass,
 		types.ZeroDivisionErrorClass.Name:    types.ZeroDivisionErrorClass,
 		types.IndexOutOfRangeErrorClass.Name: types.IndexOutOfRangeErrorClass,
+
+		addMethod.Name: addMethod,
 
 		"друкр": types.MethodNew(
 			"друкр", BuiltinPackage, []types.MethodParameter{

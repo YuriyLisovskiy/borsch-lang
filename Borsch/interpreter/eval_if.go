@@ -2,18 +2,17 @@ package interpreter
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (node *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *IfStmt) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 	if node.Condition != nil {
 		condition, err := node.Condition.Evaluate(state, nil)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
 
-		ctx := state.GetContext()
-		conditionValue, err := types.ToBool(state.GetContext(), condition)
+		ctx := state.Context()
+		conditionValue, err := types.ToBool(state.Context(), condition)
 		if err != nil {
 			return StmtResult{Err: err}
 		}
@@ -67,19 +66,19 @@ func (node *IfStmt) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 	panic("unreachable")
 }
 
-func (node *ElseIfStmt) Evaluate(state common.State, inFunction, inLoop bool) (bool, StmtResult) {
+func (node *ElseIfStmt) Evaluate(state State, inFunction, inLoop bool) (bool, StmtResult) {
 	condition, err := node.Condition.Evaluate(state, nil)
 	if err != nil {
 		return false, StmtResult{Err: err}
 	}
 
-	conditionValue, err := types.ToBool(state.GetContext(), condition)
+	conditionValue, err := types.ToBool(state.Context(), condition)
 	if err != nil {
 		return false, StmtResult{Err: err}
 	}
 
 	if conditionValue.(types.Bool) {
-		ctx := state.GetContext()
+		ctx := state.Context()
 		ctx.PushScope(Scope{})
 		result := node.Body.Evaluate(state, inFunction, inLoop)
 		if result.Err != nil {

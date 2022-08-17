@@ -6,19 +6,18 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
-func (node *ClassDef) Evaluate(state common.State) (types.Object, error) {
+func (node *ClassDef) Evaluate(state State) (types.Object, error) {
 	// TODO: add doc
 	// cls := &types.Class{
 	// 	Name:    node.Name.String(),
 	// 	IsFinal: node.IsFinal,
 	// 	Class:   nil,
-	// 	Parent:  state.GetCurrentPackage(),
+	// 	Parent:  state.Package(),
 	// }
 
-	ctx := state.GetContext()
+	ctx := state.Context()
 	var bases []*types.Class
 	for _, name := range node.Bases {
 		base, err := ctx.GetClass(name.String())
@@ -48,7 +47,7 @@ func (node *ClassDef) Evaluate(state common.State) (types.Object, error) {
 	classContext := ctx.Derive()
 	classContext.PushScope(map[string]types.Object{})
 	for _, classMember := range node.Members {
-		_, err := classMember.Evaluate(state.WithContext(classContext), cls)
+		_, err := classMember.Evaluate(state.NewChild().WithContext(classContext), cls)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +57,7 @@ func (node *ClassDef) Evaluate(state common.State) (types.Object, error) {
 	return cls, nil
 }
 
-func (node *ClassMember) Evaluate(state common.State, class *types.Class) (types.Object, error) {
+func (node *ClassMember) Evaluate(state State, class *types.Class) (types.Object, error) {
 	if node.Variable != nil {
 		return node.Variable.Evaluate(state)
 	}
@@ -66,7 +65,7 @@ func (node *ClassMember) Evaluate(state common.State, class *types.Class) (types
 	if node.Method != nil {
 		return node.Method.Evaluate(
 			state,
-			state.GetCurrentPackage().(*types.Package),
+			state.Package().(*types.Package),
 			func(arguments []types.MethodParameter, returnTypes []types.MethodReturnType) error {
 				if err := checkMethod(class, arguments, returnTypes); err != nil {
 					return state.RuntimeError(err.Error(), node)

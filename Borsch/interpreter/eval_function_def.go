@@ -2,11 +2,10 @@ package interpreter
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 func (node *FunctionDef) Evaluate(
-	state common.State,
+	state State,
 	parentPackage *types.Package,
 	check func([]types.MethodParameter, []types.MethodReturnType) error,
 ) (types.Object, error) {
@@ -32,17 +31,17 @@ func (node *FunctionDef) Evaluate(
 		arguments,
 		returnTypes,
 		func(ctx types.Context, _ types.Tuple, kwargs types.StringDict) (types.Object, error) {
-			return node.Body.Evaluate(state.WithContext(ctx))
+			return node.Body.Evaluate(state.NewChild().WithContext(ctx))
 		},
 	)
-	return function, state.GetContext().SetVar(node.Name.String(), function)
+	return function, state.Context().SetVar(node.Name.String(), function)
 }
 
-func (node *ParametersSet) Evaluate(state common.State) ([]types.MethodParameter, error) {
+func (node *ParametersSet) Evaluate(state State) ([]types.MethodParameter, error) {
 	var arguments []types.MethodParameter
 	parameters := node.Parameters
 	for _, parameter := range parameters {
-		arg, err := parameter.Evaluate(state.GetContext())
+		arg, err := parameter.Evaluate(state.Context())
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +66,7 @@ func (node *Parameter) Evaluate(ctx types.Context) (*types.MethodParameter, erro
 	}, nil
 }
 
-func (node *FunctionBody) Evaluate(state common.State) (types.Object, error) {
+func (node *FunctionBody) Evaluate(state State) (types.Object, error) {
 	result := node.Stmts.Evaluate(state, true, false)
 	return result.Value, result.Err
 }
@@ -84,7 +83,7 @@ func (node *ReturnType) Evaluate(ctx types.Context) (*types.MethodReturnType, er
 	}, nil
 }
 
-func (node *ReturnStmt) Evaluate(state common.State) (types.Object, error) {
+func (node *ReturnStmt) Evaluate(state State) (types.Object, error) {
 	resultCount := len(node.Expressions)
 	switch {
 	case resultCount == 1:

@@ -16,9 +16,24 @@ type Method struct {
 
 type MethodParameter struct {
 	Class      *Class
+	Classes    []*Class
 	Name       string
 	IsNullable bool
 	IsVariadic bool
+}
+
+func (value *MethodParameter) accepts(class *Class) bool {
+	if value.Class != nil && value.Class == class {
+		return true
+	}
+
+	for _, cls := range value.Classes {
+		if cls.Class() == class {
+			return true
+		}
+	}
+
+	return false
 }
 
 type MethodReturnType struct {
@@ -85,19 +100,19 @@ func (value *Method) call(args Tuple) (Object, error) {
 }
 
 func checkArg(parameter *MethodParameter, arg Object) error {
-	if parameter.Class == AnyClass {
+	if parameter.accepts(AnyClass) {
 		return nil
 	}
 
 	if arg == Nil {
-		if parameter.Class == NilClass || parameter.IsNullable {
+		if parameter.accepts(NilClass) || parameter.IsNullable {
 			return nil
 		}
 
 		// TODO: return error
 	}
 
-	if parameter.Class == arg.Class() {
+	if parameter.accepts(arg.Class()) {
 		return nil
 	}
 

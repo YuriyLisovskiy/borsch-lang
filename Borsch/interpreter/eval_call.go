@@ -3,11 +3,10 @@ package interpreter
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 func (node *Call) Evaluate(
-	state common.State,
+	state State,
 	variable types.Object,
 	self types.Object,
 	isLambda *bool,
@@ -30,7 +29,7 @@ func (node *Call) Evaluate(
 					// 		return nil, err
 					// 	}
 					//
-					// 	ctx := state.GetContext()
+					// 	ctx := state.Context()
 					// 	instance, err := o.New(ctx, o, args)
 					// 	if err != nil {
 					// 		return nil, err
@@ -56,7 +55,7 @@ func (node *Call) Evaluate(
 			return nil, err
 		}
 
-		ctx := state.GetContext()
+		ctx := state.Context()
 		instance, err := object.New(ctx, object, args)
 		if err != nil {
 			return nil, err
@@ -76,5 +75,5 @@ func (node *Call) Evaluate(
 		return nil, err
 	}
 
-	return types.Call(state.GetContext(), variable, args)
+	return types.Call(state.Context(), variable, args)
 }

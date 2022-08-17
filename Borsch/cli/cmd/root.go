@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 	"github.com/alecthomas/participle/v2"
@@ -50,23 +51,23 @@ var rootCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
-			i := interpreter.NewInterpreter()
 			parser, err := interpreter.NewParser()
 			if err != nil {
 				fmt.Println(err.Error())
 				os.Exit(2)
 			}
 
-			state := interpreter.NewState(parser, i, nil, nil)
-			_, err = i.Import(state, filePath)
+			stacktrace := &common.StackTrace{}
+			state := interpreter.NewInitialState(nil, nil, stacktrace)
+			i := interpreter.NewInterpreter(parser, state)
+			_, err = i.Import(filePath)
 			if err != nil {
-				stackTrace := state.GetInterpreter().StackTrace()
 				if pErr, ok := err.(participle.UnexpectedTokenError); ok {
 					text := processParseError(pErr.Message())
 					err = utilities.ParseError(pErr.Position(), pErr.Unexpected.Value, text)
 				}
 
-				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", stackTrace.String(err)))
+				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", stacktrace.String(err)))
 				os.Exit(1)
 			}
 		} else {
