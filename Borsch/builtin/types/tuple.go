@@ -35,7 +35,7 @@ func (value *Tuple) string(ctx Context) (Object, error) {
 	str := String("")
 	vLen := len(*value)
 	for i, item := range *value {
-		itemStr, err := ToString(ctx, item)
+		itemStr, err := Represent(ctx, item)
 		if err != nil {
 			return nil, err
 		}
@@ -46,7 +46,25 @@ func (value *Tuple) string(ctx Context) (Object, error) {
 		}
 	}
 
-	return String(fmt.Sprintf("[%s]", str)), nil
+	return String(fmt.Sprintf("(%s)", str)), nil
+}
+
+func (value *Tuple) equals(_ Context, other Object) (Object, error) {
+	if t, ok := other.(*Tuple); ok {
+		vLen := len(*value)
+		if vLen != len(*t) {
+			return False, nil
+		}
+
+		for i := 0; i < vLen; i++ {
+			// TODO: compare items!
+		}
+
+		// TODO: remove!
+		return True, nil
+	}
+
+	return False, nil
 }
 
 func (value *Tuple) Length(_ Context) (Int, error) {

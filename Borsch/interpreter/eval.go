@@ -384,6 +384,7 @@ func (node *IdentOrCall) Evaluate(state State, valueToSet types.Object, prevValu
 	} else if node.Ident != nil {
 		variable, err = getCurrentValue(state.Context(), prevValue, node.Ident.String())
 		if err != nil {
+			state.Trace(node, "")
 			return nil, err
 		}
 	} else {
@@ -401,6 +402,7 @@ func (node *IdentOrCall) callFunction(state State, prevValue types.Object) (type
 	ctx := state.Context()
 	variable, err := getCurrentValue(ctx, prevValue, node.Call.Ident.String())
 	if err != nil {
+		state.Trace(node, "")
 		return nil, err
 	}
 

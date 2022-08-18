@@ -36,7 +36,7 @@ func (value *List) string(ctx Context) (Object, error) {
 	str := String("")
 	vLen := len(value.Values)
 	for i, item := range value.Values {
-		itemStr, err := ToString(ctx, item)
+		itemStr, err := Represent(ctx, item)
 		if err != nil {
 			return nil, err
 		}

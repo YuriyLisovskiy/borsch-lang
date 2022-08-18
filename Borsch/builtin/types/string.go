@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 var StringClass = ObjectClass.ClassNew("рядок", map[string]Object{}, true, StringNew, nil)
@@ -144,10 +143,11 @@ func (value String) greaterOrEquals(_ Context, other Object) (Object, error) {
 func StringEscape(a String, ascii bool) (string, error) {
 	s := string(a)
 	var out bytes.Buffer
-	quote := '\''
-	if strings.ContainsRune(s, '\'') && !strings.ContainsRune(s, '"') {
-		quote = '"'
-	}
+	quote := '"'
+	// quote := '\''
+	// if strings.ContainsRune(s, '\'') && !strings.ContainsRune(s, '"') {
+	// 	quote = '"'
+	// }
 
 	if !ascii {
 		out.WriteRune(quote)
@@ -171,7 +171,7 @@ func StringEscape(a String, ascii bool) (string, error) {
 				}
 			}
 		case !ascii && c < 0x7F:
-			if c == '\\' || (quote == '\'' && c == '\'') || (quote == '"' && c == '"') {
+			if c == '\\' /*|| (quote == '\'' && c == '\'')*/ || ( /*quote == '"' && */ c == '"') {
 				out.WriteRune('\\')
 			}
 			out.WriteRune(c)

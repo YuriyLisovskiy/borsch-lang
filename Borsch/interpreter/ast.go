@@ -191,9 +191,9 @@ type ClassMember struct {
 type Assignment struct {
 	Pos lexer.Position
 
-	Expressions []*Expression ` @@ ("," @@)*`
-	Op          string        `[@"="`
-	Next        []*Expression ` @@ ("," @@)*]`
+	Expressions []*Expression `["("] @@ ("," @@)* [")"]`
+	Op          string        `[     @"="`
+	Next        []*Expression `["("] @@ ("," @@)* [")"]]`
 }
 
 type Expression struct {
