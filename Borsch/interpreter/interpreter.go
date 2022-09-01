@@ -83,12 +83,16 @@ func (i *InterpreterImpl) Import(newPackagePath string) (
 		return nil, err
 	}
 
-	ast, err := i.parser.Parse(fullPackagePath, string(packageCode))
+	return i.Evaluate(fullPackagePath, string(packageCode), parentPkg)
+}
+
+func (i *InterpreterImpl) Evaluate(packageName, code string, parentPkg *types.Package) (types.Object, error) {
+	ast, err := i.parser.Parse(packageName, code)
 	if err != nil {
 		return nil, err
 	}
 
-	pkg := types.PackageNew(fullPackagePath, parentPkg, i.rootContext.Derive())
+	pkg := types.PackageNew(packageName, parentPkg, i.rootContext.Derive())
 	ctx := pkg.Context
 	if _, err = ast.Evaluate(i.state.NewChild().WithContext(ctx).WithPackage(pkg)); err != nil {
 		return nil, err
@@ -118,7 +122,7 @@ func (i *InterpreterImpl) Import(newPackagePath string) (
 	}
 
 	pkg.Dict = attrs
-	i.packages[fullPackagePath] = pkg
+	i.packages[packageName] = pkg
 	return pkg, nil
 }
 

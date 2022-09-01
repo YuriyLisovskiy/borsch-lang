@@ -11,6 +11,7 @@ type Parser interface {
 
 type Interpreter interface {
 	Import(packageName string) (types.Object, error)
+	Evaluate(packageName, code string, parentPkg *types.Package) (types.Object, error)
 	StackTrace() *common.StackTrace
 }
 
