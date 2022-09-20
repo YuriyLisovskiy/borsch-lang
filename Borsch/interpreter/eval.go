@@ -191,7 +191,7 @@ func (node *Primary) Evaluate(state State, valueToSet types.Object) (types.Objec
 			return nil, utilities.SyntaxError("неможливо встановити значення у літерал")
 		}
 
-		return node.Literal.Evaluate(state)
+		return node.Literal.Evaluate(state, valueToSet)
 	}
 
 	if node.AttributeAccess != nil {
@@ -205,7 +205,7 @@ func (node *Primary) Evaluate(state State, valueToSet types.Object) (types.Objec
 	panic("unreachable")
 }
 
-func (node *Literal) Evaluate(state State) (types.Object, error) {
+func (node *Literal) Evaluate(state State, valueToSet types.Object) (types.Object, error) {
 	if node.Nil {
 		return types.Nil, nil
 	}
@@ -247,6 +247,14 @@ func (node *Literal) Evaluate(state State) (types.Object, error) {
 	if node.EmptyList {
 		return types.NewList(), nil
 	}
+
+	// if node.SubExpression != nil {
+	// 	if valueToSet != nil {
+	// 		return nil, utilities.SyntaxError("неможливо записати значення у вираз")
+	// 	}
+	//
+	// 	return node.SubExpression.Evaluate(state, valueToSet)
+	// }
 
 	// if node.Dictionary != nil {
 	// 	dict := types.NewDictionaryInstance()

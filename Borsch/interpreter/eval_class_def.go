@@ -83,6 +83,11 @@ func (node *ClassMember) Evaluate(state State, class *types.Class) (types.Object
 		)
 	}
 
+	if node.Operator != nil {
+		// TODO:
+		return nil, errors.New(fmt.Sprintf("unreachable: оператор %s", node.Operator.Op))
+	}
+
 	if node.Class != nil {
 		return node.Class.Evaluate(state)
 	}

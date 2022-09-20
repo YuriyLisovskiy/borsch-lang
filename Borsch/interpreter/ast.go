@@ -53,7 +53,7 @@ type Catch struct {
 type ReturnStmt struct {
 	Pos lexer.Position
 
-	Expressions []*Expression `"повернути" (@@ ("," @@)*)? ";"`
+	Expressions []*Expression `"повернути" (@@ ("," @@)*)?`
 }
 
 type LoopStmt struct {
@@ -123,14 +123,14 @@ type Stmt struct {
 	Pos lexer.Position
 
 	Throw       *Throw       `(?!("піймати" | "інакше" | "кінець")) (@@`
-	Unsafe      *Unsafe      `| @@`
-	IfStmt      *IfStmt      `| @@`
-	LoopStmt    *LoopStmt    `| @@`
-	Block       *BlockStmts  `| ("блок" @@ "кінець")`
-	FunctionDef *FunctionDef `| @@`
-	ClassDef    *ClassDef    `| @@`
-	ReturnStmt  *ReturnStmt  `| @@`
-	BreakStmt   bool         `| @"перервати"`
+	Unsafe      *Unsafe      `| @@ ";"`
+	IfStmt      *IfStmt      `| @@ ";"`
+	LoopStmt    *LoopStmt    `| @@ ";"`
+	Block       *BlockStmts  `| ("блок" @@ "кінець" ";")`
+	FunctionDef *FunctionDef `| @@ ";"`
+	ClassDef    *ClassDef    `| @@ ";"`
+	ReturnStmt  *ReturnStmt  `| @@ ";"`
+	BreakStmt   bool         `| @"перервати" ";"`
 	Assignment  *Assignment  `| (@@ ";")`
 	Empty       bool         `| @";")`
 }
@@ -184,16 +184,26 @@ type ClassMember struct {
 	Pos lexer.Position
 
 	Method   *FunctionDef `  @@`
+	Operator *OperatorDef `| @@`
 	Class    *ClassDef    `| @@`
 	Variable *Assignment  `| @@`
+}
+
+type OperatorDef struct {
+	Pos lexer.Position
+
+	Op            string         `"оператор" @("==" | "!=" | "<" | "<""=" | ">" | ">""=" | "+" | "-" | "/" | "*""*" | "*" | "%" | "<""<" | ">"">" | "|" | "^" | "&" | "~" | "&""&" | "|""|")`
+	ParametersSet *ParametersSet `@@`
+	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
+	Body          *FunctionBody  `@@ "кінець"`
 }
 
 type Assignment struct {
 	Pos lexer.Position
 
-	Expressions []*Expression `["("] @@ ("," @@)* [")"]`
+	Expressions []*Expression `@@ ("," @@)*`
 	Op          string        `[     @"="`
-	Next        []*Expression `["("] @@ ("," @@)* [")"]]`
+	Next        []*Expression `@@ ("," @@)*]`
 }
 
 type Expression struct {
@@ -237,7 +247,7 @@ type Comparison struct {
 type BitwiseOr struct {
 	Pos lexer.Position
 
-	BitwiseXor *BitwiseXor `@@`
+	BitwiseXor *BitwiseXor `  @@`
 	Op         string      `[ @("|")`
 	Next       *BitwiseOr  `  @@ ]`
 }
@@ -320,6 +330,7 @@ type Literal struct {
 	EmptyList       bool               `| @("[""]")`
 	Dictionary      []*DictionaryEntry `| "{" @@ ("," @@)* "}"`
 	EmptyDictionary bool               `| @("{""}")`
+	// SubExpression   *Expression        `| "(" @@ ")"`
 }
 
 type Boolean bool

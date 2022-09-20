@@ -182,6 +182,8 @@ func (node *Literal) String() string {
 		return "{" + strings.Join(values, ", ") + "}"
 	case node.EmptyDictionary == true:
 		return "{}"
+	// case node.SubExpression != nil:
+	// 	return fmt.Sprintf("(%s)", node.SubExpression.String())
 	default:
 		panic("unreachable")
 	}
