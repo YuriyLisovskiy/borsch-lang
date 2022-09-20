@@ -139,7 +139,7 @@ package cmd
 // 		var result common.Type
 // 		var err error
 // 		result, scope, err = interpreterInstance.Execute(
-// 			interpreterInstance.GetContext(),
+// 			interpreterInstance.Context(),
 // 			scope,
 // 			strings.TrimPrefix(code, "\n"),
 // 		)

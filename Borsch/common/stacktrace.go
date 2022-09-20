@@ -33,6 +33,10 @@ func (e *TraceRow) String(place string) string {
 
 type StackTrace []*TraceRow
 
+func (st *StackTrace) IsEmpty() bool {
+	return len(*st) == 0
+}
+
 func (st *StackTrace) Push(row *TraceRow) {
 	if row == nil {
 		panic("stack trace row is nil")
@@ -57,7 +61,9 @@ func (st StackTrace) String(err error) string {
 		rows = append(rows, st[0].String(st[0].place))
 	} else if traceLen > 1 {
 		for i := traceLen - 2; i >= 0; i-- {
+			// if st[i].pos.Line != st[i+1].pos.Line {
 			rows = append(rows, st[i].String(st[i+1].place))
+			// }
 		}
 	}
 

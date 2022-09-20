@@ -2,14 +2,13 @@ package interpreter
 
 import (
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 func (node *FunctionDef) Evaluate(
-	state common.State,
-	parentPackage *types.PackageInstance,
-	check func([]types.FunctionParameter, []types.FunctionReturnType) error,
-) (common.Value, error) {
+	state State,
+	parentPackage *types.Package,
+	check func([]types.MethodParameter, []types.MethodReturnType) error,
+) (types.Object, error) {
 	arguments, err := node.ParametersSet.Evaluate(state)
 	if err != nil {
 		return nil, err
@@ -26,25 +25,23 @@ func (node *FunctionDef) Evaluate(
 		}
 	}
 
-	function := types.NewFunctionInstance(
+	function := types.MethodNew(
 		node.Name.String(),
-		arguments,
-		func(state common.State, _ *[]common.Value, kwargs *map[string]common.Value) (common.Value, error) {
-			return node.Body.Evaluate(state)
-		},
-		returnTypes,
-		parentPackage == nil,
 		parentPackage,
-		"", // TODO: add doc
+		arguments,
+		returnTypes,
+		func(ctx types.Context, _ types.Tuple, kwargs types.StringDict) (types.Object, error) {
+			return node.Body.Evaluate(state.NewChild().WithContext(ctx))
+		},
 	)
-	return function, state.GetContext().SetVar(node.Name.String(), function)
+	return function, state.Context().SetVar(node.Name.String(), function)
 }
 
-func (node *ParametersSet) Evaluate(state common.State) ([]types.FunctionParameter, error) {
-	var arguments []types.FunctionParameter
+func (node *ParametersSet) Evaluate(state State) ([]types.MethodParameter, error) {
+	var arguments []types.MethodParameter
 	parameters := node.Parameters
 	for _, parameter := range parameters {
-		arg, err := parameter.Evaluate(state.GetContext())
+		arg, err := parameter.Evaluate(state.Context())
 		if err != nil {
 			return nil, err
 		}
@@ -55,54 +52,54 @@ func (node *ParametersSet) Evaluate(state common.State) ([]types.FunctionParamet
 	return arguments, nil
 }
 
-func (node *Parameter) Evaluate(ctx common.Context) (*types.FunctionParameter, error) {
+func (node *Parameter) Evaluate(ctx types.Context) (*types.MethodParameter, error) {
 	class, err := ctx.GetClass(node.TypeName.String())
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.FunctionParameter{
-		Type:       class.(*types.Class),
+	return &types.MethodParameter{
+		Class:      class.(*types.Class),
 		Name:       node.Name.String(),
 		IsVariadic: false,
 		IsNullable: node.IsNullable,
 	}, nil
 }
 
-func (node *FunctionBody) Evaluate(state common.State) (common.Value, error) {
+func (node *FunctionBody) Evaluate(state State) (types.Object, error) {
 	result := node.Stmts.Evaluate(state, true, false)
 	return result.Value, result.Err
 }
 
-func (node *ReturnType) Evaluate(ctx common.Context) (*types.FunctionReturnType, error) {
+func (node *ReturnType) Evaluate(ctx types.Context) (*types.MethodReturnType, error) {
 	class, err := ctx.GetClass(node.Name.String())
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.FunctionReturnType{
-		Type:       class.(*types.Class),
+	return &types.MethodReturnType{
+		Class:      class.(*types.Class),
 		IsNullable: node.IsNullable,
 	}, nil
 }
 
-func (node *ReturnStmt) Evaluate(state common.State) (common.Value, error) {
+func (node *ReturnStmt) Evaluate(state State) (types.Object, error) {
 	resultCount := len(node.Expressions)
 	switch {
 	case resultCount == 1:
 		return node.Expressions[0].Evaluate(state, nil)
 	case resultCount > 1:
-		result := types.NewListInstance()
-		for _, expression := range node.Expressions {
-			value, err := expression.Evaluate(state, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			result.Values = append(result.Values, value)
-		}
-
-		return result, nil
+		// result := types.NewListInstance()
+		// for _, expression := range node.Expressions {
+		// 	value, err := expression.Evaluate(state, nil)
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		//
+		// 	result.Values = append(result.Values, value)
+		// }
+		//
+		// return result, nil
 	}
 
 	panic("unreachable")

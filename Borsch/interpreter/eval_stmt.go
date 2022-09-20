@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 type StmtState uint8
@@ -33,7 +32,7 @@ const (
 
 type StmtResult struct {
 	State StmtState
-	Value common.Value
+	Value types.Object
 	Err   error
 }
 
@@ -54,7 +53,7 @@ func (r StmtResult) Interrupt() bool {
 
 // Evaluate executes statement.
 // Returns (result value, force stop flag, error)
-func (node *Stmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *Stmt) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 	switch {
 	case node.Throw != nil:
 		return node.Throw.Evaluate(state)
@@ -65,7 +64,7 @@ func (node *Stmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResu
 	case node.LoopStmt != nil:
 		return node.LoopStmt.Evaluate(state, inFunction, inLoop)
 	case node.Block != nil:
-		ctx := state.GetContext()
+		ctx := state.Context()
 		ctx.PushScope(Scope{})
 		blockResult := node.Block.Evaluate(state, inFunction, inLoop)
 		if blockResult.Err != nil {
@@ -75,7 +74,7 @@ func (node *Stmt) Evaluate(state common.State, inFunction, inLoop bool) StmtResu
 		ctx.PopScope()
 		return blockResult
 	case node.FunctionDef != nil:
-		function, err := node.FunctionDef.Evaluate(state, state.GetCurrentPackage().(*types.PackageInstance), nil)
+		function, err := node.FunctionDef.Evaluate(state, state.Package().(*types.Package), nil)
 		if err != nil {
 			return StmtResult{Err: err}
 		}

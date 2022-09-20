@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -22,13 +23,13 @@ func InternalError(text string) error {
 	return errors.New(fmt.Sprintf("InternalError: %s", text))
 }
 
-func InvalidUseOfOperator(operator common.Operator, left, right common.Value) error {
+func InvalidUseOfOperator(operator common.Operator, left, right types.Object) error {
 	return InternalError(
 		fmt.Sprintf(
 			"invalid use of operator '%s' for '%s' and '%s' types",
 			operator.Sign(),
-			left.GetTypeName(),
-			right.GetTypeName(),
+			left.Class().Name,
+			right.Class().Name,
 		),
 	)
 }
@@ -79,20 +80,20 @@ func AttributeIsReadOnlyError(objTypeName, attrName string) error {
 	)
 }
 
-func OperatorNotSupportedError(operator common.Operator, left, right common.Value) error {
+func OperatorNotSupportedError(operator common.Operator, left, right types.Object) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
-			operator.Sign(), left.GetTypeName(), right.GetTypeName(),
+			operator.Sign(), left.Class().Name, right.Class().Name,
 		),
 	)
 }
 
-func UnaryOperatorNotSupportedError(operator common.Operator, value common.Value) error {
+func UnaryOperatorNotSupportedError(operator common.Operator, value types.Object) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор '%s' до значення з типом '%s'",
-			operator.Sign(), value.GetTypeName(),
+			operator.Sign(), value.Class().Name,
 		),
 	)
 }

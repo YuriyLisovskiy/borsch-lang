@@ -1,0 +1,24 @@
+package types
+
+var MethodWrapperClass = ObjectClass.ClassNew("обгортка-методу", map[string]Object{}, true, nil, nil)
+
+type MethodWrapper struct {
+	Method   *Method
+	Instance Object
+}
+
+func (value *MethodWrapper) Class() *Class {
+	return MethodWrapperClass
+}
+
+func (value *MethodWrapper) call(args Tuple) (Object, error) {
+	if value.Instance == nil {
+		return nil, NewValueError("екземпляр класу не існує")
+	}
+
+	if value.Method == nil {
+		return nil, NewValueErrorf("оригінальний метод класу %s не існує", value.Instance.Class().Name)
+	}
+
+	return value.Method.call(append([]Object{value.Instance}, args...))
+}

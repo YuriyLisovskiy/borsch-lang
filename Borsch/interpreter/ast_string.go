@@ -3,7 +3,6 @@ package interpreter
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -152,9 +151,9 @@ func (node *Literal) String() string {
 	case node.Nil:
 		return "нуль"
 	case node.Integer != nil:
-		return fmt.Sprintf("%d", *node.Integer)
+		return *node.Integer
 	case node.Real != nil:
-		return strconv.FormatFloat(*node.Real, 'f', -1, 64)
+		return *node.Real
 	case node.Bool != nil:
 		if *node.Bool {
 			return "істина"
@@ -183,6 +182,8 @@ func (node *Literal) String() string {
 		return "{" + strings.Join(values, ", ") + "}"
 	case node.EmptyDictionary == true:
 		return "{}"
+	// case node.SubExpression != nil:
+	// 	return fmt.Sprintf("(%s)", node.SubExpression.String())
 	default:
 		panic("unreachable")
 	}

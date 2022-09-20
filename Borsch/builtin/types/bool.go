@@ -1,344 +1,633 @@
 package types
 
-import (
-	"errors"
-	"fmt"
-	"math"
+var (
+	BoolClass = ObjectClass.ClassNew("логічне", map[string]Object{}, true, BoolNew, nil)
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
+	True  = Bool(true)
+	False = Bool(false)
 )
 
-type BoolInstance struct {
-	BuiltinInstance
-	Value bool
-}
-
-func NewBoolInstance(value bool) BoolInstance {
-	return BoolInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance: *NewClassInstance(Bool, nil),
-		},
-		Value: value,
-	}
-}
-
-func (t BoolInstance) String(common.State) (string, error) {
-	if t.Value {
-		return "істина", nil
+func goBoolToBoolObject(value bool) Object {
+	if value {
+		return True
 	}
 
-	return "хиба", nil
+	return False
 }
 
-func (t BoolInstance) Representation(state common.State) (string, error) {
-	return t.String(state)
-}
-
-func (t BoolInstance) AsBool(common.State) (bool, error) {
-	return t.Value, nil
-}
-
-func toBool(state common.State, args ...common.Value) (common.Value, error) {
-	if len(args) == 0 {
-		return NewBoolInstance(false), nil
+func gb2bo(value bool) Bool {
+	if value {
+		return True
 	}
 
+	return False
+}
+
+// bo2io converts Bool value to Int value.
+func bo2io(value Bool) Int {
+	if value {
+		return 1
+	}
+
+	return 0
+}
+
+type Bool bool
+
+func (value Bool) Class() *Class {
+	return BoolClass
+}
+
+func NewBool(value bool) Bool {
+	if value {
+		return True
+	}
+
+	return False
+}
+
+func BoolNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	if len(args) != 1 {
-		return nil, errors.New(
-			fmt.Sprintf(
-				"функція 'логічний()' приймає лише один аргумент (отримано %d)", len(args),
-			),
-		)
+		return nil, NewErrorf("логічне() приймає 1 аргумент")
 	}
 
-	boolValue, err := args[0].AsBool(state)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewBoolInstance(boolValue), err
+	return ToBool(ctx, args[0])
 }
 
-func compareBooleans(state common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
-	left, ok := self.(BoolInstance)
-	if !ok {
-		return 0, utilities.IncorrectUseOfFunctionError("compareBooleans")
-	}
-
-	switch right := other.(type) {
-	case NilInstance:
-	case BoolInstance:
-		if left.Value == right.Value {
-			return 0, nil
-		}
-	case IntegerInstance, RealInstance:
-		rightBool, err := right.AsBool(state)
-		if err != nil {
-			return 0, err
-		}
-
-		if left.Value == rightBool {
-			return 0, nil
-		}
-	default:
-		return 0, utilities.OperatorNotSupportedError(op, left, right)
-	}
-
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
+func (value Bool) represent(ctx Context) (Object, error) {
+	return value.string(ctx)
 }
 
-func evalUnaryOperatorWithBooleans(_ common.State, operator common.Operator, value common.Value) (common.Value, error) {
-	if self, ok := value.(BoolInstance); ok {
-		switch operator {
-		case common.UnaryPlus:
-			return NewIntegerInstance(boolToInt64(self.Value)), nil
-		case common.UnaryMinus:
-			return NewIntegerInstance(-boolToInt64(self.Value)), nil
-		case common.UnaryBitwiseNotOp:
-			return NewIntegerInstance(^boolToInt64(self.Value)), nil
-		default:
-			return nil, utilities.InternalOperatorError(operator)
+func (value Bool) string(Context) (Object, error) {
+	if value {
+		return String("істина"), nil
+	}
+
+	return String("хиба"), nil
+}
+
+// func (value Bool) toBool(Context) (Object, error) {
+// 	return value, nil
+// }
+
+func (value Bool) toReal(Context) (Object, error) {
+	if value {
+		return Real(1.0), nil
+	}
+
+	return Real(0.0), nil
+}
+
+func (value Bool) toInt(ctx Context) (Object, error) {
+	return bo2io(value), nil
+}
+
+func (value Bool) add(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(value) + bo2io(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return bo2io(value) + otherValue, nil
+	}
+
+	if otherValue, ok := other.(Real); ok {
+		return bo2ro(value) + otherValue, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати додавання логічного значення до об'єкта '%s'", other.Class().Name)
+}
+
+func (value Bool) reversedAdd(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(otherValue) + bo2io(value), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return otherValue + bo2io(value), nil
+	}
+
+	if otherValue, ok := other.(Real); ok {
+		return otherValue + bo2ro(value), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати додавання об'єкта '%s' до логічне значення", other.Class().Name)
+}
+
+func (value Bool) sub(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(value) - bo2io(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return bo2io(value) - otherValue, nil
+	}
+
+	if otherValue, ok := other.(Real); ok {
+		return bo2ro(value) - otherValue, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати віднімання логічного значення від об'єкта '%s'", other.Class().Name)
+}
+
+func (value Bool) reversedSub(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(otherValue) - bo2io(value), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return otherValue - bo2io(value), nil
+	}
+
+	if otherValue, ok := other.(Real); ok {
+		return otherValue - bo2ro(value), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати віднімання об'єкта '%s' від логічне значення", other.Class().Name)
+}
+
+func (value Bool) div(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		if !otherValue {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return bo2ro(value), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		if otherValue == 0 {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return bo2ro(value) / Real(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Real); ok {
+		if otherValue == 0.0 {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return bo2ro(value) / otherValue, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати ділення логічного значення на об'єкт '%s'", other.Class().Name)
+}
+
+func (value Bool) reversedDiv(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		if !value {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return bo2ro(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		if !value {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return Real(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Real); ok {
+		if !value {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return otherValue, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати ділення об'єкта '%s' на логічне значення", other.Class().Name)
+}
+
+func (value Bool) mul(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(value && otherValue), nil
+	}
+
+	switch other.(type) {
+	case Int:
+		if !value {
+			return Int(0), nil
+		}
+
+		return other, nil
+	case Real:
+		if !value {
+			return Real(0.0), nil
+		}
+
+		return other, nil
+	}
+
+	if otherValue, ok := other.(String); ok {
+		if !value {
+			return String(""), nil
+		}
+
+		return otherValue, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати множення логічного значення на об'єкт '%s'", other.Class().Name)
+}
+
+func (value Bool) reversedMul(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(otherValue && value), nil
+	}
+
+	switch other.(type) {
+	case Int, Real:
+		if !value {
+			return Int(0), nil
+		}
+
+		return other, nil
+	}
+
+	if otherValue, ok := other.(String); ok {
+		if !value {
+			return String(""), nil
+		}
+
+		return otherValue, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати множення об'єкта '%s' на логічне значення", other.Class().Name)
+}
+
+func (value Bool) mod(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		if !otherValue {
+			return nil, NewZeroDivisionError("цілочисельне ділення або за модулем на нуль")
+		}
+
+		return Int(0), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		if otherValue == 0 {
+			return nil, NewZeroDivisionError("цілочисельне ділення або за модулем на нуль")
+		}
+
+		// return Int(mod(float64(bo2ro(value)), float64(otherValue))), nil
+		return Int(mod(bo2ro(value), Real(otherValue))), nil
+	}
+
+	if otherValue, ok := other.(Real); ok {
+		if otherValue == 0.0 {
+			return nil, NewZeroDivisionError("цілочисельне ділення або за модулем на нуль")
+		}
+
+		return mod(bo2ro(value), otherValue), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати модуль? логічного значення  '%s'", other.Class().Name)
+}
+
+func (value Bool) reversedMod(_ Context, other Object) (Object, error) {
+	switch other.(type) {
+	case Bool, Int:
+		if !value {
+			return nil, NewZeroDivisionError("цілочисельне ділення або за модулем на нуль")
+		}
+
+		return Int(0), nil
+	case Real:
+		if !value {
+			return nil, NewZeroDivisionError("цілочисельне ділення або за модулем на нуль")
+		}
+
+		return Real(0.0), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати модуль? об'єкта '%s'  логічне значення", other.Class().Name)
+}
+
+func (value Bool) pow(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(!(!value && otherValue)), nil
+	}
+
+	switch otherValue := other.(type) {
+	case Int:
+		if value {
+			if otherValue < 0 {
+				return Real(1.0), nil
+			}
+
+			return Int(1), nil
+		}
+
+		if otherValue < 0 {
+			return nil, NewZeroDivisionError("неможливо піднести 0.0 до від'ємного степеня")
+		}
+
+		if otherValue == 0 {
+			return Int(1), nil
+		}
+
+		return Int(0), nil
+	case Real:
+		if value {
+			return Real(1.0), nil
+		}
+
+		if otherValue < 0.0 {
+			return nil, NewZeroDivisionError("неможливо піднести 0.0 до від'ємного степеня")
+		}
+
+		if otherValue == 0.0 {
+			return Real(1.0), nil
+		}
+
+		return Real(0.0), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати обчислення логічного значення в степені '%s'", other.Class().Name)
+}
+
+func (value Bool) reversedPow(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(!(!otherValue && value)), nil
+	}
+
+	if value {
+		switch other.(type) {
+		case Int, Real:
+			return other, nil
 		}
 	}
 
-	return nil, utilities.BadOperandForUnaryOperatorError(operator)
+	switch other.(type) {
+	case Int:
+		return Int(1), nil
+	case Real:
+		return Real(1.0), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати обчислення об'єкта '%s' в степені логічного значення", other.Class().Name)
 }
 
-func boolOperator(
-	operator common.Operator,
-	handler func(common.State, BoolInstance, common.Value) (common.Value, error),
-) common.Value {
-	return NewFunctionInstance(
-		operator.Name(),
-		[]FunctionParameter{
-			{
-				Type:       Bool,
-				Name:       "я",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-			{
-				Type:       Any,
-				Name:       "інший",
-				IsVariadic: false,
-				IsNullable: false,
-			},
-		},
-		func(state common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-			left, ok := (*args)[0].(BoolInstance)
-			if !ok {
-				return nil, utilities.InvalidUseOfOperator(operator, left, (*args)[1])
-			}
+func (value Bool) equals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value == v), nil
+	}
 
-			right := (*args)[1]
-			result, err := handler(state, left, right)
-			if err != nil {
-				return nil, err
-			}
+	if v, ok := other.(Int); ok {
+		return gb2bo(bo2io(value) == v), nil
+	}
 
-			if result == nil {
-				return nil, utilities.OperatorNotSupportedError(operator, left, right)
-			}
+	if v, ok := other.(Real); ok {
+		return gb2bo(bo2ro(value) == v), nil
+	}
 
-			return result, nil
-		},
-		[]FunctionReturnType{
-			{
-				Type:       Any,
-				IsNullable: false,
-			},
-		},
-		true,
-		nil,
-		"", // TODO: add doc
+	return False, nil
+}
+
+func (value Bool) notEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value != v), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return gb2bo(bo2io(value) != v), nil
+	}
+
+	if v, ok := other.(Real); ok {
+		return gb2bo(bo2ro(value) != v), nil
+	}
+
+	if _, ok := other.(String); ok {
+		return True, nil
+	}
+
+	return False, nil
+}
+
+func (value Bool) less(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Bool); ok {
+		return gb2bo(!bool(value) && bool(v)), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return gb2bo(bo2io(value) < v), nil
+	}
+
+	if v, ok := other.(Real); ok {
+		return gb2bo(bo2ro(value) < v), nil
+	}
+
+	return nil, OperatorNotSupportedErrorNew("<", value.Class().Name, other.Class().Name)
+}
+
+func (value Bool) lessOrEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Bool); ok {
+		return gb2bo(!(bool(value) && !bool(v))), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return gb2bo(bo2io(value) <= v), nil
+	}
+
+	if v, ok := other.(Real); ok {
+		return gb2bo(bo2ro(value) <= v), nil
+	}
+
+	return nil, OperatorNotSupportedErrorNew("<=", value.Class().Name, other.Class().Name)
+}
+
+func (value Bool) greater(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Bool); ok {
+		return gb2bo(bool(value) && !bool(v)), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return gb2bo(bo2io(value) > v), nil
+	}
+
+	if v, ok := other.(Real); ok {
+		return gb2bo(bo2ro(value) > v), nil
+	}
+
+	return nil, OperatorNotSupportedErrorNew(">", value.Class().Name, other.Class().Name)
+}
+
+func (value Bool) greaterOrEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Bool); ok {
+		return gb2bo(bool(value) || !bool(v)), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return gb2bo(bo2io(value) >= v), nil
+	}
+
+	if v, ok := other.(Real); ok {
+		return gb2bo(bo2ro(value) >= v), nil
+	}
+
+	return nil, OperatorNotSupportedErrorNew(">=", value.Class().Name, other.Class().Name)
+}
+
+func (value Bool) shiftLeft(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(value) << bo2io(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return bo2io(value) << otherValue, nil
+	}
+
+	return nil, NewErrorf(
+		"неможливо виконати побітовий зсув ліворуч логічного значення на об'єкт '%s'",
+		other.Class().Name,
 	)
 }
 
-func boolOperator_Pow(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case RealInstance:
-		return NewRealInstance(math.Pow(boolToFloat64(left.Value), other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(int64(math.Pow(boolToFloat64(left.Value), float64(other.Value)))), nil
-	case BoolInstance:
-		return NewIntegerInstance(int64(math.Pow(boolToFloat64(left.Value), boolToFloat64(other.Value)))), nil
-	default:
-		return nil, nil
+func (value Bool) reversedShiftLeft(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(otherValue) << bo2io(value), nil
 	}
+
+	if otherValue, ok := other.(Int); ok {
+		return otherValue << bo2io(value), nil
+	}
+
+	return nil, NewErrorf(
+		"неможливо виконати побітовий зсув ліворуч об'єкта '%s' на логічне значення",
+		other.Class().Name,
+	)
 }
 
-func boolOperator_Mul(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) * boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) * other.Value), nil
-	case RealInstance:
-		return NewRealInstance(boolToFloat64(left.Value) * other.Value), nil
-	default:
-		return nil, nil
+func (value Bool) shiftRight(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(value) >> bo2io(otherValue), nil
 	}
+
+	if otherValue, ok := other.(Int); ok {
+		return bo2io(value) >> otherValue, nil
+	}
+
+	return nil, NewErrorf(
+		"неможливо виконати побітовий зсув праворуч логічного значення на об'єкт '%s'",
+		other.Class().Name,
+	)
 }
 
-func boolOperator_Div(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
-			return NewRealInstance(boolToFloat64(left.Value)), nil
-		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewRealInstance(boolToFloat64(left.Value) / float64(other.Value)), nil
-		}
-	case RealInstance:
-		if other.Value != 0.0 {
-			return NewRealInstance(boolToFloat64(left.Value) / other.Value), nil
-		}
-	default:
-		return nil, nil
+func (value Bool) reversedShiftRight(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return bo2io(otherValue) >> bo2io(value), nil
 	}
 
-	return nil, errors.New("ділення на нуль")
+	if otherValue, ok := other.(Int); ok {
+		return otherValue >> bo2io(value), nil
+	}
+
+	return nil, NewErrorf(
+		"неможливо виконати побітовий зсув праворуч об'єкта '%s' на логічного значення",
+		other.Class().Name,
+	)
 }
 
-func boolOperator_Modulo(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		if other.Value {
-			return NewIntegerInstance(boolToInt64(left.Value) % boolToInt64(other.Value)), nil
-		}
-	case IntegerInstance:
-		if other.Value != 0 {
-			return NewIntegerInstance(boolToInt64(left.Value) % other.Value), nil
-		}
-	default:
-		return nil, nil
+func (value Bool) bitwiseOr(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return io2bo(bo2io(value) | bo2io(otherValue)), nil
+	}
+	if otherValue, ok := other.(Int); ok {
+		return bo2io(value) | otherValue, nil
 	}
 
-	return nil, errors.New("ділення за модулем на нуль")
+	return nil, NewErrorf(
+		"неможливо виконати побітову диз'юнкцію логічного значення та об'єкта '%s'",
+		other.Class().Name,
+	)
 }
 
-func boolOperator_Add(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) + boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) + other.Value), nil
-	case RealInstance:
-		return NewRealInstance(boolToFloat64(left.Value) + other.Value), nil
-	default:
-		return nil, nil
+func (value Bool) reversedBitwiseOr(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return io2bo(bo2io(otherValue) | bo2io(value)), nil
 	}
+
+	if otherValue, ok := other.(Int); ok {
+		return otherValue | bo2io(value), nil
+	}
+
+	return nil, NewErrorf(
+		"неможливо виконати побітову диз'юнкцію об'єкта '%s' та логічного значення",
+		other.Class().Name,
+	)
 }
 
-func boolOperator_Sub(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) - boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) - other.Value), nil
-	case RealInstance:
-		return NewRealInstance(boolToFloat64(left.Value) - other.Value), nil
-	default:
-		return nil, nil
+func (value Bool) bitwiseXor(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return io2bo(bo2io(value) ^ bo2io(otherValue)), nil
 	}
+
+	if otherValue, ok := other.(Int); ok {
+		return bo2io(value) ^ otherValue, nil
+	}
+
+	return nil, NewErrorf(
+		"неможливо виконати побітову виняткову диз'юнкцію логічного значення та об'єкта '%s'",
+		other.Class().Name,
+	)
 }
 
-func boolOperator_BitwiseLeftShift(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) << boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) << other.Value), nil
-	default:
-		return nil, nil
+func (value Bool) reversedBitwiseXor(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return io2bo(bo2io(otherValue) ^ bo2io(value)), nil
 	}
+
+	if otherValue, ok := other.(Int); ok {
+		return otherValue ^ bo2io(value), nil
+	}
+
+	return nil, NewErrorf(
+		"неможливо виконати побітову виняткову диз'юнкцію об'єкта '%s' та логічного значення",
+		other.Class().Name,
+	)
 }
 
-func boolOperator_BitwiseRightShift(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) >> boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) >> other.Value), nil
-	default:
-		return nil, nil
+func (value Bool) bitwiseAnd(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return io2bo(bo2io(value) & bo2io(otherValue)), nil
 	}
+
+	if otherValue, ok := other.(Int); ok {
+		return bo2io(value) & otherValue, nil
+	}
+
+	return nil, NewErrorf(
+		"неможливо виконати побітову кон'юнкцію логічного значення та об'єкта '%s'",
+		other.Class().Name,
+	)
 }
 
-func boolOperator_BitwiseAnd(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) & boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) & other.Value), nil
-	default:
-		return nil, nil
+func (value Bool) reversedBitwiseAnd(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Bool); ok {
+		return io2bo(bo2io(otherValue) & bo2io(value)), nil
 	}
+
+	if otherValue, ok := other.(Int); ok {
+		return otherValue & bo2io(value), nil
+	}
+
+	return nil, NewErrorf(
+		"неможливо виконати побітову кон'юнкцію об'єкта '%s' та логічного значення",
+		other.Class().Name,
+	)
 }
 
-func boolOperator_BitwiseXor(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) ^ boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) ^ other.Value), nil
-	default:
-		return nil, nil
-	}
+func (value Bool) positive(_ Context) (Object, error) {
+	return +bo2io(value), nil
 }
 
-func boolOperator_BitwiseOr(_ common.State, left BoolInstance, right common.Value) (common.Value, error) {
-	switch other := right.(type) {
-	case BoolInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) | boolToInt64(other.Value)), nil
-	case IntegerInstance:
-		return NewIntegerInstance(boolToInt64(left.Value) | other.Value), nil
-	default:
-		return nil, nil
-	}
+func (value Bool) negate(_ Context) (Object, error) {
+	return -bo2io(value), nil
 }
 
-func newBoolClass() *Class {
-	return &Class{
-		Name:    common.BoolTypeName,
-		IsFinal: true,
-		Bases:   []*Class{},
-		Parent:  BuiltinPackage,
-		AttrInitializer: func(attrs *map[string]common.Value) {
-			*attrs = MergeAttributes(
-				map[string]common.Value{
-					// TODO: add doc
-					common.ConstructorName: makeVariadicConstructor(Bool, toBool, ""),
-
-					common.PowOp.Name():    boolOperator(common.PowOp, boolOperator_Pow),
-					common.MulOp.Name():    boolOperator(common.MulOp, boolOperator_Mul),
-					common.DivOp.Name():    boolOperator(common.DivOp, boolOperator_Div),
-					common.ModuloOp.Name(): boolOperator(common.ModuloOp, boolOperator_Modulo),
-					common.AddOp.Name():    boolOperator(common.AddOp, boolOperator_Add),
-					common.SubOp.Name():    boolOperator(common.SubOp, boolOperator_Sub),
-					common.BitwiseLeftShiftOp.Name(): boolOperator(
-						common.BitwiseLeftShiftOp,
-						boolOperator_BitwiseLeftShift,
-					),
-					common.BitwiseRightShiftOp.Name(): boolOperator(
-						common.BitwiseRightShiftOp,
-						boolOperator_BitwiseRightShift,
-					),
-					common.BitwiseAndOp.Name(): boolOperator(common.BitwiseAndOp, boolOperator_BitwiseAnd),
-					common.BitwiseXorOp.Name(): boolOperator(common.BitwiseXorOp, boolOperator_BitwiseXor),
-					common.BitwiseOrOp.Name():  boolOperator(common.BitwiseOrOp, boolOperator_BitwiseOr),
-				},
-				MakeUnaryOperators(Bool, Integer, evalUnaryOperatorWithBooleans),
-				MakeLogicalOperators(Bool),
-				MakeComparisonOperators(Bool, compareBooleans),
-				MakeCommonOperators(Bool),
-			)
-		},
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewBoolInstance(false), nil
-		},
-	}
+func (value Bool) invert(_ Context) (Object, error) {
+	return ^bo2io(value), nil
 }

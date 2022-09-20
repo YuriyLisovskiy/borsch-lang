@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -24,7 +23,7 @@ func NewParser() (*ParserImpl, error) {
 	return &ParserImpl{parser: parser}, nil
 }
 
-func (p *ParserImpl) Parse(filename string, code string) (common.Evaluatable, error) {
+func (p *ParserImpl) Parse(filename string, code string) (Evaluatable, error) {
 	ast := &Package{}
 	err := p.parser.ParseString(filename, code, ast)
 	if err != nil {

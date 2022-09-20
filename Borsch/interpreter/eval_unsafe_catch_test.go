@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
@@ -47,41 +46,28 @@ func makeThrowStmt(name *Ident) *Throw {
 	}
 }
 
-type testInterpreter struct {
-}
-
-func (i *testInterpreter) Import(common.State, string) (common.Value, error) {
-	return nil, nil
-}
-
-func (i *testInterpreter) StackTrace() *common.StackTrace {
-	st := &common.StackTrace{}
-	st.Push(&common.TraceRow{})
-	return st
-}
-
 func TestThrow_EvaluateSuccess(t *testing.T) {
 	errorIdent := Ident("err")
 	throwNode := makeThrowStmt(&errorIdent)
 	errMessage := "This is an error"
-	exc, _ := builtin.NewErrorInstance(errMessage)
+	exc := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]types.Object{
 				{errorIdent.String(): exc},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 
 	result := throwNode.Evaluate(&state)
 	if result.State != StmtThrow {
-		assertionFailed(t, result.State.String(), StmtThrow.String())
+		t.Errorf("Assertion failed:\nActual:\n%s\n\nExpected:\n%s", result.State.String(), StmtThrow.String())
 	}
 
-	errMessage = fmt.Sprintf("%s: %s", builtin.ErrorClass.GetName(), errMessage)
+	errMessage = fmt.Sprintf("%s: %s", types.ErrorClass.Name, errMessage)
 	if result.Err.Error() != errMessage {
-		assertionFailed(t, result.Err.Error(), errMessage)
+		t.Errorf("Assertion failed:\nActual:\n%s\n\nExpected:\n%s", result.Err.Error(), errMessage)
 	}
 
 	if result.Value != exc {
@@ -94,17 +80,17 @@ func TestThrow_EvaluateFail_NotAnErrorInstance(t *testing.T) {
 	throwNode := makeThrowStmt(&errorIdent)
 	errMessage := "This is an error"
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
-				{errorIdent.String(): types.NewStringInstance(errMessage)},
+			scopes: []map[string]types.Object{
+				{errorIdent.String(): types.String(errMessage)},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 
 	result := throwNode.Evaluate(&state)
 	if result.State != StmtNone {
-		assertionFailed(t, result.State.String(), StmtNone.String())
+		t.Errorf("Assertion failed:\nActual:\n%s\n\nExpected:\n%s", result.State.String(), StmtNone.String())
 	}
 
 	if result.Err == nil {
@@ -140,14 +126,14 @@ func TestUnsafe_EvaluateNoThrow(t *testing.T) {
 	}
 
 	errMessage := "This is an error"
-	err, _ := builtin.NewErrorInstance(errMessage)
+	err := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
+			scopes: []map[string]types.Object{
 				{errorIdent.String(): err},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 	result := unsafe.Evaluate(&state, false, false)
 	if result.State == StmtThrow {
@@ -158,17 +144,13 @@ func TestUnsafe_EvaluateNoThrow(t *testing.T) {
 		t.Error("error is not nil")
 	}
 
-	if _, ok := result.Value.(types.NilInstance); !ok {
+	if _, ok := result.Value.(types.NilType); !ok {
 		t.Error("result value is not NilInstance")
 	}
 }
 
 func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
-	errorClass := types.Class{
-		Name:  "CustomError",
-		Class: types.TypeClass,
-		Bases: []*types.Class{builtin.ErrorClass},
-	}
+	errorClass := types.ErrorClass.ClassNew("CustomError", map[string]types.Object{}, false, nil, nil)
 	errorClassName := Ident(errorClass.Name)
 	errorIdent := Ident("Error")
 	unsafe := &Unsafe{
@@ -193,46 +175,46 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 	}
 
 	errMessage := "This is an error"
-	err, _ := builtin.NewErrorInstance(errMessage)
+	err := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
-				{errorClass.Name: &errorClass},
+			scopes: []map[string]types.Object{
+				{errorClass.Name: errorClass},
 				{errorIdent.String(): err},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 	result := unsafe.Evaluate(&state, false, false)
 	if result.State != StmtThrow {
-		assertionFailed(t, result.State.String(), StmtThrow.String())
+		t.Errorf("Assertion failed:\nActual:\n%s\n\nExpected:\n%s", result.State.String(), StmtThrow.String())
 	}
 
 	if result.Err == nil {
 		t.Error("error is nil")
 	}
 
-	errMessage = fmt.Sprintf("%s: %s", builtin.ErrorClass.GetName(), errMessage)
+	errMessage = fmt.Sprintf("%s: %s", types.ErrorClass.Name, errMessage)
 	if result.Err.Error() != errMessage {
-		assertionFailed(t, result.Err.Error(), errMessage)
+		t.Errorf("Assertion failed:\nActual:\n%s\n\nExpected:\n%s", result.Err.Error(), errMessage)
 	}
 
 	if result.Value == nil {
 		t.Error("value is nil")
 	}
 
-	if _, ok := result.Value.(*builtin.ErrorInstance); !ok {
+	if _, ok := result.Value.(*types.Error); !ok {
 		t.Error("result value is not ErrorInstance")
 	}
 
-	if result.Value.(*builtin.ErrorInstance) != err {
+	if result.Value.(*types.Error) != err {
 		t.Error("result value is not expected error")
 	}
 }
 
 func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 	errorIdent := Ident("Error")
-	errorClassName := Ident(builtin.ErrorClass.Name)
+	errorClassName := Ident(types.ErrorClass.Name)
 	unsafe := &Unsafe{
 		Stmts: &BlockStmts{
 			Stmts:   []*Stmt{{Throw: makeThrowStmt(&errorIdent)}},
@@ -255,19 +237,19 @@ func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 	}
 
 	errMessage := "This is an error"
-	err, _ := builtin.NewErrorInstance(errMessage)
+	err := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
-				{builtin.ErrorClass.Name: builtin.ErrorClass},
+			scopes: []map[string]types.Object{
+				{types.ErrorClass.Name: types.ErrorClass},
 				{errorIdent.String(): err},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 	result := unsafe.Evaluate(&state, false, false)
 	if result.State != StmtNone {
-		assertionFailed(t, result.State.String(), StmtNone.String())
+		t.Errorf("Assertion failed:\nActual:\n%s\n\nExpected:\n%s", result.State.String(), StmtNone.String())
 	}
 
 	if result.Err != nil {
@@ -278,17 +260,13 @@ func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 		t.Error("value is nil")
 	}
 
-	if _, ok := result.Value.(types.NilInstance); !ok {
+	if _, ok := result.Value.(types.NilType); !ok {
 		t.Error("result value is not ErrorInstance")
 	}
 }
 
 func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
-	errorClass := types.Class{
-		Name:  "CustomError",
-		Class: types.TypeClass,
-		Bases: []*types.Class{builtin.ErrorClass},
-	}
+	errorClass := types.ErrorClass.ClassNew("CustomError", map[string]types.Object{}, false, nil, nil)
 	errorIdent := Ident("Error")
 	eIdent := Ident("e")
 	errorClassName := Ident(errorClass.Name)
@@ -314,43 +292,39 @@ func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
 	}
 
 	errMessage := "This is an error"
-	err, _ := builtin.NewErrorInstance(errMessage)
+	err := types.NewError(errMessage)
 	state := StateImpl{
-		interpreter: &testInterpreter{},
 		context: &ContextImpl{
-			scopes: []map[string]common.Value{
-				{errorClass.Name: &errorClass},
+			scopes: []map[string]types.Object{
+				{errorClass.Name: errorClass},
 				{errorIdent.String(): err},
 			},
 		},
+		stacktrace: &common.StackTrace{},
 	}
 	result := unsafe.Evaluate(&state, false, false)
 	if result.State != StmtThrow {
-		assertionFailed(t, result.State.String(), StmtThrow.String())
+		t.Errorf("Assertion failed:\nActual:\n%s\n\nExpected:\n%s", result.State.String(), StmtThrow.String())
 	}
 
 	if result.Err == nil {
 		t.Error("error is nil")
 	}
 
-	errMessage = fmt.Sprintf("%s: %s", builtin.ErrorClass.GetName(), errMessage)
+	errMessage = fmt.Sprintf("%s: %s", types.ErrorClass.Name, errMessage)
 	if result.Err.Error() != errMessage {
-		assertionFailed(t, result.Err.Error(), errMessage)
+		t.Errorf("Assertion failed:\nActual:\n%s\n\nExpected:\n%s", result.Err.Error(), errMessage)
 	}
 
 	if result.Value == nil {
 		t.Error("value is nil")
 	}
 
-	if _, ok := result.Value.(*builtin.ErrorInstance); !ok {
+	if _, ok := result.Value.(*types.Error); !ok {
 		t.Error("result value is not ErrorInstance")
 	}
 
-	if result.Value.(*builtin.ErrorInstance) != err {
+	if result.Value.(*types.Error) != err {
 		t.Error("result value is not expected error")
 	}
-}
-
-func assertionFailed(t *testing.T, actual, expected string) {
-	t.Errorf("Assertion failed:\nActual:\n%s\n\nExpected:\n%s", actual, expected)
 }

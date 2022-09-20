@@ -1,84 +1,78 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/interpreter"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
-	"github.com/alecthomas/participle/v2"
 	"github.com/spf13/cobra"
 )
 
-var (
-	stdRoot string
-)
+// var (
+// 	stdRoot string
+// )
 
 var rootCmd = &cobra.Command{
 	Use: "borsch",
 	Long: `Борщ — це мова програмування, яка дозволяє писати код українською.
 Вихідний код (буде) доступний на GitHub — https://github.com/YuriyLisovskiy/borsch-lang`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			fileInfo, err := os.Stat(args[0])
-			if err != nil || fileInfo.IsDir() {
-				return fmt.Errorf("'%s' is not a file", args[0])
-			}
-		}
-
-		return nil
-	},
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(stdRoot) == 0 {
-			stdRoot = os.Getenv(common.BORSCH_LIB)
-		}
-
-		if len(stdRoot) == 0 {
-			fmt.Printf(
-				"Увага: змінна середовища '%s' необхідна для використання стандартної бібліотеки\n\n",
-				common.BORSCH_LIB,
-			)
-		}
-
-		if len(args) > 0 {
-			filePath, err := filepath.Abs(args[0])
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-
-			i := interpreter.NewInterpreter()
-			parser, err := interpreter.NewParser()
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-
-			state := interpreter.NewState(parser, i, nil, nil)
-			_, err = i.Import(state, filePath)
-			if err != nil {
-				stackTrace := state.GetInterpreter().StackTrace()
-				if pErr, ok := err.(participle.UnexpectedTokenError); ok {
-					text := processParseError(pErr.Message())
-					err = utilities.ParseError(pErr.Position(), pErr.Unexpected.Value, text)
-				}
-
-				fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", stackTrace.String(err)))
-				return
-			}
-		} else {
-			// interpret := interpreter.NewInterpreter(stdRoot, builtin.RootPackageName, "")
-			// fmt.Printf("%s %s (%s, %s)\n", build.LanguageName, build.Version, build.Time, strings.Title(runtime.GOOS))
-			// fmt.Println(
-			// 	"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.\n" +
-			// 		"Натисніть CONTROL+D або CONTROL+C для виходу.",
-			// )
-			// runInteractiveConsole(interpret)
-		}
-	},
+	// Args: func(cmd *cobra.Command, args []string) error {
+	// 	if len(args) > 0 {
+	// 		fileInfo, err := os.Stat(args[0])
+	// 		if err != nil || fileInfo.IsDir() {
+	// 			return fmt.Errorf("'%s' is not a file", args[0])
+	// 		}
+	// 	}
+	//
+	// 	return nil
+	// },
+	// Run: func(cmd *cobra.Command, args []string) {
+	// 	if len(stdRoot) == 0 {
+	// 		stdRoot = os.Getenv(builtin.BORSCH_LIB)
+	// 	}
+	//
+	// 	if len(stdRoot) == 0 {
+	// 		fmt.Printf(
+	// 			"Увага: змінна середовища '%s' необхідна для використання стандартної бібліотеки\n\n",
+	// 			builtin.BORSCH_LIB,
+	// 		)
+	// 	}
+	//
+	// 	if len(args) > 0 {
+	// 		filePath, err := filepath.Abs(args[0])
+	// 		if err != nil {
+	// 			fmt.Println(err.Error())
+	// 			os.Exit(1)
+	// 		}
+	//
+	// 		parser, err := interpreter.NewParser()
+	// 		if err != nil {
+	// 			fmt.Println(err.Error())
+	// 			os.Exit(2)
+	// 		}
+	//
+	// 		stacktrace := &common.StackTrace{}
+	// 		state := interpreter.NewInitialState(nil, nil, stacktrace)
+	// 		i := interpreter.NewInterpreter(parser, state)
+	// 		_, err = i.Import(filePath)
+	// 		if err != nil {
+	// 			if pErr, ok := err.(participle.UnexpectedTokenError); ok {
+	// 				text := processParseError(pErr.Message())
+	// 				err = utilities.ParseError(pErr.Position(), pErr.Unexpected.Value, text)
+	// 			}
+	//
+	// 			fmt.Println(fmt.Sprintf("Відстеження (стек викликів):\n%s", stacktrace.String(err)))
+	// 			os.Exit(1)
+	// 		}
+	// 	} else {
+	// 		// interpret := interpreter.NewInterpreter(stdRoot, builtin.RootPackageName, "")
+	// 		// fmt.Printf("%s %s (%s, %s)\n", build.LanguageName, build.Version, build.Time, strings.Title(runtime.GOOS))
+	// 		// fmt.Println(
+	// 		// 	"Надрукуйте \"допомога();\", \"авторське_право();\" або \"ліцензія();\" для детальнішої інформації.\n" +
+	// 		// 		"Натисніть CONTROL+D або CONTROL+C для виходу.",
+	// 		// )
+	// 		// runInteractiveConsole(interpret)
+	// 	}
+	// },
 }
 
 func init() {

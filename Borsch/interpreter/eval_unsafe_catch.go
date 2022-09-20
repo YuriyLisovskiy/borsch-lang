@@ -3,44 +3,59 @@ package interpreter
 import (
 	"fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 )
 
-func (node *Throw) Evaluate(state common.State) StmtResult {
-	expression, err := node.Expression.Evaluate(state, nil)
+func (node *Throw) Evaluate(state State) StmtResult {
+	expressionObj, err := node.Expression.Evaluate(state, nil)
 	if err != nil {
 		return StmtResult{Err: err}
 	}
 
-	expressionClass := expression.(types.ObjectInstance).GetClass()
-	if expressionClass == builtin.ErrorClass || expressionClass.HasBase(builtin.ErrorClass) {
-		message, err := expression.String(state)
-		if err != nil {
-			return StmtResult{Err: err}
+	expressionClass := expressionObj.Class()
+	if expressionClass == types.ErrorClass || expressionClass.HasBase(types.ErrorClass) {
+		state.Trace(node, "")
+		stmtResult := StmtResult{
+			State: StmtThrow,
+			Value: expressionObj,
+			// Err:   utilities.NewRuntimeStatementError(message, node),
 		}
 
-		state.Trace(node, "")
-		return StmtResult{State: StmtThrow, Value: expression, Err: utilities.NewRuntimeStatementError(message, node)}
+		if execErr, ok := expressionObj.(types.LangException); ok {
+			stmtResult.Err = execErr
+		} else {
+			// TODO: remove this branch in future!
+
+			message, err := types.ToGoString(state.Context(), expressionObj)
+			if err != nil {
+				return StmtResult{Err: err}
+			}
+
+			stmtResult.Err = utilities.NewRuntimeStatementError(message, node)
+		}
+
+		return stmtResult
 	}
 
 	return StmtResult{
-		Err: state.RuntimeError(
-			fmt.Sprintf(
-				"помилки мають наслідувати клас '%s'",
-				builtin.ErrorClass.Name,
-			),
-			node,
-		),
+		Err: state.RuntimeError(fmt.Sprintf("помилки мають наслідувати клас '%s'", types.ErrorClass.Name), node),
 	}
 }
 
-func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtResult {
+func (node *Unsafe) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.State != StmtThrow {
-		return result
+		if result.Err == nil {
+			return result
+		}
+
+		langErr, ok := result.Err.(types.LangException)
+		if !ok {
+			return result
+		}
+
+		result.Value = langErr
 	}
 
 	for _, catchBlock := range node.CatchBlocks {
@@ -58,14 +73,17 @@ func (node *Unsafe) Evaluate(state common.State, inFunction, inLoop bool) StmtRe
 	return result
 }
 
-func (node *Catch) Evaluate(state common.State, exception common.Value, inFunction, inLoop bool) (StmtResult, bool) {
+func (node *Catch) Evaluate(state State, exception types.Object, inFunction, inLoop bool) (
+	StmtResult,
+	bool,
+) {
 	errorToCatch, err := node.ErrorType.Evaluate(state, nil, nil)
 	if err != nil {
 		return StmtResult{Err: err}, false
 	}
 
 	if _, ok := errorToCatch.(*types.Class); !ok {
-		str, err := errorToCatch.String(state)
+		str, err := types.ToGoString(state.Context(), errorToCatch)
 		if err != nil {
 			return StmtResult{Err: err}, false
 		}
@@ -73,21 +91,21 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 		return StmtResult{Err: state.RuntimeError(fmt.Sprintf("об'єкт '%s' не є класом", str), node)}, false
 	}
 
-	generatedErrorClass := exception.(types.ObjectInstance).GetClass()
+	generatedErrorClass := exception.Class()
 	errorToCatchClass := errorToCatch.(*types.Class)
 	if shouldCatch(generatedErrorClass, errorToCatchClass) {
-		state.PopTrace()
+		// TODO: check if stacktrace is ok when the line below is not used!
+		// state.PopTrace()
 		return node.catch(state, exception, inFunction, inLoop)
 	}
 
-	if !errorToCatchClass.HasBase(builtin.ErrorClass) {
+	if !errorToCatchClass.HasBase(types.ErrorClass) {
 		return StmtResult{
 			Err: state.RuntimeError(
 				fmt.Sprintf(
 					"перехоплення помилок, які не наслідують клас '%s' заборонено",
-					builtin.ErrorClass.Name,
-				),
-				node,
+					types.ErrorClass.Name,
+				), node,
 			),
 		}, false
 	}
@@ -95,8 +113,8 @@ func (node *Catch) Evaluate(state common.State, exception common.Value, inFuncti
 	return StmtResult{}, false
 }
 
-func (node *Catch) catch(state common.State, err common.Value, inFunction, inLoop bool) (StmtResult, bool) {
-	ctx := state.GetContext()
+func (node *Catch) catch(state State, err types.Object, inFunction, inLoop bool) (StmtResult, bool) {
+	ctx := state.Context()
 	ctx.PushScope(Scope{node.ErrorVar.String(): err})
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.Err != nil {

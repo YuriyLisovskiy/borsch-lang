@@ -4,47 +4,44 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 type StateImpl struct {
-	parser         common.Parser
-	interpreter    common.Interpreter
-	context        common.Context
-	currentPackage common.Value
+	parent     State
+	context    types.Context
+	pkg        types.Object
+	stacktrace *common.StackTrace
 }
 
-func NewState(
-	parser common.Parser,
-	interpreter common.Interpreter,
-	context common.Context,
-	currentPackage common.Value,
-) *StateImpl {
+func NewInitialState(
+	context types.Context,
+	pkg types.Object,
+	stacktrace *common.StackTrace,
+) State {
 	return &StateImpl{
-		parser:         parser,
-		interpreter:    interpreter,
-		context:        context,
-		currentPackage: currentPackage,
+		parent:     nil,
+		context:    context,
+		pkg:        pkg,
+		stacktrace: stacktrace,
 	}
 }
 
-func (s *StateImpl) GetParser() common.Parser {
-	if s.parser != nil {
-		return s.parser
-	}
-
-	panic("state: parser is nil")
+func (s *StateImpl) Parent() State {
+	return s.parent
 }
 
-func (s *StateImpl) GetInterpreter() common.Interpreter {
-	if s.interpreter != nil {
-		return s.interpreter
+func (s *StateImpl) NewChild() State {
+	return &StateImpl{
+		parent:     s,
+		context:    s.context,
+		pkg:        s.pkg,
+		stacktrace: s.stacktrace,
 	}
-
-	panic("state: interpreter is nil")
 }
 
-func (s *StateImpl) GetContext() common.Context {
+func (s *StateImpl) Context() types.Context {
 	if s.context != nil {
 		return s.context
 	}
@@ -52,34 +49,30 @@ func (s *StateImpl) GetContext() common.Context {
 	panic("state: context is nil")
 }
 
-func (s *StateImpl) GetCurrentPackage() common.Value {
-	if s.currentPackage != nil {
-		return s.currentPackage
+func (s *StateImpl) Package() types.Object {
+	if s.pkg != nil {
+		return s.pkg
 	}
 
-	panic("state: current package is nil")
+	panic("state: package is nil")
 }
 
-func (s *StateImpl) GetCurrentPackageOrNil() common.Value {
-	return s.currentPackage
+func (s *StateImpl) StackTrace() *common.StackTrace {
+	return s.stacktrace
 }
 
-func (s *StateImpl) WithContext(ctx common.Context) common.State {
-	return &StateImpl{
-		parser:         s.parser,
-		interpreter:    s.interpreter,
-		context:        ctx,
-		currentPackage: s.currentPackage,
-	}
+func (s *StateImpl) PackageOrNil() types.Object {
+	return s.pkg
 }
 
-func (s *StateImpl) WithPackage(pkg common.Value) common.State {
-	return &StateImpl{
-		parser:         s.parser,
-		interpreter:    s.interpreter,
-		context:        s.context,
-		currentPackage: pkg,
-	}
+func (s *StateImpl) WithContext(ctx types.Context) State {
+	s.context = ctx
+	return s
+}
+
+func (s *StateImpl) WithPackage(pkg types.Object) State {
+	s.pkg = pkg
+	return s
 }
 
 func (s *StateImpl) RuntimeError(message string, statement common.Statement) error {
@@ -91,9 +84,11 @@ func (s *StateImpl) RuntimeError(message string, statement common.Statement) err
 }
 
 func (s *StateImpl) Trace(statement common.Statement, place string) {
-	s.interpreter.StackTrace().Push(common.NewTraceRow(statement.Position(), statement.String(), place))
+	s.stacktrace.Push(common.NewTraceRow(statement.Position(), statement.String(), place))
 }
 
 func (s *StateImpl) PopTrace() {
-	s.interpreter.StackTrace().Pop()
+	if !s.stacktrace.IsEmpty() {
+		s.stacktrace.Pop()
+	}
 }
