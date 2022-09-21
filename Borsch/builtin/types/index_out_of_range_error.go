@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-var IndexOutOfRangeErrorClass = ErrorClass.ClassNew("ПомилкаІндексу", map[string]Object{}, false, IndexOutOfRangeErrorNew, nil)
+var IndexOutOfRangeErrorClass *Class
 
 type IndexOutOfRangeError struct {
 	message string

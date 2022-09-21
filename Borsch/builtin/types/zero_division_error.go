@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-var ZeroDivisionErrorClass = ErrorClass.ClassNew("ПомилкаДіленняНаНуль", map[string]Object{}, false, ZeroDivisionErrorNew, nil)
+var ZeroDivisionErrorClass *Class
 
 type ZeroDivisionError struct {
 	message string

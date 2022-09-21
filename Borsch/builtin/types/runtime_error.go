@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-var RuntimeErrorClass = ErrorClass.ClassNew("ПомилкаВиконання", map[string]Object{}, false, RuntimeErrorNew, nil)
+var RuntimeErrorClass *Class
 
 type RuntimeError struct {
 	message string

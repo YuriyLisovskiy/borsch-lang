@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-var AttributeErrorClass = ErrorClass.ClassNew("ПомилкаАтрибута", map[string]Object{}, false, AttributeErrorNew, nil)
+var AttributeErrorClass *Class
 
 type AttributeError struct {
 	message string

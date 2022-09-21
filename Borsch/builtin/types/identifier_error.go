@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-var IdentifierErrorClass = ErrorClass.ClassNew("ПомилкаІдентифікатора", map[string]Object{}, false, IdentifierErrorNew, nil)
+var IdentifierErrorClass *Class
 
 type IdentifierError struct {
 	message string

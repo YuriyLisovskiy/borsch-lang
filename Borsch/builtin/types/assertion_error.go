@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-var AssertionErrorClass = ErrorClass.ClassNew("ПомилкаПрипущення", map[string]Object{}, false, AssertionErrorNew, nil)
+var AssertionErrorClass *Class
 
 type AssertionError struct {
 	message string

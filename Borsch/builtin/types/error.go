@@ -7,7 +7,7 @@ type LangException interface {
 	Class() *Class
 }
 
-var ErrorClass = ObjectClass.ClassNew("Помилка", map[string]Object{}, false, ErrorNew, nil)
+var ErrorClass *Class
 
 type Error struct {
 	message string
@@ -22,14 +22,14 @@ func (value *Error) Class() *Class {
 	return ErrorClass
 }
 
-func allocate(instance *Error, cls *Class) {
-	if cls.Dict != nil {
-		instance.dict = map[string]Object{}
-		for name, attr := range cls.Dict {
+func (value *Error) allocate() {
+	if value.Class().Dict != nil {
+		value.dict = map[string]Object{}
+		for name, attr := range value.Class().Dict {
 			if m, ok := attr.(*Method); ok && m.IsMethod() {
-				instance.dict[name] = &MethodWrapper{
+				value.dict[name] = &MethodWrapper{
 					Method:   m,
-					Instance: instance,
+					Instance: value,
 				}
 			}
 		}
@@ -43,19 +43,19 @@ func ErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	}
 
 	e := &Error{message: message}
-	allocate(e, cls)
+	e.allocate()
 	return e, nil
 }
 
 func NewError(text string) *Error {
 	e := &Error{message: text}
-	allocate(e, ErrorClass)
+	e.allocate()
 	return e
 }
 
 func NewErrorf(format string, args ...interface{}) *Error {
 	e := &Error{message: fmt.Sprintf(format, args...)}
-	allocate(e, ErrorClass)
+	e.allocate()
 	return e
 }
 
