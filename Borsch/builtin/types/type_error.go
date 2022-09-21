@@ -40,3 +40,11 @@ func (value *TypeError) represent(ctx Context) (Object, error) {
 func (value *TypeError) string(_ Context) (Object, error) {
 	return String(value.message), nil
 }
+
+func (value *TypeError) getAttribute(_ Context, name string) (Object, error) {
+	if attr := value.Class().GetAttributeOrNil(name); attr != nil {
+		return attr, nil
+	}
+
+	return nil, NewErrorf("об'єкт '%s' не містить атрибута '%s'", value.Class().Name, name)
+}

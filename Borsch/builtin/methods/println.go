@@ -7,7 +7,7 @@ import (
 )
 
 func MakePrintln(pkg *types.Package) *types.Method {
-	return types.MethodNew(
+	return types.FunctionNew(
 		"друкр", pkg, []types.MethodParameter{
 			{
 				Class:      types.AnyClass,

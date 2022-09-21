@@ -17,6 +17,9 @@ var (
 )
 
 func init() {
+	types.ErrorClass.AddAttributes(types.MakeErrorClassAttributes(BuiltinPackage))
+	// types.TypeErrorClass.AddAttributes(types.MakeErrorClassAttributes(BuiltinPackage))
+
 	addMethod := methods.MakeAdd(BuiltinPackage)
 	printlnMethod := methods.MakePrintln(BuiltinPackage)
 	assertMethod := methods.MakeAssert(BuiltinPackage)
@@ -41,5 +44,10 @@ func init() {
 		addMethod.Name:     addMethod,
 		printlnMethod.Name: printlnMethod,
 		assertMethod.Name:  assertMethod,
+
+		types.ErrorClass.Name:     types.ErrorClass,
+		types.TypeErrorClass.Name: types.TypeErrorClass,
 	}
+
+	types.Initialized = true
 }

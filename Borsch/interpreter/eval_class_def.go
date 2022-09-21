@@ -66,6 +66,7 @@ func (node *ClassMember) Evaluate(state State, class *types.Class) (types.Object
 		return node.Method.Evaluate(
 			state,
 			state.Package().(*types.Package),
+			true,
 			func(arguments []types.MethodParameter, returnTypes []types.MethodReturnType) error {
 				if err := checkMethod(class, arguments, returnTypes); err != nil {
 					return state.RuntimeError(err.Error(), node)
@@ -104,7 +105,7 @@ func checkMethod(class *types.Class, args []types.MethodParameter, _ []types.Met
 	if args[0].Class != class {
 		return errors.New(
 			fmt.Sprintf(
-				"перший параметер методу має бути типу '%s' отримано '%s'", class.Name, args[0].Name,
+				"перший параметер методу має бути типу '%s' отримано '%s'", class.Name, args[0].Class.Name,
 			),
 		)
 	}

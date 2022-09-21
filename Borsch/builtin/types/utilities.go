@@ -26,7 +26,7 @@ func Represent(ctx Context, self Object) (Object, error) {
 		}
 
 		if _, ok := res.(String); !ok {
-			return nil, NewErrorf(
+			return nil, NewTypeErrorf(
 				"результат виклику '__представлення__' має бути типу 'рядок', отримано '%s'",
 				res.Class().Name,
 			)
@@ -35,7 +35,7 @@ func Represent(ctx Context, self Object) (Object, error) {
 		return res, nil
 	}
 
-	return String(fmt.Sprintf("<об'єкт %s з адресою %p>", self.Class().Name, self)), nil
+	return String(fmt.Sprintf("<об'єкт '%s' з адресою %p>", self.Class().Name, self)), nil
 }
 
 func ToString(ctx Context, self Object) (Object, error) {
@@ -46,7 +46,7 @@ func ToString(ctx Context, self Object) (Object, error) {
 		}
 
 		if _, ok := res.(String); !ok {
-			return nil, NewErrorf(
+			return nil, NewTypeErrorf(
 				"результат виклику '__рядок__' має бути типу 'рядок', отримано '%s'",
 				res.Class().Name,
 			)
@@ -150,7 +150,18 @@ func SetAttribute(ctx Context, self Object, name string, value Object) error {
 	if v, ok := self.(*Class); ok {
 		if attr := v.GetAttributeOrNil(name); attr != nil {
 			if attr.Class() != value.Class() {
-				return NewErrorf(
+				if attr.Class() == MethodWrapperClass {
+					switch value.Class() {
+					case MethodClass, FunctionClass, LambdaClass:
+						v.Dict[name] = &MethodWrapper{
+							Method:   value.(*Method),
+							Instance: self,
+						}
+						return nil
+					}
+				}
+
+				return NewTypeErrorf(
 					"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
 					value.Class().Name,
 					name,
@@ -163,7 +174,7 @@ func SetAttribute(ctx Context, self Object, name string, value Object) error {
 		return nil
 	}
 
-	return NewErrorf("'%s' не містить атрибута '%s'", self.Class().Name, name)
+	return NewAttributeErrorf("'%s' не містить атрибута '%s'", self.Class().Name, name)
 }
 
 func DeleteAttribute(ctx Context, self Object, name string) (Object, error) {

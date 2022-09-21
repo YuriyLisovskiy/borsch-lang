@@ -3,7 +3,7 @@ package methods
 import "github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 
 func MakeAssert(pkg *types.Package) *types.Method {
-	return types.MethodNew(
+	return types.FunctionNew(
 		"переконатися", pkg, []types.MethodParameter{
 			{
 				Class:      types.BoolClass,

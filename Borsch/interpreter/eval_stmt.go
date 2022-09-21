@@ -74,7 +74,7 @@ func (node *Stmt) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 		ctx.PopScope()
 		return blockResult
 	case node.FunctionDef != nil:
-		function, err := node.FunctionDef.Evaluate(state, state.Package().(*types.Package), nil)
+		function, err := node.FunctionDef.Evaluate(state, state.Package().(*types.Package), false, nil)
 		if err != nil {
 			return StmtResult{Err: err}
 		}

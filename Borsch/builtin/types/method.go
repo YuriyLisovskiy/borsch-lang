@@ -1,6 +1,18 @@
 package types
 
-var MethodClass = ObjectClass.ClassNew("метод", map[string]Object{}, true, nil, nil)
+type methodType int8
+
+const (
+	method   methodType = 0
+	function methodType = 1
+	lambda   methodType = 2
+)
+
+var (
+	MethodClass   = ObjectClass.ClassNew("метод", map[string]Object{}, true, nil, nil)
+	FunctionClass = ObjectClass.ClassNew("функція", map[string]Object{}, true, nil, nil)
+	LambdaClass   = ObjectClass.ClassNew("лямбда", map[string]Object{}, true, nil, nil)
+)
 
 type MethodFunc func(ctx Context, args Tuple, kwargs StringDict) (Object, error)
 
@@ -12,6 +24,8 @@ type Method struct {
 	ReturnTypes []MethodReturnType
 
 	methodF MethodFunc
+
+	typ methodType
 }
 
 type MethodParameter struct {
@@ -41,14 +55,15 @@ type MethodReturnType struct {
 	IsNullable bool
 }
 
-func MethodNew(
+func makeMethod(
 	name string,
 	pkg *Package,
 	parameters []MethodParameter,
 	returnTypes []MethodReturnType,
 	methodF MethodFunc,
+	typ methodType,
 ) *Method {
-	if pkg == nil {
+	if pkg == nil && Initialized {
 		panic("package is nil")
 	}
 
@@ -62,11 +77,51 @@ func MethodNew(
 		Parameters:  parameters,
 		ReturnTypes: returnTypes,
 		methodF:     methodF,
+		typ:         typ,
 	}
 }
 
+func MethodNew(
+	name string,
+	pkg *Package,
+	parameters []MethodParameter,
+	returnTypes []MethodReturnType,
+	methodF MethodFunc,
+) *Method {
+	return makeMethod(name, pkg, parameters, returnTypes, methodF, method)
+}
+
+func FunctionNew(
+	name string,
+	pkg *Package,
+	parameters []MethodParameter,
+	returnTypes []MethodReturnType,
+	methodF MethodFunc,
+) *Method {
+	return makeMethod(name, pkg, parameters, returnTypes, methodF, function)
+}
+
+func LambdaNew(
+	name string,
+	pkg *Package,
+	parameters []MethodParameter,
+	returnTypes []MethodReturnType,
+	methodF MethodFunc,
+) *Method {
+	return makeMethod(name, pkg, parameters, returnTypes, methodF, lambda)
+}
+
 func (value *Method) Class() *Class {
-	return MethodClass
+	switch value.typ {
+	case method:
+		return MethodClass
+	case function:
+		return FunctionClass
+	case lambda:
+		return LambdaClass
+	default:
+		panic("unreachable")
+	}
 }
 
 func (value *Method) call(args Tuple) (Object, error) {
@@ -97,6 +152,18 @@ func (value *Method) call(args Tuple) (Object, error) {
 
 	// TODO: check result
 	return result, nil
+}
+
+func (value *Method) IsMethod() bool {
+	return value.typ == method
+}
+
+func (value *Method) IsFunction() bool {
+	return value.typ == function
+}
+
+func (value *Method) IsLambda() bool {
+	return value.typ == lambda
 }
 
 func checkArg(parameter *MethodParameter, arg Object) error {

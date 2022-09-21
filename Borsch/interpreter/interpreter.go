@@ -28,7 +28,7 @@ func NewInterpreter(parser Parser, initialState State) Interpreter {
 		state:    initialState,
 	}
 
-	GlobalScope["імпорт"] = types.MethodNew(
+	GlobalScope["імпорт"] = types.FunctionNew(
 		"імпорт", BuiltinPackage, []types.MethodParameter{
 			{
 				Class:      types.StringClass,

@@ -4,6 +4,10 @@ import "fmt"
 
 var PackageClass = ObjectClass.ClassNew("пакет", map[string]Object{}, true, nil, nil)
 
+var (
+	Initialized = false
+)
+
 type Package struct {
 	Filename string
 	Dict     map[string]Object

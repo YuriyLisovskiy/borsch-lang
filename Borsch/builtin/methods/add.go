@@ -5,7 +5,7 @@ import (
 )
 
 func MakeAdd(pkg *types.Package) *types.Method {
-	return types.MethodNew(
+	return types.FunctionNew(
 		"додати", pkg, []types.MethodParameter{
 			{
 				Classes:    []*types.Class{types.ListClass},

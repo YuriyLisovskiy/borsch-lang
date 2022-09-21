@@ -1,6 +1,6 @@
 package types
 
-var MethodWrapperClass = ObjectClass.ClassNew("обгортка-методу", map[string]Object{}, true, nil, nil)
+var MethodWrapperClass = ObjectClass.ClassNew("метод-обгортка", map[string]Object{}, true, nil, nil)
 
 type MethodWrapper struct {
 	Method   *Method

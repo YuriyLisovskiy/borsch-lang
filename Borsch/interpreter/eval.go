@@ -414,8 +414,8 @@ func (node *IdentOrCall) callFunction(state State, prevValue types.Object) (type
 		return nil, err
 	}
 
-	isLambda := false
-	variable, err = node.Call.Evaluate(state, variable, prevValue, &isLambda)
+	// isLambda := false
+	variable, err = node.Call.Evaluate(state, variable /*prevValue, &isLambda*/)
 	if err != nil {
 		if _, ok := err.(utilities.CallError); !ok {
 			err = utilities.NewCallError(err, string(node.Call.Ident))
@@ -465,7 +465,7 @@ func (node *LambdaDef) Evaluate(state State) (types.Object, error) {
 		return nil, err
 	}
 
-	lambda := types.MethodNew(
+	lambda := types.LambdaNew(
 		builtin.LambdaSignature,
 		state.Package().(*types.Package),
 		arguments,

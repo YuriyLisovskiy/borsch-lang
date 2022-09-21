@@ -98,7 +98,7 @@ func (value *Class) Allocate(attributes map[string]Object) *Class {
 	}
 
 	for name, attr := range value.Dict {
-		if m, ok := attr.(*Method); ok && m.Name != builtin.LambdaSignature {
+		if m, ok := attr.(*Method); ok && m.IsMethod() {
 			instance.Dict[name] = &MethodWrapper{
 				Method:   m,
 				Instance: instance,
@@ -117,15 +117,65 @@ func (value *Class) Class() *Class {
 	return TypeClass
 }
 
+// AddAttributes is used to create and set attributes for classes
+// after built-in package is initialized.
+//
+// Do not use this method for class instances!
+func (value *Class) AddAttributes(attributes map[string]Object) {
+	value.Dict = attributes
+}
+
 func (value *Class) represent(Context) (Object, error) {
 	if value.ClassType != nil {
-		return String(fmt.Sprintf("<об'єкт %s з адресою %p>", value.Class().Name, value)), nil
+		if attr := value.NativeGetAttributeOrNil(builtin.RepresentationOperatorName); attr != nil {
+			if method, ok := attr.(ICall); ok {
+				result, err := method.call([]Object{value})
+				if err != nil {
+					return nil, err
+				}
+
+				if _, ok := result.(String); ok {
+					return result, nil
+				}
+
+				return nil, NewTypeErrorf(
+					"%s повернув не рядковий тип, а '%s'",
+					builtin.RepresentationOperatorName,
+					result.Class().Name,
+				)
+			}
+
+			return nil, NewTypeErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
+		}
+
+		return String(fmt.Sprintf("<об'єкт '%s' з адресою %p>", value.Class().Name, value)), nil
 	}
 
 	return String(fmt.Sprintf("<клас '%s'>", value.Name)), nil
 }
 
 func (value *Class) string(ctx Context) (Object, error) {
+	if attr := value.NativeGetAttributeOrNil(builtin.StringOperatorName); attr != nil {
+		if method, ok := attr.(ICall); ok {
+			result, err := method.call([]Object{value})
+			if err != nil {
+				return nil, err
+			}
+
+			if _, ok := result.(String); ok {
+				return result, nil
+			}
+
+			return nil, NewTypeErrorf(
+				"%s повернув не рядковий тип, а '%s'",
+				builtin.StringOperatorName,
+				result.Class().Name,
+			)
+		}
+
+		return nil, NewErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
+	}
+
 	return value.represent(ctx)
 }
 
@@ -144,7 +194,7 @@ func (value *Class) Lookup(name string) Object {
 // NativeGetAttributeOrNil returns an attribute from the class.
 func (value *Class) NativeGetAttributeOrNil(name string) Object {
 	// Look in type Dict
-	if res, ok := value.Dict[name]; ok {
+	if res, ok := value.Class().Dict[name]; ok {
 		return res
 	}
 

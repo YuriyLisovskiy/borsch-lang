@@ -7,6 +7,7 @@ import (
 func (node *FunctionDef) Evaluate(
 	state State,
 	parentPackage *types.Package,
+	isClassMember bool,
 	check func([]types.MethodParameter, []types.MethodReturnType) error,
 ) (types.Object, error) {
 	arguments, err := node.ParametersSet.Evaluate(state)
@@ -25,16 +26,18 @@ func (node *FunctionDef) Evaluate(
 		}
 	}
 
-	function := types.MethodNew(
-		node.Name.String(),
-		parentPackage,
-		arguments,
-		returnTypes,
-		func(ctx types.Context, _ types.Tuple, kwargs types.StringDict) (types.Object, error) {
-			return node.Body.Evaluate(state.NewChild().WithContext(ctx))
-		},
-	)
-	return function, state.Context().SetVar(node.Name.String(), function)
+	methodF := func(ctx types.Context, _ types.Tuple, kwargs types.StringDict) (types.Object, error) {
+		return node.Body.Evaluate(state.NewChild().WithContext(ctx))
+	}
+
+	var method *types.Method
+	if isClassMember {
+		method = types.MethodNew(node.Name.String(), parentPackage, arguments, returnTypes, methodF)
+	} else {
+		method = types.FunctionNew(node.Name.String(), parentPackage, arguments, returnTypes, methodF)
+	}
+
+	return method, state.Context().SetVar(node.Name.String(), method)
 }
 
 func (node *ParametersSet) Evaluate(state State) ([]types.MethodParameter, error) {
