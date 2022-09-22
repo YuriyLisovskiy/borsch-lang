@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 var (
@@ -19,10 +20,11 @@ type (
 )
 
 type Class struct {
-	Name    string
-	Dict    map[string]Object
-	Bases   []*Class
-	IsFinal bool
+	Name      string
+	Dict      StringDict
+	Operators map[common.OperatorHash]*Method
+	Bases     []*Class
+	IsFinal   bool
 
 	New       NewFunc
 	Construct ConstructFunc
@@ -110,7 +112,7 @@ func (value *Class) Allocate(attributes map[string]Object) *Class {
 }
 
 func (value *Class) Class() *Class {
-	if value.ClassType != nil {
+	if value.IsInstance() {
 		return value.ClassType
 	}
 
@@ -126,7 +128,7 @@ func (value *Class) AddAttributes(attributes map[string]Object) {
 }
 
 func (value *Class) represent(Context) (Object, error) {
-	if value.ClassType != nil {
+	if value.IsInstance() {
 		if attr := value.NativeGetAttributeOrNil(builtin.RepresentationOperatorName); attr != nil {
 			if method, ok := attr.(ICall); ok {
 				result, err := method.call([]Object{value})
@@ -155,25 +157,27 @@ func (value *Class) represent(Context) (Object, error) {
 }
 
 func (value *Class) string(ctx Context) (Object, error) {
-	if attr := value.NativeGetAttributeOrNil(builtin.StringOperatorName); attr != nil {
-		if method, ok := attr.(ICall); ok {
-			result, err := method.call([]Object{value})
-			if err != nil {
-				return nil, err
+	if value.IsInstance() {
+		if attr := value.NativeGetAttributeOrNil(builtin.StringOperatorName); attr != nil {
+			if method, ok := attr.(ICall); ok {
+				result, err := method.call([]Object{value})
+				if err != nil {
+					return nil, err
+				}
+
+				if _, ok := result.(String); ok {
+					return result, nil
+				}
+
+				return nil, NewTypeErrorf(
+					"%s повернув не рядковий тип, а '%s'",
+					builtin.StringOperatorName,
+					result.Class().Name,
+				)
 			}
 
-			if _, ok := result.(String); ok {
-				return result, nil
-			}
-
-			return nil, NewTypeErrorf(
-				"%s повернув не рядковий тип, а '%s'",
-				builtin.StringOperatorName,
-				result.Class().Name,
-			)
+			return nil, NewErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
 		}
-
-		return nil, NewErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
 	}
 
 	return value.represent(ctx)
@@ -250,6 +254,10 @@ func (value *Class) HasBase(cls *Class) bool {
 	return false
 }
 
+func (value *Class) IsInstance() bool {
+	return value.ClassType != nil
+}
+
 func ObjectNew(_ Context, cls *Class, args Tuple) (Object, error) {
 	// Check arguments to new only for object
 	if cls == ObjectClass && excessArgs(args) {
@@ -290,9 +298,6 @@ func TypeNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 		return args[0].Class(), nil
 	}
 
-	// if len(args) != 3 {
-	// 	return nil, NewErrorf("тип() приймає 1 або 3 аргументи")
-	// }
 	return nil, NewErrorf("тип() приймає 1 аргумент")
 }
 

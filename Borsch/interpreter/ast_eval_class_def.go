@@ -6,6 +6,7 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 func (node *ClassDef) Evaluate(state State) (types.Object, error) {
@@ -85,8 +86,20 @@ func (node *ClassMember) Evaluate(state State, class *types.Class) (types.Object
 	}
 
 	if node.Operator != nil {
-		// TODO:
-		return nil, errors.New(fmt.Sprintf("unreachable: оператор %s", node.Operator.Op))
+		operator, err := node.Operator.Evaluate(state, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		switch operator.Name {
+		case "+", "-":
+			if len(operator.Parameters) == 1 {
+				operator.Name = "_" + operator.Name
+			}
+		}
+
+		class.Operators[common.OperatorHashFromString(operator.Name)] = operator
+		return operator, nil
 	}
 
 	if node.Class != nil {

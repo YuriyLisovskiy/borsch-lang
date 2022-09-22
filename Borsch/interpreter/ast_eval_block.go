@@ -43,7 +43,7 @@ func (node *Throw) Evaluate(state State) StmtResult {
 	}
 }
 
-func (node *Unsafe) Evaluate(state State, inFunction, inLoop bool) StmtResult {
+func (node *Block) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.State != StmtThrow {
 		if result.Err == nil {
@@ -58,14 +58,16 @@ func (node *Unsafe) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 		result.Value = langErr
 	}
 
-	for _, catchBlock := range node.CatchBlocks {
-		blockResult, caught := catchBlock.Evaluate(state, result.Value, inFunction, inLoop)
-		if blockResult.Interrupt() {
-			return blockResult
-		}
+	if len(node.CatchBlocks) > 0 {
+		for _, catchBlock := range node.CatchBlocks {
+			blockResult, caught := catchBlock.Evaluate(state, result.Value, inFunction, inLoop)
+			if blockResult.Interrupt() {
+				return blockResult
+			}
 
-		if caught {
-			return blockResult
+			if caught {
+				return blockResult
+			}
 		}
 	}
 

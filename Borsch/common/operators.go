@@ -2,11 +2,11 @@ package common
 
 import "fmt"
 
-type Operator int
+type OperatorHash int
 
 const (
 	// math
-	PowOp Operator = iota
+	PowOp OperatorHash = iota
 	ModuloOp
 	AddOp
 	SubOp
@@ -37,7 +37,7 @@ const (
 	LessOrEqualsOp
 )
 
-var opTypesToSignatures = map[Operator]string{
+var opTypesToSignatures = map[OperatorHash]string{
 	PowOp:               "**",
 	ModuloOp:            "%",
 	AddOp:               "+",
@@ -63,33 +63,72 @@ var opTypesToSignatures = map[Operator]string{
 	LessOrEqualsOp:      "<=",
 }
 
-var opNames = []string{
-	"__оператор_степеня__",             // **
-	"__оператор_ділення_за_модулем__",  // %
-	"__оператор_суми__",                // +
-	"__оператор_різниці__",             // -
-	"__оператор_добутку__",             // *
-	"__оператор_частки__",              // /
-	"__оператор_мінус__",               // -
-	"__оператор_плюс__",                // +
-	"__оператор_і__",                   // &&
-	"__оператор_або__",                 // ||
-	"__оператор_не__",                  // !
-	"__оператор_побітового_не__",       // ~
-	"__оператор_зсуву_ліворуч__",       // <<
-	"__оператор_зсуву_праворуч__",      // >>
-	"__оператор_побітового_і__",        // &
-	"__оператор_побітового_XOR__",      // ^   TODO: підібрати відповідник до XOR
-	"__оператор_побітового_або__",      // |
-	"__оператор_рівності__",            // ==
-	"__оператор_нерівності__",          // !=
-	"__оператор_більше__",              // >
-	"__оператор_більше_або_дорівнює__", // >=
-	"__оператор_менше__",               // <
-	"__оператор_менше_або_дорівнює__",  // <=
+var opSignaturesToHashes = map[string]OperatorHash{
+	"**": PowOp,
+	"%":  ModuloOp,
+	"+":  AddOp,
+	"-":  SubOp,
+	"*":  MulOp,
+	"/":  DivOp,
+	"_-": UnaryMinus,
+	"_+": UnaryPlus,
+	"&&": AndOp,
+	"||": OrOp,
+	"!":  NotOp,
+	"~":  UnaryBitwiseNotOp,
+	"<<": BitwiseLeftShiftOp,
+	">>": BitwiseRightShiftOp,
+	"&":  BitwiseAndOp,
+	"^":  BitwiseXorOp,
+	"|":  BitwiseOrOp,
+	"==": EqualsOp,
+	"!=": NotEqualsOp,
+	">":  GreaterOp,
+	">=": GreaterOrEqualsOp,
+	"<":  LessOp,
+	"<=": LessOrEqualsOp,
 }
 
-func (op Operator) Sign() string {
+var opNames = []string{
+	"**",        // **
+	"%",         // %
+	"+",         // +
+	"-",         // -
+	"*",         // *
+	"/",         // /
+	"унарний -", // -
+	"унарний +", // +
+	"&&",        // &&
+	"||",        // ||
+	"!",         // !
+	"~",         // ~
+	"<<",        // <<
+	">>",        // >>
+	"&",         // &
+	"^",         // ^   TODO: підібрати відповідник до XOR
+	"|",         // |
+	"==",        // ==
+	"!=",        // !=
+	">",         // >
+	">=",        // >=
+	"<",         // <
+	"<=",        // <=
+}
+
+func OperatorHashFromString(signature string) OperatorHash {
+	if opHash, ok := opSignaturesToHashes[signature]; ok {
+		return opHash
+	}
+
+	panic(
+		fmt.Sprintf(
+			"Unable to create hash for operator '%s', please add it to 'opSignaturesToHashes' map first",
+			signature,
+		),
+	)
+}
+
+func (op OperatorHash) Sign() string {
 	if op >= 0 && int(op) < len(opTypesToSignatures) {
 		return opTypesToSignatures[op]
 	}
@@ -102,7 +141,7 @@ func (op Operator) Sign() string {
 	)
 }
 
-func (op Operator) Name() string {
+func (op OperatorHash) Name() string {
 	if op >= 0 && int(op) < len(opNames) {
 		return opNames[op]
 	}

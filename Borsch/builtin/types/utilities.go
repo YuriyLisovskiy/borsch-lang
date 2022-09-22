@@ -148,30 +148,7 @@ func SetAttribute(ctx Context, self Object, name string, value Object) error {
 	}
 
 	if v, ok := self.(*Class); ok {
-		if attr := v.GetAttributeOrNil(name); attr != nil {
-			if attr.Class() != value.Class() {
-				if attr.Class() == MethodWrapperClass {
-					switch value.Class() {
-					case MethodClass, FunctionClass, LambdaClass:
-						v.Dict[name] = &MethodWrapper{
-							Method:   value.(*Method),
-							Instance: self,
-						}
-						return nil
-					}
-				}
-
-				return NewTypeErrorf(
-					"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
-					value.Class().Name,
-					name,
-					attr.Class().Name,
-				)
-			}
-		}
-
-		v.Dict[name] = value
-		return nil
+		return setAttributeTo(self, &v.Dict, v.GetAttributeOrNil(name), name, value)
 	}
 
 	return NewAttributeErrorf("'%s' не містить атрибута '%s'", self.Class().Name, name)
@@ -329,4 +306,58 @@ func parseFormat(format string) (string, string, error) {
 	}
 
 	return typesFormat, nullablesFormat, nil
+}
+
+func getAttributeFrom(dict *StringDict, name string, cls *Class) (Object, error) {
+	if attr, ok := (*dict)[name]; ok {
+		return attr, nil
+	}
+
+	if attr := cls.GetAttributeOrNil(name); attr != nil {
+		return attr, nil
+	}
+
+	return nil, NewErrorf("об'єкт '%s' не містить атрибута '%s'", cls.Name, name)
+}
+
+func setAttributeTo(instance Object, dict *StringDict, attr Object, name string, value Object) error {
+	if attr != nil && attr.Class() != value.Class() {
+		if attr.Class() == MethodWrapperClass {
+			switch value.Class() {
+			case MethodClass, FunctionClass, LambdaClass:
+				(*dict)[name] = &MethodWrapper{
+					Method:   value.(*Method),
+					Instance: instance,
+				}
+				return nil
+			}
+		}
+
+		return NewTypeErrorf(
+			"неможливо записати значення типу '%s' в атрибут '%s' з типом '%s'",
+			value.Class().Name,
+			name,
+			attr.Class().Name,
+		)
+	}
+
+	(*dict)[name] = value
+	return nil
+}
+
+// allocate prepares object's attributes using the base class
+// and performs any other common operations for object with
+// dict.
+func allocate(instance Object, dict *StringDict, cls *Class) {
+	if cls.Dict != nil {
+		*dict = StringDict{}
+		for name, attr := range cls.Dict {
+			if m, ok := attr.(*Method); ok && m.IsMethod() {
+				(*dict)[name] = &MethodWrapper{
+					Method:   m,
+					Instance: instance,
+				}
+			}
+		}
+	}
 }

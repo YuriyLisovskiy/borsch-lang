@@ -19,6 +19,7 @@ var (
 func init() {
 	types.ErrorClass.AddAttributes(types.MakeErrorClassAttributes(BuiltinPackage))
 	// types.TypeErrorClass.AddAttributes(types.MakeErrorClassAttributes(BuiltinPackage))
+	types.ZeroDivisionErrorClass.AddAttributes(types.MakeZeroDivisionErrorClassAttributes(BuiltinPackage))
 
 	addMethod := methods.MakeAdd(BuiltinPackage)
 	printlnMethod := methods.MakePrintln(BuiltinPackage)
