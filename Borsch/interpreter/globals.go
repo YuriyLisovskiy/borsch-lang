@@ -33,6 +33,7 @@ func init() {
 		types.StringClass.Name: types.StringClass,
 		types.TupleClass.Name:  types.TupleClass,
 
+		types.AnyClass.Name:  types.AnyClass,
 		types.TypeClass.Name: types.TypeClass,
 
 		types.ErrorClass.Name:                types.ErrorClass,

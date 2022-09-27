@@ -242,11 +242,35 @@ func (value *Class) bitwiseOr(ctx Context, other Object) (Object, error) {
 }
 
 func (value *Class) equals(ctx Context, other Object) (Object, error) {
-	return callBinaryOperator(ctx, value, other, common.EqualsOp)
+	if value.IsInstance() {
+		return callBinaryOperator(ctx, value, other, common.EqualsOp)
+	}
+
+	if o, ok := other.(*Class); ok && !o.IsInstance() {
+		return goBoolToBoolObject(value == o), nil
+	}
+
+	return nil, NewErrorf(
+		"непідтримувані типи операндів для ==: '%s' та '%s'",
+		value.Class().Name,
+		other.Class().Name,
+	)
 }
 
 func (value *Class) notEquals(ctx Context, other Object) (Object, error) {
-	return callBinaryOperator(ctx, value, other, common.NotEqualsOp)
+	if value.IsInstance() {
+		return callBinaryOperator(ctx, value, other, common.NotEqualsOp)
+	}
+
+	if o, ok := other.(*Class); ok && !o.IsInstance() {
+		return goBoolToBoolObject(value != o), nil
+	}
+
+	return nil, NewErrorf(
+		"непідтримувані типи операндів для !=: '%s' та '%s'",
+		value.Class().Name,
+		other.Class().Name,
+	)
 }
 
 func (value *Class) greater(ctx Context, other Object) (Object, error) {
@@ -381,12 +405,11 @@ func ObjectConstruct(ctx Context, self Object, args Tuple) error {
 
 	// Call the '__конструктор__' method if it exists.
 	if _, ok := self.(*Class); ok {
-		init := t.GetAttributeOrNil(builtin.ConstructorName)
-		if init != nil {
+		if constructor := t.GetAttributeOrNil(builtin.ConstructorName); constructor != nil {
 			newArgs := make(Tuple, len(args)+1)
 			newArgs[0] = self
 			copy(newArgs[1:], args)
-			_, err := Call(ctx, init, newArgs)
+			_, err := Call(ctx, constructor, newArgs)
 			if err != nil {
 				return err
 			}
