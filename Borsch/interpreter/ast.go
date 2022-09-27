@@ -193,7 +193,7 @@ type ClassMember struct {
 type OperatorDef struct {
 	Pos lexer.Position
 
-	Op            string         `"оператор" @("==" | "!=" | "<" | "<""=" | ">" | ">""=" | "+" | "-" | "/" | "*""*" | "*" | "%" | "<""<" | ">"">" | "|" | "^" | "&" | "~" | "&""&" | "|""|")`
+	Op            string         `"оператор" @("=""=" | "!""=" | "<""=" | "<""<" | "<" | ">""=" | ">"">" | ">" | "+" | "-" | "/" | "*""*" | "*" | "%" | "^" | "~" | "&""&" | "&" | "|""|" | "|")`
 	ParametersSet *ParametersSet `@@`
 	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
 	Body          *FunctionBody  `@@ "кінець"`
