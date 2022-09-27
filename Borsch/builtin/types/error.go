@@ -26,8 +26,8 @@ func (value *Error) Class() *Class {
 	return ErrorClass
 }
 
-func (value *Error) allocate() {
-	allocate(value, &value.dict, value.Class())
+func (value *Error) init() {
+	initInstance(value, &value.dict, value.Class())
 }
 
 func ErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
@@ -37,19 +37,19 @@ func ErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	}
 
 	e := &Error{message: message}
-	e.allocate()
+	e.init()
 	return e, nil
 }
 
 func NewError(text string) *Error {
 	e := &Error{message: text}
-	e.allocate()
+	e.init()
 	return e
 }
 
 func NewErrorf(format string, args ...interface{}) *Error {
 	e := &Error{message: fmt.Sprintf(format, args...)}
-	e.allocate()
+	e.init()
 	return e
 }
 

@@ -159,7 +159,7 @@ type Parameter struct {
 	Pos lexer.Position
 
 	Name       Ident `@Ident ":"`
-	TypeName   Ident `@Ident`
+	TypeName   Ident `@Ident | @"?"`
 	IsNullable bool  `@"?"?`
 }
 

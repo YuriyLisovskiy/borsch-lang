@@ -345,10 +345,10 @@ func setAttributeTo(instance Object, dict *StringDict, attr Object, name string,
 	return nil
 }
 
-// allocate prepares object's attributes using the base class
+// initInstance prepares object's attributes using the base class
 // and performs any other common operations for object with
 // dict.
-func allocate(instance Object, dict *StringDict, cls *Class) {
+func initInstance(instance Object, dict *StringDict, cls *Class) {
 	if cls.Dict != nil {
 		*dict = StringDict{}
 		for name, attr := range cls.Dict {

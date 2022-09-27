@@ -28,24 +28,24 @@ func ZeroDivisionErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	}
 
 	zeroDivErr := &ZeroDivisionError{message: message}
-	zeroDivErr.allocate()
+	zeroDivErr.init()
 	return zeroDivErr, nil
 }
 
 func NewZeroDivisionError(text string) *ZeroDivisionError {
 	err := &ZeroDivisionError{message: text}
-	err.allocate()
+	err.init()
 	return err
 }
 
 func NewZeroDivisionErrorf(format string, args ...interface{}) *ZeroDivisionError {
 	err := &ZeroDivisionError{message: fmt.Sprintf(format, args...)}
-	err.allocate()
+	err.init()
 	return err
 }
 
-func (value *ZeroDivisionError) allocate() {
-	allocate(value, &value.dict, value.Class())
+func (value *ZeroDivisionError) init() {
+	initInstance(value, &value.dict, value.Class())
 }
 
 func (value *ZeroDivisionError) represent(ctx Context) (Object, error) {

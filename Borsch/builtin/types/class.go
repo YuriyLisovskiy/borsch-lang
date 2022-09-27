@@ -49,10 +49,11 @@ func ClassNew(
 	constructF ConstructFunc,
 ) *Class {
 	return &Class{
-		Name:    name,
-		Dict:    attributes,
-		Bases:   bases,
-		IsFinal: isFinal,
+		Name:      name,
+		Dict:      attributes,
+		Operators: map[common.OperatorHash]*Method{},
+		Bases:     bases,
+		IsFinal:   isFinal,
 
 		New:       newF,
 		Construct: constructF,
@@ -69,10 +70,11 @@ func (value *Class) ClassNew(
 	constructF ConstructFunc,
 ) *Class {
 	cls := &Class{
-		Name:    name,
-		Dict:    attributes,
-		Bases:   []*Class{value},
-		IsFinal: isFinal,
+		Name:      name,
+		Dict:      attributes,
+		Operators: map[common.OperatorHash]*Method{},
+		Bases:     []*Class{value},
+		IsFinal:   isFinal,
 
 		ClassType: nil,
 	}
@@ -183,6 +185,86 @@ func (value *Class) string(ctx Context) (Object, error) {
 	return value.represent(ctx)
 }
 
+func (value *Class) pow(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.PowOp)
+}
+
+func (value *Class) mod(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.ModuloOp)
+}
+
+func (value *Class) add(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.AddOp)
+}
+
+func (value *Class) sub(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.SubOp)
+}
+
+func (value *Class) mul(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.MulOp)
+}
+
+func (value *Class) div(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.DivOp)
+}
+
+func (value *Class) negate(ctx Context) (Object, error) {
+	return callUnaryOperator(ctx, value, common.UnaryMinus)
+}
+
+func (value *Class) positive(ctx Context) (Object, error) {
+	return callUnaryOperator(ctx, value, common.UnaryPlus)
+}
+
+func (value *Class) invert(ctx Context) (Object, error) {
+	return callUnaryOperator(ctx, value, common.UnaryBitwiseNotOp)
+}
+
+func (value *Class) shiftLeft(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseLeftShiftOp)
+}
+
+func (value *Class) shiftRight(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseRightShiftOp)
+}
+
+func (value *Class) bitwiseAnd(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseAndOp)
+}
+
+func (value *Class) bitwiseXor(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseXorOp)
+}
+
+func (value *Class) bitwiseOr(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseOrOp)
+}
+
+func (value *Class) equals(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.EqualsOp)
+}
+
+func (value *Class) notEquals(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.NotEqualsOp)
+}
+
+func (value *Class) greater(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.GreaterOp)
+}
+
+func (value *Class) greaterOrEquals(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.GreaterOrEqualsOp)
+}
+
+func (value *Class) less(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.LessOp)
+}
+
+func (value *Class) lessOrEquals(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.LessOrEqualsOp)
+}
+
 // Lookup returns an attribute from one of the base class,
 // and doesn't set an exception, but returns nil instead.
 func (value *Class) Lookup(name string) Object {
@@ -242,6 +324,28 @@ func (value *Class) DeleteAttributeOrNil(name string) Object {
 	}
 
 	return nil
+}
+
+func (value *Class) GetOperator(name string) (ICall, error) {
+	if res, ok := value.Class().Dict[name]; ok {
+		if call, ok := res.(ICall); ok {
+			return call, nil
+		}
+
+		return nil, NewTypeErrorf("об'єкт '%s' не може бути викликаний", name)
+	}
+
+	for _, base := range value.Bases {
+		if res, ok := base.Dict[name]; ok {
+			if call, ok := res.(ICall); ok {
+				return call, nil
+			}
+
+			return nil, NewTypeErrorf("об'єкт '%s' не може бути викликаний", name)
+		}
+	}
+
+	return nil, nil
 }
 
 func (value *Class) HasBase(cls *Class) bool {
@@ -313,4 +417,25 @@ func TypeConstruct(ctx Context, self Object, args Tuple) error {
 // Return true if any arguments supplied.
 func excessArgs(args Tuple) bool {
 	return len(args) != 0
+}
+
+func callBinaryOperator(ctx Context, a, b Object, opHash common.OperatorHash) (Object, error) {
+	if op, ok := a.Class().Operators[opHash]; ok {
+		return Call(ctx, op, []Object{a, b})
+	}
+
+	return nil, NewErrorf(
+		"непідтримувані типи операндів для %s: '%s' та '%s'",
+		opHash.Sign(),
+		a.Class().Name,
+		b.Class().Name,
+	)
+}
+
+func callUnaryOperator(ctx Context, a Object, opHash common.OperatorHash) (Object, error) {
+	if op, ok := a.Class().Operators[opHash]; ok {
+		return Call(ctx, op, []Object{a})
+	}
+
+	return nil, NewErrorf("непідтримуваний тип операнда для унарного %s: '%s'", opHash.Sign(), a.Class().Name)
 }

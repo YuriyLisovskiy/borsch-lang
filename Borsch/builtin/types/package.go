@@ -24,7 +24,7 @@ func PackageNew(filename string, parent *Package, ctx Context) *Package {
 		Parent:  parent,
 		Context: ctx,
 	}
-	pkg.allocate()
+	pkg.init()
 	return pkg
 }
 
@@ -32,8 +32,8 @@ func (value *Package) Class() *Class {
 	return PackageClass
 }
 
-func (value *Package) allocate() {
-	allocate(value, &value.Dict, value.Class())
+func (value *Package) init() {
+	initInstance(value, &value.Dict, value.Class())
 }
 
 func (value *Package) represent(Context) (Object, error) {

@@ -153,13 +153,3 @@ func (op OperatorHash) Name() string {
 		),
 	)
 }
-
-func IsOperator(name string) bool {
-	for _, current := range opNames {
-		if current == name {
-			return true
-		}
-	}
-
-	return false
-}
