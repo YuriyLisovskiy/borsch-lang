@@ -29,7 +29,7 @@ func MakePrintln(pkg *types.Package) *types.Method {
 			}
 
 			fmt.Println(message)
-			return nil, nil
+			return types.Nil, nil
 		},
 	)
 }

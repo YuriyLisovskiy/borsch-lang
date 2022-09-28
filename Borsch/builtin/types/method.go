@@ -162,6 +162,7 @@ func (value *Method) call(args Tuple) (Object, error) {
 
 	names := ""
 	for i, retType := range value.ReturnTypes {
+		// Check for derived types and "any" type.
 		if retType.Class == result.Class() {
 			return result, nil
 		}
