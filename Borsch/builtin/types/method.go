@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 type methodType int8
 
 const (
@@ -151,7 +153,26 @@ func (value *Method) call(args Tuple) (Object, error) {
 	}
 
 	// TODO: check result
-	return result, nil
+	prefix := ""
+	if len(value.ReturnTypes) > 1 {
+		prefix = "одним із типів"
+	} else {
+		prefix = "типу"
+	}
+
+	names := ""
+	for i, retType := range value.ReturnTypes {
+		if retType.Class == result.Class() {
+			return result, nil
+		}
+
+		names += retType.Class.Name
+		if i < len(value.ReturnTypes)-1 {
+			names += ", "
+		}
+	}
+
+	return nil, NewTypeErrorf("повернене значення має бути %s ʼ%sʼ, отримано ʼ%sʼ", prefix, names, result.Class().Name)
 }
 
 func (value *Method) IsMethod() bool {
@@ -176,15 +197,42 @@ func checkArg(parameter *MethodParameter, arg Object) error {
 			return nil
 		}
 
-		// TODO: return error
+		return NewTypeErrorf("очікується ненульовий аргумент, отримано ʼ%sʼ", arg.Class().Name)
 	}
 
 	if parameter.accepts(arg.Class()) {
 		return nil
 	}
 
-	// TODO: return error
-	return nil
+	appendix := ""
+	if parameter.IsNullable {
+		appendix = fmt.Sprintf("або ʼ%sʼ", NilClass.Name)
+	}
+
+	if parameter.Class != nil {
+		return NewTypeErrorf(
+			"очікується аргумент з типом ʼ%sʼ%s, отримано ʼ%sʼ",
+			parameter.Class.Name,
+			appendix,
+			arg.Class().Name,
+		)
+	}
+
+	var names string
+	clsLen := len(parameter.Classes)
+	for i, cls := range parameter.Classes {
+		names += cls.Name
+		if i < clsLen-1 {
+			names += ", "
+		}
+	}
+
+	return NewTypeErrorf(
+		"очікується аргумент з одним із типів ʼ%sʼ%s, отримано ʼ%sʼ",
+		names,
+		appendix,
+		arg.Class().Name,
+	)
 }
 
 func checkReturnValue(cls *Class, returnValue Object) error {

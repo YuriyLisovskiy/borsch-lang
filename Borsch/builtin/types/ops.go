@@ -93,11 +93,17 @@ func ToInt(ctx Context, a Object) (Object, error) {
 	}
 
 	if A, ok := a.(IInt); ok {
-		return A.toInt(ctx)
+		result, err := A.toInt(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
-	// TODO: TypeError
-	return nil, NewErrorf("непідтримуваний тип операнда для 'ціле': '%s'", a.Class().Name)
+	return nil, NewTypeErrorf("непідтримуваний тип операнда для 'ціле': '%s'", a.Class().Name)
 }
 
 func ToReal(ctx Context, a Object) (Object, error) {
@@ -191,7 +197,7 @@ func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ..
 		isNullable := nullablesFormat[i] == '?'
 		if arg.Class() == NilClass {
 			if !isNullable {
-				return NewErrorf( /*TypeError,*/ "%s() аргумент виклику %d не може бути нульовим", name, i+1)
+				return NewErrorf(/*TypeError,*/ "%s() аргумент виклику %d не може бути нульовим", name, i+1)
 			}
 		} else {
 			extra := ""
@@ -270,19 +276,19 @@ func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ..
 func checkNumberOfArgs(name string, argsN, resultsN, argsMin, argsMax int) error {
 	if argsMin == argsMax {
 		if argsN != argsMax {
-			return NewErrorf( /*TypeError, */ "%s() takes exactly %d arguments (%d given)", name, argsMax, argsN)
+			return NewErrorf(/*TypeError, */ "%s() takes exactly %d arguments (%d given)", name, argsMax, argsN)
 		}
 	} else {
 		if argsN > argsMax {
-			return NewErrorf( /*TypeError, */ "%s() takes at most %d arguments (%d given)", name, argsMax, argsN)
+			return NewErrorf(/*TypeError, */ "%s() takes at most %d arguments (%d given)", name, argsMax, argsN)
 		}
 		if argsN < argsMin {
-			return NewErrorf( /*TypeError, */ "%s() takes at least %d arguments (%d given)", name, argsMin, argsN)
+			return NewErrorf(/*TypeError, */ "%s() takes at least %d arguments (%d given)", name, argsMin, argsN)
 		}
 	}
 
 	if argsN > resultsN {
-		return NewErrorf( /*TypeError, */ "Internal error: not enough arguments supplied to Unpack*/Parse*")
+		return NewErrorf(/*TypeError, */ "Internal error: not enough arguments supplied to Unpack*/Parse*")
 	}
 
 	return nil

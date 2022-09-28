@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
@@ -12,6 +13,19 @@ func (node *OperatorDef) Evaluate(
 	state State,
 	check func([]types.MethodParameter, []types.MethodReturnType) error,
 ) (*types.Method, error) {
+	if len(node.Op) > 3 {
+		switch node.Op {
+		case builtin.CallOperatorName,
+			builtin.LengthOperatorName,
+			builtin.IntOperatorName,
+			builtin.BoolOperatorName,
+			builtin.StringOperatorName,
+			builtin.RepresentationOperatorName:
+		default:
+			return nil, types.NewIdentifierErrorf("ідентифікатор '%s' не є оператором", node.Op)
+		}
+	}
+
 	arguments, err := node.ParametersSet.Evaluate(state)
 	if err != nil {
 		return nil, err
@@ -25,6 +39,13 @@ func (node *OperatorDef) Evaluate(
 	if check != nil {
 		if err := check(arguments, returnTypes); err != nil {
 			return nil, err
+		}
+	}
+
+	switch node.Op {
+	case "+", "-":
+		if len(arguments) == 1 {
+			node.Op = "_" + node.Op
 		}
 	}
 

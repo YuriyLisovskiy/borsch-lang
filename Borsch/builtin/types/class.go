@@ -129,27 +129,42 @@ func (value *Class) AddAttributes(attributes map[string]Object) {
 	value.Dict = attributes
 }
 
-func (value *Class) represent(Context) (Object, error) {
+func (value *Class) represent(ctx Context) (Object, error) {
 	if value.IsInstance() {
-		if attr := value.NativeGetAttributeOrNil(builtin.RepresentationOperatorName); attr != nil {
-			if method, ok := attr.(ICall); ok {
-				result, err := method.call([]Object{value})
-				if err != nil {
-					return nil, err
-				}
-
-				if _, ok := result.(String); ok {
-					return result, nil
-				}
-
-				return nil, NewTypeErrorf(
-					"%s повернув не рядковий тип, а '%s'",
-					builtin.RepresentationOperatorName,
-					result.Class().Name,
-				)
+		if attr := value.GetOperatorOrNil(common.RepresentationOp); attr != nil {
+			result, err := Call(ctx, attr, Tuple{value})
+			if err != nil {
+				return nil, err
 			}
 
-			return nil, NewTypeErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
+			if _, ok := result.(String); ok {
+				return result, nil
+			}
+
+			return nil, NewTypeErrorf(
+				"%s повернув не рядковий тип, а '%s'",
+				common.RepresentationOp.Name(),
+				result.Class().Name,
+			)
+
+			// if method, ok := attr.(ICall); ok {
+			// 	result, err := method.call([]Object{value})
+			// 	if err != nil {
+			// 		return nil, err
+			// 	}
+			//
+			// 	if _, ok := result.(String); ok {
+			// 		return result, nil
+			// 	}
+			//
+			// 	return nil, NewTypeErrorf(
+			// 		"%s повернув не рядковий тип, а '%s'",
+			// 		builtin.RepresentationOperatorName,
+			// 		result.Class().Name,
+			// 	)
+			// }
+			//
+			// return nil, NewTypeErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
 		}
 
 		return String(fmt.Sprintf("<об'єкт '%s' з адресою %p>", value.Class().Name, value)), nil
@@ -160,29 +175,65 @@ func (value *Class) represent(Context) (Object, error) {
 
 func (value *Class) string(ctx Context) (Object, error) {
 	if value.IsInstance() {
-		if attr := value.NativeGetAttributeOrNil(builtin.StringOperatorName); attr != nil {
-			if method, ok := attr.(ICall); ok {
-				result, err := method.call([]Object{value})
-				if err != nil {
-					return nil, err
-				}
-
-				if _, ok := result.(String); ok {
-					return result, nil
-				}
-
-				return nil, NewTypeErrorf(
-					"%s повернув не рядковий тип, а '%s'",
-					builtin.StringOperatorName,
-					result.Class().Name,
-				)
+		if attr := value.GetOperatorOrNil(common.StringOp); attr != nil {
+			result, err := Call(ctx, attr, Tuple{value})
+			if err != nil {
+				return nil, err
 			}
 
-			return nil, NewErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
+			if _, ok := result.(String); ok {
+				return result, nil
+			}
+
+			return nil, NewTypeErrorf(
+				"%s повернув не рядковий тип, а '%s'",
+				common.StringOp.Name(),
+				result.Class().Name,
+			)
+
+			// if method, ok := attr.(ICall); ok {
+			// 	result, err := method.call([]Object{value})
+			// 	if err != nil {
+			// 		return nil, err
+			// 	}
+			//
+			// 	if _, ok := result.(String); ok {
+			// 		return result, nil
+			// 	}
+			//
+			// 	return nil, NewTypeErrorf(
+			// 		"%s повернув не рядковий тип, а '%s'",
+			// 		builtin.StringOperatorName,
+			// 		result.Class().Name,
+			// 	)
+			// }
+			//
+			// return nil, NewErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
 		}
 	}
 
 	return value.represent(ctx)
+}
+
+func (value *Class) toInt(ctx Context) (Object, error) {
+	if value.IsInstance() {
+		if attr := value.GetOperatorOrNil(common.IntOp); attr != nil {
+			result, err := Call(ctx, attr, Tuple{value})
+			if err != nil {
+				return nil, err
+			}
+
+			if _, ok := result.(Int); ok {
+				return result, nil
+			}
+
+			return nil, NewTypeErrorf("%s повернув не цілий тип, а '%s'", common.IntOp.Name(), result.Class().Name)
+		}
+	}
+
+	// Marks that method could not be executed due to incorrect arguments.
+	// Caller should return the default error message in this case.
+	return nil, nil
 }
 
 func (value *Class) pow(ctx Context, other Object) (Object, error) {
@@ -350,26 +401,12 @@ func (value *Class) DeleteAttributeOrNil(name string) Object {
 	return nil
 }
 
-func (value *Class) GetOperator(name string) (ICall, error) {
-	if res, ok := value.Class().Dict[name]; ok {
-		if call, ok := res.(ICall); ok {
-			return call, nil
-		}
-
-		return nil, NewTypeErrorf("об'єкт '%s' не може бути викликаний", name)
+func (value *Class) GetOperatorOrNil(op common.OperatorHash) Object {
+	if res, ok := value.Class().Operators[op]; ok {
+		return res
 	}
 
-	for _, base := range value.Bases {
-		if res, ok := base.Dict[name]; ok {
-			if call, ok := res.(ICall); ok {
-				return call, nil
-			}
-
-			return nil, NewTypeErrorf("об'єкт '%s' не може бути викликаний", name)
-		}
-	}
-
-	return nil, nil
+	return nil
 }
 
 func (value *Class) HasBase(cls *Class) bool {

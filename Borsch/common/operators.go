@@ -35,6 +35,14 @@ const (
 	GreaterOrEqualsOp
 	LessOp
 	LessOrEqualsOp
+
+	// other operators
+	CallOp
+	LengthOp
+	BoolOp
+	IntOp
+	StringOp
+	RepresentationOp
 )
 
 var opTypesToSignatures = map[OperatorHash]string{
@@ -61,32 +69,44 @@ var opTypesToSignatures = map[OperatorHash]string{
 	GreaterOrEqualsOp:   ">=",
 	LessOp:              "<",
 	LessOrEqualsOp:      "<=",
+	CallOp:              "__виклик__",
+	LengthOp:            "__довжина__",
+	BoolOp:              "__логічне__",
+	IntOp:               "__ціле__",
+	StringOp:            "__рядок__",
+	RepresentationOp:    "__представлення__",
 }
 
 var opSignaturesToHashes = map[string]OperatorHash{
-	"**": PowOp,
-	"%":  ModuloOp,
-	"+":  AddOp,
-	"-":  SubOp,
-	"*":  MulOp,
-	"/":  DivOp,
-	"_-": UnaryMinus,
-	"_+": UnaryPlus,
-	"&&": AndOp,
-	"||": OrOp,
-	"!":  NotOp,
-	"~":  UnaryBitwiseNotOp,
-	"<<": BitwiseLeftShiftOp,
-	">>": BitwiseRightShiftOp,
-	"&":  BitwiseAndOp,
-	"^":  BitwiseXorOp,
-	"|":  BitwiseOrOp,
-	"==": EqualsOp,
-	"!=": NotEqualsOp,
-	">":  GreaterOp,
-	">=": GreaterOrEqualsOp,
-	"<":  LessOp,
-	"<=": LessOrEqualsOp,
+	"**":                PowOp,
+	"%":                 ModuloOp,
+	"+":                 AddOp,
+	"-":                 SubOp,
+	"*":                 MulOp,
+	"/":                 DivOp,
+	"_-":                UnaryMinus,
+	"_+":                UnaryPlus,
+	"&&":                AndOp,
+	"||":                OrOp,
+	"!":                 NotOp,
+	"~":                 UnaryBitwiseNotOp,
+	"<<":                BitwiseLeftShiftOp,
+	">>":                BitwiseRightShiftOp,
+	"&":                 BitwiseAndOp,
+	"^":                 BitwiseXorOp,
+	"|":                 BitwiseOrOp,
+	"==":                EqualsOp,
+	"!=":                NotEqualsOp,
+	">":                 GreaterOp,
+	">=":                GreaterOrEqualsOp,
+	"<":                 LessOp,
+	"<=":                LessOrEqualsOp,
+	"__виклик__":        CallOp,
+	"__довжина__":       LengthOp,
+	"__логічне__":       BoolOp,
+	"__ціле__":          IntOp,
+	"__рядок__":         StringOp,
+	"__представлення__": RepresentationOp,
 }
 
 var opNames = []string{
@@ -113,6 +133,12 @@ var opNames = []string{
 	">=",        // >=
 	"<",         // <
 	"<=",        // <=
+	"__виклик__",
+	"__довжина__",
+	"__логічне__",
+	"__ціле__",
+	"__рядок__",
+	"__представлення__",
 }
 
 func OperatorHashFromString(signature string) OperatorHash {

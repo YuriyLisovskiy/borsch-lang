@@ -414,8 +414,7 @@ func (node *IdentOrCall) callFunction(state State, prevValue types.Object) (type
 		return nil, err
 	}
 
-	// isLambda := false
-	variable, err = node.Call.Evaluate(state, variable /*prevValue, &isLambda*/)
+	variable, err = node.Call.Evaluate(state, variable)
 	if err != nil {
 		if _, ok := err.(utilities.CallError); !ok {
 			err = utilities.NewCallError(err, string(node.Call.Ident))

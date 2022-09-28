@@ -91,13 +91,6 @@ func (node *ClassMember) Evaluate(state State, class *types.Class) (types.Object
 			return nil, err
 		}
 
-		switch operator.Name {
-		case "+", "-":
-			if len(operator.Parameters) == 1 {
-				operator.Name = "_" + operator.Name
-			}
-		}
-
 		class.Operators[common.OperatorHashFromString(operator.Name)] = operator
 		return operator, nil
 	}
