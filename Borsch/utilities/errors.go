@@ -19,21 +19,6 @@ func RuntimeError(text string) error {
 	return errors.New(fmt.Sprintf("Помилка виконання: %s", text))
 }
 
-func InternalError(text string) error {
-	return errors.New(fmt.Sprintf("InternalError: %s", text))
-}
-
-func InvalidUseOfOperator(operator common.OperatorHash, left, right types.Object) error {
-	return InternalError(
-		fmt.Sprintf(
-			"invalid use of operator '%s' for '%s' and '%s' types",
-			operator.Sign(),
-			left.Class().Name,
-			right.Class().Name,
-		),
-	)
-}
-
 func ParseError(pos lexer.Position, unexpected string, err string) error {
 	return errors.New(
 		fmt.Sprintf(

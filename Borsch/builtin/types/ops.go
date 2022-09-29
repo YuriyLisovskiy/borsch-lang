@@ -7,12 +7,6 @@ import (
 )
 
 func mod(l, r Real) Real {
-	// return l - (r * Real(math.Floor(float64(l/r))))
-	// if r-Real(math.Floor(float64(r))) == 0.0 {
-	// 	return l - (r * Real(math.Floor(float64(l/r))))
-	// }
-	//
-	// return l - (r * (l / r))
 	a := float64(l)
 	b := float64(r)
 	return Real(math.Mod(b+math.Mod(a, b), b))
@@ -115,8 +109,7 @@ func ToReal(ctx Context, a Object) (Object, error) {
 		return A.toReal(ctx)
 	}
 
-	// TODO: TypeError
-	return nil, NewErrorf("непідтримуваний тип операнда для 'дійсне': '%s'", a.Class().Name)
+	return nil, NewTypeErrorf("непідтримуваний тип операнда для 'дійсне': '%s'", a.Class().Name)
 }
 
 // ToGoInt turns 'a' into Go int if possible.
@@ -130,19 +123,12 @@ func ToGoInt(ctx Context, a Object) (int, error) {
 		return v.toGoInt(ctx)
 	}
 
-	// TODO: TypeError
-	return 0, NewErrorf("об'єкт '%v' не може бути інтрпретований як ціле число", a.Class().Name)
+	return 0, NewTypeErrorf("об'єкт '%v' не може бути інтерпретований як ціле число", a.Class().Name)
 }
 
 func GetAttribute(ctx Context, self Object, name string) (Object, error) {
 	if v, ok := self.(IGetAttribute); ok {
 		return v.getAttribute(ctx, name)
-	}
-
-	if v, ok := self.(*Class); ok {
-		if attr := v.GetAttributeOrNil(name); attr != nil {
-			return attr, nil
-		}
 	}
 
 	return nil, NewErrorf("'%s' не містить атрибута '%s'", self.Class().Name, name)
@@ -153,10 +139,6 @@ func SetAttribute(ctx Context, self Object, name string, value Object) error {
 		return v.setAttribute(ctx, name, value)
 	}
 
-	if v, ok := self.(*Class); ok {
-		return setAttributeTo(self, &v.Dict, v.GetAttributeOrNil(name), name, value)
-	}
-
 	return NewAttributeErrorf("'%s' не містить атрибута '%s'", self.Class().Name, name)
 }
 
@@ -165,18 +147,12 @@ func DeleteAttribute(ctx Context, self Object, name string) (Object, error) {
 		return v.deleteAttribute(ctx, name)
 	}
 
-	if v, ok := self.(*Class); ok {
-		if attr := v.DeleteAttributeOrNil(name); attr != nil {
-			return attr, nil
-		}
-	}
-
 	return nil, NewErrorf("'%s' не містить атрибута '%s'", self.Class().Name, name)
 }
 
 func Call(ctx Context, self Object, args Tuple) (Object, error) {
 	if v, ok := self.(ICall); ok {
-		return v.call(args)
+		return v.call(ctx, args)
 	}
 
 	return nil, NewErrorf("неможливо застосувати оператор виклику до об'єкта з типом '%s'", self.Class().Name)
@@ -197,7 +173,7 @@ func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ..
 		isNullable := nullablesFormat[i] == '?'
 		if arg.Class() == NilClass {
 			if !isNullable {
-				return NewErrorf(/*TypeError,*/ "%s() аргумент виклику %d не може бути нульовим", name, i+1)
+				return NewErrorf( /*TypeError,*/ "%s() аргумент виклику %d не може бути нульовим", name, i+1)
 			}
 		} else {
 			extra := ""
@@ -276,19 +252,19 @@ func parseArgs(name, format string, args Tuple, argsMin, argsMax int, results ..
 func checkNumberOfArgs(name string, argsN, resultsN, argsMin, argsMax int) error {
 	if argsMin == argsMax {
 		if argsN != argsMax {
-			return NewErrorf(/*TypeError, */ "%s() takes exactly %d arguments (%d given)", name, argsMax, argsN)
+			return NewErrorf( /*TypeError, */ "%s() takes exactly %d arguments (%d given)", name, argsMax, argsN)
 		}
 	} else {
 		if argsN > argsMax {
-			return NewErrorf(/*TypeError, */ "%s() takes at most %d arguments (%d given)", name, argsMax, argsN)
+			return NewErrorf( /*TypeError, */ "%s() takes at most %d arguments (%d given)", name, argsMax, argsN)
 		}
 		if argsN < argsMin {
-			return NewErrorf(/*TypeError, */ "%s() takes at least %d arguments (%d given)", name, argsMin, argsN)
+			return NewErrorf( /*TypeError, */ "%s() takes at least %d arguments (%d given)", name, argsMin, argsN)
 		}
 	}
 
 	if argsN > resultsN {
-		return NewErrorf(/*TypeError, */ "Internal error: not enough arguments supplied to Unpack*/Parse*")
+		return NewErrorf( /*TypeError, */ "Internal error: not enough arguments supplied to Unpack*/Parse*")
 	}
 
 	return nil
@@ -327,14 +303,11 @@ func getAttributeFrom(dict *StringDict, name string, cls *Class) (Object, error)
 }
 
 func setAttributeTo(instance Object, dict *StringDict, attr Object, name string, value Object) error {
-	if attr != nil && attr.Class() != value.Class() {
+	if attr != nil && !accepts(attr.Class(), value.Class()) {
 		if attr.Class() == MethodWrapperClass {
 			switch value.Class() {
 			case MethodClass, FunctionClass, LambdaClass:
-				(*dict)[name] = &MethodWrapper{
-					Method:   value.(*Method),
-					Instance: instance,
-				}
+				(*dict)[name] = wrap(instance, value.(*Method))
 				return nil
 			}
 		}
@@ -349,6 +322,24 @@ func setAttributeTo(instance Object, dict *StringDict, attr Object, name string,
 
 	(*dict)[name] = value
 	return nil
+}
+
+func wrapMethod(instance, obj Object) (Object, bool) {
+	if method, ok := obj.(*Method); ok && method.IsMethod() {
+		return &MethodWrapper{
+			Method:   method,
+			Instance: instance,
+		}, true
+	}
+
+	return obj, false
+}
+
+func wrap(instance Object, method *Method) Object {
+	return &MethodWrapper{
+		Method:   method,
+		Instance: instance,
+	}
 }
 
 // initInstance prepares object's attributes using the base class
@@ -366,4 +357,8 @@ func initInstance(instance Object, dict *StringDict, cls *Class) {
 			}
 		}
 	}
+}
+
+func accepts(a, b *Class) bool {
+	return a == b || a.IsBaseOf(b)
 }

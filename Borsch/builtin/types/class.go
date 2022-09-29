@@ -11,7 +11,6 @@ var (
 	ObjectClass = ClassNew("об_єкт", []*Class{}, map[string]Object{}, false, nil, nil)
 
 	TypeClass = ObjectClass.ClassNew("тип", map[string]Object{}, true, nil, nil)
-	AnyClass  = ClassNew("довільний", []*Class{}, map[string]Object{}, true, nil, nil)
 )
 
 type (
@@ -91,7 +90,7 @@ func (value *Class) ClassNew(
 	return cls
 }
 
-func (value *Class) Allocate(attributes map[string]Object) *Class {
+func (value *Class) allocate(attributes map[string]Object) *Class {
 	instance := &Class{
 		Name:    "",
 		Dict:    attributes,
@@ -102,11 +101,8 @@ func (value *Class) Allocate(attributes map[string]Object) *Class {
 	}
 
 	for name, attr := range value.Dict {
-		if m, ok := attr.(*Method); ok && m.IsMethod() {
-			instance.Dict[name] = &MethodWrapper{
-				Method:   m,
-				Instance: instance,
-			}
+		if wrapped, ok := wrapMethod(instance, attr); ok {
+			instance.Dict[name] = wrapped
 		}
 	}
 
@@ -127,6 +123,52 @@ func (value *Class) Class() *Class {
 // Do not use this method for class instances!
 func (value *Class) AddAttributes(attributes map[string]Object) {
 	value.Dict = attributes
+}
+
+func (value *Class) call(ctx Context, args Tuple) (Object, error) {
+	if value.IsInstance() {
+		if attr := value.GetOperatorOrNil(common.CallOp); attr != nil {
+			return Call(ctx, attr, append(Tuple{value}, args...))
+		}
+
+		return nil, NewTypeErrorf("обʼєкт ʼ%sʼ не може бути викликаний", value.Class().Name)
+	}
+
+	// Create instance of the class.
+	instance, err := value.New(ctx, value, args)
+	if err != nil {
+		return nil, err
+	}
+
+	if value.Construct != nil {
+		err = value.Construct(ctx, instance, args)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return instance, nil
+}
+
+func (value *Class) getAttribute(_ Context, name string) (Object, error) {
+	// TODO: call __отримати_атрибут__ method if exists
+
+	// The (nil, nil) result forces the caller to return the default error.
+	return value.GetAttributeOrNil(name), nil
+}
+
+func (value *Class) setAttribute(_ Context, name string, newValue Object) error {
+	return setAttributeTo(value, &value.Dict, value.GetAttributeOrNil(name), name, newValue)
+}
+
+func (value *Class) deleteAttribute(_ Context, name string) (Object, error) {
+	if attr, ok := value.Dict[name]; ok {
+		delete(value.Dict, name)
+		return attr, nil
+	}
+
+	// The (nil, nil) result forces the caller to return the default error.
+	return nil, nil
 }
 
 func (value *Class) represent(ctx Context) (Object, error) {
@@ -380,27 +422,6 @@ func (value *Class) GetAttributeOrNil(name string) Object {
 	return value.Lookup(name)
 }
 
-func (value *Class) DeleteAttributeOrNil(name string) Object {
-	if attr, ok := value.Dict[name]; ok {
-		delete(value.Dict, name)
-		return attr
-	}
-
-	if attr, ok := value.Class().Dict[name]; ok {
-		delete(value.Class().Dict, name)
-		return attr
-	}
-
-	for _, base := range value.Bases {
-		if attr, ok := base.Dict[name]; ok {
-			delete(base.Dict, name)
-			return attr
-		}
-	}
-
-	return nil
-}
-
 func (value *Class) GetOperatorOrNil(op common.OperatorHash) Object {
 	if res, ok := value.Class().Operators[op]; ok {
 		return res
@@ -409,18 +430,18 @@ func (value *Class) GetOperatorOrNil(op common.OperatorHash) Object {
 	return nil
 }
 
-func (value *Class) HasBase(cls *Class) bool {
-	for _, base := range value.Bases {
-		if base == cls {
+func (value *Class) IsInstance() bool {
+	return value.ClassType != nil
+}
+
+func (value *Class) IsBaseOf(cls *Class) bool {
+	for _, c := range cls.Bases {
+		if value == c || value.IsBaseOf(c) {
 			return true
 		}
 	}
 
 	return false
-}
-
-func (value *Class) IsInstance() bool {
-	return value.ClassType != nil
 }
 
 func ObjectNew(_ Context, cls *Class, args Tuple) (Object, error) {
@@ -429,7 +450,7 @@ func ObjectNew(_ Context, cls *Class, args Tuple) (Object, error) {
 		return nil, NewErrorf("об_єкт() не приймає аргументів")
 	}
 
-	return cls.Allocate(map[string]Object{}), nil
+	return cls.allocate(map[string]Object{}), nil
 }
 
 func ObjectConstruct(ctx Context, self Object, args Tuple) error {

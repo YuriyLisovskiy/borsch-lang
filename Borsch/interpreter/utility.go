@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
@@ -236,55 +235,6 @@ func unpack(state State, lhs []*Expression, rhs []*Expression) (types.Object, er
 	}
 
 	return unpackFromSequence(state, lhs, rhsSeq, true)
-
-	// lhsLen := len(lhs)
-	// rhsLen := len(rhs)
-	// if lhsLen > rhsLen {
-	// 	return unpackList(state, lhs, rhs[0])
-	// }
-	//
-	// sequence, result, err := getSequenceOrResult(state, lhs, rhs)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//
-	// if result != nil {
-	// 	return result, err
-	// }
-	//
-	// if lhsLen > len(sequence) {
-	// 	// TODO: return unable to unpack
-	// 	panic(fmt.Sprintf("unable to unpack %d elements to %d vars", len(sequence), lhsLen))
-	// } else if lhsLen < len(sequence) {
-	// 	// TODO: return unable to unpack
-	// 	panic(fmt.Sprintf("unable to unpack %d elements to %d vars", len(sequence), lhsLen))
-	// }
-	//
-	// var i int
-	// list := types.NewList()
-	// for i = 0; i < lhsLen-1; i++ {
-	// 	element, err := lhs[i].Evaluate(state, sequence[i])
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	//
-	// 	list.Values = append(list.Values, element)
-	// }
-	//
-	// if i < len(sequence)-1 {
-	// 	rest := types.NewList()
-	// 	rest.Values = sequence[i:]
-	// 	list.Values = append(list.Values, rest)
-	// } else {
-	// 	element, err := lhs[i].Evaluate(state, sequence[i])
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	//
-	// 	list.Values = append(list.Values, element)
-	// }
-	//
-	// return list, nil
 }
 
 // unpackFromSequence unpacks right-hand tuple into left-hand variables:
@@ -329,113 +279,6 @@ func unpackFromSequence(state State, dest []*Expression, src types.Object, skipS
 	}
 
 	return result, nil
-}
-
-func getSequenceOrResult(state State, lhs []*Expression, rhs []*Expression) (
-	[]types.Object,
-	types.Object,
-	error,
-) {
-	rhsLen := len(rhs)
-	var sequence []types.Object
-	if rhsLen == 1 {
-		element, err := rhs[0].Evaluate(state, nil)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		switch list := element.(type) {
-		case *types.List:
-			if len(lhs) == 1 {
-				result, err := lhs[0].Evaluate(state, list)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				return nil, result, nil
-			}
-
-			sequence = list.Values
-		default:
-			sequence = append(sequence, element)
-		}
-	} else {
-		for _, expr := range rhs {
-			element, err := expr.Evaluate(state, nil)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			sequence = append(sequence, element)
-		}
-	}
-
-	return sequence, nil, nil
-}
-
-func unpackList(state State, lhs []*Expression, rhs *Expression) (types.Object, error) {
-	element, err := rhs.Evaluate(state, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	switch list := element.(type) {
-	case types.ISequence:
-		lhsLen := types.Int(len(lhs))
-		rhsLen, err := list.Length(state.Context())
-		if err != nil {
-			return nil, err
-		}
-
-		if lhsLen > rhsLen {
-			// TODO: return error
-			panic(fmt.Sprintf("unable to unpack %d elements of %s to %d vars", rhsLen, element.Class().Name, lhsLen))
-		}
-
-		ctx := state.Context()
-		var i types.Int
-		resultList := types.NewList()
-		for i = 0; i < lhsLen-1; i++ {
-			value, err := list.GetElement(ctx, i)
-			if err != nil {
-				return nil, err
-			}
-
-			item, err := lhs[i].Evaluate(state, value)
-			if err != nil {
-				return nil, err
-			}
-
-			resultList.Values = append(resultList.Values, item)
-		}
-
-		listLen, err := list.Length(state.Context())
-		if i < listLen-1 {
-			rest, err := list.Slice(ctx, i, listLen)
-			if err != nil {
-				return nil, err
-			}
-
-			resultList.Values = append(resultList.Values, rest)
-		} else {
-			value, err := list.GetElement(ctx, i)
-			if err != nil {
-				return nil, err
-			}
-
-			element, err := lhs[i].Evaluate(state, value)
-			if err != nil {
-				return nil, err
-			}
-
-			resultList.Values = append(resultList.Values, element)
-		}
-
-		return resultList, nil
-	}
-
-	// TODO: return error
-	return nil, types.NewErrorf("unable to unpack %s", element.Class().Name)
 }
 
 func evalReturnTypes(state State, returnTypes []*ReturnType) ([]types.MethodReturnType, error) {

@@ -36,7 +36,7 @@ type IGoInt interface {
 }
 
 type ICall interface {
-	call(args Tuple) (Object, error)
+	call(ctx Context, args Tuple) (Object, error)
 }
 
 type IGetAttribute interface {

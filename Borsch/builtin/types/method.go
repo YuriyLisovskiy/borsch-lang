@@ -1,6 +1,8 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type methodType int8
 
@@ -126,7 +128,7 @@ func (value *Method) Class() *Class {
 	}
 }
 
-func (value *Method) call(args Tuple) (Object, error) {
+func (value *Method) call(parentCtx Context, args Tuple) (Object, error) {
 	pLen := len(value.Parameters)
 	aLen := len(args)
 	if pLen != aLen {
@@ -152,28 +154,11 @@ func (value *Method) call(args Tuple) (Object, error) {
 		return nil, err
 	}
 
-	// TODO: check result
-	prefix := ""
-	if len(value.ReturnTypes) > 1 {
-		prefix = "одним із типів"
-	} else {
-		prefix = "типу"
+	if err = value.checkCallResult(result); err != nil {
+		return nil, err
 	}
 
-	names := ""
-	for i, retType := range value.ReturnTypes {
-		// Check for derived types and "any" type.
-		if retType.Class == result.Class() {
-			return result, nil
-		}
-
-		names += retType.Class.Name
-		if i < len(value.ReturnTypes)-1 {
-			names += ", "
-		}
-	}
-
-	return nil, NewTypeErrorf("повернене значення має бути %s ʼ%sʼ, отримано ʼ%sʼ", prefix, names, result.Class().Name)
+	return result, nil
 }
 
 func (value *Method) IsMethod() bool {
@@ -189,7 +174,7 @@ func (value *Method) IsLambda() bool {
 }
 
 func checkArg(parameter *MethodParameter, arg Object) error {
-	if parameter.accepts(AnyClass) {
+	if parameter.accepts(ObjectClass) {
 		return nil
 	}
 
@@ -236,7 +221,63 @@ func checkArg(parameter *MethodParameter, arg Object) error {
 	)
 }
 
-func checkReturnValue(cls *Class, returnValue Object) error {
-	// TODO:
-	return nil
+func (value *Method) checkCallResult(result Object) error {
+	switch retLen := len(value.ReturnTypes); retLen {
+	case 0:
+		panic("unreachable")
+	case 1:
+		if accepts(value.ReturnTypes[0].Class, result.Class()) {
+			return nil
+		}
+	default:
+		resultTuple, ok := result.(*Tuple)
+		if !ok {
+			return NewTypeErrorf(
+				"результат виклику має бути типу ʼ%sʼ, отримано ʼ%sʼ",
+				TupleClass.Name,
+				result.Class().Name,
+			)
+		}
+
+		tuple := *resultTuple
+		tupleLen := len(tuple)
+		if tupleLen != retLen {
+			mismatchInfo := ""
+			if tupleLen > retLen {
+				mismatchInfo = "недостатню"
+			} else {
+				mismatchInfo = "занадто велику"
+			}
+
+			return NewRuntimeErrorf(
+				"результат виклику містить %s кількість значень, очікується %d, отримано %d",
+				mismatchInfo,
+				retLen,
+				tupleLen,
+			)
+		}
+
+		for i, ret := range value.ReturnTypes {
+			if accepts(ret.Class, tuple[i].Class()) {
+				return nil
+			}
+		}
+	}
+
+	names := ""
+	for i, retType := range value.ReturnTypes {
+		names += retType.Class.Name
+		if i < len(value.ReturnTypes)-1 {
+			names += ", "
+		}
+	}
+
+	prefix := ""
+	if len(value.ReturnTypes) > 1 {
+		prefix = "одним із типів"
+	} else {
+		prefix = "типу"
+	}
+
+	return NewTypeErrorf("результат виклику має бути %s ʼ%sʼ, отримано ʼ%sʼ", prefix, names, result.Class().Name)
 }

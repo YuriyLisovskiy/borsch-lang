@@ -57,13 +57,18 @@ func (value *Package) setAttribute(_ Context, name string, newValue Object) erro
 	return setAttributeTo(value, &value.Dict, attr, name, newValue)
 }
 
-func (value *Package) deleteAttribute(_ Context, name string) (Object, error) {
+func (value *Package) deleteAttribute(ctx Context, name string) (Object, error) {
 	if attr, ok := value.Dict[name]; ok {
 		delete(value.Dict, name)
 		return attr, nil
 	}
 
-	if attr := value.Class().DeleteAttributeOrNil(name); attr != nil {
+	attr, err := value.Class().deleteAttribute(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if attr != nil {
 		return attr, nil
 	}
 

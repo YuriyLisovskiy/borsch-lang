@@ -12,16 +12,12 @@ const (
 	SubOp
 	MulOp
 	DivOp
-	UnaryMinus
-	UnaryPlus
 
 	// logical
 	AndOp
 	OrOp
-	NotOp
 
 	// bitwise
-	UnaryBitwiseNotOp
 	BitwiseLeftShiftOp
 	BitwiseRightShiftOp
 	BitwiseAndOp
@@ -38,6 +34,18 @@ const (
 
 	// other operators
 	CallOp
+
+	// math: unary operators
+	UnaryMinus
+	UnaryPlus
+
+	// logical: unary operators
+	NotOp
+
+	// bitwise: unary operators
+	UnaryBitwiseNotOp
+
+	// other: unary operators
 	LengthOp
 	BoolOp
 	IntOp
@@ -52,12 +60,8 @@ var opTypesToSignatures = map[OperatorHash]string{
 	SubOp:               "-",
 	MulOp:               "*",
 	DivOp:               "/",
-	UnaryMinus:          "-",
-	UnaryPlus:           "+",
 	AndOp:               "&&",
 	OrOp:                "||",
-	NotOp:               "!",
-	UnaryBitwiseNotOp:   "~",
 	BitwiseLeftShiftOp:  "<<",
 	BitwiseRightShiftOp: ">>",
 	BitwiseAndOp:        "&",
@@ -69,39 +73,47 @@ var opTypesToSignatures = map[OperatorHash]string{
 	GreaterOrEqualsOp:   ">=",
 	LessOp:              "<",
 	LessOrEqualsOp:      "<=",
-	CallOp:              "__виклик__",
-	LengthOp:            "__довжина__",
-	BoolOp:              "__логічне__",
-	IntOp:               "__ціле__",
-	StringOp:            "__рядок__",
-	RepresentationOp:    "__представлення__",
+
+	CallOp: "__виклик__",
+
+	UnaryMinus:        "-",
+	UnaryPlus:         "+",
+	NotOp:             "!",
+	UnaryBitwiseNotOp: "~",
+	LengthOp:          "__довжина__",
+	BoolOp:            "__логічне__",
+	IntOp:             "__ціле__",
+	StringOp:          "__рядок__",
+	RepresentationOp:  "__представлення__",
 }
 
 var opSignaturesToHashes = map[string]OperatorHash{
-	"**":                PowOp,
-	"%":                 ModuloOp,
-	"+":                 AddOp,
-	"-":                 SubOp,
-	"*":                 MulOp,
-	"/":                 DivOp,
+	"**": PowOp,
+	"%":  ModuloOp,
+	"+":  AddOp,
+	"-":  SubOp,
+	"*":  MulOp,
+	"/":  DivOp,
+	"&&": AndOp,
+	"||": OrOp,
+	"<<": BitwiseLeftShiftOp,
+	">>": BitwiseRightShiftOp,
+	"&":  BitwiseAndOp,
+	"^":  BitwiseXorOp,
+	"|":  BitwiseOrOp,
+	"==": EqualsOp,
+	"!=": NotEqualsOp,
+	">":  GreaterOp,
+	">=": GreaterOrEqualsOp,
+	"<":  LessOp,
+	"<=": LessOrEqualsOp,
+
+	"__виклик__": CallOp,
+
 	"_-":                UnaryMinus,
 	"_+":                UnaryPlus,
-	"&&":                AndOp,
-	"||":                OrOp,
 	"!":                 NotOp,
 	"~":                 UnaryBitwiseNotOp,
-	"<<":                BitwiseLeftShiftOp,
-	">>":                BitwiseRightShiftOp,
-	"&":                 BitwiseAndOp,
-	"^":                 BitwiseXorOp,
-	"|":                 BitwiseOrOp,
-	"==":                EqualsOp,
-	"!=":                NotEqualsOp,
-	">":                 GreaterOp,
-	">=":                GreaterOrEqualsOp,
-	"<":                 LessOp,
-	"<=":                LessOrEqualsOp,
-	"__виклик__":        CallOp,
 	"__довжина__":       LengthOp,
 	"__логічне__":       BoolOp,
 	"__ціле__":          IntOp,
@@ -110,30 +122,32 @@ var opSignaturesToHashes = map[string]OperatorHash{
 }
 
 var opNames = []string{
-	"**",        // **
-	"%",         // %
-	"+",         // +
-	"-",         // -
-	"*",         // *
-	"/",         // /
+	"**", // **
+	"%",  // %
+	"+",  // +
+	"-",  // -
+	"*",  // *
+	"/",  // /
+	"&&", // &&
+	"||", // ||
+	"<<", // <<
+	">>", // >>
+	"&",  // &
+	"^",  // ^   TODO: підібрати відповідник до XOR
+	"|",  // |
+	"==", // ==
+	"!=", // !=
+	">",  // >
+	">=", // >=
+	"<",  // <
+	"<=", // <=
+
+	"__виклик__",
+
 	"унарний -", // -
 	"унарний +", // +
-	"&&",        // &&
-	"||",        // ||
 	"!",         // !
 	"~",         // ~
-	"<<",        // <<
-	">>",        // >>
-	"&",         // &
-	"^",         // ^   TODO: підібрати відповідник до XOR
-	"|",         // |
-	"==",        // ==
-	"!=",        // !=
-	">",         // >
-	">=",        // >=
-	"<",         // <
-	"<=",        // <=
-	"__виклик__",
 	"__довжина__",
 	"__логічне__",
 	"__ціле__",
@@ -152,6 +166,14 @@ func OperatorHashFromString(signature string) OperatorHash {
 			signature,
 		),
 	)
+}
+
+func (op OperatorHash) IsUnary() bool {
+	return op >= UnaryMinus
+}
+
+func (op OperatorHash) IsBinary() bool {
+	return op <= LessOrEqualsOp
 }
 
 func (op OperatorHash) Sign() string {

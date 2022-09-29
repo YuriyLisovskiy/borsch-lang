@@ -86,7 +86,18 @@ func (node *ClassMember) Evaluate(state State, class *types.Class) (types.Object
 	}
 
 	if node.Operator != nil {
-		operator, err := node.Operator.Evaluate(state, nil)
+		operator, err := node.Operator.Evaluate(
+			state,
+			func(parameters []types.MethodParameter, returnTypes []types.MethodReturnType, opName string) error {
+				opHash := common.OperatorHashFromString(opName)
+				paramsCount := getParamsCountOfOperator(opHash)
+				if err := checkOperator(class, parameters, returnTypes, paramsCount, opHash); err != nil {
+					return err
+				}
+
+				return nil
+			},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -132,4 +143,21 @@ func checkConstructor(_ []types.MethodParameter, returnTypes []types.MethodRetur
 	}
 
 	return nil
+}
+
+// getParamsCountOfOperator returns a count of parameters minus 1,
+// which can be present in the operator depending on whether it is
+// the binary, unary or multi-parameter operator.
+//
+// Attention: -1 marks multi-parameter operator.
+func getParamsCountOfOperator(op common.OperatorHash) int {
+	if op.IsUnary() {
+		return 0
+	}
+
+	if op.IsBinary() {
+		return 1
+	}
+
+	return -1
 }
