@@ -22,7 +22,8 @@ func AssertionErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 		return nil, err
 	}
 
-	return &AssertionError{message: message}, nil
+	e := &AssertionError{message: message}
+	return e, nil
 }
 
 func NewAssertionError(text string) *AssertionError {

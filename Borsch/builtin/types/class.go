@@ -87,6 +87,8 @@ func (value *Class) ClassNew(
 
 	cls.New = newF
 	cls.Construct = constructF
+
+	// initInstance(cls, &cls.Dict, TypeClass)
 	return cls
 }
 
@@ -232,25 +234,6 @@ func (value *Class) string(ctx Context) (Object, error) {
 				common.StringOp.Name(),
 				result.Class().Name,
 			)
-
-			// if method, ok := attr.(ICall); ok {
-			// 	result, err := method.call([]Object{value})
-			// 	if err != nil {
-			// 		return nil, err
-			// 	}
-			//
-			// 	if _, ok := result.(String); ok {
-			// 		return result, nil
-			// 	}
-			//
-			// 	return nil, NewTypeErrorf(
-			// 		"%s повернув не рядковий тип, а '%s'",
-			// 		builtin.StringOperatorName,
-			// 		result.Class().Name,
-			// 	)
-			// }
-			//
-			// return nil, NewErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
 		}
 	}
 
@@ -390,6 +373,8 @@ func (value *Class) Lookup(name string) Object {
 			return res
 		}
 	}
+
+	// TODO: lookup bases properly!
 
 	return nil
 }

@@ -24,16 +24,12 @@ func PackageNew(filename string, parent *Package, ctx Context) *Package {
 		Parent:  parent,
 		Context: ctx,
 	}
-	pkg.init()
+	initInstance(pkg, &pkg.Dict, pkg.Class())
 	return pkg
 }
 
 func (value *Package) Class() *Class {
 	return PackageClass
-}
-
-func (value *Package) init() {
-	initInstance(value, &value.Dict, value.Class())
 }
 
 func (value *Package) represent(Context) (Object, error) {

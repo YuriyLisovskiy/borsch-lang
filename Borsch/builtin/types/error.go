@@ -26,10 +26,6 @@ func (value *Error) Class() *Class {
 	return ErrorClass
 }
 
-func (value *Error) init() {
-	initInstance(value, &value.dict, value.Class())
-}
-
 func ErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	message, err := errorMessageFromArgs(ctx, cls, args)
 	if err != nil {
@@ -37,19 +33,19 @@ func ErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	}
 
 	e := &Error{message: message}
-	e.init()
+	initInstance(e, &e.dict, e.Class())
 	return e, nil
 }
 
 func NewError(text string) *Error {
 	e := &Error{message: text}
-	e.init()
+	initInstance(e, &e.dict, e.Class())
 	return e
 }
 
 func NewErrorf(format string, args ...interface{}) *Error {
 	e := &Error{message: fmt.Sprintf(format, args...)}
-	e.init()
+	initInstance(e, &e.dict, e.Class())
 	return e
 }
 
