@@ -128,7 +128,14 @@ func ToGoInt(ctx Context, a Object) (int, error) {
 
 func GetAttribute(ctx Context, self Object, name string) (Object, error) {
 	if v, ok := self.(IGetAttribute); ok {
-		return v.getAttribute(ctx, name)
+		attr, err := v.getAttribute(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+
+		if attr != nil {
+			return attr, nil
+		}
 	}
 
 	return nil, NewErrorf("'%s' не містить атрибута '%s'", self.Class().Name, name)
@@ -144,7 +151,14 @@ func SetAttribute(ctx Context, self Object, name string, value Object) error {
 
 func DeleteAttribute(ctx Context, self Object, name string) (Object, error) {
 	if v, ok := self.(IDeleteAttribute); ok {
-		return v.deleteAttribute(ctx, name)
+		attr, err := v.deleteAttribute(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+
+		if attr != nil {
+			return attr, nil
+		}
 	}
 
 	return nil, NewErrorf("'%s' не містить атрибута '%s'", self.Class().Name, name)

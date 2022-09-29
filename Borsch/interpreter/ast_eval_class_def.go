@@ -38,7 +38,10 @@ func (node *ClassDef) Evaluate(state State) (types.Object, error) {
 	}
 
 	cls := types.ObjectClass.ClassNew(node.Name.String(), map[string]types.Object{}, node.IsFinal, nil, nil)
-	cls.Bases = append(cls.Bases, bases...)
+	// cls.Bases = append(cls.Bases, bases...)
+	if len(bases) > 0 {
+		cls.Bases = bases
+	}
 
 	err := ctx.SetVar(node.Name.String(), cls)
 	if err != nil {

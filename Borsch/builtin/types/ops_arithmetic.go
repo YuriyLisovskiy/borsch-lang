@@ -2,12 +2,13 @@ package types
 
 func Add(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IAdd); ok {
-		return v.add(ctx, b)
-	}
+		result, err := v.add(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedAdd); ok {
-			return v.reversedAdd(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -20,12 +21,13 @@ func Add(ctx Context, a, b Object) (Object, error) {
 
 func Sub(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(ISub); ok {
-		return v.sub(ctx, b)
-	}
+		result, err := v.sub(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedSub); ok {
-			return v.reversedSub(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -38,12 +40,13 @@ func Sub(ctx Context, a, b Object) (Object, error) {
 
 func Div(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IDiv); ok {
-		return v.div(ctx, b)
-	}
+		result, err := v.div(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedDiv); ok {
-			return v.reversedDiv(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -56,12 +59,13 @@ func Div(ctx Context, a, b Object) (Object, error) {
 
 func Mul(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IMul); ok {
-		return v.mul(ctx, b)
-	}
+		result, err := v.mul(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedMul); ok {
-			return v.reversedMul(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -74,12 +78,13 @@ func Mul(ctx Context, a, b Object) (Object, error) {
 
 func Mod(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IMod); ok {
-		return v.mod(ctx, b)
-	}
+		result, err := v.mod(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedMod); ok {
-			return v.reversedMod(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -92,12 +97,13 @@ func Mod(ctx Context, a, b Object) (Object, error) {
 
 func Pow(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IPow); ok {
-		return v.pow(ctx, b)
-	}
+		result, err := v.pow(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedPow); ok {
-			return v.reversedPow(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -110,7 +116,14 @@ func Pow(ctx Context, a, b Object) (Object, error) {
 
 func Positive(ctx Context, a Object) (Object, error) {
 	if v, ok := a.(IPositive); ok {
-		return v.positive(ctx)
+		result, err := v.positive(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
 	return nil, NewErrorf(
@@ -121,7 +134,14 @@ func Positive(ctx Context, a Object) (Object, error) {
 
 func Negate(ctx Context, a Object) (Object, error) {
 	if v, ok := a.(INegate); ok {
-		return v.negate(ctx)
+		result, err := v.negate(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
 	return nil, NewErrorf(

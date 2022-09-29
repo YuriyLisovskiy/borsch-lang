@@ -41,12 +41,12 @@ type MethodParameter struct {
 }
 
 func (value *MethodParameter) accepts(class *Class) bool {
-	if value.Class != nil && value.Class == class {
+	if value.Class != nil && (value.Class == class || value.Class.IsBaseOf(class)) {
 		return true
 	}
 
 	for _, cls := range value.Classes {
-		if cls.Class() == class {
+		if cls.Class() == class || cls.Class().IsBaseOf(class) {
 			return true
 		}
 	}

@@ -33,6 +33,7 @@ const (
 	LessOrEqualsOp
 
 	// other operators
+	ConstructorOp
 	CallOp
 
 	// math: unary operators
@@ -74,7 +75,8 @@ var opTypesToSignatures = map[OperatorHash]string{
 	LessOp:              "<",
 	LessOrEqualsOp:      "<=",
 
-	CallOp: "__виклик__",
+	ConstructorOp: "__конструктор__",
+	CallOp:        "__виклик__",
 
 	UnaryMinus:        "-",
 	UnaryPlus:         "+",
@@ -108,7 +110,8 @@ var opSignaturesToHashes = map[string]OperatorHash{
 	"<":  LessOp,
 	"<=": LessOrEqualsOp,
 
-	"__виклик__": CallOp,
+	"__конструктор__": ConstructorOp,
+	"__виклик__":      CallOp,
 
 	"_-":                UnaryMinus,
 	"_+":                UnaryPlus,
@@ -142,6 +145,7 @@ var opNames = []string{
 	"<",  // <
 	"<=", // <=
 
+	"__конструктор__",
 	"__виклик__",
 
 	"унарний -", // -
