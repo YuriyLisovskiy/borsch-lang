@@ -5,7 +5,7 @@ var Time string
 const (
 	LanguageName = "Борщ"
 	Author       = "Yuriy Lisovskiy"
-	Years        = "2021"
+	Years        = "2021-2022"
 	Version      = "0.1.0"
 	License      = `MIT License
 

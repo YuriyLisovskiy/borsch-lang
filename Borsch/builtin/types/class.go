@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 var (
 	ObjectClass = ClassNew("об_єкт", []*Class{}, map[string]Object{}, false, nil, nil)
 
 	TypeClass = ObjectClass.ClassNew("тип", map[string]Object{}, true, nil, nil)
-	AnyClass  = ClassNew("довільний", []*Class{}, map[string]Object{}, true, nil, nil)
 )
 
 type (
@@ -19,10 +19,11 @@ type (
 )
 
 type Class struct {
-	Name    string
-	Dict    map[string]Object
-	Bases   []*Class
-	IsFinal bool
+	Name      string
+	Dict      StringDict
+	Operators map[common.OperatorHash]*Method
+	Bases     []*Class
+	IsFinal   bool
 
 	New       NewFunc
 	Construct ConstructFunc
@@ -47,10 +48,11 @@ func ClassNew(
 	constructF ConstructFunc,
 ) *Class {
 	return &Class{
-		Name:    name,
-		Dict:    attributes,
-		Bases:   bases,
-		IsFinal: isFinal,
+		Name:      name,
+		Dict:      attributes,
+		Operators: map[common.OperatorHash]*Method{},
+		Bases:     bases,
+		IsFinal:   isFinal,
 
 		New:       newF,
 		Construct: constructF,
@@ -67,10 +69,11 @@ func (value *Class) ClassNew(
 	constructF ConstructFunc,
 ) *Class {
 	cls := &Class{
-		Name:    name,
-		Dict:    attributes,
-		Bases:   []*Class{value},
-		IsFinal: isFinal,
+		Name:      name,
+		Dict:      attributes,
+		Operators: map[common.OperatorHash]*Method{},
+		Bases:     []*Class{value},
+		IsFinal:   isFinal,
 
 		ClassType: nil,
 	}
@@ -84,10 +87,12 @@ func (value *Class) ClassNew(
 
 	cls.New = newF
 	cls.Construct = constructF
+
+	// initInstance(cls, &cls.Dict, TypeClass)
 	return cls
 }
 
-func (value *Class) Allocate(attributes map[string]Object) *Class {
+func (value *Class) allocate(attributes map[string]Object) *Class {
 	instance := &Class{
 		Name:    "",
 		Dict:    attributes,
@@ -97,20 +102,35 @@ func (value *Class) Allocate(attributes map[string]Object) *Class {
 		ClassType: value,
 	}
 
-	for name, attr := range value.Dict {
-		if m, ok := attr.(*Method); ok && m.IsMethod() {
-			instance.Dict[name] = &MethodWrapper{
-				Method:   m,
-				Instance: instance,
-			}
-		}
-	}
+	initAttributes(value, instance)
+
+	// for _, base := range value.Bases {
+	//
+	// }
+	//
+	// for name, attr := range value.Dict {
+	// 	if wrapped, ok := wrapMethod(instance, attr); ok {
+	// 		instance.Dict[name] = wrapped
+	// 	}
+	// }
 
 	return instance
 }
 
+func initAttributes(cls, instance *Class) {
+	for _, base := range cls.Bases {
+		initAttributes(base, instance)
+	}
+
+	for name, attr := range cls.Dict {
+		if wrapped, ok := wrapMethod(instance, attr); ok {
+			instance.Dict[name] = wrapped
+		}
+	}
+}
+
 func (value *Class) Class() *Class {
-	if value.ClassType != nil {
+	if value.IsInstance() {
 		return value.ClassType
 	}
 
@@ -125,27 +145,56 @@ func (value *Class) AddAttributes(attributes map[string]Object) {
 	value.Dict = attributes
 }
 
-func (value *Class) represent(Context) (Object, error) {
-	if value.ClassType != nil {
-		if attr := value.NativeGetAttributeOrNil(builtin.RepresentationOperatorName); attr != nil {
-			if method, ok := attr.(ICall); ok {
-				result, err := method.call([]Object{value})
-				if err != nil {
-					return nil, err
-				}
+func (value *Class) call(ctx Context, args Tuple) (Object, error) {
+	if value.IsInstance() {
+		if attr := value.GetOperatorOrNil(common.CallOp); attr != nil {
+			return Call(ctx, attr, append(Tuple{value}, args...))
+		}
 
-				if _, ok := result.(String); ok {
-					return result, nil
-				}
+		return nil, NewTypeErrorf("обʼєкт ʼ%sʼ не може бути викликаний", value.Class().Name)
+	}
 
-				return nil, NewTypeErrorf(
-					"%s повернув не рядковий тип, а '%s'",
-					builtin.RepresentationOperatorName,
-					result.Class().Name,
-				)
-			}
+	// Create instance of the class.
+	instance, err := value.New(ctx, value, args)
+	if err != nil {
+		return nil, err
+	}
 
-			return nil, NewTypeErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
+	if value.Construct != nil {
+		err = value.Construct(ctx, instance, args)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return instance, nil
+}
+
+func (value *Class) getAttribute(_ Context, name string) (Object, error) {
+	// TODO: call __отримати_атрибут__ method if exists
+
+	// The (nil, nil) result forces the caller to return the default error.
+	return value.GetAttributeOrNil(name), nil
+}
+
+func (value *Class) setAttribute(_ Context, name string, newValue Object) error {
+	return setAttributeTo(value, &value.Dict, value.GetAttributeOrNil(name), name, newValue)
+}
+
+func (value *Class) deleteAttribute(_ Context, name string) (Object, error) {
+	if attr, ok := value.Dict[name]; ok {
+		delete(value.Dict, name)
+		return attr, nil
+	}
+
+	// The (nil, nil) result forces the caller to return the default error.
+	return nil, nil
+}
+
+func (value *Class) represent(ctx Context) (Object, error) {
+	if value.IsInstance() {
+		if attr := value.GetOperatorOrNil(common.RepresentationOp); attr != nil {
+			return Call(ctx, attr, Tuple{value})
 		}
 
 		return String(fmt.Sprintf("<об'єкт '%s' з адресою %p>", value.Class().Name, value)), nil
@@ -155,35 +204,152 @@ func (value *Class) represent(Context) (Object, error) {
 }
 
 func (value *Class) string(ctx Context) (Object, error) {
-	if attr := value.NativeGetAttributeOrNil(builtin.StringOperatorName); attr != nil {
-		if method, ok := attr.(ICall); ok {
-			result, err := method.call([]Object{value})
-			if err != nil {
-				return nil, err
-			}
-
-			if _, ok := result.(String); ok {
-				return result, nil
-			}
-
-			return nil, NewTypeErrorf(
-				"%s повернув не рядковий тип, а '%s'",
-				builtin.StringOperatorName,
-				result.Class().Name,
-			)
+	if value.IsInstance() {
+		if attr := value.GetOperatorOrNil(common.StringOp); attr != nil {
+			return Call(ctx, attr, Tuple{value})
 		}
-
-		return nil, NewErrorf("об'єкт '%s' не може бути викликаний", attr.Class().Name)
 	}
 
 	return value.represent(ctx)
 }
 
+func (value *Class) toInt(ctx Context) (Object, error) {
+	if value.IsInstance() {
+		if attr := value.GetOperatorOrNil(common.IntOp); attr != nil {
+			result, err := Call(ctx, attr, Tuple{value})
+			if err != nil {
+				return nil, err
+			}
+
+			if _, ok := result.(Int); ok {
+				return result, nil
+			}
+
+			return nil, NewTypeErrorf("%s повернув не цілий тип, а '%s'", common.IntOp.Name(), result.Class().Name)
+		}
+	}
+
+	// Marks that method could not be executed due to incorrect arguments.
+	// Caller should return the default error message in this case.
+	return nil, nil
+}
+
+func (value *Class) pow(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.PowOp)
+}
+
+func (value *Class) mod(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.ModuloOp)
+}
+
+func (value *Class) add(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.AddOp)
+}
+
+func (value *Class) sub(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.SubOp)
+}
+
+func (value *Class) mul(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.MulOp)
+}
+
+func (value *Class) div(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.DivOp)
+}
+
+func (value *Class) negate(ctx Context) (Object, error) {
+	return callUnaryOperator(ctx, value, common.UnaryMinus)
+}
+
+func (value *Class) positive(ctx Context) (Object, error) {
+	return callUnaryOperator(ctx, value, common.UnaryPlus)
+}
+
+func (value *Class) invert(ctx Context) (Object, error) {
+	return callUnaryOperator(ctx, value, common.UnaryBitwiseNotOp)
+}
+
+func (value *Class) shiftLeft(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseLeftShiftOp)
+}
+
+func (value *Class) shiftRight(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseRightShiftOp)
+}
+
+func (value *Class) bitwiseAnd(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseAndOp)
+}
+
+func (value *Class) bitwiseXor(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseXorOp)
+}
+
+func (value *Class) bitwiseOr(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.BitwiseOrOp)
+}
+
+func (value *Class) equals(ctx Context, other Object) (Object, error) {
+	if value.IsInstance() {
+		return callBinaryOperator(ctx, value, other, common.EqualsOp)
+	}
+
+	if o, ok := other.(*Class); ok && !o.IsInstance() {
+		return goBoolToBoolObject(value == o), nil
+	}
+
+	return nil, NewErrorf(
+		"непідтримувані типи операндів для ==: '%s' та '%s'",
+		value.Class().Name,
+		other.Class().Name,
+	)
+}
+
+func (value *Class) notEquals(ctx Context, other Object) (Object, error) {
+	if value.IsInstance() {
+		return callBinaryOperator(ctx, value, other, common.NotEqualsOp)
+	}
+
+	if o, ok := other.(*Class); ok && !o.IsInstance() {
+		return goBoolToBoolObject(value != o), nil
+	}
+
+	return nil, NewErrorf(
+		"непідтримувані типи операндів для !=: '%s' та '%s'",
+		value.Class().Name,
+		other.Class().Name,
+	)
+}
+
+func (value *Class) greater(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.GreaterOp)
+}
+
+func (value *Class) greaterOrEquals(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.GreaterOrEqualsOp)
+}
+
+func (value *Class) less(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.LessOp)
+}
+
+func (value *Class) lessOrEquals(ctx Context, other Object) (Object, error) {
+	return callBinaryOperator(ctx, value, other, common.LessOrEqualsOp)
+}
+
 // Lookup returns an attribute from one of the base class,
 // and doesn't set an exception, but returns nil instead.
 func (value *Class) Lookup(name string) Object {
-	for _, base := range value.Bases {
-		if res, ok := base.Dict[name]; ok {
+	var bases []*Class
+	if value.IsInstance() {
+		bases = value.Class().Bases
+	} else {
+		bases = value.Bases
+	}
+
+	for _, base := range bases {
+		if res := base.GetAttributeOrNil(name); res != nil {
 			return res
 		}
 	}
@@ -219,30 +385,27 @@ func (value *Class) GetAttributeOrNil(name string) Object {
 	return value.Lookup(name)
 }
 
-func (value *Class) DeleteAttributeOrNil(name string) Object {
-	if attr, ok := value.Dict[name]; ok {
-		delete(value.Dict, name)
-		return attr
-	}
-
-	if attr, ok := value.Class().Dict[name]; ok {
-		delete(value.Class().Dict, name)
-		return attr
-	}
-
-	for _, base := range value.Bases {
-		if attr, ok := base.Dict[name]; ok {
-			delete(base.Dict, name)
-			return attr
+func (value *Class) GetOperatorOrNil(op common.OperatorHash) Object {
+	if value.IsInstance() {
+		if res, ok := value.Class().Operators[op]; ok {
+			return res
 		}
+	}
+
+	if res, ok := value.Operators[op]; ok {
+		return res
 	}
 
 	return nil
 }
 
-func (value *Class) HasBase(cls *Class) bool {
-	for _, base := range value.Bases {
-		if base == cls {
+func (value *Class) IsInstance() bool {
+	return value.ClassType != nil
+}
+
+func (value *Class) IsBaseOf(cls *Class) bool {
+	for _, c := range cls.Bases {
+		if value == c || value.IsBaseOf(c) {
 			return true
 		}
 	}
@@ -256,11 +419,11 @@ func ObjectNew(_ Context, cls *Class, args Tuple) (Object, error) {
 		return nil, NewErrorf("об_єкт() не приймає аргументів")
 	}
 
-	return cls.Allocate(map[string]Object{}), nil
+	return cls.allocate(map[string]Object{}), nil
 }
 
-func ObjectConstruct(ctx Context, self Object, args Tuple) error {
-	t := self.Class()
+func ObjectConstruct(ctx Context, instance Object, args Tuple) error {
+	t := instance.Class()
 
 	// Check args for object()
 	if t == ObjectClass && excessArgs(args) {
@@ -268,16 +431,10 @@ func ObjectConstruct(ctx Context, self Object, args Tuple) error {
 	}
 
 	// Call the '__конструктор__' method if it exists.
-	if _, ok := self.(*Class); ok {
-		init := t.GetAttributeOrNil(builtin.ConstructorName)
-		if init != nil {
-			newArgs := make(Tuple, len(args)+1)
-			newArgs[0] = self
-			copy(newArgs[1:], args)
-			_, err := Call(ctx, init, newArgs)
-			if err != nil {
-				return err
-			}
+	if constructor := t.GetOperatorOrNil(common.ConstructorOp); constructor != nil {
+		_, err := Call(ctx, constructor, append([]Object{instance}, args...))
+		if err != nil {
+			return err
 		}
 	}
 
@@ -290,9 +447,6 @@ func TypeNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 		return args[0].Class(), nil
 	}
 
-	// if len(args) != 3 {
-	// 	return nil, NewErrorf("тип() приймає 1 або 3 аргументи")
-	// }
 	return nil, NewErrorf("тип() приймає 1 аргумент")
 }
 
@@ -308,4 +462,24 @@ func TypeConstruct(ctx Context, self Object, args Tuple) error {
 // Return true if any arguments supplied.
 func excessArgs(args Tuple) bool {
 	return len(args) != 0
+}
+
+func callBinaryOperator(ctx Context, a, b Object, opHash common.OperatorHash) (Object, error) {
+	if op, ok := a.Class().Operators[opHash]; ok {
+		return Call(ctx, op, []Object{a, b})
+	}
+
+	// Marks that method could not be executed due to incorrect arguments.
+	// Caller should return the default error message in this case.
+	return nil, nil
+}
+
+func callUnaryOperator(ctx Context, a Object, opHash common.OperatorHash) (Object, error) {
+	if op, ok := a.Class().Operators[opHash]; ok {
+		return Call(ctx, op, []Object{a})
+	}
+
+	// Marks that method could not be executed due to incorrect arguments.
+	// Caller should return the default error message in this case.
+	return nil, nil
 }

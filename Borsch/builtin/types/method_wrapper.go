@@ -11,7 +11,7 @@ func (value *MethodWrapper) Class() *Class {
 	return MethodWrapperClass
 }
 
-func (value *MethodWrapper) call(args Tuple) (Object, error) {
+func (value *MethodWrapper) call(ctx Context, args Tuple) (Object, error) {
 	if value.Instance == nil {
 		return nil, NewValueError("екземпляр класу не існує")
 	}
@@ -20,5 +20,5 @@ func (value *MethodWrapper) call(args Tuple) (Object, error) {
 		return nil, NewValueErrorf("оригінальний метод класу %s не існує", value.Instance.Class().Name)
 	}
 
-	return value.Method.call(append([]Object{value.Instance}, args...))
+	return value.Method.call(ctx, append([]Object{value.Instance}, args...))
 }

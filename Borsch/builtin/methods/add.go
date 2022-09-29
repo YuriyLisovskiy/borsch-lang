@@ -1,8 +1,6 @@
 package methods
 
-import (
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-)
+import "github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 
 func MakeAdd(pkg *types.Package) *types.Method {
 	return types.FunctionNew(
@@ -14,7 +12,7 @@ func MakeAdd(pkg *types.Package) *types.Method {
 				IsVariadic: false,
 			},
 			{
-				Class:      types.AnyClass,
+				Class:      types.ObjectClass,
 				Name:       "елемент",
 				IsVariadic: false,
 			},

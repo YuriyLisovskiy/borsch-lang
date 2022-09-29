@@ -1,11 +1,16 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
 
-var ZeroDivisionErrorClass = ErrorClass.ClassNew("ПомилкаДіленняНаНуль", map[string]Object{}, false, ZeroDivisionErrorNew, nil)
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+)
+
+var ZeroDivisionErrorClass *Class
 
 type ZeroDivisionError struct {
 	message string
+	dict    StringDict
 }
 
 func (value *ZeroDivisionError) Error() string {
@@ -22,15 +27,21 @@ func ZeroDivisionErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 		return nil, err
 	}
 
-	return &ZeroDivisionError{message: message}, nil
+	zeroDivErr := &ZeroDivisionError{message: message}
+	initInstance(zeroDivErr, &zeroDivErr.dict, zeroDivErr.Class())
+	return zeroDivErr, nil
 }
 
 func NewZeroDivisionError(text string) *ZeroDivisionError {
-	return &ZeroDivisionError{message: text}
+	err := &ZeroDivisionError{message: text}
+	initInstance(err, &err.dict, err.Class())
+	return err
 }
 
 func NewZeroDivisionErrorf(format string, args ...interface{}) *ZeroDivisionError {
-	return &ZeroDivisionError{message: fmt.Sprintf(format, args...)}
+	err := &ZeroDivisionError{message: fmt.Sprintf(format, args...)}
+	initInstance(err, &err.dict, err.Class())
+	return err
 }
 
 func (value *ZeroDivisionError) represent(ctx Context) (Object, error) {
@@ -39,4 +50,24 @@ func (value *ZeroDivisionError) represent(ctx Context) (Object, error) {
 
 func (value *ZeroDivisionError) string(_ Context) (Object, error) {
 	return String(value.message), nil
+}
+
+func (value *ZeroDivisionError) getAttribute(_ Context, name string) (Object, error) {
+	return getAttributeFrom(&value.dict, name, value.Class())
+}
+
+func (value *ZeroDivisionError) setAttribute(_ Context, name string, newValue Object) error {
+	attr, ok := value.dict[name]
+	if !ok {
+		attr = value.Class().GetAttributeOrNil(name)
+	}
+
+	return setAttributeTo(value, &value.dict, attr, name, newValue)
+}
+
+func MakeZeroDivisionErrorClassAttributes(pkg *Package) map[string]Object {
+	return map[string]Object{
+		builtin.StringOperatorName:         makeStringMethod(pkg, ZeroDivisionErrorClass),
+		builtin.RepresentationOperatorName: makeRepresentationMethod(pkg, ZeroDivisionErrorClass),
+	}
 }

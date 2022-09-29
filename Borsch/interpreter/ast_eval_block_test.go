@@ -104,7 +104,7 @@ func TestThrow_EvaluateFail_NotAnErrorInstance(t *testing.T) {
 
 func TestUnsafe_EvaluateNoThrow(t *testing.T) {
 	errorIdent := Ident("Error")
-	unsafe := &Unsafe{
+	unsafe := &Block{
 		Stmts: &BlockStmts{
 			Stmts:   []*Stmt{},
 			stmtPos: 0,
@@ -153,7 +153,7 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 	errorClass := types.ErrorClass.ClassNew("CustomError", map[string]types.Object{}, false, nil, nil)
 	errorClassName := Ident(errorClass.Name)
 	errorIdent := Ident("Error")
-	unsafe := &Unsafe{
+	unsafe := &Block{
 		Stmts: &BlockStmts{
 			Stmts:   []*Stmt{{Throw: makeThrowStmt(&errorIdent)}},
 			stmtPos: 0,
@@ -215,7 +215,7 @@ func TestUnsafe_EvaluateThrownAndNotCaught(t *testing.T) {
 func TestUnsafe_EvaluateThrownAndCaught(t *testing.T) {
 	errorIdent := Ident("Error")
 	errorClassName := Ident(types.ErrorClass.Name)
-	unsafe := &Unsafe{
+	unsafe := &Block{
 		Stmts: &BlockStmts{
 			Stmts:   []*Stmt{{Throw: makeThrowStmt(&errorIdent)}},
 			stmtPos: 0,
@@ -270,7 +270,7 @@ func TestUnsafe_EvaluateThrownRethrownAndNotCaught(t *testing.T) {
 	errorIdent := Ident("Error")
 	eIdent := Ident("e")
 	errorClassName := Ident(errorClass.Name)
-	unsafe := &Unsafe{
+	unsafe := &Block{
 		Stmts: &BlockStmts{
 			Stmts:   []*Stmt{{Throw: makeThrowStmt(&errorIdent)}},
 			stmtPos: 0,

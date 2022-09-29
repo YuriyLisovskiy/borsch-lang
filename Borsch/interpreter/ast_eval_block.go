@@ -14,7 +14,7 @@ func (node *Throw) Evaluate(state State) StmtResult {
 	}
 
 	expressionClass := expressionObj.Class()
-	if expressionClass == types.ErrorClass || expressionClass.HasBase(types.ErrorClass) {
+	if expressionClass == types.ErrorClass || types.ErrorClass.IsBaseOf(expressionClass) {
 		state.Trace(node, "")
 		stmtResult := StmtResult{
 			State: StmtThrow,
@@ -43,7 +43,7 @@ func (node *Throw) Evaluate(state State) StmtResult {
 	}
 }
 
-func (node *Unsafe) Evaluate(state State, inFunction, inLoop bool) StmtResult {
+func (node *Block) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 	result := node.Stmts.Evaluate(state, inFunction, inLoop)
 	if result.State != StmtThrow {
 		if result.Err == nil {
@@ -58,14 +58,16 @@ func (node *Unsafe) Evaluate(state State, inFunction, inLoop bool) StmtResult {
 		result.Value = langErr
 	}
 
-	for _, catchBlock := range node.CatchBlocks {
-		blockResult, caught := catchBlock.Evaluate(state, result.Value, inFunction, inLoop)
-		if blockResult.Interrupt() {
-			return blockResult
-		}
+	if len(node.CatchBlocks) > 0 {
+		for _, catchBlock := range node.CatchBlocks {
+			blockResult, caught := catchBlock.Evaluate(state, result.Value, inFunction, inLoop)
+			if blockResult.Interrupt() {
+				return blockResult
+			}
 
-		if caught {
-			return blockResult
+			if caught {
+				return blockResult
+			}
 		}
 	}
 
@@ -99,7 +101,7 @@ func (node *Catch) Evaluate(state State, exception types.Object, inFunction, inL
 		return node.catch(state, exception, inFunction, inLoop)
 	}
 
-	if !errorToCatchClass.HasBase(types.ErrorClass) {
+	if !types.ErrorClass.IsBaseOf(errorToCatchClass) {
 		return StmtResult{
 			Err: state.RuntimeError(
 				fmt.Sprintf(
@@ -126,5 +128,5 @@ func (node *Catch) catch(state State, err types.Object, inFunction, inLoop bool)
 }
 
 func shouldCatch(generated, toCatch *types.Class) bool {
-	return generated == toCatch || generated.HasBase(toCatch)
+	return generated == toCatch || toCatch.IsBaseOf(generated)
 }

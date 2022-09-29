@@ -2,12 +2,13 @@ package types
 
 func ShiftLeft(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IShiftLeft); ok {
-		return v.shiftLeft(ctx, b)
-	}
+		result, err := v.shiftLeft(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedShiftLeft); ok {
-			return v.reversedShiftLeft(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -20,12 +21,13 @@ func ShiftLeft(ctx Context, a, b Object) (Object, error) {
 
 func ShiftRight(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IShiftRight); ok {
-		return v.shiftRight(ctx, b)
-	}
+		result, err := v.shiftRight(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedShiftRight); ok {
-			return v.reversedShiftRight(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -38,12 +40,13 @@ func ShiftRight(ctx Context, a, b Object) (Object, error) {
 
 func BitwiseOr(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IBitwiseOr); ok {
-		return v.bitwiseOr(ctx, b)
-	}
+		result, err := v.bitwiseOr(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedBitwiseOr); ok {
-			return v.reversedBitwiseOr(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -56,12 +59,13 @@ func BitwiseOr(ctx Context, a, b Object) (Object, error) {
 
 func BitwiseXor(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IBitwiseXor); ok {
-		return v.bitwiseXor(ctx, b)
-	}
+		result, err := v.bitwiseXor(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedBitwiseXor); ok {
-			return v.reversedBitwiseXor(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -74,12 +78,13 @@ func BitwiseXor(ctx Context, a, b Object) (Object, error) {
 
 func BitwiseAnd(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IBitwiseAnd); ok {
-		return v.bitwiseAnd(ctx, b)
-	}
+		result, err := v.bitwiseAnd(ctx, b)
+		if err != nil {
+			return nil, err
+		}
 
-	if a.Class() != b.Class() {
-		if v, ok := b.(IReversedBitwiseAnd); ok {
-			return v.reversedBitwiseAnd(ctx, a)
+		if result != nil {
+			return result, nil
 		}
 	}
 
@@ -92,7 +97,14 @@ func BitwiseAnd(ctx Context, a, b Object) (Object, error) {
 
 func Invert(ctx Context, a Object) (Object, error) {
 	if v, ok := a.(IInvert); ok {
-		return v.invert(ctx)
+		result, err := v.invert(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
 	return nil, NewErrorf(

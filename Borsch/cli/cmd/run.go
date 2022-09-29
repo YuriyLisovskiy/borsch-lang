@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
@@ -116,4 +117,18 @@ func init() {
 		&filenameArg, "file", "f", "", "початковий файл програми",
 	)
 	rootCmd.AddCommand(runCmd)
+}
+
+func processParseError(text string) string {
+	return strings.Replace(
+		strings.Replace(
+			text,
+			"unexpected token",
+			"неочікуваний токен",
+			1,
+		),
+		"expected",
+		"очікуваний",
+		1,
+	)
 }

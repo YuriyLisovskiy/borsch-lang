@@ -17,8 +17,6 @@ func (node *BlockStmts) String() string {
 func (node *Stmt) String() string {
 	if node.Throw != nil {
 		return node.Throw.String()
-	} else if node.Unsafe != nil {
-		return node.Unsafe.String()
 	} else if node.IfStmt != nil {
 		return node.IfStmt.String("")
 	} else if node.LoopStmt != nil {
@@ -48,8 +46,8 @@ func (node *Throw) String() string {
 	return fmt.Sprintf("панікувати %s", node.Expression.String())
 }
 
-func (node *Unsafe) String() string {
-	return "небезпечно"
+func (node *Block) String() string {
+	return "блок"
 }
 
 func (node *Catch) String() string {

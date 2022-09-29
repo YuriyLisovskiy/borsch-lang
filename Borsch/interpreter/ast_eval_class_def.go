@@ -6,6 +6,7 @@ import (
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 func (node *ClassDef) Evaluate(state State) (types.Object, error) {
@@ -37,7 +38,10 @@ func (node *ClassDef) Evaluate(state State) (types.Object, error) {
 	}
 
 	cls := types.ObjectClass.ClassNew(node.Name.String(), map[string]types.Object{}, node.IsFinal, nil, nil)
-	cls.Bases = append(cls.Bases, bases...)
+	// cls.Bases = append(cls.Bases, bases...)
+	if len(bases) > 0 {
+		cls.Bases = bases
+	}
 
 	err := ctx.SetVar(node.Name.String(), cls)
 	if err != nil {
@@ -85,8 +89,24 @@ func (node *ClassMember) Evaluate(state State, class *types.Class) (types.Object
 	}
 
 	if node.Operator != nil {
-		// TODO:
-		return nil, errors.New(fmt.Sprintf("unreachable: оператор %s", node.Operator.Op))
+		operator, err := node.Operator.Evaluate(
+			state,
+			func(parameters []types.MethodParameter, returnTypes []types.MethodReturnType, opName string) error {
+				opHash := common.OperatorHashFromString(opName)
+				paramsCount := getParamsCountOfOperator(opHash)
+				if err := checkOperator(class, parameters, returnTypes, paramsCount, opHash); err != nil {
+					return err
+				}
+
+				return nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		class.Operators[common.OperatorHashFromString(operator.Name)] = operator
+		return operator, nil
 	}
 
 	if node.Class != nil {
@@ -126,4 +146,21 @@ func checkConstructor(_ []types.MethodParameter, returnTypes []types.MethodRetur
 	}
 
 	return nil
+}
+
+// getParamsCountOfOperator returns a count of parameters minus 1,
+// which can be present in the operator depending on whether it is
+// the binary, unary or multi-parameter operator.
+//
+// Attention: -1 marks multi-parameter operator.
+func getParamsCountOfOperator(op common.OperatorHash) int {
+	if op.IsUnary() {
+		return 0
+	}
+
+	if op.IsBinary() {
+		return 1
+	}
+
+	return -1
 }

@@ -19,20 +19,22 @@ var (
 func init() {
 	types.ErrorClass.AddAttributes(types.MakeErrorClassAttributes(BuiltinPackage))
 	// types.TypeErrorClass.AddAttributes(types.MakeErrorClassAttributes(BuiltinPackage))
+	types.ZeroDivisionErrorClass.AddAttributes(types.MakeZeroDivisionErrorClassAttributes(BuiltinPackage))
 
 	addMethod := methods.MakeAdd(BuiltinPackage)
 	printlnMethod := methods.MakePrintln(BuiltinPackage)
 	assertMethod := methods.MakeAssert(BuiltinPackage)
 
 	GlobalScope = map[string]types.Object{
+		types.ObjectClass.Name: types.ObjectClass,
+		types.TypeClass.Name:   types.TypeClass,
+
 		types.BoolClass.Name:   types.BoolClass,
 		types.IntClass.Name:    types.IntClass,
 		types.ListClass.Name:   types.ListClass,
 		types.RealClass.Name:   types.RealClass,
 		types.StringClass.Name: types.StringClass,
 		types.TupleClass.Name:  types.TupleClass,
-
-		types.TypeClass.Name: types.TypeClass,
 
 		types.ErrorClass.Name:                types.ErrorClass,
 		types.RuntimeErrorClass.Name:         types.RuntimeErrorClass,

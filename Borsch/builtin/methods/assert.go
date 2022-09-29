@@ -26,7 +26,7 @@ func MakeAssert(pkg *types.Package) *types.Method {
 		},
 		func(ctx types.Context, args types.Tuple, kwargs types.StringDict) (types.Object, error) {
 			if args[0].(types.Bool) {
-				return nil, nil
+				return types.Nil, nil
 			}
 
 			return nil, types.NewAssertionError(string(args[1].(types.String)))

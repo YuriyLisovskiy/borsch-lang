@@ -1,17 +1,21 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+)
 
 type LangException interface {
 	Error() string
 	Class() *Class
 }
 
-var ErrorClass = ObjectClass.ClassNew("Помилка", map[string]Object{}, false, ErrorNew, nil)
+var ErrorClass *Class
 
 type Error struct {
 	message string
-	dict    map[string]Object
+	dict    StringDict
 }
 
 func (value *Error) Error() string {
@@ -22,20 +26,6 @@ func (value *Error) Class() *Class {
 	return ErrorClass
 }
 
-func allocate(instance *Error, cls *Class) {
-	if cls.Dict != nil {
-		instance.dict = map[string]Object{}
-		for name, attr := range cls.Dict {
-			if m, ok := attr.(*Method); ok && m.IsMethod() {
-				instance.dict[name] = &MethodWrapper{
-					Method:   m,
-					Instance: instance,
-				}
-			}
-		}
-	}
-}
-
 func ErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	message, err := errorMessageFromArgs(ctx, cls, args)
 	if err != nil {
@@ -43,19 +33,19 @@ func ErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
 	}
 
 	e := &Error{message: message}
-	allocate(e, cls)
+	initInstance(e, &e.dict, e.Class())
 	return e, nil
 }
 
 func NewError(text string) *Error {
 	e := &Error{message: text}
-	allocate(e, ErrorClass)
+	initInstance(e, &e.dict, e.Class())
 	return e
 }
 
 func NewErrorf(format string, args ...interface{}) *Error {
 	e := &Error{message: fmt.Sprintf(format, args...)}
-	allocate(e, ErrorClass)
+	initInstance(e, &e.dict, e.Class())
 	return e
 }
 
@@ -68,15 +58,16 @@ func (value *Error) string(ctx Context) (Object, error) {
 }
 
 func (value *Error) getAttribute(_ Context, name string) (Object, error) {
-	if attr, ok := value.dict[name]; ok {
-		return attr, nil
+	return getAttributeFrom(&value.dict, name, value.Class())
+}
+
+func (value *Error) setAttribute(_ Context, name string, newValue Object) error {
+	attr, ok := value.dict[name]
+	if !ok {
+		attr = value.Class().GetAttributeOrNil(name)
 	}
 
-	if attr := value.Class().GetAttributeOrNil(name); attr != nil {
-		return attr, nil
-	}
-
-	return nil, NewErrorf("об'єкт '%s' не містить атрибута '%s'", value.Class().Name, name)
+	return setAttributeTo(value, &value.dict, attr, name, newValue)
 }
 
 func errorMessageFromArgs(ctx Context, cls *Class, args Tuple) (string, error) {
@@ -104,27 +95,65 @@ func OperatorNotSupportedErrorNew(operator, lType, rType string) error {
 
 func MakeErrorClassAttributes(pkg *Package) map[string]Object {
 	return map[string]Object{
-		"__рядок__": MethodNew(
-			"__рядок__",
-			pkg,
-			[]MethodParameter{
-				{
-					Class:      ErrorClass,
-					Classes:    nil,
-					Name:       "я",
-					IsNullable: false,
-					IsVariadic: false,
-				},
-			},
-			[]MethodReturnType{
-				{
-					Class:      StringClass,
-					IsNullable: false,
-				},
-			},
-			func(ctx Context, args Tuple, kwargs StringDict) (Object, error) {
-				return args[0].(IString).string(ctx)
-			},
-		),
+		builtin.StringOperatorName:         makeStringMethod(pkg, ErrorClass),
+		builtin.RepresentationOperatorName: makeRepresentationMethod(pkg, ErrorClass),
 	}
+}
+
+func makeStringMethod(pkg *Package, cls *Class) *Method {
+	return MethodNew(
+		builtin.StringOperatorName,
+		pkg,
+		[]MethodParameter{
+			{
+				Class:      cls,
+				Classes:    nil,
+				Name:       "я",
+				IsNullable: false,
+				IsVariadic: false,
+			},
+		},
+		[]MethodReturnType{
+			{
+				Class:      StringClass,
+				IsNullable: false,
+			},
+		},
+		func(ctx Context, args Tuple, kwargs StringDict) (Object, error) {
+			if v, ok := args[0].(IString); ok {
+				return v.string(ctx)
+			}
+
+			panic("unreachable")
+		},
+	)
+}
+
+func makeRepresentationMethod(pkg *Package, cls *Class) *Method {
+	return MethodNew(
+		builtin.RepresentationOperatorName,
+		pkg,
+		[]MethodParameter{
+			{
+				Class:      cls,
+				Classes:    nil,
+				Name:       "я",
+				IsNullable: false,
+				IsVariadic: false,
+			},
+		},
+		[]MethodReturnType{
+			{
+				Class:      StringClass,
+				IsNullable: false,
+			},
+		},
+		func(ctx Context, args Tuple, kwargs StringDict) (Object, error) {
+			if v, ok := args[0].(IRepresent); ok {
+				return v.represent(ctx)
+			}
+
+			panic("unreachable")
+		},
+	)
 }

@@ -10,13 +10,13 @@ var (
 
 type Package struct {
 	Filename string
-	Dict     map[string]Object
+	Dict     StringDict
 	Parent   *Package
 	Context  Context
 }
 
 func PackageNew(filename string, parent *Package, ctx Context) *Package {
-	return &Package{
+	pkg := &Package{
 		Filename: filename,
 		Dict: map[string]Object{
 			"__назва__": String(filename),
@@ -24,6 +24,8 @@ func PackageNew(filename string, parent *Package, ctx Context) *Package {
 		Parent:  parent,
 		Context: ctx,
 	}
+	initInstance(pkg, &pkg.Dict, pkg.Class())
+	return pkg
 }
 
 func (value *Package) Class() *Class {
@@ -39,15 +41,7 @@ func (value *Package) string(ctx Context) (Object, error) {
 }
 
 func (value *Package) getAttribute(_ Context, name string) (Object, error) {
-	if attr, ok := value.Dict[name]; ok {
-		return attr, nil
-	}
-
-	if attr := value.Class().GetAttributeOrNil(name); attr != nil {
-		return attr, nil
-	}
-
-	return nil, NewErrorf("пакет '%s' не містить атрибута '%s'", value.Name(), name)
+	return getAttributeFrom(&value.Dict, name, value.Class())
 }
 
 func (value *Package) setAttribute(_ Context, name string, newValue Object) error {
@@ -56,26 +50,21 @@ func (value *Package) setAttribute(_ Context, name string, newValue Object) erro
 		attr = value.Class().GetAttributeOrNil(name)
 	}
 
-	if attr != nil && attr.Class() != newValue.Class() {
-		return NewErrorf(
-			"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
-			newValue.Class().Name,
-			name,
-			attr.Class().Name,
-		)
-	}
-
-	value.Dict[name] = value
-	return nil
+	return setAttributeTo(value, &value.Dict, attr, name, newValue)
 }
 
-func (value *Package) deleteAttribute(_ Context, name string) (Object, error) {
+func (value *Package) deleteAttribute(ctx Context, name string) (Object, error) {
 	if attr, ok := value.Dict[name]; ok {
 		delete(value.Dict, name)
 		return attr, nil
 	}
 
-	if attr := value.Class().DeleteAttributeOrNil(name); attr != nil {
+	attr, err := value.Class().deleteAttribute(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if attr != nil {
 		return attr, nil
 	}
 
@@ -88,5 +77,5 @@ func (value *Package) Name() string {
 		name = "???"
 	}
 
-	return string(name)
+	return fmt.Sprintf("<пакет \"%s\">", name)
 }

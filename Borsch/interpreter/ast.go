@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -17,14 +18,13 @@ type Throw struct {
 	Expression *Expression `"панікувати" @@`
 }
 
-type Unsafe struct {
+type Block struct {
 	Pos lexer.Position
 
-	Stmts       *BlockStmts `"небезпечно" @@`
-	CatchBlocks []*Catch    `@@ (@@)* "кінець"`
+	Stmts       *BlockStmts `"блок" @@`
+	CatchBlocks []*Catch    `[ @@ (@@)* ] "кінець"`
 }
 
-// Ident TODO: remove Ident
 type Ident string
 
 func (i *Ident) Capture(values []string) error {
@@ -84,7 +84,7 @@ type RangeBasedLoop struct {
 // ConditionalLoop
 //
 // Example:
-//   цикл (логічна_умова)
+//   цикл (умова_логічного_типу)
 //   {
 //   }
 type ConditionalLoop struct {
@@ -123,10 +123,9 @@ type Stmt struct {
 	Pos lexer.Position
 
 	Throw       *Throw       `(?!("піймати" | "інакше" | "кінець")) (@@`
-	Unsafe      *Unsafe      `| @@ ";"`
 	IfStmt      *IfStmt      `| @@ ";"`
 	LoopStmt    *LoopStmt    `| @@ ";"`
-	Block       *BlockStmts  `| ("блок" @@ "кінець" ";")`
+	Block       *Block       `| @@ ";"`
 	FunctionDef *FunctionDef `| @@ ";"`
 	ClassDef    *ClassDef    `| @@ ";"`
 	ReturnStmt  *ReturnStmt  `| @@ ";"`
@@ -160,7 +159,7 @@ type Parameter struct {
 	Pos lexer.Position
 
 	Name       Ident `@Ident ":"`
-	TypeName   Ident `@Ident`
+	TypeName   Ident `@Ident | @"?"`
 	IsNullable bool  `@"?"?`
 }
 
@@ -178,6 +177,8 @@ type ClassDef struct {
 	IsFinal bool           `@"заключний"?`
 	Bases   []Ident        `(":" @Ident ("," @Ident)*)?`
 	Members []*ClassMember `(@@ ";")* "кінець"`
+
+	operators []*types.Method
 }
 
 type ClassMember struct {
@@ -192,7 +193,7 @@ type ClassMember struct {
 type OperatorDef struct {
 	Pos lexer.Position
 
-	Op            string         `"оператор" @("==" | "!=" | "<" | "<""=" | ">" | ">""=" | "+" | "-" | "/" | "*""*" | "*" | "%" | "<""<" | ">"">" | "|" | "^" | "&" | "~" | "&""&" | "|""|")`
+	Op            string         `"оператор" @("=""=" | "!""=" | "<""=" | "<""<" | "<" | ">""=" | ">"">" | ">" | "+" | "-" | "/" | "*""*" | "*" | "%" | "^" | "~" | "&""&" | "&" | "|""|" | "|" | "__конструктор__" | "__виклик__" | "__довжина__" | "__логічне__" | "__ціле__" | "__рядок__" | "__представлення__")`
 	ParametersSet *ParametersSet `@@`
 	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
 	Body          *FunctionBody  `@@ "кінець"`

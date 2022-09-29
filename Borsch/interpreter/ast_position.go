@@ -6,7 +6,7 @@ func (node *Throw) Position() lexer.Position {
 	return node.Pos
 }
 
-func (node *Unsafe) Position() lexer.Position {
+func (node *Block) Position() lexer.Position {
 	return node.Pos
 }
 

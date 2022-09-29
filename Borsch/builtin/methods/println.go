@@ -10,7 +10,7 @@ func MakePrintln(pkg *types.Package) *types.Method {
 	return types.FunctionNew(
 		"друкр", pkg, []types.MethodParameter{
 			{
-				Class:      types.AnyClass,
+				Class:      types.ObjectClass,
 				Name:       "повідомлення",
 				IsNullable: false,
 				IsVariadic: false,
@@ -29,7 +29,7 @@ func MakePrintln(pkg *types.Package) *types.Method {
 			}
 
 			fmt.Println(message)
-			return nil, nil
+			return types.Nil, nil
 		},
 	)
 }

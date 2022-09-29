@@ -2,12 +2,26 @@ package types
 
 func Equals(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IEquals); ok {
-		return v.equals(ctx, b)
+		result, err := v.equals(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
 	if a.Class() != b.Class() {
 		if v, ok := b.(IEquals); ok {
-			return v.equals(ctx, a)
+			result, err := v.equals(ctx, a)
+			if err != nil {
+				return nil, err
+			}
+
+			if result != nil {
+				return result, nil
+			}
 		}
 	}
 
@@ -20,12 +34,26 @@ func Equals(ctx Context, a, b Object) (Object, error) {
 
 func NotEquals(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(INotEquals); ok {
-		return v.notEquals(ctx, b)
+		result, err := v.notEquals(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
 	if a.Class() != b.Class() {
 		if v, ok := b.(INotEquals); ok {
-			return v.notEquals(ctx, a)
+			result, err := v.notEquals(ctx, a)
+			if err != nil {
+				return nil, err
+			}
+
+			if result != nil {
+				return result, nil
+			}
 		}
 	}
 
@@ -38,12 +66,26 @@ func NotEquals(ctx Context, a, b Object) (Object, error) {
 
 func Less(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(ILess); ok {
-		return v.less(ctx, b)
+		result, err := v.less(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
 	if a.Class() != b.Class() {
 		if v, ok := b.(ILess); ok {
-			return v.less(ctx, a)
+			result, err := v.less(ctx, a)
+			if err != nil {
+				return nil, err
+			}
+
+			if result != nil {
+				return result, nil
+			}
 		}
 	}
 
@@ -56,12 +98,26 @@ func Less(ctx Context, a, b Object) (Object, error) {
 
 func LessOrEquals(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(ILessOrEquals); ok {
-		return v.lessOrEquals(ctx, b)
+		result, err := v.lessOrEquals(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
 	if a.Class() != b.Class() {
 		if v, ok := b.(ILessOrEquals); ok {
-			return v.lessOrEquals(ctx, a)
+			result, err := v.lessOrEquals(ctx, a)
+			if err != nil {
+				return nil, err
+			}
+
+			if result != nil {
+				return result, nil
+			}
 		}
 	}
 
@@ -74,12 +130,26 @@ func LessOrEquals(ctx Context, a, b Object) (Object, error) {
 
 func Greater(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IGreater); ok {
-		return v.greater(ctx, b)
+		result, err := v.greater(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
 	if a.Class() != b.Class() {
 		if v, ok := b.(IGreater); ok {
-			return v.greater(ctx, a)
+			result, err := v.greater(ctx, a)
+			if err != nil {
+				return nil, err
+			}
+
+			if result != nil {
+				return result, nil
+			}
 		}
 	}
 
@@ -92,12 +162,26 @@ func Greater(ctx Context, a, b Object) (Object, error) {
 
 func GreaterOrEquals(ctx Context, a, b Object) (Object, error) {
 	if v, ok := a.(IGreaterOrEquals); ok {
-		return v.greaterOrEquals(ctx, b)
+		result, err := v.greaterOrEquals(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
 	if a.Class() != b.Class() {
 		if v, ok := b.(IGreaterOrEquals); ok {
-			return v.greaterOrEquals(ctx, a)
+			result, err := v.greaterOrEquals(ctx, a)
+			if err != nil {
+				return nil, err
+			}
+
+			if result != nil {
+				return result, nil
+			}
 		}
 	}
 

@@ -19,21 +19,6 @@ func RuntimeError(text string) error {
 	return errors.New(fmt.Sprintf("Помилка виконання: %s", text))
 }
 
-func InternalError(text string) error {
-	return errors.New(fmt.Sprintf("InternalError: %s", text))
-}
-
-func InvalidUseOfOperator(operator common.Operator, left, right types.Object) error {
-	return InternalError(
-		fmt.Sprintf(
-			"invalid use of operator '%s' for '%s' and '%s' types",
-			operator.Sign(),
-			left.Class().Name,
-			right.Class().Name,
-		),
-	)
-}
-
 func ParseError(pos lexer.Position, unexpected string, err string) error {
 	return errors.New(
 		fmt.Sprintf(
@@ -52,7 +37,7 @@ func AttributeNotFoundError(objTypeName, attrName string) error {
 	return RuntimeError(fmt.Sprintf("об'єкт типу '%s' не містить атрибута з назвою '%s'", objTypeName, attrName))
 }
 
-func BadOperandForUnaryOperatorError(operator common.Operator) error {
+func BadOperandForUnaryOperatorError(operator common.OperatorHash) error {
 	return RuntimeError(fmt.Sprintf("некоректний тип операнда для унарного оператора %s", operator.Sign()))
 }
 
@@ -80,7 +65,7 @@ func AttributeIsReadOnlyError(objTypeName, attrName string) error {
 	)
 }
 
-func OperatorNotSupportedError(operator common.Operator, left, right types.Object) error {
+func OperatorNotSupportedError(operator common.OperatorHash, left, right types.Object) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор '%s' до значень типів '%s' та '%s'",
@@ -89,7 +74,7 @@ func OperatorNotSupportedError(operator common.Operator, left, right types.Objec
 	)
 }
 
-func UnaryOperatorNotSupportedError(operator common.Operator, value types.Object) error {
+func UnaryOperatorNotSupportedError(operator common.OperatorHash, value types.Object) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"неможливо застосувати оператор '%s' до значення з типом '%s'",
@@ -98,7 +83,7 @@ func UnaryOperatorNotSupportedError(operator common.Operator, value types.Object
 	)
 }
 
-func OperandsNotSupportedError(operator common.Operator, leftType, rightType string) error {
+func OperandsNotSupportedError(operator common.OperatorHash, leftType, rightType string) error {
 	return RuntimeError(
 		fmt.Sprintf(
 			"непідтримувані типи операндів для оператора %s: '%s' і '%s'",
@@ -131,7 +116,7 @@ func IncorrectUseOfFunctionError(functionName string) error {
 	return InterpreterError{message: fmt.Sprintf("incorrect use of '%s' func", functionName)}
 }
 
-func InternalOperatorError(operator common.Operator) InterpreterError {
+func InternalOperatorError(operator common.OperatorHash) InterpreterError {
 	return InterpreterError{message: fmt.Sprintf("fatal: invalid operator '%s'", operator.Sign())}
 }
 

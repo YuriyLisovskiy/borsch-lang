@@ -1,5 +1,9 @@
 package types
 
+import (
+	"fmt"
+)
+
 type methodType int8
 
 const (
@@ -37,12 +41,12 @@ type MethodParameter struct {
 }
 
 func (value *MethodParameter) accepts(class *Class) bool {
-	if value.Class != nil && value.Class == class {
+	if value.Class != nil && (value.Class == class || value.Class.IsBaseOf(class)) {
 		return true
 	}
 
 	for _, cls := range value.Classes {
-		if cls.Class() == class {
+		if cls.Class() == class || cls.Class().IsBaseOf(class) {
 			return true
 		}
 	}
@@ -124,7 +128,7 @@ func (value *Method) Class() *Class {
 	}
 }
 
-func (value *Method) call(args Tuple) (Object, error) {
+func (value *Method) call(parentCtx Context, args Tuple) (Object, error) {
 	pLen := len(value.Parameters)
 	aLen := len(args)
 	if pLen != aLen {
@@ -150,7 +154,10 @@ func (value *Method) call(args Tuple) (Object, error) {
 		return nil, err
 	}
 
-	// TODO: check result
+	if err = value.checkCallResult(result); err != nil {
+		return nil, err
+	}
+
 	return result, nil
 }
 
@@ -167,7 +174,7 @@ func (value *Method) IsLambda() bool {
 }
 
 func checkArg(parameter *MethodParameter, arg Object) error {
-	if parameter.accepts(AnyClass) {
+	if parameter.accepts(ObjectClass) {
 		return nil
 	}
 
@@ -176,18 +183,101 @@ func checkArg(parameter *MethodParameter, arg Object) error {
 			return nil
 		}
 
-		// TODO: return error
+		return NewTypeErrorf("очікується ненульовий аргумент, отримано ʼ%sʼ", arg.Class().Name)
 	}
 
 	if parameter.accepts(arg.Class()) {
 		return nil
 	}
 
-	// TODO: return error
-	return nil
+	appendix := ""
+	if parameter.IsNullable {
+		appendix = fmt.Sprintf("або ʼ%sʼ", NilClass.Name)
+	}
+
+	if parameter.Class != nil {
+		return NewTypeErrorf(
+			"очікується аргумент з типом ʼ%sʼ%s, отримано ʼ%sʼ",
+			parameter.Class.Name,
+			appendix,
+			arg.Class().Name,
+		)
+	}
+
+	var names string
+	clsLen := len(parameter.Classes)
+	for i, cls := range parameter.Classes {
+		names += cls.Name
+		if i < clsLen-1 {
+			names += ", "
+		}
+	}
+
+	return NewTypeErrorf(
+		"очікується аргумент з одним із типів ʼ%sʼ%s, отримано ʼ%sʼ",
+		names,
+		appendix,
+		arg.Class().Name,
+	)
 }
 
-func checkReturnValue(cls *Class, returnValue Object) error {
-	// TODO:
-	return nil
+func (value *Method) checkCallResult(result Object) error {
+	switch retLen := len(value.ReturnTypes); retLen {
+	case 0:
+		panic("unreachable")
+	case 1:
+		if accepts(value.ReturnTypes[0].Class, result.Class()) {
+			return nil
+		}
+	default:
+		resultTuple, ok := result.(*Tuple)
+		if !ok {
+			return NewTypeErrorf(
+				"результат виклику має бути типу ʼ%sʼ, отримано ʼ%sʼ",
+				TupleClass.Name,
+				result.Class().Name,
+			)
+		}
+
+		tuple := *resultTuple
+		tupleLen := len(tuple)
+		if tupleLen != retLen {
+			mismatchInfo := ""
+			if tupleLen > retLen {
+				mismatchInfo = "недостатню"
+			} else {
+				mismatchInfo = "занадто велику"
+			}
+
+			return NewRuntimeErrorf(
+				"результат виклику містить %s кількість значень, очікується %d, отримано %d",
+				mismatchInfo,
+				retLen,
+				tupleLen,
+			)
+		}
+
+		for i, ret := range value.ReturnTypes {
+			if accepts(ret.Class, tuple[i].Class()) {
+				return nil
+			}
+		}
+	}
+
+	names := ""
+	for i, retType := range value.ReturnTypes {
+		names += retType.Class.Name
+		if i < len(value.ReturnTypes)-1 {
+			names += ", "
+		}
+	}
+
+	prefix := ""
+	if len(value.ReturnTypes) > 1 {
+		prefix = "одним із типів"
+	} else {
+		prefix = "типу"
+	}
+
+	return NewTypeErrorf("результат виклику має бути %s ʼ%sʼ, отримано ʼ%sʼ", prefix, names, result.Class().Name)
 }

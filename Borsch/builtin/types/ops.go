@@ -7,12 +7,6 @@ import (
 )
 
 func mod(l, r Real) Real {
-	// return l - (r * Real(math.Floor(float64(l/r))))
-	// if r-Real(math.Floor(float64(r))) == 0.0 {
-	// 	return l - (r * Real(math.Floor(float64(l/r))))
-	// }
-	//
-	// return l - (r * (l / r))
 	a := float64(l)
 	b := float64(r)
 	return Real(math.Mod(b+math.Mod(a, b), b))
@@ -93,11 +87,17 @@ func ToInt(ctx Context, a Object) (Object, error) {
 	}
 
 	if A, ok := a.(IInt); ok {
-		return A.toInt(ctx)
+		result, err := A.toInt(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if result != nil {
+			return result, nil
+		}
 	}
 
-	// TODO: TypeError
-	return nil, NewErrorf("непідтримуваний тип операнда для 'ціле': '%s'", a.Class().Name)
+	return nil, NewTypeErrorf("непідтримуваний тип операнда для 'ціле': '%s'", a.Class().Name)
 }
 
 func ToReal(ctx Context, a Object) (Object, error) {
@@ -109,8 +109,7 @@ func ToReal(ctx Context, a Object) (Object, error) {
 		return A.toReal(ctx)
 	}
 
-	// TODO: TypeError
-	return nil, NewErrorf("непідтримуваний тип операнда для 'дійсне': '%s'", a.Class().Name)
+	return nil, NewTypeErrorf("непідтримуваний тип операнда для 'дійсне': '%s'", a.Class().Name)
 }
 
 // ToGoInt turns 'a' into Go int if possible.
@@ -124,17 +123,17 @@ func ToGoInt(ctx Context, a Object) (int, error) {
 		return v.toGoInt(ctx)
 	}
 
-	// TODO: TypeError
-	return 0, NewErrorf("об'єкт '%v' не може бути інтрпретований як ціле число", a.Class().Name)
+	return 0, NewTypeErrorf("об'єкт '%v' не може бути інтерпретований як ціле число", a.Class().Name)
 }
 
 func GetAttribute(ctx Context, self Object, name string) (Object, error) {
 	if v, ok := self.(IGetAttribute); ok {
-		return v.getAttribute(ctx, name)
-	}
+		attr, err := v.getAttribute(ctx, name)
+		if err != nil {
+			return nil, err
+		}
 
-	if v, ok := self.(*Class); ok {
-		if attr := v.GetAttributeOrNil(name); attr != nil {
+		if attr != nil {
 			return attr, nil
 		}
 	}
@@ -147,43 +146,17 @@ func SetAttribute(ctx Context, self Object, name string, value Object) error {
 		return v.setAttribute(ctx, name, value)
 	}
 
-	if v, ok := self.(*Class); ok {
-		if attr := v.GetAttributeOrNil(name); attr != nil {
-			if attr.Class() != value.Class() {
-				if attr.Class() == MethodWrapperClass {
-					switch value.Class() {
-					case MethodClass, FunctionClass, LambdaClass:
-						v.Dict[name] = &MethodWrapper{
-							Method:   value.(*Method),
-							Instance: self,
-						}
-						return nil
-					}
-				}
-
-				return NewTypeErrorf(
-					"неможливо записати значення типу '%s' у атрибут '%s' з типом '%s'",
-					value.Class().Name,
-					name,
-					attr.Class().Name,
-				)
-			}
-		}
-
-		v.Dict[name] = value
-		return nil
-	}
-
 	return NewAttributeErrorf("'%s' не містить атрибута '%s'", self.Class().Name, name)
 }
 
 func DeleteAttribute(ctx Context, self Object, name string) (Object, error) {
 	if v, ok := self.(IDeleteAttribute); ok {
-		return v.deleteAttribute(ctx, name)
-	}
+		attr, err := v.deleteAttribute(ctx, name)
+		if err != nil {
+			return nil, err
+		}
 
-	if v, ok := self.(*Class); ok {
-		if attr := v.DeleteAttributeOrNil(name); attr != nil {
+		if attr != nil {
 			return attr, nil
 		}
 	}
@@ -193,7 +166,7 @@ func DeleteAttribute(ctx Context, self Object, name string) (Object, error) {
 
 func Call(ctx Context, self Object, args Tuple) (Object, error) {
 	if v, ok := self.(ICall); ok {
-		return v.call(args)
+		return v.call(ctx, args)
 	}
 
 	return nil, NewErrorf("неможливо застосувати оператор виклику до об'єкта з типом '%s'", self.Class().Name)
@@ -329,4 +302,77 @@ func parseFormat(format string) (string, string, error) {
 	}
 
 	return typesFormat, nullablesFormat, nil
+}
+
+func getAttributeFrom(dict *StringDict, name string, cls *Class) (Object, error) {
+	if attr, ok := (*dict)[name]; ok {
+		return attr, nil
+	}
+
+	if attr := cls.GetAttributeOrNil(name); attr != nil {
+		return attr, nil
+	}
+
+	return nil, NewErrorf("об'єкт '%s' не містить атрибута '%s'", cls.Name, name)
+}
+
+func setAttributeTo(instance Object, dict *StringDict, attr Object, name string, value Object) error {
+	if attr != nil && !accepts(attr.Class(), value.Class()) {
+		if attr.Class() == MethodWrapperClass {
+			switch value.Class() {
+			case MethodClass, FunctionClass, LambdaClass:
+				(*dict)[name] = wrap(instance, value.(*Method))
+				return nil
+			}
+		}
+
+		return NewTypeErrorf(
+			"неможливо записати значення типу '%s' в атрибут '%s' з типом '%s'",
+			value.Class().Name,
+			name,
+			attr.Class().Name,
+		)
+	}
+
+	(*dict)[name] = value
+	return nil
+}
+
+func wrapMethod(instance, obj Object) (Object, bool) {
+	if method, ok := obj.(*Method); ok && method.IsMethod() {
+		return &MethodWrapper{
+			Method:   method,
+			Instance: instance,
+		}, true
+	}
+
+	return obj, false
+}
+
+func wrap(instance Object, method *Method) Object {
+	return &MethodWrapper{
+		Method:   method,
+		Instance: instance,
+	}
+}
+
+// initInstance prepares object's attributes using the base class
+// and performs any other common operations for object with
+// dict.
+func initInstance(instance Object, dict *StringDict, cls *Class) {
+	if cls.Dict != nil {
+		*dict = StringDict{}
+		for name, attr := range cls.Dict {
+			if m, ok := attr.(*Method); ok && m.IsMethod() {
+				(*dict)[name] = &MethodWrapper{
+					Method:   m,
+					Instance: instance,
+				}
+			}
+		}
+	}
+}
+
+func accepts(a, b *Class) bool {
+	return a == b || a.IsBaseOf(b)
 }

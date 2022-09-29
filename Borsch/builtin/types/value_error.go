@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-var ValueErrorClass = ErrorClass.ClassNew("ПомилкаЗначення", map[string]Object{}, false, ValueErrorNew, nil)
+var ValueErrorClass *Class
 
 type ValueError struct {
 	message string
