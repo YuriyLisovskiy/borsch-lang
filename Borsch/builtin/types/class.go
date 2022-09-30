@@ -103,17 +103,6 @@ func (value *Class) allocate(attributes map[string]Object) *Class {
 	}
 
 	initAttributes(value, instance)
-
-	// for _, base := range value.Bases {
-	//
-	// }
-	//
-	// for name, attr := range value.Dict {
-	// 	if wrapped, ok := wrapMethod(instance, attr); ok {
-	// 		instance.Dict[name] = wrapped
-	// 	}
-	// }
-
 	return instance
 }
 
@@ -240,6 +229,18 @@ func (value *Class) toInt(ctx Context) (Object, error) {
 func (value *Class) toReal(ctx Context) (Object, error) {
 	if value.IsInstance() {
 		if attr := value.GetOperatorOrNil(common.RealOp); attr != nil {
+			return Call(ctx, attr, Tuple{value})
+		}
+	}
+
+	// Marks that method could not be executed due to incorrect arguments.
+	// Caller should return the default error message in this case.
+	return nil, nil
+}
+
+func (value *Class) length(ctx Context) (Object, error) {
+	if value.IsInstance() {
+		if attr := value.GetOperatorOrNil(common.LengthOp); attr != nil {
 			return Call(ctx, attr, Tuple{value})
 		}
 	}
@@ -402,13 +403,17 @@ func (value *Class) GetAttributeOrNil(name string) Object {
 
 func (value *Class) GetOperatorOrNil(op common.OperatorHash) Object {
 	if value.IsInstance() {
-		if res, ok := value.Class().Operators[op]; ok {
-			return res
-		}
+		return value.Class().GetOperatorOrNil(op)
 	}
 
 	if res, ok := value.Operators[op]; ok {
 		return res
+	}
+
+	for _, base := range value.Bases {
+		if res := base.GetOperatorOrNil(op); res != nil {
+			return res
+		}
 	}
 
 	return nil

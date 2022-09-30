@@ -46,7 +46,7 @@ func (value *MethodParameter) accepts(class *Class) bool {
 	}
 
 	for _, cls := range value.Classes {
-		if cls.Class() == class || cls.Class().IsBaseOf(class) {
+		if cls == class || cls.IsBaseOf(class) {
 			return true
 		}
 	}

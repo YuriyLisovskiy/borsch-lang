@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
 )
 
 type LangException interface {
@@ -93,10 +94,10 @@ func OperatorNotSupportedErrorNew(operator, lType, rType string) error {
 	)
 }
 
-func MakeErrorClassAttributes(pkg *Package) map[string]Object {
-	return map[string]Object{
-		builtin.StringOperatorName:         makeStringMethod(pkg, ErrorClass),
-		builtin.RepresentationOperatorName: makeRepresentationMethod(pkg, ErrorClass),
+func MakeErrorClassOperators(pkg *Package) map[common.OperatorHash]*Method {
+	return map[common.OperatorHash]*Method{
+		common.StringOp:         makeStringMethod(pkg, ErrorClass),
+		common.RepresentationOp: makeRepresentationMethod(pkg, ErrorClass),
 	}
 }
 

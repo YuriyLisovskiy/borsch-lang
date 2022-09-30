@@ -68,7 +68,7 @@ jobs:
           mkdir build
           cp -r ./bin ./build
           cp -r ./Lib ./build
-          cp ./scripts/install.sh ./build
+          cp ./Scripts/install.sh ./build
       - name: Upload build to artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -109,6 +109,6 @@ jobs:
         env:
           BORSCH_LIB: ./build/Lib
         run: |
-          chmod +x ./scripts/ci_lang_test.sh
+          chmod +x ./Scripts/ci_lang_test.sh
           chmod +x $(find ./build/bin/ -name "borsch*")
-          ./scripts/ci_lang_test.sh $(find ./build/bin/ -name "borsch*") ./Test/вбудовані
+          ./Scripts/ci_lang_test.sh $(find ./build/bin/ -name "borsch*") ./Test

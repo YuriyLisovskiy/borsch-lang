@@ -17,13 +17,14 @@ var (
 )
 
 func init() {
-	types.ErrorClass.AddAttributes(types.MakeErrorClassAttributes(BuiltinPackage))
-	// types.TypeErrorClass.AddAttributes(types.MakeErrorClassAttributes(BuiltinPackage))
+	types.ErrorClass.Operators = types.MakeErrorClassOperators(BuiltinPackage)
+	// types.TypeErrorClass.AddAttributes(types.MakeErrorClassOperators(BuiltinPackage))
 	types.ZeroDivisionErrorClass.AddAttributes(types.MakeZeroDivisionErrorClassAttributes(BuiltinPackage))
 
 	addMethod := methods.MakeAdd(BuiltinPackage)
-	printlnMethod := methods.MakePrintln(BuiltinPackage)
 	assertMethod := methods.MakeAssert(BuiltinPackage)
+	lenMethod := methods.MakeLen(BuiltinPackage)
+	printlnMethod := methods.MakePrintln(BuiltinPackage)
 
 	GlobalScope = map[string]types.Object{
 		types.ObjectClass.Name: types.ObjectClass,
@@ -44,8 +45,9 @@ func init() {
 		types.IndexOutOfRangeErrorClass.Name: types.IndexOutOfRangeErrorClass,
 
 		addMethod.Name:     addMethod,
-		printlnMethod.Name: printlnMethod,
 		assertMethod.Name:  assertMethod,
+		lenMethod.Name:     lenMethod,
+		printlnMethod.Name: printlnMethod,
 
 		types.ErrorClass.Name:     types.ErrorClass,
 		types.TypeErrorClass.Name: types.TypeErrorClass,

@@ -11,7 +11,6 @@ const (
 
 // Built-in types
 const (
-	AnyTypeName        = "довільний"
 	BoolTypeName       = "логічне"
 	DictionaryTypeName = "словник"
 	FunctionTypeName   = "функція"
