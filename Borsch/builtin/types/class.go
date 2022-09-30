@@ -213,19 +213,34 @@ func (value *Class) string(ctx Context) (Object, error) {
 	return value.represent(ctx)
 }
 
+func (value *Class) toBool(ctx Context) (Object, error) {
+	if value.IsInstance() {
+		if attr := value.GetOperatorOrNil(common.BoolOp); attr != nil {
+			return Call(ctx, attr, Tuple{value})
+		}
+	}
+
+	// Marks that method could not be executed due to incorrect arguments.
+	// Caller should return the default error message in this case.
+	return nil, nil
+}
+
 func (value *Class) toInt(ctx Context) (Object, error) {
 	if value.IsInstance() {
 		if attr := value.GetOperatorOrNil(common.IntOp); attr != nil {
-			result, err := Call(ctx, attr, Tuple{value})
-			if err != nil {
-				return nil, err
-			}
+			return Call(ctx, attr, Tuple{value})
+		}
+	}
 
-			if _, ok := result.(Int); ok {
-				return result, nil
-			}
+	// Marks that method could not be executed due to incorrect arguments.
+	// Caller should return the default error message in this case.
+	return nil, nil
+}
 
-			return nil, NewTypeErrorf("%s повернув не цілий тип, а '%s'", common.IntOp.Name(), result.Class().Name)
+func (value *Class) toReal(ctx Context) (Object, error) {
+	if value.IsInstance() {
+		if attr := value.GetOperatorOrNil(common.RealOp); attr != nil {
+			return Call(ctx, attr, Tuple{value})
 		}
 	}
 
@@ -464,22 +479,26 @@ func excessArgs(args Tuple) bool {
 	return len(args) != 0
 }
 
+// callBinaryOperator looks for a binary operator, i.e. with 2 arguments,
+// by its hash and executes it. If the operator is not found,
+// returns (nil, nil) as a result, which marks that method could not be executed.
+// The caller should return the default error message in this case.
 func callBinaryOperator(ctx Context, a, b Object, opHash common.OperatorHash) (Object, error) {
-	if op, ok := a.Class().Operators[opHash]; ok {
-		return Call(ctx, op, []Object{a, b})
+	if attr := a.Class().GetOperatorOrNil(opHash); attr != nil {
+		return Call(ctx, attr, Tuple{a, b})
 	}
 
-	// Marks that method could not be executed due to incorrect arguments.
-	// Caller should return the default error message in this case.
 	return nil, nil
 }
 
+// callUnaryOperator looks for a unary operator, i.e. with 1 argument,
+// by its hash and executes it. If the operator is not found,
+// returns (nil, nil) as a result, which marks that method could not be executed.
+// The caller should return the default error message in this case.
 func callUnaryOperator(ctx Context, a Object, opHash common.OperatorHash) (Object, error) {
-	if op, ok := a.Class().Operators[opHash]; ok {
-		return Call(ctx, op, []Object{a})
+	if attr := a.Class().GetOperatorOrNil(opHash); attr != nil {
+		return Call(ctx, attr, Tuple{a})
 	}
 
-	// Marks that method could not be executed due to incorrect arguments.
-	// Caller should return the default error message in this case.
 	return nil, nil
 }

@@ -50,6 +50,7 @@ const (
 	LengthOp
 	BoolOp
 	IntOp
+	RealOp
 	StringOp
 	RepresentationOp
 )
@@ -85,6 +86,7 @@ var opTypesToSignatures = map[OperatorHash]string{
 	LengthOp:          "__довжина__",
 	BoolOp:            "__логічне__",
 	IntOp:             "__ціле__",
+	RealOp:            "__дійсне__",
 	StringOp:          "__рядок__",
 	RepresentationOp:  "__представлення__",
 }
@@ -120,6 +122,7 @@ var opSignaturesToHashes = map[string]OperatorHash{
 	"__довжина__":       LengthOp,
 	"__логічне__":       BoolOp,
 	"__ціле__":          IntOp,
+	"__дійсне__":        RealOp,
 	"__рядок__":         StringOp,
 	"__представлення__": RepresentationOp,
 }
@@ -155,6 +158,7 @@ var opNames = []string{
 	"__довжина__",
 	"__логічне__",
 	"__ціле__",
+	"__дійсне__",
 	"__рядок__",
 	"__представлення__",
 }
