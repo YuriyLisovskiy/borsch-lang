@@ -401,6 +401,7 @@ func (value *Class) GetAttributeOrNil(name string) Object {
 	return value.Lookup(name)
 }
 
+// TODO not working properly
 func (value *Class) GetOperatorOrNil(op common.OperatorHash) Object {
 	if value.IsInstance() {
 		return value.Class().GetOperatorOrNil(op)
