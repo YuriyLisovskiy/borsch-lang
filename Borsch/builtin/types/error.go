@@ -27,26 +27,30 @@ func (value *Error) Class() *Class {
 	return ErrorClass
 }
 
-func ErrorNew(ctx Context, cls *Class, args Tuple) (Object, error) {
-	message, err := errorMessageFromArgs(ctx, cls, args)
+func (value *Error) init() {
+	value.dict["повідомлення"] = String(value.message)
+}
+
+func ErrorConstruct(ctx Context, self Object, args Tuple) error {
+	message, err := errorMessageFromArgs(ctx, nil, args)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	e := &Error{message: message}
-	initInstance(e, &e.dict, e.Class())
-	return e, nil
+	return SetAttribute(ctx, self, "повідомлення", String(message))
 }
 
 func NewError(text string) *Error {
 	e := &Error{message: text}
 	initInstance(e, &e.dict, e.Class())
+	e.init()
 	return e
 }
 
 func NewErrorf(format string, args ...interface{}) *Error {
 	e := &Error{message: fmt.Sprintf(format, args...)}
 	initInstance(e, &e.dict, e.Class())
+	e.init()
 	return e
 }
 
@@ -101,6 +105,40 @@ func MakeErrorClassOperators(pkg *Package) map[common.OperatorHash]*Method {
 	}
 }
 
+func MakeErrorClassMethods(pkg *Package) StringDict {
+	instanceMethod := MethodNew(
+		InitializeMethodName, pkg, []MethodParameter{
+			{
+				Class:      ErrorClass,
+				Classes:    nil,
+				Name:       "я",
+				IsNullable: false,
+				IsVariadic: false,
+			},
+			{
+				Class:      ObjectClass,
+				Classes:    nil,
+				Name:       "повідомлення",
+				IsNullable: false,
+				IsVariadic: true,
+			},
+		},
+		[]MethodReturnType{
+			{
+				Class:      NilClass,
+				IsNullable: true,
+			},
+		},
+		func(ctx Context, args Tuple, kwargs StringDict) (Object, error) {
+			return Nil, ErrorConstruct(ctx, args[0], args[1:])
+		},
+	)
+
+	return StringDict{
+		instanceMethod.Name: instanceMethod,
+	}
+}
+
 func makeStringMethod(pkg *Package, cls *Class) *Method {
 	return MethodNew(
 		builtin.StringOperatorName,
@@ -121,8 +159,20 @@ func makeStringMethod(pkg *Package, cls *Class) *Method {
 			},
 		},
 		func(ctx Context, args Tuple, kwargs StringDict) (Object, error) {
-			if v, ok := args[0].(IString); ok {
-				return v.string(ctx)
+			if instance, ok := args[0].(*Class); ok && instance.IsInstance() {
+				message, err := GetAttribute(ctx, instance, "повідомлення")
+				if err != nil {
+					return nil, err
+				}
+
+				if v, ok := message.(IString); ok {
+					str, err := v.string(ctx)
+					if err != nil {
+						return nil, err
+					}
+
+					return String(fmt.Sprintf("%s: %s", instance.Class().Name, str)), nil
+				}
 			}
 
 			panic("unreachable")
@@ -130,6 +180,7 @@ func makeStringMethod(pkg *Package, cls *Class) *Method {
 	)
 }
 
+// TODO: fix an infinite recursion
 func makeRepresentationMethod(pkg *Package, cls *Class) *Method {
 	return MethodNew(
 		builtin.RepresentationOperatorName,

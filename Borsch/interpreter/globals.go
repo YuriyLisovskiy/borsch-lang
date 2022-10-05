@@ -17,9 +17,15 @@ var (
 )
 
 func init() {
+	initializeObjectMethod := types.MakeObjectClassInitializer(BuiltinPackage)
+	types.ObjectClass.AddAttributes(
+		map[string]types.Object{
+			initializeObjectMethod.Name: initializeObjectMethod,
+		},
+	)
+
+	types.ErrorClass.AddAttributes(types.MakeErrorClassMethods(BuiltinPackage))
 	types.ErrorClass.Operators = types.MakeErrorClassOperators(BuiltinPackage)
-	// types.TypeErrorClass.AddAttributes(types.MakeErrorClassOperators(BuiltinPackage))
-	types.ZeroDivisionErrorClass.AddAttributes(types.MakeZeroDivisionErrorClassAttributes(BuiltinPackage))
 
 	addMethod := methods.MakeAdd(BuiltinPackage)
 	assertMethod := methods.MakeAssert(BuiltinPackage)

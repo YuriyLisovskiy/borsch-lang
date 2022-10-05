@@ -58,6 +58,15 @@ func (node *ClassDef) Evaluate(state State) (types.Object, error) {
 	}
 
 	cls.Dict = classContext.PopScope()
+	if _, ok := cls.Dict[types.InitializeMethodName]; ok {
+		// TODO: panic that ініцілізувати is a special method which can not be overwritten
+		panic("unreachable")
+	}
+
+	if construct, ok := cls.Operators[common.ConstructorOp]; ok {
+		cls.Dict[types.InitializeMethodName] = construct
+	}
+
 	return cls, nil
 }
 

@@ -1,7 +1,7 @@
 package types
 
 func init() {
-	ErrorClass = ObjectClass.ClassNew("Помилка", map[string]Object{}, false, ErrorNew, nil)
+	ErrorClass = ObjectClass.ClassNew("Помилка", map[string]Object{}, false, nil, ErrorConstruct)
 
 	AssertionErrorClass = ErrorClass.ClassNew("ПомилкаПрипущення", map[string]Object{}, false, AssertionErrorNew, nil)
 

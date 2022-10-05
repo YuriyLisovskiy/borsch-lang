@@ -2,8 +2,6 @@ package types
 
 import (
 	"fmt"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin"
 )
 
 var ZeroDivisionErrorClass *Class
@@ -63,11 +61,4 @@ func (value *ZeroDivisionError) setAttribute(_ Context, name string, newValue Ob
 	}
 
 	return setAttributeTo(value, &value.dict, attr, name, newValue)
-}
-
-func MakeZeroDivisionErrorClassAttributes(pkg *Package) map[string]Object {
-	return map[string]Object{
-		builtin.StringOperatorName:         makeStringMethod(pkg, ZeroDivisionErrorClass),
-		builtin.RepresentationOperatorName: makeRepresentationMethod(pkg, ZeroDivisionErrorClass),
-	}
 }

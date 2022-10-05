@@ -13,6 +13,8 @@ var (
 	TypeClass = ObjectClass.ClassNew("тип", map[string]Object{}, true, nil, nil)
 )
 
+const InitializeMethodName = "__конструктор__"
+
 type (
 	NewFunc       func(ctx Context, cls *Class, args Tuple) (Object, error)
 	ConstructFunc func(ctx Context, self Object, args Tuple) error
@@ -143,14 +145,21 @@ func (value *Class) call(ctx Context, args Tuple) (Object, error) {
 		return nil, NewTypeErrorf("обʼєкт ʼ%sʼ не може бути викликаний", value.Class().Name)
 	}
 
+	var instance Object
 	// Create instance of the class.
-	instance, err := value.New(ctx, value, args)
-	if err != nil {
-		return nil, err
+	if value.New != nil {
+		var err error
+		instance, err = value.New(ctx, value, []Object{})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// TODO: check if args len > 0
+		instance = args[0]
 	}
 
 	if value.Construct != nil {
-		err = value.Construct(ctx, instance, args)
+		err := value.Construct(ctx, instance, args)
 		if err != nil {
 			return nil, err
 		}
@@ -401,7 +410,6 @@ func (value *Class) GetAttributeOrNil(name string) Object {
 	return value.Lookup(name)
 }
 
-// TODO not working properly
 func (value *Class) GetOperatorOrNil(op common.OperatorHash) Object {
 	if value.IsInstance() {
 		return value.Class().GetOperatorOrNil(op)
@@ -507,4 +515,29 @@ func callUnaryOperator(ctx Context, a Object, opHash common.OperatorHash) (Objec
 	}
 
 	return nil, nil
+}
+
+func MakeObjectClassInitializer(pkg *Package) *Method {
+	return MethodNew(
+		InitializeMethodName,
+		pkg,
+		[]MethodParameter{
+			{
+				Class:      ObjectClass,
+				Classes:    nil,
+				Name:       "я",
+				IsNullable: false,
+				IsVariadic: false,
+			},
+		},
+		[]MethodReturnType{
+			{
+				Class:      NilClass,
+				IsNullable: true,
+			},
+		},
+		func(ctx Context, args Tuple, kwargs StringDict) (Object, error) {
+			return Nil, nil
+		},
+	)
 }
