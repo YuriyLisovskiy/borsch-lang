@@ -18,5 +18,8 @@
 bin/
 .idea/
 
+# Environments
+venv/
+
 # macOS files
 .DS_Store
