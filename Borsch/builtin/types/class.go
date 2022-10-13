@@ -149,7 +149,7 @@ func (value *Class) call(ctx Context, args Tuple) (Object, error) {
 	// Create instance of the class.
 	if value.New != nil {
 		var err error
-		instance, err = value.New(ctx, value, []Object{})
+		instance, err = value.New(ctx, value, args)
 		if err != nil {
 			return nil, err
 		}

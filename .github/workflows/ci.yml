@@ -112,3 +112,14 @@ jobs:
           chmod +x ./Scripts/ci_lang_test.sh
           chmod +x $(find ./build/bin/ -name "borsch*")
           ./Scripts/ci_lang_test.sh $(find ./build/bin/ -name "borsch*") ./Test
+  deploy-docs:
+    needs:
+      - lang-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+      - run: pip install -r docs/requirements.txt
+      - run: mkdocs gh-deploy --force
