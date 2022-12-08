@@ -20,7 +20,7 @@ make build
 Для встановлення стандартної бібліотеки, достатньо скопіювати каталог `Lib` до бажаного розташування
 на диску та експортувти шлях до неї:
 ```bash
-sudo make install
+sudo make install-lib
 export BORSCH_LIB="/usr/local/lib/borsch-lang/Lib"
 ```
 
