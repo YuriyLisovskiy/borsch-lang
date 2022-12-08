@@ -20,6 +20,7 @@ install:
 	mkdir -p ${LIB_DIR}
 	cp -R Lib/ ${LIB_DIR}
 	export BORSCH_STD="${LIB_DIR}/Lib"
+	export BORSCH_LIB="${LIB_DIR}/Lib"
 	cp ${BINARY} ${BIN_DIR}/${APP_NAME}
 
 uninstall:
