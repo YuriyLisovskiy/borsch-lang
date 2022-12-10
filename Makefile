@@ -1,6 +1,14 @@
-.PHONY: all install uninstall test
+.PHONY: all build install uninstall test
 
-all: install test
+APP_NAME=borsch
+BUILD_TIME=`LC_ALL=uk_UA.utf8 date '+%b %d %Y, %T'`
+LDFLAGS="-X '${ROOT_PACKAGE_NAME}/cli/build.Time=${BUILD_TIME}'"
+
+all: build test
+
+build:
+	@mkdir -p bin
+	@go build -ldflags ${LDFLAGS} -o bin/${APP_NAME} Borsch/cli/main.go
 
 install:
 	@bash ./Scripts/install.sh
