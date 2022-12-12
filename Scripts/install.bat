@@ -32,9 +32,6 @@ if %month%==11 set month_short=Nov
 if %month%==12 set month_short=Dec
 for /f "tokens=1-3 delims=/:" %%a in ("%TIME%") do (set current_time=%%a:%%b:%%c)
 
-set BUILD_TIME=%month_short% %day% %year%, %current_time:~0,8%
-set LDFLAGS=-X '%ROOT_PACKAGE_NAME%/cli/build.Time=%BUILD_TIME%'
-
 chcp 65001 > NUL
 
 echo %C_BOLD_PURPLE%==^> %C_BOLD_BLACK%Перевірка середовища Go...%NO_COLOR%
@@ -59,6 +56,8 @@ echo.
 
 echo %C_BOLD_PURPLE%==^>%NO_COLOR% %C_BOLD_BLACK%Збірка та встановлення інтерпретатора...%NO_COLOR%
 if not exist "%BORSCH_BIN%" mkdir %BORSCH_BIN%
+set BUILD_TIME=%month_short% %day% %year%, %current_time:~0,8%
+set LDFLAGS=-X '%ROOT_PACKAGE_NAME%/cli/build.Time=%BUILD_TIME%'
 go build -ldflags "%LDFLAGS%" -o %BORSCH_BIN%\%APP_NAME% Borsch\cli\main.go
 mklink %BORSCH_BIN%\борщ.exe %BORSCH_BIN%\%APP_NAME%
 setx /m PATH "%PATH%;%BORSCH_BIN%" > NUL
