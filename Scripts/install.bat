@@ -1,5 +1,6 @@
 @echo off
 
+setlocal
 set ROOT_PACKAGE_NAME="github.com/YuriyLisovskiy/borsch-lang/Borsch"
 
 set APP_NAME=borsch.exe
@@ -34,7 +35,7 @@ for /f "tokens=1-3 delims=/:" %%a in ("%TIME%") do (set current_time=%%a:%%b:%%c
 set BUILD_TIME=%month_short% %day% %year%, %current_time:~0,8%
 set LDFLAGS=-X '%ROOT_PACKAGE_NAME%/cli/build.Time=%BUILD_TIME%'
 
-chcp 65001> NUL
+chcp 65001 > NUL
 
 echo %C_BOLD_PURPLE%==^> %C_BOLD_BLACK%Перевірка середовища Go...%NO_COLOR%
 where /q go || ^
@@ -50,7 +51,7 @@ echo %C_BOLD_GREEN%Готово.%NO_COLOR%
 
 echo %C_BOLD_PURPLE%==^> %C_BOLD_BLACK%Встановлення стандартної бібліотеки...%NO_COLOR%
 if not exist "%BORSCH_LIB%" mkdir %BORSCH_LIB%
-robocopy Lib %BORSCH_LIB% /E /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy Lib %BORSCH_LIB% /e /nfl /ndl /njh /njs /nc /ns /np
 echo %C_BOLD_GREEN%Готово.%NO_COLOR%
 echo.
 echo Бібліотека міститься в каталозі %BORSCH_LIB%
@@ -59,11 +60,10 @@ echo.
 echo %C_BOLD_PURPLE%==^>%NO_COLOR% %C_BOLD_BLACK%Збірка та встановлення інтерпретатора...%NO_COLOR%
 if not exist "%BORSCH_BIN%" mkdir %BORSCH_BIN%
 go build -ldflags "%LDFLAGS%" -o %BORSCH_BIN%\%APP_NAME% Borsch\cli\main.go
-echo @C:\Users\YuriyLisovskiy\borsch\bin\borsch.exe  > C:\Windows\System32\борщ.bat
-setx /M PATH "%PATH%;%BORSCH_BIN%" > NUL
+mklink %BORSCH_BIN%\борщ.exe %BORSCH_BIN%\%APP_NAME%
+setx /m PATH "%PATH%;%BORSCH_BIN%" > NUL
 echo %C_BOLD_GREEN%Готово.%NO_COLOR%
 echo.
 echo Інтерпретатор міститься в каталозі %BORSCH_BIN%
 echo.
-echo Перезапустіть термінал, щоб застосувати зміни.
-echo.
+endlocal
