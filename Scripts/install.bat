@@ -57,19 +57,13 @@ echo Бібліотека міститься в каталозі %BORSCH_LIB%
 echo.
 
 echo %C_BOLD_PURPLE%==^>%NO_COLOR% %C_BOLD_BLACK%Збірка та встановлення інтерпретатора...%NO_COLOR%
-
 if not exist "%BORSCH_BIN%" mkdir %BORSCH_BIN%
 go build -ldflags "%LDFLAGS%" -o %BORSCH_BIN%\%APP_NAME% Borsch\cli\main.go
 echo @C:\Users\YuriyLisovskiy\borsch\bin\borsch.exe  > C:\Windows\System32\борщ.bat
-
+setx /M PATH "%PATH%;%BORSCH_BIN%" > NUL
 echo %C_BOLD_GREEN%Готово.%NO_COLOR%
 echo.
 echo Інтерпретатор міститься в каталозі %BORSCH_BIN%
-echo.
-echo %C_BOLD_PURPLE%==^> %C_BOLD_BLACK%Завершення процесу встановлення.%NO_COLOR%
-echo.
-echo Додайте в змінну середовища PATH шлях до інтерпретатора:
-echo.  %BORSCH_BIN%
 echo.
 echo Перезапустіть термінал, щоб застосувати зміни.
 echo.
