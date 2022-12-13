@@ -45,6 +45,7 @@ echo.   https://go.dev/doc/install && ^
 echo. && ^
 EXIT /B
 echo %C_BOLD_GREEN%Готово.%NO_COLOR%
+echo.
 
 echo %C_BOLD_PURPLE%==^> %C_BOLD_BLACK%Встановлення стандартної бібліотеки...%NO_COLOR%
 if not exist "%BORSCH_LIB%" mkdir %BORSCH_LIB%
@@ -59,10 +60,26 @@ if not exist "%BORSCH_BIN%" mkdir %BORSCH_BIN%
 set BUILD_TIME=%month_short% %day% %year%, %current_time:~0,8%
 set LDFLAGS=-X '%ROOT_PACKAGE_NAME%/cli/build.Time=%BUILD_TIME%'
 go build -ldflags "%LDFLAGS%" -o %BORSCH_BIN%\%APP_NAME% Borsch\cli\main.go
-mklink %BORSCH_BIN%\борщ.exe %BORSCH_BIN%\%APP_NAME%
-setx /m PATH "%PATH%;%BORSCH_BIN%" > NUL
 echo %C_BOLD_GREEN%Готово.%NO_COLOR%
 echo.
 echo Інтерпретатор міститься в каталозі %BORSCH_BIN%
 echo.
+echo %C_BOLD_PURPLE%==^>%C_BOLD_BLACK% Завершення процесу встановлення.%NO_COLOR%
+mklink %BORSCH_BIN%\борщ.exe %BORSCH_BIN%\%APP_NAME% > NUL || ^
+echo Запустіть команду нижче, щоб створити посилання на інтерпретатор: && ^
+echo.   mklink %BORSCH_BIN%\борщ.exe %BORSCH_BIN%\%APP_NAME% && ^
+echo.
+setx BORSCH_HOME "%BORSCH_HOME%" >NUL || ^
+echo Запустіть команду нижче, щоб встановити змінну середовища BORSCH_HOME: && ^
+echo.   setx BORSCH_HOME "%BORSCH_HOME%" && ^
+echo.
+setx PATH "%PATH%;%BORSCH_BIN%" >NUL || ^
+echo Запустіть команду нижче, щоб встановити змінну середовища BORSCH_BIN: && ^
+echo.   setx PATH "%PATH%;%BORSCH_BIN%" && ^
+echo.
+setx BORSCH_LIB "%BORSCH_LIB%" >NUL || ^
+echo Запустіть команду нижче, щоб встановити змінну середовища BORSCH_LIB: && ^
+echo.   setx BORSCH_LIB "%BORSCH_LIB%" && ^
+echo.
+echo %C_BOLD_GREEN%Готово.%NO_COLOR%
 endlocal
