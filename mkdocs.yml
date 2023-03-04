@@ -64,4 +64,5 @@ nav:
     - Класи: tutorial/classes.md
     - Пакети: tutorial/packages.md
   - Бібліотека:
-    - library/index.md
+    - Розробка:
+      - library/dev/index.md
