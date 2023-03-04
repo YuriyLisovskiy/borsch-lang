@@ -363,6 +363,41 @@ func (value *Class) lessOrEquals(ctx Context, other Object) (Object, error) {
 	return callBinaryOperator(ctx, value, other, common.LessOrEqualsOp)
 }
 
+func (value *Class) Length(ctx Context) (Int, error) {
+	if value.IsInstance() {
+		result, err := callUnaryOperator(ctx, value, common.LengthOp)
+		if err != nil {
+			return -1, err
+		}
+
+		if result != nil {
+			intResult, err := ToInt(ctx, result)
+			if err != nil {
+				return -1, err
+			}
+
+			return intResult.(Int), nil
+		}
+	}
+
+	return -1, NewErrorf("непідтримуваний тип операнда для __довжина__: '%s'", value.Class().Name)
+}
+
+// TODO:
+func (value *Class) GetElement(ctx Context, index Int) (Object, error) {
+	return nil, nil
+}
+
+// TODO:
+func (value *Class) SetElement(ctx Context, index Int, item Object) (Object, error) {
+	return nil, nil
+}
+
+// TODO:
+func (value *Class) Slice(ctx Context, leftBound, rightBound Int) (Object, error) {
+	return nil, nil
+}
+
 // Lookup returns an attribute from one of the base class,
 // and doesn't set an exception, but returns nil instead.
 func (value *Class) Lookup(name string) Object {
