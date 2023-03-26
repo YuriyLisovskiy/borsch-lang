@@ -1,244 +1,444 @@
 package types
 
 import (
-	"errors"
+	"fmt"
 	"math"
 	"strconv"
-
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+	"strings"
 )
 
-type RealInstance struct {
-	BuiltinInstance
-	Value float64
-}
+var RealClass = ObjectClass.ClassNew("дійсне", map[string]Object{}, true, RealNew, nil)
 
-func NewRealInstance(value float64) RealInstance {
-	return RealInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance: ClassInstance{
-				class:      Real,
-				attributes: map[string]common.Value{},
-				address:    "",
-			},
-		},
-		Value: value,
-	}
-}
+type Real float64
 
-func (t RealInstance) String(common.State) (string, error) {
-	return strconv.FormatFloat(t.Value, 'f', -1, 64), nil
-}
-
-func (t RealInstance) Representation(state common.State) (string, error) {
-	return t.String(state)
-}
-
-func (t RealInstance) AsBool(common.State) (bool, error) {
-	return t.Value != 0.0, nil
-}
-
-func compareReals(_ common.State, op common.Operator, self, other common.Value) (int, error) {
-	left, ok := self.(RealInstance)
-	if !ok {
-		return 0, util.IncorrectUseOfFunctionError("compareReals")
+func bo2ro(value Bool) Real {
+	if value {
+		return 1.0
 	}
 
-	switch right := other.(type) {
-	case NilInstance:
-	case BoolInstance:
-		rightVal := boolToFloat64(right.Value)
-		if left.Value == rightVal {
-			return 0, nil
-		}
-
-		if left.Value < rightVal {
-			return -1, nil
-		}
-
-		return 1, nil
-	case IntegerInstance:
-		rightVal := float64(right.Value)
-		if left.Value == rightVal {
-			return 0, nil
-		}
-
-		if left.Value < rightVal {
-			return -1, nil
-		}
-
-		return 1, nil
-	case RealInstance:
-		if left.Value == right.Value {
-			return 0, nil
-		}
-
-		if left.Value < right.Value {
-			return -1, nil
-		}
-
-		return 1, nil
-	default:
-		return 0, util.OperatorNotSupportedError(op, left.GetTypeName(), right.GetTypeName())
-	}
-
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
+	return 0.0
 }
 
-func newRealBinaryOperator(
-	name string,
-	doc string,
-	handler func(RealInstance, common.Value) (common.Value, error),
-) *FunctionInstance {
-	return newBinaryMethod(
-		name,
-		Real,
-		Any,
-		doc,
-		func(_ common.State, left common.Value, right common.Value) (common.Value, error) {
-			if leftInstance, ok := left.(RealInstance); ok {
-				return handler(leftInstance, right)
+func (value Real) Class() *Class {
+	return RealClass
+}
+
+func RealNew(ctx Context, cls *Class, args Tuple) (Object, error) {
+	var xObj Object = Real(0)
+	err := parseArgs(cls.Name, "o|!", args, 1, 1, &xObj)
+	if err != nil {
+		return nil, err
+	}
+
+	switch x := xObj.(type) {
+	case String:
+		return RealFromString(string(x))
+	}
+
+	return ToReal(ctx, xObj)
+}
+
+func RealFromString(str string) (Object, error) {
+	str = strings.TrimSpace(str)
+	f, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		if numErr, ok := err.(*strconv.NumError); ok {
+			if numErr.Err == strconv.ErrRange {
+				if str[0] == '-' {
+					return Real(math.Inf(-1)), nil
+				} else {
+					return Real(math.Inf(1)), nil
+				}
 			}
+		}
 
-			return nil, util.IncorrectUseOfFunctionError(name)
-		},
-	)
-}
-
-func newRealUnaryOperator(
-	name string,
-	doc string,
-	handler func(RealInstance) (common.Value, error),
-) *FunctionInstance {
-	return newUnaryMethod(
-		name, Real, Any, doc, func(_ common.State, left common.Value) (common.Value, error) {
-			if leftInstance, ok := left.(RealInstance); ok {
-				return handler(leftInstance)
-			}
-
-			return nil, util.IncorrectUseOfFunctionError(name)
-		},
-	)
-}
-
-func newRealClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			map[string]common.Value{
-				// TODO: add doc
-				common.ConstructorName: newBuiltinConstructor(Real, ToReal, ""),
-				common.PowOp.Name(): newRealBinaryOperator(
-					// TODO: add doc
-					common.PowOp.Name(), "", func(self RealInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case RealInstance:
-							return NewRealInstance(math.Pow(self.Value, o.Value)), nil
-						case IntegerInstance:
-							return NewRealInstance(math.Pow(self.Value, float64(o.Value))), nil
-						case BoolInstance:
-							return NewRealInstance(math.Pow(self.Value, boolToFloat64(o.Value))), nil
-						default:
-							return nil, nil
-						}
-					},
-				),
-				common.UnaryPlus.Name(): newRealUnaryOperator(
-					// TODO: add doc
-					common.UnaryPlus.Name(), "", func(self RealInstance) (common.Value, error) {
-						return self, nil
-					},
-				),
-				common.UnaryMinus.Name(): newRealUnaryOperator(
-					// TODO: add doc
-					common.UnaryMinus.Name(), "", func(self RealInstance) (common.Value, error) {
-						return NewRealInstance(-self.Value), nil
-					},
-				),
-				common.MulOp.Name(): newRealBinaryOperator(
-					// TODO: add doc
-					common.MulOp.Name(), "", func(self RealInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case BoolInstance:
-							return NewRealInstance(self.Value * boolToFloat64(o.Value)), nil
-						case IntegerInstance:
-							return NewRealInstance(self.Value * float64(o.Value)), nil
-						case RealInstance:
-							return NewRealInstance(self.Value * o.Value), nil
-						default:
-							return nil, nil
-						}
-					},
-				),
-				common.DivOp.Name(): newRealBinaryOperator(
-					// TODO: add doc
-					common.DivOp.Name(), "", func(self RealInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case BoolInstance:
-							if o.Value {
-								return NewRealInstance(self.Value), nil
-							}
-						case IntegerInstance:
-							if o.Value != 0 {
-								return NewRealInstance(self.Value / float64(o.Value)), nil
-							}
-						case RealInstance:
-							if o.Value != 0.0 {
-								return NewRealInstance(self.Value / o.Value), nil
-							}
-						default:
-							return nil, nil
-						}
-
-						return nil, errors.New("ділення на нуль")
-					},
-				),
-				common.AddOp.Name(): newRealBinaryOperator(
-					// TODO: add doc
-					common.AddOp.Name(), "", func(self RealInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case BoolInstance:
-							return NewRealInstance(self.Value + boolToFloat64(o.Value)), nil
-						case IntegerInstance:
-							return NewRealInstance(self.Value + float64(o.Value)), nil
-						case RealInstance:
-							return NewRealInstance(self.Value + o.Value), nil
-						default:
-							return nil, nil
-						}
-					},
-				),
-				common.SubOp.Name(): newRealBinaryOperator(
-					// TODO: add doc
-					common.SubOp.Name(), "", func(self RealInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case BoolInstance:
-							return NewRealInstance(self.Value - boolToFloat64(o.Value)), nil
-						case IntegerInstance:
-							return NewRealInstance(self.Value - float64(o.Value)), nil
-						case RealInstance:
-							return NewRealInstance(self.Value - o.Value), nil
-						default:
-							return nil, nil
-						}
-					},
-				),
-			},
-			MakeLogicalOperators(Real),
-			MakeComparisonOperators(Real, compareReals),
-			MakeCommonOperators(Real),
-		)
+		return nil, NewErrorf("invalid literal for real: '%s'", str)
 	}
 
-	return &Class{
-		Name:            common.RealTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewRealInstance(0), nil
-		},
+	return Real(f), nil
+}
+
+func (value Real) represent(ctx Context) (Object, error) {
+	return value.string(ctx)
+}
+
+func (value Real) string(Context) (Object, error) {
+	if i := int64(value); Real(i) == value {
+		return String(fmt.Sprintf("%d.0", i)), nil
 	}
+
+	return String(fmt.Sprintf("%g", value)), nil
+}
+
+func (value Real) toBool(Context) (Object, error) {
+	return Bool(value != 0.0), nil
+}
+
+// func (value Real) toReal(Context) (Object, error) {
+// 	return value, nil
+// }
+
+func (value Real) toInt(ctx Context) (Object, error) {
+	return Int(value), nil
+}
+
+func (value Real) add(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return value + otherValue, nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return value + Real(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		return value + bo2ro(otherValue), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати додавання дійсного числа до об'єкта '%s'", other.Class().Name)
+}
+
+func (value Real) reversedAdd(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return otherValue + value, nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return Real(otherValue) + value, nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		return bo2ro(otherValue) + value, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати додавання об'єкта '%s' до дійсне число", other.Class().Name)
+}
+
+func (value Real) sub(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return value - otherValue, nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return value - Real(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		return value - bo2ro(otherValue), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати віднімання дійсного числа від об'єкта '%s'", other.Class().Name)
+}
+
+func (value Real) reversedSub(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return otherValue - value, nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return Real(otherValue) - value, nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		return bo2ro(otherValue) - value, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати віднімання об'єкта '%s' від дійсне число", other.Class().Name)
+}
+
+func (value Real) div(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		if otherValue == 0 {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return value / otherValue, nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		if otherValue == 0 {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return value / Real(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if !otherValue {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return value, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати ділення дійсного числа на об'єкт '%s'", other.Class().Name)
+}
+
+func (value Real) reversedDiv(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		if value == 0 {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return otherValue / value, nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		if value == 0 {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		return Real(otherValue) / value, nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if value == 0.0 {
+			return nil, NewZeroDivisionError("ділення на нуль")
+		}
+
+		if !otherValue {
+			return Real(0.0), nil
+		}
+
+		return 1.0 / value, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати ділення об'єкта '%s' на дійсне число", other.Class().Name)
+}
+
+func (value Real) mul(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return value * otherValue, nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return value * Real(otherValue), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if otherValue {
+			return value, nil
+		}
+
+		return Real(0.0), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати множення дійсного числа на об'єкт '%s'", other.Class().Name)
+}
+
+func (value Real) reversedMul(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return otherValue * value, nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return Real(otherValue) * value, nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if !otherValue {
+			return Real(0.0), nil
+		}
+
+		return value, nil
+	}
+
+	return nil, NewErrorf("неможливо виконати множення об'єкта '%s' на дійсне число", other.Class().Name)
+}
+
+func (value Real) mod(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return mod(value, otherValue), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return mod(value, Real(otherValue)), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if !otherValue {
+			return nil, NewZeroDivisionError("цілочисельне ділення або за модулем на нуль")
+		}
+
+		return mod(value, bo2ro(otherValue)), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати модуль? дійсного числа  '%s'", other.Class().Name)
+}
+
+func (value Real) reversedMod(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return mod(otherValue, value), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return mod(Real(otherValue), value), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if value == 0.0 {
+			return nil, NewZeroDivisionError("цілочисельне ділення або за модулем на нуль")
+		}
+
+		return mod(bo2ro(otherValue), value), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати модуль? об'єкта '%s'  дійсне число", other.Class().Name)
+}
+
+func (value Real) pow(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return Real(math.Pow(float64(value), float64(otherValue))), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		return Real(math.Pow(float64(value), float64(otherValue))), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if otherValue {
+			return value, nil
+		}
+
+		return Real(1.0), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати степінь? дійсного числа  '%s'", other.Class().Name)
+}
+
+func (value Real) reversedPow(_ Context, other Object) (Object, error) {
+	if otherValue, ok := other.(Real); ok {
+		return Real(math.Pow(float64(otherValue), float64(value))), nil
+	}
+
+	if otherValue, ok := other.(Int); ok {
+		result := math.Pow(float64(otherValue), float64(value))
+		if otherValue < 0 {
+			return Real(result), nil
+		}
+
+		return Int(result), nil
+	}
+
+	if otherValue, ok := other.(Bool); ok {
+		if otherValue {
+			return Real(1.0), nil
+		}
+
+		if value < 0.0 {
+			return nil, NewZeroDivisionError("неможливо піднести 0.0 до від'ємного степеня")
+		}
+
+		if value == 0.0 {
+			return Real(1.0), nil
+		}
+
+		return Real(0.0), nil
+	}
+
+	return nil, NewErrorf("неможливо виконати степінь? об'єкта '%s'  дійсне число", other.Class().Name)
+}
+
+func (value Real) equals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Real); ok {
+		return goBoolToBoolObject(value == v), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value == Real(v)), nil
+	}
+
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value == bo2ro(v)), nil
+	}
+
+	return False, nil
+}
+
+func (value Real) notEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Real); ok {
+		return goBoolToBoolObject(value != v), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value != Real(v)), nil
+	}
+
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value != bo2ro(v)), nil
+	}
+
+	return False, nil
+}
+
+func (value Real) less(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Real); ok {
+		return goBoolToBoolObject(value < v), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value < Real(v)), nil
+	}
+
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value < bo2ro(v)), nil
+	}
+
+	return nil, OperatorNotSupportedErrorNew("<", value.Class().Name, other.Class().Name)
+}
+
+func (value Real) lessOrEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Real); ok {
+		return goBoolToBoolObject(value <= v), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value <= Real(v)), nil
+	}
+
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value <= bo2ro(v)), nil
+	}
+
+	return nil, OperatorNotSupportedErrorNew("<=", value.Class().Name, other.Class().Name)
+}
+
+func (value Real) greater(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Real); ok {
+		return goBoolToBoolObject(value > v), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value > Real(v)), nil
+	}
+
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value > bo2ro(v)), nil
+	}
+
+	return nil, OperatorNotSupportedErrorNew(">", value.Class().Name, other.Class().Name)
+}
+
+func (value Real) greaterOrEquals(_ Context, other Object) (Object, error) {
+	if v, ok := other.(Real); ok {
+		return goBoolToBoolObject(value >= v), nil
+	}
+
+	if v, ok := other.(Int); ok {
+		return goBoolToBoolObject(value >= Real(v)), nil
+	}
+
+	if v, ok := other.(Bool); ok {
+		return gb2bo(value >= bo2ro(v)), nil
+	}
+
+	return nil, OperatorNotSupportedErrorNew(">=", value.Class().Name, other.Class().Name)
+}
+
+func (value Real) positive(_ Context) (Object, error) {
+	return +value, nil
+}
+
+func (value Real) negate(_ Context) (Object, error) {
+	return -value, nil
 }

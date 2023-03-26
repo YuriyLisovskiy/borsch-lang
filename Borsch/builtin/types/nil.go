@@ -1,90 +1,42 @@
 package types
 
-import (
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
+var (
+	NilClass = ObjectClass.ClassNew("нульове", map[string]Object{}, true, nil, nil)
+
+	Nil = NilType{}
 )
 
-type NilInstance struct {
-	BuiltinInstance
+type NilType struct {
 }
 
-func NewNilInstance() NilInstance {
-	return NilInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance: ClassInstance{
-				class:      Nil,
-				attributes: map[string]common.Value{},
-				address:    "",
-			},
-		},
-	}
+func (value NilType) Class() *Class {
+	return NilClass
 }
 
-func (t NilInstance) String(common.State) (string, error) {
-	return "нуль", nil
+func (value NilType) represent(Context) (Object, error) {
+	return String("нуль"), nil
 }
 
-func (t NilInstance) Representation(state common.State) (string, error) {
-	return t.String(state)
+func (value NilType) string(ctx Context) (Object, error) {
+	return value.represent(ctx)
 }
 
-func (t NilInstance) AsBool(common.State) (bool, error) {
-	return false, nil
+func (value NilType) toBool(_ Context) (Object, error) {
+	return False, nil
 }
 
-func compareNils(_ common.State, _ common.Operator, _ common.Value, other common.Value) (int, error) {
-	switch other.(type) {
-	case NilInstance:
-		return 0, nil
-	default:
-		// -2 is something other than -1, 0 or 1 and means 'not equals'
-		return -2, nil
-	}
-}
-
-func newNilClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			map[string]common.Value{
-				// TODO: add doc
-				common.ConstructorName: NewFunctionInstance(
-					common.ConstructorName,
-					[]FunctionParameter{
-						{
-							Type:       Nil,
-							Name:       "я",
-							IsVariadic: false,
-							IsNullable: false,
-						},
-					},
-					func(_ common.State, args *[]common.Value, _ *map[string]common.Value) (common.Value, error) {
-						return (*args)[0], nil
-					},
-					[]FunctionReturnType{
-						{
-							Type:       Nil,
-							IsNullable: false,
-						},
-					},
-					true,
-					nil,
-					"",
-				),
-			},
-			MakeLogicalOperators(Nil),
-			MakeComparisonOperators(Nil, compareNils),
-			MakeCommonOperators(Nil),
-		)
+func (value NilType) equals(_ Context, other Object) (Object, error) {
+	if _, ok := other.(NilType); ok {
+		return True, nil
 	}
 
-	return &Class{
-		Name:            common.NilTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewNilInstance(), nil
-		},
+	return False, nil
+}
+
+func (value NilType) notEquals(_ Context, other Object) (Object, error) {
+	if _, ok := other.(NilType); ok {
+		return False, nil
 	}
+
+	return True, nil
 }

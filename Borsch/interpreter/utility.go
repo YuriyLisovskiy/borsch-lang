@@ -1,60 +1,47 @@
 package interpreter
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
 )
 
 func evalBinaryOperator(
-	state common.State,
-	valueToSet common.Value,
-	operatorName string,
-	current common.OperatorEvaluatable,
-	next common.OperatorEvaluatable,
-) (common.Value, error) {
+	state State,
+	valueToSet types.Object,
+	operator func(ctx types.Context, a, b types.Object) (types.Object, error),
+	current OperatorEvaluatable,
+	next OperatorEvaluatable,
+) (types.Object, error) {
 	left, err := current.Evaluate(state, valueToSet)
 	if err != nil {
 		return nil, err
 	}
 
 	if !reflect.ValueOf(next).IsNil() {
-		right, err := next.Evaluate(state, nil)
+		right, err := next.Evaluate(state, valueToSet)
 		if err != nil {
 			return nil, err
 		}
 
-		operator, err := left.GetOperator(operatorName)
-		if err != nil {
-			return nil, err
-		}
-
-		return types.CallAttribute(state, left, operator, operatorName, &[]common.Value{right}, nil, true)
+		return operator(state.Context(), left, right)
 	}
 
 	return left, nil
 }
 
 func evalUnaryOperator(
-	state common.State,
-	operatorName string,
-	operator common.OperatorEvaluatable,
-) (common.Value, error) {
-	if operator != nil {
-		value, err := operator.Evaluate(state, nil)
+	state State,
+	operator func(ctx types.Context, a types.Object) (types.Object, error),
+	next OperatorEvaluatable,
+) (types.Object, error) {
+	if next != nil {
+		value, err := next.Evaluate(state, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		operatorFunc, err := value.GetOperator(operatorName)
-		if err != nil {
-			return nil, err
-		}
-
-		return types.CallAttribute(state, value, operatorFunc, operatorName, nil, nil, true)
+		return operator(state.Context(), value)
 	}
 
 	panic("unreachable")
@@ -62,13 +49,13 @@ func evalUnaryOperator(
 
 // evalSlicingOperation: "ranges_" len should be greater than 0
 func evalSlicingOperation(
-	state common.State,
-	variable common.Value,
+	state State,
+	variable types.Object,
 	ranges_ []*Range,
-	valueToSet common.Value,
-) (common.Value, error) {
+	valueToSet types.Object,
+) (types.Object, error) {
 	switch iterable := variable.(type) {
-	case common.SequentialType:
+	case types.ISequence:
 		errMsg := ""
 		if ranges_[0].IsSlicing {
 			errMsg = "ліва межа має бути цілого типу"
@@ -77,26 +64,40 @@ func evalSlicingOperation(
 		}
 
 		leftIdx, err := mustInt(
-			state, ranges_[0].LeftBound, func(t common.Value) string {
-				return fmt.Sprintf("%s, отримано %s", errMsg, t.GetTypeName())
+			state, ranges_[0].LeftBound, func(t types.Object) error {
+				return types.NewTypeErrorf("%s, отримано %s", errMsg, t.Class().Name)
 			},
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		var element common.Value
+		ctx := state.Context()
+		length, err := iterable.Length(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if leftIdx < 0 {
+			leftIdx = length + leftIdx
+		}
+
+		var element types.Object
 		if ranges_[0].RightBound != nil {
 			rightIdx, err := mustInt(
-				state, ranges_[0].RightBound, func(t common.Value) string {
-					return fmt.Sprintf("права межа має бути цілого типу, отримано %s", t.GetTypeName())
+				state, ranges_[0].RightBound, func(t types.Object) error {
+					return types.NewTypeErrorf("права межа має бути цілого типу, отримано %s", t.Class().Name)
 				},
 			)
 			if err != nil {
 				return nil, err
 			}
 
-			element, err = iterable.Slice(state, leftIdx, rightIdx)
+			if rightIdx < 0 {
+				rightIdx = length + rightIdx
+			}
+
+			element, err = iterable.Slice(ctx, leftIdx, rightIdx)
 			if err != nil {
 				return nil, err
 			}
@@ -106,7 +107,7 @@ func evalSlicingOperation(
 				return element, nil
 			}
 		} else if ranges_[0].IsSlicing {
-			element, err = iterable.Slice(state, leftIdx, iterable.Length(state))
+			element, err = iterable.Slice(ctx, leftIdx, length)
 			if err != nil {
 				return nil, err
 			}
@@ -118,19 +119,24 @@ func evalSlicingOperation(
 		} else {
 			if len(ranges_) == 1 {
 				if valueToSet != nil {
-					return iterable.SetElement(state, leftIdx, valueToSet)
+					return iterable.SetElement(ctx, leftIdx, valueToSet)
 				}
 
-				return iterable.GetElement(state, leftIdx)
+				return iterable.GetElement(ctx, leftIdx)
 			}
 
-			element, err = iterable.GetElement(state, leftIdx)
+			element, err = iterable.GetElement(ctx, leftIdx)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		return evalSlicingOperation(state, element, ranges_[1:], valueToSet)
+		element, err = evalSlicingOperation(state, element, ranges_[1:], valueToSet)
+		if err != nil {
+			return nil, err
+		}
+
+		return iterable.SetElement(ctx, leftIdx, element)
 	default:
 		operatorDescription := ""
 		if ranges_[0].IsSlicing {
@@ -139,181 +145,159 @@ func evalSlicingOperation(
 			operatorDescription = "довільного доступу"
 		}
 
-		return nil, util.RuntimeError(
-			fmt.Sprintf(
-				"неможливо застосувати оператор %s до об'єкта з типом '%s'",
-				operatorDescription, variable.GetTypeName(),
-			),
+		return nil, types.NewTypeErrorf(
+			"неможливо застосувати оператор %s до об'єкта з типом '%s'",
+			operatorDescription, variable.Class().Name,
 		)
 	}
 }
 
-func mustInt(state common.State, expression *Expression, errFunc func(common.Value) string) (int64, error) {
+func mustInt(state State, expression *Expression, errFunc func(types.Object) error) (types.Int, error) {
 	value, err := expression.Evaluate(state, nil)
 	if err != nil {
 		return 0, err
 	}
 
 	switch integer := value.(type) {
-	case types.IntegerInstance:
-		return integer.Value, nil
+	case types.Int:
+		return integer, nil
 	default:
-		return 0, util.RuntimeError(errFunc(value))
+		return 0, errFunc(value)
 	}
 }
 
-func unpack(state common.State, lhs []*Expression, rhs []*Expression) (common.Value, error) {
+func checkValuesCountToUnpack(lhsLen, rhsLen int64) error {
+	if lhsLen > rhsLen {
+		return types.NewValueErrorf(
+			"недостатньо значень для розпакування (потрібно %d, отримано %d)",
+			lhsLen,
+			rhsLen,
+		)
+	}
+
+	if lhsLen < rhsLen {
+		return types.NewValueErrorf("занадто багато значень для розпакування (потрібно %d)", lhsLen)
+	}
+
+	return nil
+}
+
+func evalRhs(state State, _ /*lhs*/ []*Expression, rhs []*Expression) (*types.Tuple, error) {
+	rhsSeq := types.Tuple{}
+	for _, expr := range rhs {
+		obj, err := expr.Evaluate(state, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: possible optimization: validate types of lhs[i] and
+		//  evaluated i-th expression.
+		//  Note: lhs can contain only one expression when unpacking a
+		//  statement like: к = 1, 2.0, "Привіт"
+		rhsSeq = append(rhsSeq, obj)
+	}
+
+	return &rhsSeq, nil
+}
+
+func unpack(state State, lhs []*Expression, rhs []*Expression) (types.Object, error) {
 	lhsLen := len(lhs)
 	rhsLen := len(rhs)
-	if lhsLen > rhsLen {
-		return unpackList(state, lhs, rhs[0])
-	}
-
-	sequence, result, err := getSequenceOrResult(state, lhs, rhs)
-	if err != nil {
-		return nil, err
-	}
-
-	if result != nil {
-		return result, err
-	}
-
-	if lhsLen > len(sequence) {
-		// TODO: return unable to unpack
-		panic(fmt.Sprintf("unable to unpack %d elements to %d vars", len(sequence), lhsLen))
-	}
-
-	var i int
-	list := types.NewListInstance()
-	for i = 0; i < lhsLen-1; i++ {
-		element, err := lhs[i].Evaluate(state, sequence[i])
+	if lhsLen == 1 && lhsLen < rhsLen {
+		// unpack right-hand values into left-hand single variable:
+		//  к = 1, 2.0, "Привіт";
+		rhsSeq, err := evalRhs(state, lhs, rhs)
 		if err != nil {
 			return nil, err
 		}
 
-		list.Values = append(list.Values, element)
+		return lhs[0].Evaluate(state, rhsSeq)
 	}
 
-	if i < len(sequence)-1 {
-		rest := types.NewListInstance()
-		rest.Values = sequence[i:]
-		list.Values = append(list.Values, rest)
-	} else {
-		element, err := lhs[i].Evaluate(state, sequence[i])
+	if rhsLen == 1 && lhsLen > rhsLen {
+		// unpack right-hand tuple into left-hand variables:
+		//  а, б, в = [1, 2.0, "Привіт"];
+		obj, err := rhs[0].Evaluate(state, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		list.Values = append(list.Values, element)
+		return unpackFromSequence(state, lhs, obj, false)
 	}
 
-	return list, nil
-}
-
-func getSequenceOrResult(state common.State, lhs []*Expression, rhs []*Expression) (
-	[]common.Value,
-	common.Value,
-	error,
-) {
-	rhsLen := len(rhs)
-	var sequence []common.Value
-	if rhsLen == 1 {
-		element, err := rhs[0].Evaluate(state, nil)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		switch list := element.(type) {
-		case types.ListInstance:
-			if len(lhs) == 1 {
-				result, err := lhs[0].Evaluate(state, list)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				return nil, result, nil
-			}
-
-			sequence = list.Values
-		default:
-			sequence = append(sequence, element)
-		}
-	} else {
-		for _, expr := range rhs {
-			element, err := expr.Evaluate(state, nil)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			sequence = append(sequence, element)
-		}
+	if err := checkValuesCountToUnpack(int64(lhsLen), int64(rhsLen)); err != nil {
+		return nil, err
 	}
 
-	return sequence, nil, nil
-}
-
-func unpackList(state common.State, lhs []*Expression, rhs *Expression) (common.Value, error) {
-	element, err := rhs.Evaluate(state, nil)
+	rhsSeq, err := evalRhs(state, lhs, rhs)
 	if err != nil {
 		return nil, err
 	}
 
-	switch list := element.(type) {
-	case types.ListInstance:
-		lhsLen := int64(len(lhs))
-		rhsLen := list.Length(state)
-		if lhsLen > rhsLen {
-			// TODO: return error
-			panic(fmt.Sprintf("unable to unpack %d elements of %s to %d vars", rhsLen, element.GetTypeName(), lhsLen))
-		}
-
-		var i int64
-		resultList := types.NewListInstance()
-		for i = 0; i < lhsLen-1; i++ {
-			item, err := lhs[i].Evaluate(state, list.Values[i])
-			if err != nil {
-				return nil, err
-			}
-
-			resultList.Values = append(resultList.Values, item)
-		}
-
-		if i < list.Length(state)-1 {
-			rest := types.NewListInstance()
-			rest.Values = list.Values[i:]
-			resultList.Values = append(resultList.Values, rest)
-		} else {
-			element, err := lhs[i].Evaluate(state, list.Values[i])
-			if err != nil {
-				return nil, err
-			}
-
-			resultList.Values = append(resultList.Values, element)
-		}
-
-		return resultList, nil
-	}
-
-	// TODO: return error
-	panic(fmt.Sprintf("unable to unpack %s", element.GetTypeName()))
+	return unpackFromSequence(state, lhs, rhsSeq, true)
 }
 
-func evalReturnTypes(state common.State, returnTypes []*ReturnType) ([]types.FunctionReturnType, error) {
-	var result []types.FunctionReturnType
+// unpackFromSequence unpacks right-hand tuple into left-hand variables:
+//  а, б, в = 1, 2.0, "Привіт"
+//  а, б, в = [1, 2.0, "Привіт"]
+//  а, б, в = (1, 2.0, "Привіт")
+//  а, б, в = <any sequence>
+func unpackFromSequence(state State, dest []*Expression, src types.Object, skipSrcCheck bool) (types.Object, error) {
+	var sequence types.ISequence
+	if skipSrcCheck {
+		sequence = src.(types.ISequence)
+	} else {
+		var ok bool
+		sequence, ok = src.(types.ISequence)
+		if !ok {
+			return nil, types.NewErrorf(
+				"неможливо розпакувати об'єкт з типом '%s', оскільки він не є послідовністю",
+				src.Class().Name,
+			)
+		}
+
+		seqLen, err := sequence.Length(state.Context())
+		if err != nil {
+			return nil, err
+		}
+
+		if err := checkValuesCountToUnpack(int64(len(dest)), int64(seqLen)); err != nil {
+			return nil, err
+		}
+	}
+
+	result := types.NewList()
+	ctx := state.Context()
+	for i, expr := range dest {
+		item, _ := sequence.GetElement(ctx, types.Int(i))
+		obj, err := expr.Evaluate(state, item)
+		if err != nil {
+			return nil, err
+		}
+
+		result.Values = append(result.Values, obj)
+	}
+
+	return result, nil
+}
+
+func evalReturnTypes(state State, returnTypes []*ReturnType) ([]types.MethodReturnType, error) {
+	var result []types.MethodReturnType
 	if len(returnTypes) == 0 {
 		result = append(
-			result, types.FunctionReturnType{
-				Type:       types.Nil,
+			result, types.MethodReturnType{
+				Class:      types.NilClass,
 				IsNullable: false,
 			},
 		)
 	} else {
 		for _, returnType := range returnTypes {
-			r, err := returnType.Evaluate(state.GetContext())
+			r, err := returnType.Evaluate(state.Context())
 			if err != nil {
 				return nil, err
 			}
 
+			// TODO: check if return type is class!
 			result = append(result, *r)
 		}
 	}
@@ -321,20 +305,20 @@ func evalReturnTypes(state common.State, returnTypes []*ReturnType) ([]types.Fun
 	return result, nil
 }
 
-func getCurrentValue(ctx common.Context, prevValue common.Value, ident string) (common.Value, error) {
+func getCurrentValue(ctx types.Context, prevValue types.Object, ident string) (types.Object, error) {
 	if prevValue != nil {
 		if err := checkForNilAttribute(ident); err != nil {
 			return nil, err
 		}
 
-		return prevValue.GetAttribute(ident)
+		return types.GetAttribute(ctx, prevValue, ident)
 	}
 
 	return ctx.GetVar(ident)
 }
 
-func setCurrentValue(ctx common.Context, prevValue common.Value, ident string, valueToSet common.Value) (
-	common.Value,
+func setCurrentValue(ctx types.Context, prevValue types.Object, ident string, valueToSet types.Object) (
+	types.Object,
 	error,
 ) {
 	if prevValue != nil {
@@ -342,7 +326,7 @@ func setCurrentValue(ctx common.Context, prevValue common.Value, ident string, v
 			return nil, err
 		}
 
-		return prevValue, prevValue.SetAttribute(ident, valueToSet)
+		return prevValue, types.SetAttribute(ctx, prevValue, ident, valueToSet)
 	}
 
 	return valueToSet, ctx.SetVar(ident, valueToSet)
@@ -350,14 +334,14 @@ func setCurrentValue(ctx common.Context, prevValue common.Value, ident string, v
 
 func checkForNilAttribute(ident string) error {
 	switch ident {
-	case "нуль", "нульовий":
-		return util.RuntimeError(fmt.Sprintf("'%s' не є атрибутом", ident))
+	case "нуль", "нульове":
+		return types.NewAttributeErrorf("'%s' не є атрибутом", ident)
 	}
 
 	return nil
 }
 
-func updateArgs(state common.State, arguments []*Expression, args *[]common.Value) error {
+func updateArgs(state State, arguments []*Expression, args *types.Tuple) error {
 	for _, expressionArgument := range arguments {
 		arg, err := expressionArgument.Evaluate(state, nil)
 		if err != nil {

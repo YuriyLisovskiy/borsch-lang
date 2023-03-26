@@ -1,90 +1,81 @@
 package types
 
-import (
-	"fmt"
+import "fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
+var PackageClass = ObjectClass.ClassNew("пакет", map[string]Object{}, true, nil, nil)
+
+var (
+	Initialized = false
 )
 
-type PackageInstance struct {
-	ClassInstance
-	Name   string
-	Parent *PackageInstance
-
-	ctx common.Context
+type Package struct {
+	Filename string
+	Dict     StringDict
+	Parent   *Package
+	Context  Context
 }
 
-func NewPackageInstance(
-	ctx common.Context,
-	name string,
-	parent *PackageInstance,
-	attributes map[string]common.Value,
-) *PackageInstance {
-	instance := &PackageInstance{
-		ClassInstance: *NewClassInstance(Package, attributes),
-		Name:          name,
-		Parent:        parent,
-		ctx:           ctx,
-	}
-
-	instance.address = fmt.Sprintf("%p", instance)
-	return instance
-}
-
-func (p *PackageInstance) String(common.State) (string, error) {
-	return fmt.Sprintf("<пакет '%s'>", p.Name), nil
-}
-
-func (p *PackageInstance) Representation(state common.State) (string, error) {
-	return p.String(state)
-}
-
-func (p *PackageInstance) GetContext() common.Context {
-	return p.ctx
-}
-
-func (p *PackageInstance) SetContext(ctx common.Context) {
-	p.ctx = ctx
-}
-
-func (p *PackageInstance) SetAttributes(attrs map[string]common.Value) {
-	p.attributes = attrs
-	if p.attributes == nil {
-		p.attributes = map[string]common.Value{}
-	}
-}
-
-func comparePackages(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
-	switch right := other.(type) {
-	case NilInstance:
-	case *PackageInstance:
-		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
-	default:
-		return -2, util.OperatorNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
-	}
-
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
-}
-
-func NewPackageClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			MakeLogicalOperators(Package),
-			MakeComparisonOperators(Package, comparePackages),
-			MakeCommonOperators(Package),
-		)
-	}
-
-	return &Class{
-		Name:            common.PackageTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
-			panic("unreachable")
+func PackageNew(filename string, parent *Package, ctx Context) *Package {
+	pkg := &Package{
+		Filename: filename,
+		Dict: map[string]Object{
+			"__назва__": String(filename),
 		},
+		Parent:  parent,
+		Context: ctx,
 	}
+	initInstance(pkg, &pkg.Dict, pkg.Class())
+	return pkg
+}
+
+func (value *Package) Class() *Class {
+	return PackageClass
+}
+
+func (value *Package) represent(Context) (Object, error) {
+	return String(fmt.Sprintf("<пакет %s>", value.Name())), nil
+}
+
+func (value *Package) string(ctx Context) (Object, error) {
+	return value.represent(ctx)
+}
+
+func (value *Package) getAttribute(_ Context, name string) (Object, error) {
+	return getAttributeFrom(&value.Dict, name, value.Class())
+}
+
+func (value *Package) setAttribute(_ Context, name string, newValue Object) error {
+	attr, ok := value.Dict[name]
+	if !ok {
+		attr = value.Class().GetAttributeOrNil(name)
+	}
+
+	return setAttributeTo(value, &value.Dict, attr, name, newValue)
+}
+
+func (value *Package) deleteAttribute(ctx Context, name string) (Object, error) {
+	if attr, ok := value.Dict[name]; ok {
+		delete(value.Dict, name)
+		return attr, nil
+	}
+
+	attr, err := value.Class().deleteAttribute(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if attr != nil {
+		return attr, nil
+	}
+
+	return nil, NewErrorf("пакет '%s' не містить атрибута '%s'", value.Name(), name)
+}
+
+func (value *Package) Name() string {
+	name, ok := value.Dict["__назва__"].(String)
+	if !ok {
+		name = "???"
+	}
+
+	return fmt.Sprintf("<пакет \"%s\">", name)
 }

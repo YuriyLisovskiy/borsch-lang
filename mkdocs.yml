@@ -1,0 +1,68 @@
+site_name: Документація Borsch
+repo_url: https://github.com/YuriyLisovskiy/borsch-lang
+repo_name: YuriyLisovskiy/borsch-lang
+edit_uri: edit/gh-pages/docs/
+copyright: Copyright &copy; 2021 - 2022 Yuriy Lisovskiy
+
+theme:
+  name: material
+  language: uk
+  favicon: assets/favicon.ico
+  logo: assets/logo.svg
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/file-edit-outline
+  features:
+#    - toc.integrate
+    - navigation.top
+    - navigation.tabs
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/YuriyLisovskiy
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/r/yuralisovskiy/borsch/
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+nav:
+  - Домівка:
+    - index.md
+  - Туторіал:
+    - tutorial/index.md
+    - Коментарі: tutorial/comments.md
+    - Змінні: tutorial/variables.md
+    - Типи Даних: tutorial/data-types.md
+    - Числа: tutorial/numbers.md
+    - Рядки: tutorial/strings.md
+    - Логічні Значення: tutorial/booleans.md
+    - Списки: tutorial/lists.md
+    - Кортежі: tutorial/tuples.md
+    - Словники: tutorial/dictionaries.md
+    - Операції: tutorial/operations.md
+    - Конструкції: tutorial/syntax.md
+    - Класи: tutorial/classes.md
+    - Пакети: tutorial/packages.md
+  - Бібліотека:
+    - Розробка:
+      - library/dev/index.md

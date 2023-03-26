@@ -1,178 +1,111 @@
 package types
 
-import (
-	"errors"
-	"strings"
+import "fmt"
 
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/common"
-	"github.com/YuriyLisovskiy/borsch-lang/Borsch/util"
-)
+var ListClass = ObjectClass.ClassNew("список", map[string]Object{}, true, ListNew, nil)
 
-type ListInstance struct {
-	BuiltinInstance
-	Values []common.Value
+type List struct {
+	Values []Object
 }
 
-func NewListInstance() ListInstance {
-	return ListInstance{
-		BuiltinInstance: BuiltinInstance{
-			ClassInstance{
-				class:      List,
-				attributes: map[string]common.Value{},
-				address:    "",
-			},
-		},
-		Values: []common.Value{},
+func checkIndex(index, length Int, indexOfWhat string) error {
+	if index >= 0 && index < length {
+		return nil
 	}
+
+	return NewIndexOutOfRangeErrorf("індекс %s за межами діапазону", indexOfWhat)
 }
 
-func (t ListInstance) String(state common.State) (string, error) {
-	return t.Representation(state)
+func NewList() *List {
+	return &List{Values: nil}
 }
 
-func (t ListInstance) Representation(state common.State) (string, error) {
-	var strValues []string
-	for _, value := range t.Values {
-		strValue, err := value.Representation(state)
+func (value *List) Class() *Class {
+	return ListClass
+}
+
+func ListNew(ctx Context, cls *Class, args Tuple) (Object, error) {
+	return &List{Values: args}, nil
+}
+
+func (value *List) represent(ctx Context) (Object, error) {
+	return value.string(ctx)
+}
+
+func (value *List) string(ctx Context) (Object, error) {
+	str := String("")
+	vLen := len(value.Values)
+	for i, item := range value.Values {
+		itemStr, err := Represent(ctx, item)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		strValues = append(strValues, strValue)
+		str += itemStr.(String)
+		if i < vLen-1 {
+			str += ", "
+		}
 	}
 
-	return "[" + strings.Join(strValues, ", ") + "]", nil
+	return String(fmt.Sprintf("[%s]", str)), nil
 }
 
-func (t ListInstance) AsBool(state common.State) (bool, error) {
-	return t.Length(state) != 0, nil
+func (value *List) Length(_ Context) (Int, error) {
+	return Int(len(value.Values)), nil
 }
 
-func (t ListInstance) Length(common.State) int64 {
-	return int64(len(t.Values))
-}
-
-func (t ListInstance) GetElement(state common.State, index int64) (common.Value, error) {
-	idx, err := getIndex(index, t.Length(state))
+func (value *List) GetElement(ctx Context, index Int) (Object, error) {
+	length, err := value.Length(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return t.Values[idx], nil
+	if err = checkIndex(index, length, "списку"); err != nil {
+		return nil, err
+	}
+
+	return value.Values[index], nil
 }
 
-func (t ListInstance) SetElement(state common.State, index int64, value common.Value) (common.Value, error) {
-	idx, err := getIndex(index, t.Length(state))
+func (value *List) SetElement(ctx Context, index Int, item Object) (Object, error) {
+	length, err := value.Length(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	t.Values[idx] = value
-	return t, nil
-}
-
-func (t ListInstance) Slice(state common.State, from, to int64) (common.Value, error) {
-	length := t.Length(state)
-	fromIdx := normalizeBound(from, length)
-	toIdx := normalizeBound(to, length)
-	if fromIdx > toIdx {
-		return nil, errors.New("індекс списку за межами послідовності")
+	if err = checkIndex(index, length, "списку"); err != nil {
+		return nil, err
 	}
 
-	listInstance := NewListInstance()
-	listInstance.Values = t.Values[fromIdx:toIdx]
-	return listInstance, nil
+	value.Values[index] = item
+	return value, nil
 }
 
-func compareLists(_ common.State, op common.Operator, self common.Value, other common.Value) (int, error) {
-	switch right := other.(type) {
-	case NilInstance:
-	case ListInstance:
-		return -2, util.OperandsNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
-	default:
-		return -2, util.OperatorNotSupportedError(op, self.GetTypeName(), right.GetTypeName())
+func (value *List) Slice(ctx Context, leftBound, rightBound Int) (Object, error) {
+	length, err := value.Length(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// -2 is something other than -1, 0 or 1 and means 'not equals'
-	return -2, nil
-}
-
-func newListBinaryOperator(
-	name string,
-	doc string,
-	handler func(ListInstance, common.Value) (common.Value, error),
-) *FunctionInstance {
-	return newBinaryMethod(
-		name,
-		List,
-		Any,
-		doc,
-		func(_ common.State, left common.Value, right common.Value) (common.Value, error) {
-			if leftInstance, ok := left.(ListInstance); ok {
-				return handler(leftInstance, right)
-			}
-
-			return nil, util.IncorrectUseOfFunctionError(name)
-		},
-	)
-}
-
-func newListClass() *Class {
-	initAttributes := func(attrs *map[string]common.Value) {
-		*attrs = MergeAttributes(
-			map[string]common.Value{
-				// TODO: add doc
-				common.ConstructorName: newBuiltinConstructor(List, ToList, ""),
-
-				// TODO: add doc
-				common.LengthOperatorName: newLengthOperator(List, getLength, ""),
-
-				common.MulOp.Name(): newListBinaryOperator(
-					// TODO: add doc
-					common.MulOp.Name(), "", func(self ListInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case IntegerInstance:
-							count := int(o.Value)
-							list := NewListInstance()
-							if count > 0 {
-								for c := 0; c < count; c++ {
-									list.Values = append(list.Values, self.Values...)
-								}
-							}
-
-							return list, nil
-						default:
-							return nil, nil
-						}
-					},
-				),
-				common.AddOp.Name(): newListBinaryOperator(
-					// TODO: add doc
-					common.AddOp.Name(), "", func(self ListInstance, other common.Value) (common.Value, error) {
-						switch o := other.(type) {
-						case ListInstance:
-							self.Values = append(self.Values, o.Values...)
-							return self, nil
-						default:
-							return nil, nil
-						}
-					},
-				),
-			},
-			MakeLogicalOperators(List),
-			MakeComparisonOperators(List, compareLists),
-			MakeCommonOperators(List),
-		)
+	if err = checkIndex(leftBound, length, "списку"); err != nil {
+		if leftBound < 0 {
+			leftBound = 0
+		}
 	}
 
-	return &Class{
-		Name:            common.ListTypeName,
-		IsFinal:         true,
-		Bases:           []*Class{},
-		Parent:          BuiltinPackage,
-		AttrInitializer: initAttributes,
-		GetEmptyInstance: func() (common.Value, error) {
-			return NewListInstance(), nil
-		},
+	if err = checkIndex(rightBound, length+1, "списку"); err != nil {
+		if rightBound > length {
+			rightBound = length
+		}
 	}
+
+	list := NewList()
+	if leftBound > rightBound {
+		return list, nil
+	}
+
+	slicedList := value.Values[leftBound:rightBound]
+	list.Values = make([]Object, len(slicedList))
+	copy(list.Values, slicedList)
+	return list, nil
 }

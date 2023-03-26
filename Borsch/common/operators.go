@@ -2,26 +2,22 @@ package common
 
 import "fmt"
 
-type Operator int
+type OperatorHash int
 
 const (
 	// math
-	PowOp Operator = iota
+	PowOp OperatorHash = iota
 	ModuloOp
 	AddOp
 	SubOp
 	MulOp
 	DivOp
-	UnaryMinus
-	UnaryPlus
 
 	// logical
 	AndOp
 	OrOp
-	NotOp
 
 	// bitwise
-	UnaryBitwiseNotOp
 	BitwiseLeftShiftOp
 	BitwiseRightShiftOp
 	BitwiseAndOp
@@ -35,21 +31,39 @@ const (
 	GreaterOrEqualsOp
 	LessOp
 	LessOrEqualsOp
+
+	// other operators
+	ConstructorOp
+	CallOp
+
+	// math: unary operators
+	UnaryMinus
+	UnaryPlus
+
+	// logical: unary operators
+	NotOp
+
+	// bitwise: unary operators
+	UnaryBitwiseNotOp
+
+	// other: unary operators
+	LengthOp
+	BoolOp
+	IntOp
+	RealOp
+	StringOp
+	RepresentationOp
 )
 
-var opTypesToSignatures = map[Operator]string{
+var opTypesToSignatures = map[OperatorHash]string{
 	PowOp:               "**",
 	ModuloOp:            "%",
 	AddOp:               "+",
 	SubOp:               "-",
 	MulOp:               "*",
 	DivOp:               "/",
-	UnaryMinus:          "-",
-	UnaryPlus:           "+",
 	AndOp:               "&&",
 	OrOp:                "||",
-	NotOp:               "!",
-	UnaryBitwiseNotOp:   "~",
 	BitwiseLeftShiftOp:  "<<",
 	BitwiseRightShiftOp: ">>",
 	BitwiseAndOp:        "&",
@@ -61,35 +75,116 @@ var opTypesToSignatures = map[Operator]string{
 	GreaterOrEqualsOp:   ">=",
 	LessOp:              "<",
 	LessOrEqualsOp:      "<=",
+
+	ConstructorOp: "__конструктор__",
+	CallOp:        "__виклик__",
+
+	UnaryMinus:        "-",
+	UnaryPlus:         "+",
+	NotOp:             "!",
+	UnaryBitwiseNotOp: "~",
+	LengthOp:          "__довжина__",
+	BoolOp:            "__логічне__",
+	IntOp:             "__ціле__",
+	RealOp:            "__дійсне__",
+	StringOp:          "__рядок__",
+	RepresentationOp:  "__представлення__",
+}
+
+var opSignaturesToHashes = map[string]OperatorHash{
+	"**": PowOp,
+	"%":  ModuloOp,
+	"+":  AddOp,
+	"-":  SubOp,
+	"*":  MulOp,
+	"/":  DivOp,
+	"&&": AndOp,
+	"||": OrOp,
+	"<<": BitwiseLeftShiftOp,
+	">>": BitwiseRightShiftOp,
+	"&":  BitwiseAndOp,
+	"^":  BitwiseXorOp,
+	"|":  BitwiseOrOp,
+	"==": EqualsOp,
+	"!=": NotEqualsOp,
+	">":  GreaterOp,
+	">=": GreaterOrEqualsOp,
+	"<":  LessOp,
+	"<=": LessOrEqualsOp,
+
+	"__конструктор__": ConstructorOp,
+	"__виклик__":      CallOp,
+
+	"_-":                UnaryMinus,
+	"_+":                UnaryPlus,
+	"!":                 NotOp,
+	"~":                 UnaryBitwiseNotOp,
+	"__довжина__":       LengthOp,
+	"__логічне__":       BoolOp,
+	"__ціле__":          IntOp,
+	"__дійсне__":        RealOp,
+	"__рядок__":         StringOp,
+	"__представлення__": RepresentationOp,
 }
 
 var opNames = []string{
-	"__оператор_степеня__",             // **
-	"__оператор_ділення_за_модулем__",  // %
-	"__оператор_суми__",                // +
-	"__оператор_різниці__",             // -
-	"__оператор_добутку__",             // *
-	"__оператор_частки__",              // /
-	"__оператор_мінус__",               // -
-	"__оператор_плюс__",                // +
-	"__оператор_і__",                   // &&
-	"__оператор_або__",                 // ||
-	"__оператор_не__",                  // !
-	"__оператор_побітового_не__",       // ~
-	"__оператор_зсуву_ліворуч__",       // <<
-	"__оператор_зсуву_праворуч__",      // >>
-	"__оператор_побітового_і__",        // &
-	"__оператор_побітового_XOR__",      // ^   TODO: підібрати відповідник до XOR
-	"__оператор_побітового_або__",      // |
-	"__оператор_рівності__",            // ==
-	"__оператор_нерівності__",          // !=
-	"__оператор_більше__",              // >
-	"__оператор_більше_або_дорівнює__", // >=
-	"__оператор_менше__",               // <
-	"__оператор_менше_або_дорівнює__",  // <=
+	"**", // **
+	"%",  // %
+	"+",  // +
+	"-",  // -
+	"*",  // *
+	"/",  // /
+	"&&", // &&
+	"||", // ||
+	"<<", // <<
+	">>", // >>
+	"&",  // &
+	"^",  // ^   TODO: підібрати відповідник до XOR
+	"|",  // |
+	"==", // ==
+	"!=", // !=
+	">",  // >
+	">=", // >=
+	"<",  // <
+	"<=", // <=
+
+	"__конструктор__",
+	"__виклик__",
+
+	"унарний -", // -
+	"унарний +", // +
+	"!",         // !
+	"~",         // ~
+	"__довжина__",
+	"__логічне__",
+	"__ціле__",
+	"__дійсне__",
+	"__рядок__",
+	"__представлення__",
 }
 
-func (op Operator) Sign() string {
+func OperatorHashFromString(signature string) OperatorHash {
+	if opHash, ok := opSignaturesToHashes[signature]; ok {
+		return opHash
+	}
+
+	panic(
+		fmt.Sprintf(
+			"Unable to create hash for operator '%s', please add it to 'opSignaturesToHashes' map first",
+			signature,
+		),
+	)
+}
+
+func (op OperatorHash) IsUnary() bool {
+	return op >= UnaryMinus
+}
+
+func (op OperatorHash) IsBinary() bool {
+	return op <= LessOrEqualsOp
+}
+
+func (op OperatorHash) Sign() string {
 	if op >= 0 && int(op) < len(opTypesToSignatures) {
 		return opTypesToSignatures[op]
 	}
@@ -102,7 +197,7 @@ func (op Operator) Sign() string {
 	)
 }
 
-func (op Operator) Name() string {
+func (op OperatorHash) Name() string {
 	if op >= 0 && int(op) < len(opNames) {
 		return opNames[op]
 	}
@@ -113,14 +208,4 @@ func (op Operator) Name() string {
 			op,
 		),
 	)
-}
-
-func IsOperator(name string) bool {
-	for _, current := range opNames {
-		if current == name {
-			return true
-		}
-	}
-
-	return false
 }

@@ -8,7 +8,7 @@ import (
 )
 
 var versionCmd = &cobra.Command{
-	Use:   "version",
+	Use:   "версія",
 	Short: "друк номеру збірки мови",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("%s %s\n", build.LanguageName, build.Version)

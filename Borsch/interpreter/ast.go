@@ -1,43 +1,92 @@
 package interpreter
 
-import "github.com/alecthomas/participle/v2/lexer"
+import (
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/builtin/types"
+	"github.com/YuriyLisovskiy/borsch-lang/Borsch/utilities"
+	"github.com/alecthomas/participle/v2/lexer"
+)
 
 type Package struct {
 	Pos lexer.Position
 
-	Stmts []*Stmt `@@*`
+	Stmts *BlockStmts `@@`
+}
+
+type Throw struct {
+	Pos lexer.Position
+
+	Expression *Expression `"панікувати" @@`
+}
+
+type Block struct {
+	Pos lexer.Position
+
+	Stmts       *BlockStmts `"блок" @@`
+	CatchBlocks []*Catch    `[ @@ (@@)* ] "кінець"`
+}
+
+type Ident string
+
+func (i *Ident) Capture(values []string) error {
+	ident := values[0]
+	if ident == "кінець" {
+		// TODO: write ukr error!
+		return utilities.SyntaxError("unexpected token 'кінець'")
+	}
+
+	*i = Ident(ident)
+	return nil
+}
+
+func (i Ident) String() string {
+	return string(i)
+}
+
+type Catch struct {
+	Pos lexer.Position
+
+	ErrorVar  Ident            `"піймати" "(" @Ident`
+	ErrorType *AttributeAccess `":" @@ ")"`
+	Stmts     *BlockStmts      `@@`
 }
 
 type ReturnStmt struct {
 	Pos lexer.Position
 
-	Expressions []*Expression `"повернути" (@@ ("," @@)*)? ";"`
+	Expressions []*Expression `"повернути" (@@ ("," @@)*)?`
 }
 
 type LoopStmt struct {
 	Pos lexer.Position
 
 	Keyword         string           `"цикл"`
-	RangeBasedLoop  *RangeBasedLoop  `"(" (@@ `
-	ConditionalLoop *ConditionalLoop `|    @@) ")"`
-	Body            *BlockStmts      `"{" @@ "}"`
+	RangeBasedLoop  *RangeBasedLoop  `["(" (@@ `
+	ConditionalLoop *ConditionalLoop `|    @@) ")"]`
+	Body            *BlockStmts      `@@ "кінець"`
 }
 
 // RangeBasedLoop is a loop with two bounds to
 // iterate over.
 //
+// Example:
 //   цикл (і : 1 .. 7)
 //   {
 //   }
 type RangeBasedLoop struct {
 	Pos lexer.Position
 
-	Variable   string      `@Ident ":"`
+	Variable   Ident       `@Ident ":"`
 	LeftBound  *Expression `@@`
-	SS         string      `@("."".")`
+	Separator  string      `@("."".")`
 	RightBound *Expression `@@`
 }
 
+// ConditionalLoop
+//
+// Example:
+//   цикл (умова_логічного_типу)
+//   {
+//   }
 type ConditionalLoop struct {
 	Pos lexer.Position
 
@@ -48,34 +97,41 @@ type IfStmt struct {
 	Pos lexer.Position
 
 	Condition   *Expression   `"якщо" "(" @@ ")"`
-	Body        *BlockStmts   `"{" @@ "}"`
-	ElseIfStmts []*ElseIfStmt `(@@ (@@)* )?`
-	Else        *BlockStmts   `("інакше" "{" @@ "}")?`
+	Body        *BlockStmts   `@@`
+	ElseIfStmts []*ElseIfStmt `(@@ (@@)*)?`
+	Else        *BlockStmts   `("інакше" @@)? "кінець"`
 }
 
 type ElseIfStmt struct {
 	Condition *Expression `"інакше" "якщо" "(" @@ ")"`
-	Body      *BlockStmts `"{" @@ "}"`
+	Body      *BlockStmts `@@`
 }
 
 type BlockStmts struct {
 	Pos lexer.Position
 
 	Stmts []*Stmt `@@*`
+
+	stmtPos int
+}
+
+func (node *BlockStmts) GetCurrentStmt() *Stmt {
+	return node.Stmts[node.stmtPos]
 }
 
 type Stmt struct {
 	Pos lexer.Position
 
-	IfStmt      *IfStmt      `  @@`
-	LoopStmt    *LoopStmt    `| @@`
-	Block       *BlockStmts  `| "{" @@ "}"`
-	FunctionDef *FunctionDef `| @@`
-	ClassDef    *ClassDef    `| @@`
-	ReturnStmt  *ReturnStmt  `| @@`
-	BreakStmt   bool         `| @"перервати"`
+	Throw       *Throw       `(?!("піймати" | "інакше" | "кінець")) (@@`
+	IfStmt      *IfStmt      `| @@ ";"`
+	LoopStmt    *LoopStmt    `| @@ ";"`
+	Block       *Block       `| @@ ";"`
+	FunctionDef *FunctionDef `| @@ ";"`
+	ClassDef    *ClassDef    `| @@ ";"`
+	ReturnStmt  *ReturnStmt  `| @@ ";"`
+	BreakStmt   bool         `| @"перервати" ";"`
 	Assignment  *Assignment  `| (@@ ";")`
-	Empty       bool         `| @";"`
+	Empty       bool         `| @";")`
 }
 
 type FunctionBody struct {
@@ -87,10 +143,10 @@ type FunctionBody struct {
 type FunctionDef struct {
 	Pos lexer.Position
 
-	Name          string         `"функція" @Ident`
+	Name          Ident          `"функція" @Ident`
 	ParametersSet *ParametersSet `@@`
 	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body          *FunctionBody  `"{" @@ "}"`
+	Body          *FunctionBody  `@@ "кінець"`
 }
 
 type ParametersSet struct {
@@ -102,41 +158,53 @@ type ParametersSet struct {
 type Parameter struct {
 	Pos lexer.Position
 
-	Name       string `@Ident ":"`
-	Type       string `@Ident`
-	IsNullable bool   `@"?"?`
+	Name       Ident `@Ident ":"`
+	TypeName   Ident `@Ident`
+	IsNullable bool  `@"?"?`
 }
 
 type ReturnType struct {
 	Pos lexer.Position
 
-	Name       string `@Ident`
-	IsNullable bool   `@"?"?`
+	Name       Ident `@Ident`
+	IsNullable bool  `@"?"?`
 }
 
 type ClassDef struct {
 	Pos lexer.Position
 
-	Name    string         `"клас" @Ident`
+	Name    Ident          `"клас" @Ident`
 	IsFinal bool           `@"заключний"?`
-	Bases   []string       `[":" (@Ident)+]`
-	Members []*ClassMember `"{" @@* "}"`
+	Bases   []Ident        `(":" @Ident ("," @Ident)*)?`
+	Members []*ClassMember `(@@ ";")* "кінець"`
+
+	operators []*types.Method
 }
 
 type ClassMember struct {
 	Pos lexer.Position
 
-	Variable *Assignment  ` (@@ ";")`
-	Method   *FunctionDef `| @@`
+	Method   *FunctionDef `  @@`
+	Operator *OperatorDef `| @@`
 	Class    *ClassDef    `| @@`
+	Variable *Assignment  `| @@`
+}
+
+type OperatorDef struct {
+	Pos lexer.Position
+
+	Op            string         `"оператор" @("=""=" | "!""=" | "<""=" | "<""<" | "<" | ">""=" | ">"">" | ">" | "+" | "-" | "/" | "*""*" | "*" | "%" | "^" | "~" | "&""&" | "&" | "|""|" | "|" | "__конструктор__" | "__виклик__" | "__довжина__" | "__логічне__" | "__ціле__" | "__дійсне__" | "__рядок__" | "__представлення__")`
+	ParametersSet *ParametersSet `@@`
+	ReturnTypes   []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
+	Body          *FunctionBody  `@@ "кінець"`
 }
 
 type Assignment struct {
 	Pos lexer.Position
 
-	Expressions []*Expression ` @@ ("," @@)*`
-	Op          string        `[@"="`
-	Next        []*Expression ` @@ ("," @@)*]`
+	Expressions []*Expression `@@ ("," @@)*`
+	Op          string        `[     @"="`
+	Next        []*Expression `@@ ("," @@)*]`
 }
 
 type Expression struct {
@@ -180,7 +248,7 @@ type Comparison struct {
 type BitwiseOr struct {
 	Pos lexer.Position
 
-	BitwiseXor *BitwiseXor `@@`
+	BitwiseXor *BitwiseXor `  @@`
 	Op         string      `[ @("|")`
 	Next       *BitwiseOr  `  @@ ]`
 }
@@ -244,23 +312,26 @@ type Exponent struct {
 type Primary struct {
 	Pos lexer.Position
 
-	Constant        *Constant        `  @@`
+	Literal         *Literal         `  @@`
 	LambdaDef       *LambdaDef       `| @@`
 	AttributeAccess *AttributeAccess `| @@`
 	SubExpression   *Expression      `| "(" @@ ")"`
 }
 
-type Constant struct {
+type Literal struct {
 	Pos lexer.Position
 
-	Integer         *int64             `  @Int`
-	Real            *float64           `| @Float`
+	Nil             bool               `  @"нуль"`
+	Integer         *string            `| @Int`
+	Real            *string            `| @Float`
 	Bool            *Boolean           `| @("істина" | "хиба")`
 	StringValue     *string            `| @String`
+	MultilineString *string            `| @RawString`
 	List            []*Expression      `| "[" @@ ("," @@)* "]"`
 	EmptyList       bool               `| @("[""]")`
 	Dictionary      []*DictionaryEntry `| "{" @@ ("," @@)* "}"`
 	EmptyDictionary bool               `| @("{""}")`
+	// SubExpression   *Expression        `| "(" @@ ")"`
 }
 
 type Boolean bool
@@ -280,9 +351,9 @@ type DictionaryEntry struct {
 type LambdaDef struct {
 	Pos lexer.Position
 
-	ParametersSet        *ParametersSet `@@`
+	ParametersSet        *ParametersSet `"лямбда" @@`
 	ReturnTypes          []*ReturnType  `[":" (@@ | ("(" (@@ ("," @@)+ )? ")"))]`
-	Body                 *FunctionBody  `"="">" "{" @@ "}"`
+	Body                 *FunctionBody  `@@ "кінець"`
 	InstantCall          bool           `[ @"("`
 	InstantCallArguments []*Expression  `[(@@ ("," @@)*)?] ")"]`
 }
@@ -290,16 +361,22 @@ type LambdaDef struct {
 type AttributeAccess struct {
 	Pos lexer.Position
 
-	SlicingOrSubscription *SlicingOrSubscription `@@`
-	AttributeAccess       *AttributeAccess       `("." @@)?`
+	IdentOrCall     *IdentOrCall     `@@`
+	AttributeAccess *AttributeAccess `("." @@)?`
+}
+
+type IdentOrCall struct {
+	Pos lexer.Position
+
+	Call                  *Call                  `( @@`
+	Ident                 *Ident                 `| @Ident)`
+	SlicingOrSubscription *SlicingOrSubscription `@@?`
 }
 
 type SlicingOrSubscription struct {
 	Pos lexer.Position
 
-	Call   *Call    `( @@`
-	Ident  *string  `| @Ident)`
-	Ranges []*Range `@@*`
+	Ranges []*Range `@@+`
 }
 
 type Range struct {
@@ -313,6 +390,6 @@ type Range struct {
 type Call struct {
 	Pos lexer.Position
 
-	Ident     string        `@Ident`
+	Ident     Ident         `@Ident`
 	Arguments []*Expression `"(" (@@ ("," @@)*)? ")"`
 }
