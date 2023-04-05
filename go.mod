@@ -1,6 +1,6 @@
 module github.com/YuriyLisovskiy/borsch-lang
 
-go 1.17
+go 1.19
 
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-alpha7

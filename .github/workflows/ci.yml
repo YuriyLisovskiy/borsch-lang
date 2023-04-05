@@ -2,113 +2,87 @@ name: CI
 on:
   push:
     branches:
-      - dev
-      - main
-  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'misc/**'
+      - 'LICENSE'
+      - 'mkdocs.yml'
+      - 'README.md'
+      - 'version'
 jobs:
-  interpreter-test:
+#  TODO: add lint check
+#  lint:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      fail-fast: false
+  test-interpreter:
     runs-on: ${{ matrix.system }}
     strategy:
       fail-fast: false
       matrix:
         system:
-          - ubuntu-latest
-          - macos-latest
+          - macos-11
+          - macos-12
+          - ubuntu-20.04
+          - ubuntu-22.04
+          - windows-2019
+          - windows-2022
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+
       - name: Test
         run: go test -v ./...
-  build:
+  test-language:
     needs:
-      - interpreter-test
-    runs-on: ubuntu-latest
+      - test-interpreter
+    runs-on: ${{ matrix.system }}
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - os: linux
-            arch: 386
-          - os: linux
-            arch: amd64
-          - os: linux
-            arch: arm
-          - os: linux
-            arch: arm64
-
-          - os: darwin
-            arch: amd64
-          - os: darwin
-            arch: arm64
-
-          - os: windows
-            arch: amd64
-          - os: windows
-            arch: 386
+        system:
+          - macos-11
+          - macos-12
+          - ubuntu-20.04
+          - ubuntu-22.04
+          - windows-2019
+          - windows-2022
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
-      - name: Build
-        run: make GOOS=${{ matrix.platform.os }} GOARCH=${{ matrix.platform.arch }} build
-      - name: Update bin name for Windows
-        if: ${{ startsWith(matrix.platform.os, 'windows') }}
-        run: mv ./bin/borsch ./bin/borsch.exe
-      - name: Set app version
-        id: app_version
-        run: |
-          echo "app_version=$(cat ./version.txt)" >> $GITHUB_ENV
-      - name: Compose build
-        run: |
-          mkdir build
-          cp -r ./bin ./build
-          cp -r ./Lib ./build
-          cp ./Scripts/install.sh ./build
-      - name: Upload build to artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: borsch-${{ matrix.platform.os }}-${{ matrix.platform.arch }}
-          path: ./build
-          retention-days: 60
-  lang-test:
-    needs:
-      - build
-    runs-on: ${{ matrix.platform.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - os: ubuntu-20.04
-            artifact: borsch-linux-amd64
-          - os: ubuntu-22.04
-            artifact: borsch-linux-amd64
 
-          - os: macos-11
-            artifact: borsch-darwin-amd64
-          - os: macos-12
-            artifact: borsch-darwin-amd64
-
-          - os: windows-2019
-            artifact: borsch-windows-amd64
-          - os: windows-2022
-            artifact: borsch-windows-amd64
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download the interpreter
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ matrix.platform.artifact }}
-          path: ./build
       - name: Run language tests
         shell: bash
         env:
-          BORSCH_LIB: ./build/Lib
+          BORSCH_LIB: ./build/stdlib
         run: |
-          chmod +x ./Scripts/ci_lang_test.sh
-          chmod +x $(find ./build/bin/ -name "borsch*")
-          ./Scripts/ci_lang_test.sh $(find ./build/bin/ -name "borsch*") ./Test
+          chmod +x ./scripts/ci_test.sh
+          ./scripts/ci_test.sh ./test
+  versioning:
+    needs:
+      - test-interpreter
+      - test-language
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.DEPLOY_ACCESS_TOKEN }}
+        env:
+          COMMIT_MESSAGE: Update build version to
+      - name: Create tag
+        run: |
+          git config --global user.name "${{ secret.DEPLOY_USERNAME }}"
+          git config --global user.email "${{ secret.DEPLOY_USER_EMAIL }}"
+          echo ${$(cat version)%-*}-$(git rev-parse --short HEAD) > version
+          git commit -m "${{ env.COMMIT_MESSAGE }} $(cat version)"
+          git push
